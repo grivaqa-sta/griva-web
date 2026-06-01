@@ -143,7 +143,7 @@ export default function SubNavbar() {
           {/* Deal */}
           <Link href="/shop" className="flex items-center gap-2 group">
             <span className="text-sm font-semibold text-black group-hover:text-orange-500 transition-colors">
-              Today's Deal
+              Today&apos;s Deal
             </span>
             <span className="rounded bg-orange-500 px-1.5 py-[2px] text-[10px] font-bold uppercase text-white animate-bounce">
               Hot

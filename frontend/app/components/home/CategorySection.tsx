@@ -1,5 +1,3 @@
-// components/home/CategorySection.tsx
-
 "use client";
 
 import { categories } from "@/app/data/data";
@@ -7,10 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-
-
 const GAP = 16;
-const VISIBLE = 5;
 const INTERVAL = 1200;
 const TOTAL_CARDS = categories.length;
 
@@ -23,15 +18,39 @@ export default function CategorySection() {
   const [translateX, setTranslateX] = useState(0);
   const [transition, setTransition] = useState(true);
 
+  // UPDATED: responsive visible cards
+  const [visibleCards, setVisibleCards] = useState(5);
+
   const indexRef = useRef(0);
+
+  // UPDATED: responsive card count
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setVisibleCards(2); // mobile
+      } else if (window.innerWidth < 1024) {
+        setVisibleCards(3); // tablet
+      } else {
+        setVisibleCards(5); // desktop
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () =>
+      window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const measure = () => {
       if (containerRef.current) {
         const totalWidth = containerRef.current.offsetWidth;
 
+        // UPDATED: use visibleCards instead of VISIBLE
         const cw =
-          (totalWidth - GAP * (VISIBLE - 1)) / VISIBLE;
+          (totalWidth - GAP * (visibleCards - 1)) /
+          visibleCards;
 
         setCardWidth(cw);
       }
@@ -41,8 +60,9 @@ export default function CategorySection() {
 
     window.addEventListener("resize", measure);
 
-    return () => window.removeEventListener("resize", measure);
-  }, []);
+    return () =>
+      window.removeEventListener("resize", measure);
+  }, [visibleCards]); // UPDATED
 
   const cardStep = cardWidth + GAP;
 
@@ -102,7 +122,7 @@ export default function CategorySection() {
                   src={item.image}
                   alt={item.title}
                   fill
-                  sizes="(max-width: 768px) 100vw, 300px"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" // UPDATED
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
 

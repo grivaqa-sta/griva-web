@@ -15,7 +15,7 @@ import { useSearch } from "@/app/context/SearchContext";
 import { useScrolled } from "@/app/hooks/useScrolled";
 import SearchDropdown from "./SearchDropdown";
 import MobileMenu from "./MobileMenu";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 
 export default function Navbar() {
@@ -27,6 +27,7 @@ export default function Navbar() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -188,6 +189,18 @@ export default function Navbar() {
         {/* Mobile Actions: Cart & Hamburger */}
         <div className="flex items-center gap-2 lg:hidden">
           {/* Wishlist Button (Mobile) */}
+          {/* Search Toggle Button (Mobile) */}
+          <button
+            onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+            className={`p-2 transition-colors rounded-lg cursor-pointer ${
+              mobileSearchOpen ? "text-orange-500 bg-orange-50" : "text-gray-700 hover:text-orange-500"
+            }`}
+            aria-label="Toggle Search"
+          >
+            <Search size={20} />
+          </button>
+
+          {/* Wishlist Button (Mobile) */}
           <Link
             href="/wishlist"
             className="relative p-2 text-gray-700 hover:text-orange-500 transition-colors rounded-lg"
@@ -224,23 +237,35 @@ export default function Navbar() {
       </div>
 
       {/* Mobile Inline Search Bar */}
-      <div className="border-t border-gray-100 px-4 py-2 lg:hidden">
-        <div className="flex overflow-hidden rounded-md border border-orange-500 shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
-          <input
-            type="text"
-            placeholder="Search for products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 text-sm outline-none bg-white text-black"
-          />
-          <Link
-            href={`/shop?search=${encodeURIComponent(searchQuery)}`}
-            className="bg-orange-500 flex items-center justify-center px-4 text-white hover:bg-orange-600 transition-colors"
+      <AnimatePresence>
+        {mobileSearchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="border-t border-gray-100 px-4 py-2 lg:hidden overflow-hidden"
           >
-            <Search size={18} />
-          </Link>
-        </div>
-      </div>
+            <div className="flex overflow-hidden rounded-md border border-orange-500 shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
+              <input
+                type="text"
+                placeholder="Search for products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 text-sm outline-none bg-white text-black"
+                autoFocus
+              />
+              <Link
+                href={`/shop?search=${encodeURIComponent(searchQuery)}`}
+                onClick={() => setMobileSearchOpen(false)}
+                className="bg-orange-500 flex items-center justify-center px-4 text-white hover:bg-orange-600 transition-colors"
+              >
+                <Search size={18} />
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Navigation Drawer */}
       <AnimatePresence>

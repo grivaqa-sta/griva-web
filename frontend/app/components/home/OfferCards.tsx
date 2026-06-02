@@ -4,43 +4,78 @@ import { OfferCard } from "@/app/types/types";
 import Image from "next/image";
 import Link from "next/link";
 
-function OfferCards({offer}: {offer: OfferCard;}) {
+function OfferCards({ offer }: { offer: OfferCard }) {
   return (
     <Link
       href={offer.href}
-      className={`group relative flex flex-col h-[250px] overflow-hidden rounded-2xl p-5 ${offer.bgColor}`}
+      className={`group relative h-[300px] overflow-hidden rounded-[32px] ${offer.bgColor}
+      border border-black/5 transition-all duration-700
+      lg:hover:-translate-y-3
+      lg:hover:shadow-[0_40px_100px_rgba(0,0,0,0.15)]`}
     >
-      {/* Glacing Animation */}
-      <div className="absolute inset-0 -translate-x-full skew-x-12 bg-white/20 transition-transform duration-700 group-hover:translate-x-full" />
+      {/* Background Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.4),transparent_45%)]" />
 
-      {/* Badge */}
-      <div className="inline-flex w-fit bg-red-700 px-3 py-1 mb-3">
-        <span className="text-[10px] uppercase tracking-wide text-white">
+      {/* Decorative Shape */}
+      <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-black/[0.03]" />
+
+      {/* Corner Accent */}
+      <div className="absolute right-5 top-5 h-14 w-14 rounded-full border border-white/30 opacity-70 transition-all duration-700 group-hover:scale-125" />
+
+      {/* Content */}
+      <div className="relative z-20 flex flex-col items-center text-center px-8 pt-8">
+        {/* Badge */}
+        <span className="rounded-full bg-orange-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">
           {offer.badge}
         </span>
+
+        {/* Title */}
+        <h2 className="mt-5 max-w-[240px] font-semibold text-2xl font-black leading-[0.95] tracking-tight text-black  ">
+          {offer.title}
+        </h2>
+
+        {/* Subtitle */}
+        <p className="mt-3 text-[11px] uppercase tracking-[0.35em] text-black/45">
+          {offer.subtitle}
+        </p>
+
+        {/* CTA */}
+      
       </div>
 
-      {/* Title */}
-      <h2 className="text-base leading-snug font-bold text-black">
-        {offer.title}
-      </h2>
-
-      {/* Subtitle */}
-      <p className="mt-1 text-xs uppercase tracking-wide text-black/70">
-        {offer.subtitle}
-      </p>
-
       {/* Product Image */}
-      <div className="absolute bottom-[-5px] left-0 right-0 flex justify-center">
+      <div className="absolute bottom-[-20px] left-1/2 z-10 -translate-x-1/2">
         <Image
           src={offer.image}
           alt={offer.title}
-          width={150}
-          height={150}
-          className="object-contain"
+          width={280}
+          height={280}
+        className="object-contain transition-all duration-700 ease-out lg:group-hover:scale-110 lg:group-hover:-translate-y-5 lg:group-hover:rotate-2"
           style={{ width: "auto", height: "auto" }}
         />
       </div>
+
+      {/* Bottom Glow */}
+      <div className="absolute bottom-0 left-1/2 h-28 w-40 -translate-x-1/2 rounded-full bg-white/20 blur-3xl opacity-60" />
+
+      {/* Premium Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/[0.03]" />
+
+      {/* Hover Shine */}
+      <div
+        className="
+          absolute inset-0
+          -translate-x-full
+          skew-x-12
+          bg-gradient-to-r
+          from-transparent
+          via-white/20
+          to-transparent
+          transition-transform
+          duration-1000
+          group-hover:translate-x-[250%]
+        "
+      />
     </Link>
   );
 }

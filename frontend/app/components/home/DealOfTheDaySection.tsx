@@ -140,7 +140,7 @@ export default function DealOfTheDaySection() {
                           : "border-gray-100 bg-gray-50 hover:border-orange-200"
                         }`}
                     >
-                      <Image src={image} alt="thumb" width={36} height={36} className="object-contain" />
+                      <Image src={image} alt="thumb" width={36} height={36} className="object-contain" style={{ width: "auto", height: "auto" }} />
                     </div>
                   ))}
                 </div>

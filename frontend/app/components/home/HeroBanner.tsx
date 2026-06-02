@@ -99,30 +99,17 @@ export default function HeroBanner() {
               </div>
 
               {/* Title */}
-              <h1 className="max-w-xl whitespace-pre-line text-2xl font-black leading-tight text-white sm:text-3xl lg:text-5xl">
+              <h1 className="max-w-xl text-2xl font-black text-white sm:text-3xl lg:text-4xl">
                 {currentSlide.title}
               </h1>
 
               {/* Subtitle */}
-              <p className="mt-3 max-w-lg text-xs leading-6 text-gray-300 sm:text-sm lg:text-base lg:mt-5">
+              <p className=" max-w-lg text-xs  text-gray-300 sm:text-sm lg:text-base">
                 {currentSlide.subtitle}
               </p>
 
-              {/* Feature Tags */}
-              <div className="mt-6 flex flex-wrap gap-3">
-                <div className="rounded-full border border-white/15 px-4 py-2 text-xs font-medium text-gray-200">
-                  Premium Quality
-                </div>
-                <div className="rounded-full border border-white/15 px-4 py-2 text-xs font-medium text-gray-200">
-                  Fast Delivery
-                </div>
-                <div className="rounded-full border border-white/15 px-4 py-2 text-xs font-medium text-gray-200">
-                  Best Price
-                </div>
-              </div>
-
               {/* Price */}
-              <div className="mt-5 flex items-end gap-2 lg:mt-8 lg:gap-3">
+              <div className=" flex items-end gap-2 lg:gap-3">
                 <span className="text-sm font-medium text-gray-300 lg:text-lg">From</span>
                 <span
                   key={`price-${animKey}`}
@@ -201,15 +188,15 @@ export default function HeroBanner() {
           </div>
 
           {/* Bottom Dots */}
-          <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+          <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
             {slide.map((_, i) => (
               <button
                 key={i}
                 onClick={() => goTo(i)}
                 className={`rounded-full transition-all duration-300 ${
                   i === current
-                    ? "h-2.5 w-7 bg-orange-500"
-                    : "h-2.5 w-2.5 bg-white/50 hover:bg-white"
+                    ? "h-2 w-5 bg-orange-500"
+                    : "h-2 w-2.5 bg-white/50 hover:bg-white"
                 }`}
               />
             ))}

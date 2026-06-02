@@ -44,7 +44,7 @@ export default function TrendingProductCard({
         className="group relative flex rounded-xl p-4 shadow-sm hover:shadow transition border border-gray-100 hover:border-orange-200"
       >
         {/* Badges */}
-        <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
+        <div className="absolute left-3 top-3 z-10 flex gap-1">
           {product.badge && (
             <span className="rounded bg-orange-500 px-2 py-0.5 text-[9px] font-extrabold text-white uppercase">
               {product.badge}
@@ -58,7 +58,7 @@ export default function TrendingProductCard({
         </div>
 
         {/* Product Image */}
-        <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center rounded-lg bg-gray-50/50 p-2">
+        <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center rounded-lg bg-gray-50/50 p-2 mt-2">
           <Image
             src={product.image}
             alt={product.title}

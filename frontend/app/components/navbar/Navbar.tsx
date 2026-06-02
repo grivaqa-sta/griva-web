@@ -52,10 +52,10 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-10 w-full border-b border-gray-100 bg-white transition-all duration-300 px-4 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-[10001]" : "z-40"
-        } ${scrolled ? "py-2 shadow-md" : "py-4"}`}
+      className={`sticky top-5 sm:top-10 w-full border-b border-gray-100 bg-white transition-all duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-[10001]" : "z-40"
+        } ${scrolled ? "py-2 shadow-md" : "py-2"}`}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
+      <div className="mx-auto flex sm:h-16 h-13 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <h1 className="text-2xl tracking-tight text-black font-semibold">
@@ -66,37 +66,6 @@ export default function Navbar() {
         {/* Search Bar - Desktop */}
         <div ref={searchRef} className="hidden lg:relative lg:flex flex-1 max-w-2xl items-center justify-center">
           <div className="flex h-10 w-full overflow-hidden rounded-md border border-orange-500 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
-            {/* Category Dropdown */}
-            <div className="border-r border-gray-200 pr-4 bg-gray-50">
-              <select
-                className="
-      pl-5
-      pr-8
-      h-full
-      text-xs
-      font-semibold
-      text-gray-700
-      outline-none
-      cursor-pointer
-      bg-transparent
-      hover:bg-gray-100
-      transition-colors
-    "
-                value={
-                  filters.category
-                    ? filters.category.charAt(0).toUpperCase() + filters.category.slice(1)
-                    : "All Categories"
-                }
-                onChange={handleCategoryChange}
-              >
-                <option>All Categories</option>
-                <option>Electronics</option>
-                <option>Fashion</option>
-                <option>Accessories</option>
-                <option>Gaming</option>
-                <option>Mobiles</option>
-              </select>
-            </div>
 
             {/* Input */}
             <div className="flex flex-1 items-center px-3 gap-2">

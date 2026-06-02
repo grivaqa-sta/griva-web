@@ -2,8 +2,8 @@
 
 export default function NewsletterSection() {
   return (
-    <section className="bg-[#8990f1] max-w-7xl mx-auto py-10 rounded-lg mb-10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ">
+    <section className="w-full  py-10 mb-10 px-4 sm:px-6 lg:px-0">
+      <div className="mx-auto max-w-7xl rounded-[8px] p-4 bg-[#8990f1] sm:p-6 lg:p-8">
         <div className="flex flex-col items-center gap-3 text-center lg:flex-row lg:justify-between lg:text-left">
 
           {/* Left Content */}
@@ -20,7 +20,7 @@ export default function NewsletterSection() {
           </div>
 
           {/* Right Form */}
-          <div className="flex w-full max-w-lg overflow-hidden rounded-full shadow-lg lg:w-auto">
+          <div className="flex w-full max-w-lg overflow-hidden rounded-md shadow-lg lg:w-auto">
             <input
               type="email"
               placeholder="Enter your email address..."
@@ -28,7 +28,7 @@ export default function NewsletterSection() {
             />
             <button
               type="submit"
-              className="bg-black px-7 py-4 text-xs font-black uppercase tracking-widest text-white transition duration-300 hover:bg-gray-800 whitespace-nowrap rounded-r-full"
+              className="bg-black px-7 py-4 text-xs font-black uppercase tracking-widest text-white transition duration-300 hover:bg-gray-800 whitespace-nowrap"
             >
               Subscribe
             </button>

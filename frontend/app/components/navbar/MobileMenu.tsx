@@ -37,7 +37,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         animate={{ opacity: 0.5 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black"
+        className="fixed inset-0 z-[10000] bg-black"
       />
 
       {/* Drawer */}
@@ -46,7 +46,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         animate={{ x: 0 }}
         exit={{ x: "-100%" }}
         transition={{ type: "tween", duration: 0.3 }}
-        className="fixed inset-y-0 left-0 z-50 flex w-full max-w-xs flex-col bg-white p-6 shadow-2xl overflow-y-auto"
+        className="fixed inset-y-0 left-0 z-[10001] flex w-full max-w-xs flex-col bg-white p-6 shadow-2xl overflow-y-auto"
       >
         <div className="flex items-center justify-between border-b pb-4">
           <h2 className="text-xl font-bold text-gray-900">

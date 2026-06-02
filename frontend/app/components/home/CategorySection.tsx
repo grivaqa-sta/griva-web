@@ -189,7 +189,7 @@ export default function CategorySection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
                 <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <h3 className="text-sm font-bold leading-tight text-white transition-colors duration-300 group-hover:text-orange-400">
+                  <h3 className="text-sm text-center font-bold leading-tight text-white transition-colors duration-300 group-hover:text-orange-400">
                     {item.title}
                   </h3>
                 </div>

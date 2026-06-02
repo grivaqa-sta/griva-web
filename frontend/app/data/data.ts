@@ -32,6 +32,7 @@ import nbg from "../../public/images/nbg.png";
 import headphoneNew from "../../public/images/headphonenew.png";
 import gamejoysticnew from "../../public/images/gamejoysticnew.png";
 import airbudsnew from "../../public/images/airbudsnew.png";
+import headphone123 from "../../public/images/HeadphoneNew@.png";
 
 // ───────────────────────────────────────────────────────── 
 // Products

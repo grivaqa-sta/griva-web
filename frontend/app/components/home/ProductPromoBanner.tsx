@@ -5,58 +5,169 @@ import Link from "next/link";
 
 const ProductPromoBanner = () => {
   return (
-    <section className="w-full  py-4 sm:py-6">
+    <section className="w-full py-20 overflow-visible">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
-        {/* Banner Card */}
-        <div className="relative overflow-hidden rounded-[5px]">
-          
-
-
-          <div className="relative grid min-h-[210px] bg-[#f0e5bc] items-center gap-6 px-5 py-6 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:px-12 lg:py-8">
-            
-            {/* Left Content */}
-            <div className="max-w-lg">
-              <span className="inline-block text-[10px] font-bold uppercase tracking-[3px] text-orange-500">
+        <div className="relative overflow-visible rounded-[8px]">
+          <div
+            className="
+              relative
+              overflow-visible
+              rounded-[8px]
+              bg-[#f0e5bc]
+              px-5
+              py-8
+              min-h-[500px]
+              lg:min-h-[220px]
+              sm:px-10
+              lg:px-14
+            "
+          >
+            {/* DESKTOP CONTENT */}
+            <div className="hidden lg:block relative z-20 max-w-[520px]">
+              <span className="inline-block text-[11px] font-bold uppercase tracking-[4px] text-orange-500">
                 Exclusive Headphone
               </span>
 
-              <h2 className="mt-2 text-2xl font-black leading-tight text-black sm:text-3xl lg:text-4xl">
+              <h2 className="mt-3 text-5xl leading-[1.05] font-black text-black">
                 Discounts 50% On
-                <span className="block">
-                  All Headphone
-                </span>
+                <span className="block">All Headphone</span>
               </h2>
 
-              <p className="mt-3 max-w-md text-xs leading-6 text-gray-600 sm:text-sm">
+              <p className="mt-4 max-w-md text-base leading-7 text-gray-600">
                 Discover premium wireless headphones with immersive sound,
                 active noise cancellation, and unbeatable comfort.
               </p>
 
-              {/* CTA Button */}
-              <div className="mt-5">
+              <div className="mt-8">
                 <Link
                   href="/shop"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-orange-500 px-6 text-[11px] font-bold uppercase tracking-wide text-white transition-all duration-300 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
+                  className="
+                    inline-flex
+                    h-12
+                    items-center
+                    justify-center
+                    rounded-xl
+                    bg-orange-500
+                    px-8
+                    text-[12px]
+                    font-bold
+                    uppercase
+                    tracking-wide
+                    text-white
+                    transition-all
+                    duration-300
+                    hover:bg-orange-600
+                    hover:shadow-xl
+                    hover:shadow-orange-500/30
+                  "
                 >
                   Shop Now
                 </Link>
               </div>
             </div>
 
-            {/* Right Image */}
-            <div className="relative flex items-center justify-center">
-              <div className="relative">
-                <Image
-                  src="/images/headphonenew.png"
-                  alt="Premium Headphones"
-                  width={520}
-                  height={420}
-                  priority
-                  className="h-[250px] w-full max-w-[400px] object-contain drop-shadow-2xl"
-                  style={{ width: "auto", height: "auto" }}
-                />
-              </div>
+            {/* MOBILE CONTENT */}
+            <div className="lg:hidden relative z-20 mt-[190px] text-left">
+              <span className="inline-block text-[10px] font-bold uppercase tracking-[4px] text-orange-500">
+                Exclusive Headphone
+              </span>
+
+              <h2 className="mt-3 text-[34px] leading-[1.05] font-black text-black">
+                Discounts 50% On
+                <span className="block">All Headphone</span>
+              </h2>
+
+              <p className="mt-4 text-[13px] leading-7 text-gray-600">
+                Discover premium wireless headphones with immersive sound,
+                active noise cancellation, and unbeatable comfort.
+              </p>
+
+              <div className="mt-6 w-full">
+  <Link
+    href="/shop"
+    className="
+      flex
+      w-full
+      h-[54px]
+      items-center
+      justify-center
+      rounded-[12px]
+      bg-orange-500
+      text-[12px]
+      font-bold
+      uppercase
+      tracking-wide
+      text-white
+      transition-all
+      duration-300
+      hover:bg-orange-600
+      hover:shadow-xl
+      hover:shadow-orange-500/30
+    "
+  >
+    Shop Now
+  </Link>
+</div>
+            </div>
+
+            {/* FLOATING 3D HEADPHONE */}
+            <div
+              className="
+                pointer-events-none
+                absolute
+                z-10
+                left-1/2
+                -translate-x-[40%]
+                top-[-90px]
+
+                lg:left-auto
+                lg:translate-x-0
+                lg:right-[20px]
+                lg:top-auto
+                lg:bottom-[-225px]
+              "
+            >
+              <div
+  className="
+    absolute
+    left-1/2
+    -translate-x-1/2
+    bottom-[80px]
+    w-[180px]
+    h-[30px]
+    rounded-full
+    md:bg-black/90
+    md:blur-[25px]
+    bg-black/100
+    blur-[23px]
+
+    lg:w-[280px]
+    lg:h-[55px]
+    lg:bottom-[170px]
+  "
+/>
+
+              <Image
+                src="/images/HeadphoneNew@.png"
+                alt="Premium Headphones"
+                width={450}
+                height={350}
+                priority
+                className="
+  relative
+  z-10
+  w-[250px]
+  max-w-none
+  sm:w-[380px]
+  lg:w-[500px]
+  h-auto
+  object-contain
+  rotate-[-10deg]
+  transition-transform
+  duration-500
+  hover:scale-105
+"
+              />
             </div>
           </div>
         </div>

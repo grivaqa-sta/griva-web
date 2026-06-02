@@ -63,9 +63,9 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-10 z-40 w-full border-b border-gray-100 bg-white transition-all duration-300 px-4 sm:px-6 lg:px-8 xl:px-10 ${
-        scrolled ? "py-2 shadow-md" : "py-4"
-      }`}
+      className={`sticky top-10 w-full border-b border-gray-100 bg-white transition-all duration-300 px-4 sm:px-6 lg:px-8 xl:px-10 ${
+        mobileMenuOpen ? "z-[10001]" : "z-40"
+      } ${scrolled ? "py-2 shadow-md" : "py-4"}`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
         {/* Logo */}

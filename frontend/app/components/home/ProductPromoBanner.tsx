@@ -2,8 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 const ProductPromoBanner = () => {
+  // ✅ ADDED: animation state + ref
+  const imageRef = useRef<HTMLDivElement>(null);
+  const [showImage, setShowImage] = useState(false);
+
+  // ✅ ADDED: scroll reveal animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShowImage(true);
+        }
+      },
+      {
+        threshold: 0.25,
+      }
+    );
+
+    if (imageRef.current) {
+      observer.observe(imageRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="w-full py-20 overflow-visible">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -83,35 +108,37 @@ const ProductPromoBanner = () => {
               </p>
 
               <div className="mt-6 w-full">
-  <Link
-    href="/shop"
-    className="
-      flex
-      w-full
-      h-[54px]
-      items-center
-      justify-center
-      rounded-[12px]
-      bg-orange-500
-      text-[12px]
-      font-bold
-      uppercase
-      tracking-wide
-      text-white
-      transition-all
-      duration-300
-      hover:bg-orange-600
-      hover:shadow-xl
-      hover:shadow-orange-500/30
-    "
-  >
-    Shop Now
-  </Link>
-</div>
+                <Link
+                  href="/shop"
+                  className="
+                    flex
+                    w-full
+                    h-[54px]
+                    items-center
+                    justify-center
+                    rounded-[12px]
+                    bg-orange-500
+                    text-[12px]
+                    font-bold
+                    uppercase
+                    tracking-wide
+                    text-white
+                    transition-all
+                    duration-300
+                    hover:bg-orange-600
+                    hover:shadow-xl
+                    hover:shadow-orange-500/30
+                  "
+                >
+                  Shop Now
+                </Link>
+              </div>
             </div>
 
             {/* FLOATING 3D HEADPHONE */}
             <div
+              // ✅ ADDED REF HERE
+              ref={imageRef}
               className="
                 pointer-events-none
                 absolute
@@ -128,24 +155,24 @@ const ProductPromoBanner = () => {
               "
             >
               <div
-  className="
-    absolute
-    left-1/2
-    -translate-x-1/2
-    bottom-[80px]
-    w-[180px]
-    h-[30px]
-    rounded-full
-    md:bg-black/90
-    md:blur-[25px]
-    bg-black/100
-    blur-[23px]
+                className="
+                  absolute
+                  left-1/2
+                  -translate-x-1/2
+                  bottom-[80px]
+                  w-[180px]
+                  h-[30px]
+                  rounded-full
+                  md:bg-black/90
+                  md:blur-[25px]
+                  bg-black/100
+                  blur-[23px]
 
-    lg:w-[280px]
-    lg:h-[55px]
-    lg:bottom-[170px]
-  "
-/>
+                  lg:w-[280px]
+                  lg:h-[55px]
+                  lg:bottom-[170px]
+                "
+              />
 
               <Image
                 src="/images/HeadphoneNew@.png"
@@ -153,20 +180,26 @@ const ProductPromoBanner = () => {
                 width={450}
                 height={350}
                 priority
-                className="
-  relative
-  z-10
-  w-[250px]
-  max-w-none
-  sm:w-[380px]
-  lg:w-[500px]
-  h-auto
-  object-contain
-  rotate-[-10deg]
-  transition-transform
-  duration-500
-  hover:scale-105
-"
+                className={`
+                  relative
+                  z-10
+                  w-[250px]
+                  max-w-none
+                  sm:w-[380px]
+                  lg:w-[500px]
+                  h-auto
+                  object-contain
+                  rotate-[-10deg]
+                  hover:scale-105
+                  transition-all
+                  duration-1000
+                  ease-out
+                  ${
+                    showImage
+                      ? "opacity-100 translate-y-0 scale-100"
+                      : "opacity-0 translate-y-[90px] scale-[0.7]"
+                  }
+                `}
               />
             </div>
           </div>

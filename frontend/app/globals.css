@@ -4,11 +4,12 @@
   --color-brand-orange: #f97316;
   --color-brand-orange-dark: #ea580c;
   --font-body: var(--font-geist-sans), sans-serif;
-  
+
   @keyframes marquee {
     0% {
       transform: translate3d(0, 0, 0);
     }
+
     100% {
       transform: translate3d(-50%, 0, 0);
     }
@@ -19,22 +20,22 @@
   html {
     scroll-behavior: smooth;
   }
-  
+
   /* Custom scrollbar styling */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: #e5e7eb;
     border-radius: 9999px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     background: #cbd5e1;
   }
@@ -45,6 +46,7 @@
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -58,13 +60,33 @@
 
 /* HeroBanner price shake animation */
 @keyframes priceShake {
-  0%   { transform: scale(1) rotate(0deg); }
-  15%  { transform: scale(1.15) rotate(-3deg); }
-  30%  { transform: scale(1.2) rotate(3deg); }
-  45%  { transform: scale(1.15) rotate(-2deg); }
-  60%  { transform: scale(1.1) rotate(2deg); }
-  75%  { transform: scale(1.05) rotate(-1deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  15% {
+    transform: scale(1.15) rotate(-3deg);
+  }
+
+  30% {
+    transform: scale(1.2) rotate(3deg);
+  }
+
+  45% {
+    transform: scale(1.15) rotate(-2deg);
+  }
+
+  60% {
+    transform: scale(1.1) rotate(2deg);
+  }
+
+  75% {
+    transform: scale(1.05) rotate(-1deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 .price-shake {

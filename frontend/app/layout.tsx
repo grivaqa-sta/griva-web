@@ -40,7 +40,7 @@ export default function RootLayout({
         <Providers>
           <AnnouncementBar />
           <Navbar />
-          <main className="flex-grow">
+          <main className="flex-grow pb-16 sm:pb-0">
             {children}
           </main>
           <Footer />

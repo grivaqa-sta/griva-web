@@ -1,87 +1,97 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { SlidersHorizontal, Star, RotateCcw, X } from "lucide-react";
+import { useParams } from "next/navigation";
+import { SlidersHorizontal, Star, RotateCcw, X, ChevronRight, Laptop, Tv, Speaker, Headphones, Gamepad2, Sparkles } from "lucide-react";
 import { products, parsePriceNumber } from "@/app/data/data";
 import ProductCard from "@/app/components/product/ProductCard";
-import SectionHeading from "@/app/components/common/SectionHeading";
-import { Product } from "@/app/types/types";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface ShopPageProps {
-  searchParams: Promise<{
-    category?: string;
-    search?: string;
-  }>;
+// Helper to resolve styling/taglines based on category slug
+interface CategoryMetadata {
+  title: string;
+  tagline: string;
+  gradient: string;
+  icon: React.ReactNode;
 }
 
-const CATEGORIES = ["Laptops", "Television", "Speakers", "Headphones", "Gaming", "Gadgets"];
+const CATEGORY_META: Record<string, CategoryMetadata> = {
+  laptops: {
+    title: "Premium Laptops",
+    tagline: "Unleash ultimate power and portable computing",
+    gradient: "from-blue-600 via-indigo-700 to-purple-800",
+    icon: <Laptop className="h-6 w-6 text-white" />,
+  },
+  television: {
+    title: "Smart Televisions",
+    tagline: "Immerse yourself in cinematic 4K QLED displays",
+    gradient: "from-red-650 via-pink-700 to-rose-800",
+    icon: <Tv className="h-6 w-6 text-white" />,
+  },
+  speakers: {
+    title: "Hi-Fi Speakers",
+    tagline: "Experience crystal clear theater-grade acoustics",
+    gradient: "from-amber-600 via-orange-600 to-red-700",
+    icon: <Speaker className="h-6 w-6 text-white" />,
+  },
+  headphones: {
+    title: "Acoustic Headphones",
+    tagline: "Drown the noise with premium studio comfort",
+    gradient: "from-emerald-600 via-teal-700 to-cyan-800",
+    icon: <Headphones className="h-6 w-6 text-white" />,
+  },
+  gaming: {
+    title: "Gaming Zone",
+    tagline: "Next-gen speed and high-precision peripherals",
+    gradient: "from-violet-650 via-purple-750 to-fuchsia-850",
+    icon: <Gamepad2 className="h-6 w-6 text-white" />,
+  },
+  gadgets: {
+    title: "Smart Gadgets",
+    tagline: "Future-proof smartwatches, VR systems, and drones",
+    gradient: "from-orange-500 via-amber-500 to-yellow-600",
+    icon: <Sparkles className="h-6 w-6 text-white" />,
+  },
+};
 
-export default function ShopPage({ searchParams }: ShopPageProps) {
-  const resolvedParams = React.use(searchParams);
+export default function CategoryPage() {
+  const params = useParams();
+  const slug = (params.slug as string)?.toLowerCase() || "";
 
   // Filter States
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [searchVal, setSearchVal] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
-
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Initialize filters from searchParams
-  useEffect(() => {
-    if (resolvedParams.category) {
-      setSelectedCategory(resolvedParams.category.toLowerCase());
-    }
-    if (resolvedParams.search) {
-      setSearchVal(resolvedParams.search);
-    }
-  }, [resolvedParams]);
-
-  const handleResetFilters = () => {
-    setSelectedCategory("");
-    setSearchVal("");
-    setMaxPrice(2000);
-    setMinRating(0);
-    setSortBy("featured");
+  // Get metadata
+  const meta = CATEGORY_META[slug] || {
+    title: slug.charAt(0).toUpperCase() + slug.slice(1),
+    tagline: "Browse our premium selected catalog products",
+    gradient: "from-zinc-800 via-zinc-900 to-black",
+    icon: <Sparkles className="h-6 w-6 text-white" />,
   };
 
-  // Filter and Sort Logic (Memoized)
-  const processedProducts = useMemo(() => {
-    let result = [...products];
+  // Filter and Sort Logic
+  const filteredProducts = useMemo(() => {
+    // 1. Match category
+    let result = products.filter(
+      (p) => p.category.toLowerCase() === slug
+    );
 
-    // Search Query
-    if (searchVal.trim()) {
-      const query = searchVal.toLowerCase().trim();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(query) ||
-          p.category.toLowerCase().includes(query) ||
-          (p.description && p.description.toLowerCase().includes(query))
-      );
-    }
-
-    // Category
-    if (selectedCategory) {
-      result = result.filter(
-        (p) => p.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
-    }
-
-    // Price Filter
+    // 2. Price filter
     result = result.filter((p) => {
       const priceNum = parsePriceNumber(p.price);
       return priceNum <= maxPrice;
     });
 
-    // Rating Filter
+    // 3. Rating filter
     if (minRating > 0) {
       result = result.filter((p) => p.rating >= minRating);
     }
 
-    // Sorting
+    // 4. Sorting
     if (sortBy === "price-low-to-high") {
       result.sort((a, b) => parsePriceNumber(a.price) - parsePriceNumber(b.price));
     } else if (sortBy === "price-high-to-low") {
@@ -91,22 +101,54 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
 
     return result;
-  }, [searchVal, selectedCategory, maxPrice, minRating, sortBy]);
+  }, [slug, maxPrice, minRating, sortBy]);
+
+  const handleResetFilters = () => {
+    setMaxPrice(2000);
+    setMinRating(0);
+    setSortBy("featured");
+  };
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading title="Shop Products" subtitle="Browse, filter, and find your perfect gear" />
+    <div className="bg-gray-50/40 min-h-screen py-8 selection:bg-orange-500 selection:text-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        {/* Breadcrumbs (SEO compliance) */}
+        <nav className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+          <Link href="/" className="hover:text-orange-500 transition-colors">Home</Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <Link href="/shop" className="hover:text-orange-500 transition-colors">Shop</Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-gray-900 capitalize font-bold">{meta.title}</span>
+        </nav>
 
+        {/* Dynamic Glassmorphic Category Banner */}
+        <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${meta.gradient} p-8 md:p-12 text-white shadow-xl shadow-zinc-950/10`}>
+          <div className="absolute -right-16 -top-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute right-10 bottom-10 opacity-10 blur-xs">
+            {meta.icon}
+          </div>
+          <div className="relative max-w-2xl space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
+                {meta.icon}
+              </div>
+              <span className="text-[10px] font-black tracking-widest uppercase text-white/80">Category Catalog</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{meta.title}</h1>
+            <p className="text-sm md:text-base text-white/85 leading-relaxed">{meta.tagline}</p>
+          </div>
+        </div>
+
+        {/* Filters and Grid Wrapper */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* ────────────────────────────────────────────────────────
-              Desktop Filter Sidebar (lg and up)
-             ──────────────────────────────────────────────────────── */}
+          
+          {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block space-y-6">
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-6">
               <div className="flex items-center justify-between border-b pb-4">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  <SlidersHorizontal className="h-4. w-4." /> Filters
+                  <SlidersHorizontal className="h-4 w-4" /> Filters
                 </h3>
                 <button
                   onClick={handleResetFilters}
@@ -114,36 +156,6 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                 >
                   <RotateCcw className="h-3 w-3" /> Reset
                 </button>
-              </div>
-
-              {/* Categories */}
-              <div>
-                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
-                  Categories
-                </h4>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setSelectedCategory("")}
-                    className={`block w-full text-left text-xs py-1 px-2 rounded-md transition-colors cursor-pointer ${selectedCategory === ""
-                      ? "bg-orange-500 text-white font-semibold"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                  >
-                    All Categories
-                  </button>
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat.toLowerCase())}
-                      className={`block w-full text-left text-xs py-1 px-2 rounded-md transition-colors cursor-pointer ${selectedCategory === cat.toLowerCase()
-                        ? "bg-orange-500 text-white font-semibold"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               {/* Price Filter */}
@@ -179,10 +191,11 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                     <button
                       key={rating}
                       onClick={() => setMinRating(rating)}
-                      className={`flex w-full items-center gap-2 text-xs py-1 px-2 rounded-md transition cursor-pointer ${minRating === rating
-                        ? "bg-orange-500 text-white font-semibold"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`}
+                      className={`flex w-full items-center gap-2 text-xs py-1 px-2 rounded-md transition cursor-pointer ${
+                        minRating === rating
+                          ? "bg-orange-505 bg-orange-500 text-white font-semibold"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
                     >
                       {rating === 0 ? (
                         <span>Any Rating</span>
@@ -192,12 +205,13 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`h-3 w-3 ${i < rating
-                                  ? minRating === rating
-                                    ? "fill-white text-white"
-                                    : "fill-orange-400 text-orange-400"
-                                  : "text-gray-200"
-                                  }`}
+                                className={`h-3 w-3 ${
+                                  i < rating
+                                    ? minRating === rating
+                                      ? "fill-white text-white"
+                                      : "fill-orange-400 text-orange-400"
+                                    : "text-gray-200"
+                                }`}
                               />
                             ))}
                           </div>
@@ -211,21 +225,18 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
             </div>
           </div>
 
-          {/* ────────────────────────────────────────────────────────
-              Main Grid & Sorting Header
-             ──────────────────────────────────────────────────────── */}
+          {/* Catalog view grid */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Header / Controls */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-
-              {/* Desktop Product Count */}
-              <div className="hidden lg:block">
+            
+            {/* Header control board */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
                 <span className="text-xs text-gray-500 font-semibold">
-                  Found {processedProducts.length} {processedProducts.length === 1 ? "product" : "products"}
+                  Found {filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"} in <span className="text-gray-900 font-bold capitalize">{meta.title}</span>
                 </span>
               </div>
 
-              {/* Mobile controls (Filters + Sort side by side) */}
+              {/* Mobile controls */}
               <div className="flex lg:hidden w-full gap-3">
                 <button
                   onClick={() => setMobileFiltersOpen(true)}
@@ -244,20 +255,10 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                     <option value="price-high-to-low">Sort: Highest Price</option>
                     <option value="rating">Sort: Top Rated</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                    <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                  </div>
                 </div>
               </div>
 
-              {/* Mobile Product Count */}
-              <div className="lg:hidden text-center w-full border-t border-gray-100 pt-3">
-                <span className="text-xs text-gray-500 font-semibold">
-                  Found {processedProducts.length} {processedProducts.length === 1 ? "product" : "products"}
-                </span>
-              </div>
-
-              {/* Desktop Sort By Dropdown */}
+              {/* Desktop sort by selector */}
               <div className="hidden lg:flex items-center gap-2">
                 <span className="text-xs text-gray-500 font-semibold">Sort by:</span>
                 <select
@@ -273,17 +274,17 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
               </div>
             </div>
 
-            {/* Product Cards Grid */}
-            {processedProducts.length > 0 ? (
+            {/* Product card loop */}
+            {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                {processedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {filteredProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} />
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
                 <p className="text-sm font-semibold text-gray-500">
-                  No products match your active filters.
+                  No products matched the filters inside this category.
                 </p>
                 <button
                   onClick={handleResetFilters}
@@ -297,13 +298,10 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
         </div>
       </div>
 
-      {/* ────────────────────────────────────────────────────────
-          Mobile Filters Overlay Drawer
-         ──────────────────────────────────────────────────────── */}
+      {/* Mobile drawer filter settings */}
       <AnimatePresence>
         {mobileFiltersOpen && (
-          <div>
-            {/* Backdrop */}
+          <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
@@ -312,7 +310,6 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
               className="fixed inset-0 z-50 bg-black lg:hidden"
             />
 
-            {/* Slide up Drawer */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -320,7 +317,6 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
               transition={{ type: "tween", duration: 0.3 }}
               className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl lg:hidden flex flex-col"
             >
-              {/* Header */}
               <div className="flex items-center justify-between border-b pb-4 mb-6">
                 <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
                   <SlidersHorizontal className="h-5 w-5" /> Filter Settings
@@ -344,38 +340,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                 </div>
               </div>
 
-              {/* Contents */}
               <div className="space-y-6 overflow-y-auto pr-1">
-                {/* Categories */}
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
-                    Categories
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setSelectedCategory("")}
-                      className={`text-xs py-1.5 px-3 rounded-lg border transition cursor-pointer ${selectedCategory === ""
-                        ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
-                        : "border-gray-200 text-gray-600 bg-white"
-                        }`}
-                    >
-                      All Categories
-                    </button>
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat.toLowerCase())}
-                        className={`text-xs py-1.5 px-3 rounded-lg border transition cursor-pointer ${selectedCategory === cat.toLowerCase()
-                          ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
-                          : "border-gray-200 text-gray-600 bg-white"
-                          }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Price Slider */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
@@ -393,10 +358,6 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                     className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                   />
-                  <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-semibold">
-                    <span>$0</span>
-                    <span>$2,000</span>
-                  </div>
                 </div>
 
                 {/* Ratings */}
@@ -409,10 +370,11 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                       <button
                         key={rating}
                         onClick={() => setMinRating(rating)}
-                        className={`flex items-center justify-center gap-1.5 text-xs py-2 px-3 rounded-lg border transition cursor-pointer ${minRating === rating
-                          ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
-                          : "border-gray-200 text-gray-600 bg-white"
-                          }`}
+                        className={`flex items-center justify-center gap-1.5 text-xs py-2 px-3 rounded-lg border transition cursor-pointer ${
+                          minRating === rating
+                            ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
+                            : "border-gray-200 text-gray-650 bg-white"
+                        }`}
                       >
                         {rating === 0 ? (
                           <span>Any Rating</span>
@@ -422,10 +384,11 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`h-3 w-3 ${i < rating
-                                    ? "fill-orange-400 text-orange-400"
-                                    : "text-gray-200"
-                                    }`}
+                                  className={`h-3 w-3 ${
+                                    i < rating
+                                      ? "fill-orange-400 text-orange-400"
+                                      : "text-gray-200"
+                                  }`}
                                 />
                               ))}
                             </div>
@@ -438,15 +401,14 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                 </div>
               </div>
 
-              {/* View Results Action Button */}
               <button
                 onClick={() => setMobileFiltersOpen(false)}
                 className="mt-8 w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/10 cursor-pointer"
               >
-                Show {processedProducts.length} Results
+                Show {filteredProducts.length} Results
               </button>
             </motion.div>
-          </div>
+          </>
         )}
       </AnimatePresence>
     </div>

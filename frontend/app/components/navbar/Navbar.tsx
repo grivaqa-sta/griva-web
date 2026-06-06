@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Menu,
   ShoppingCart,
@@ -19,11 +20,13 @@ import { useUser } from "@/app/context/UserContext";
 import { useScrolled } from "@/app/hooks/useScrolled";
 import SearchDropdown from "./SearchDropdown";
 import MobileMenu from "./MobileMenu";
+import MobileCategoryDrawer from "./MobileCategoryDrawer";
 import { AnimatePresence, motion } from "framer-motion";
 
 
 export default function Navbar() {
   const scrolled = useScrolled(10);
+  const pathname = usePathname();
 
   const { state: cartState, openDrawer } = useCart();
   const { items: wishlistItems } = useWishlist();
@@ -31,6 +34,7 @@ export default function Navbar() {
   const { state: userState } = useUser();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -326,20 +330,22 @@ export default function Navbar() {
             {/* Home */}
             <Link
               href="/"
-              className="flex flex-col items-center justify-center w-14 h-full text-gray-600 hover:text-orange-500 transition-colors"
+              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
+                pathname === "/" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
+              }`}
             >
               <Home size={20} />
               <span className="text-[10px] mt-1 font-medium tracking-tight">Home</span>
             </Link>
 
             {/* Categories */}
-            <Link
-              href="/#categories-section"
-              className="flex flex-col items-center justify-center w-14 h-full text-gray-600 hover:text-orange-500 transition-colors"
+            <button
+              onClick={() => setCategoryDrawerOpen(true)}
+              className="flex flex-col items-center justify-center w-14 h-full text-gray-600 hover:text-orange-500 transition-colors cursor-pointer"
             >
               <LayoutGrid size={20} />
               <span className="text-[10px] mt-1 font-medium tracking-tight">Categories</span>
-            </Link>
+            </button>
 
             {/* Cart */}
             <button
@@ -360,7 +366,9 @@ export default function Navbar() {
             {/* Account / User */}
             <Link
               href={userState.isLoggedIn ? "/account" : "/login"}
-              className="flex flex-col items-center justify-center w-14 h-full text-gray-600 hover:text-orange-500 transition-colors"
+              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
+                pathname === "/account" || pathname === "/login" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
+              }`}
             >
               <User size={20} />
               <span className="text-[10px] mt-1 font-medium tracking-tight">
@@ -379,6 +387,12 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Mobile Category Drawer */}
+      <MobileCategoryDrawer
+        isOpen={categoryDrawerOpen}
+        onClose={() => setCategoryDrawerOpen(false)}
+      />
     </div>
   );
 }

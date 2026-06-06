@@ -263,13 +263,13 @@ export default function AboutPage() {
                 <p className="mt-6 text-sm leading-relaxed text-gray-500">
                   At GriVA, we aren&apos;t just an online retailer — we are
                   tech enthusiasts who verify the quality of every product we
-                  stock. From the latest flagship smartphones to immersive
+                  stock. From the latest high-performance laptops to immersive
                   audiophile headphones, GriVA guarantees authenticity, speed,
                   and premium craftsmanship.
                 </p>
                 <p className="mt-4 text-sm leading-relaxed text-gray-500">
                   Since our inception, we have dedicated ourselves to sourcing
-                  only the finest components, smartphones, laptops, and smart
+                  only the finest components, hi-fi speakers, laptops, and smart
                   accessories — offering them with unmatched service and care to
                   customers across 50+ countries.
                 </p>
@@ -440,7 +440,7 @@ export default function AboutPage() {
               <TimelineStep
                 year="'20"
                 title="The Spark"
-                description="GriVA launched with a mission to make premium electronics accessible to everyone, starting with smartphones and laptops."
+                description="GriVA launched with a mission to make premium electronics accessible to everyone, starting with audiophile headphones and laptops."
                 index={0}
               />
               <TimelineStep

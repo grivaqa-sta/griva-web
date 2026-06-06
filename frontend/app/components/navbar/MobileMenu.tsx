@@ -20,7 +20,7 @@ const navLinks = [
   { label: "FAQ", href: "/faq" },
 ];
 
-const categories = ["Electronics", "Fashion", "Accessories", "Gaming", "Mobiles"];
+const categories = ["Laptops", "Television", "Speakers", "Headphones", "Gaming", "Gadgets"];
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { state: cartState, openDrawer } = useCart();
@@ -90,7 +90,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 {categories.map((cat) => (
                   <Link
                     key={cat}
-                    href={`/shop?category=${cat.toLowerCase()}`}
+                    href={`/category/${cat.toLowerCase()}`}
                     onClick={onClose}
                     className="block rounded-md px-4 py-2 text-xs font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors"
                   >

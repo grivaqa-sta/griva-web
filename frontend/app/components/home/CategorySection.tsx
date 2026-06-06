@@ -16,7 +16,7 @@ function getCategoryIcon(title: string, isCollapsed: boolean) {
   };
 
   switch (title.toLowerCase()) {
-    case "games":
+    case "gaming":
       return <Gamepad2 style={style} className={iconClass} />;
     case "television":
       return <Tv style={style} className={iconClass} />;
@@ -24,7 +24,7 @@ function getCategoryIcon(title: string, isCollapsed: boolean) {
       return <Speaker style={style} className={iconClass} />;
     case "headphones":
       return <Headphones style={style} className={iconClass} />;
-    case "smartphone":
+    case "gadgets":
       return <Smartphone style={style} className={iconClass} />;
     case "laptops":
       return <Laptop style={style} className={iconClass} />;

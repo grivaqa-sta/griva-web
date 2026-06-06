@@ -64,7 +64,7 @@ export default function AdminDashboard() {
   const [newPrice, setNewPrice] = useState("");
   const [newOldPrice, setNewOldPrice] = useState("");
   const [newStock, setNewStock] = useState(10);
-  const [newCategory, setNewCategory] = useState("Smartphone");
+  const [newCategory, setNewCategory] = useState("Gadgets");
   const [newDesc, setNewDesc] = useState("");
   const [newBadge, setNewBadge] = useState("");
   const [newMainImage, setNewMainImage] = useState("https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=800&auto=format&fit=crop");
@@ -1015,12 +1015,12 @@ export default function AdminDashboard() {
                     onChange={(e) => setNewCategory(e.target.value)}
                     className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-400 focus:outline-none cursor-pointer"
                   >
-                    <option value="Smartphone">Smartphone</option>
+                    <option value="Gadgets">Gadgets</option>
                     <option value="Laptops">Laptops</option>
                     <option value="Television">Television</option>
                     <option value="Speakers">Speakers</option>
                     <option value="Headphones">Headphones</option>
-                    <option value="Games">Games</option>
+                    <option value="Gaming">Gaming</option>
                   </select>
                 </div>
               </div>

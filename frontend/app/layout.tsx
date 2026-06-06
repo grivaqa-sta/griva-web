@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "GriVA — Premium Electronics Store",
-  description: "Explore flagship smartphones, laptops, smartwatches, audiophile headphones, and gaming gear at GriVA.",
+  description: "Explore premium laptops, smartwatches, drones, audiophile headphones, and gaming gear at GriVA.",
 };
 
 export default function RootLayout({
@@ -33,7 +33,6 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col bg-white text-gray-900" suppressHydrationWarning>

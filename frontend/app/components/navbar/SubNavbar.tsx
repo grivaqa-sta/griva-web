@@ -23,41 +23,38 @@ interface NavLink {
 }
 
 const shopCategories: DropdownItem[] = [
-  { label: "Electronics", href: "/shop?category=electronics" },
-  { label: "Fashion", href: "/shop?category=fashion" },
-  { label: "Accessories", href: "/shop?category=accessories" },
-  { label: "Gaming", href: "/shop?category=gaming" },
-  { label: "Mobiles", href: "/shop?category=mobiles" },
+  { label: "Laptops", href: "/category/laptops" },
+  { label: "Television", href: "/category/television" },
+  { label: "Speakers", href: "/category/speakers" },
+  { label: "Headphones", href: "/category/headphones" },
+  { label: "Gaming", href: "/category/gaming" },
+  { label: "Gadgets", href: "/category/gadgets" },
 ];
 
 const dropdownData: DropdownData = {
   Home: [
-    { label: "Home Style 1", href: "/" },
-    { label: "Home Style 2", href: "/" },
+    { label: "Home Page", href: "/" },
   ],
   Laptops: [
-    { label: "Gaming Laptop", href: "/shop?category=electronics" },
-    { label: "Business Laptop", href: "/shop?category=electronics" },
-    { label: "Macbook", href: "/shop?category=electronics" },
+    { label: "MacBook Air/Pro", href: "/category/laptops" },
+    { label: "Windows Laptops", href: "/category/laptops" },
   ],
-  Smartphone: [
-    { label: "iPhone", href: "/shop?category=mobiles" },
-    { label: "Samsung", href: "/shop?category=mobiles" },
-    { label: "Xiaomi", href: "/shop?category=mobiles" },
+  Television: [
+    { label: "OLED Smart TVs", href: "/category/television" },
+    { label: "QLED Displays", href: "/category/television" },
   ],
   Headphones: [
-    { label: "Wireless", href: "/shop?category=accessories" },
-    { label: "Gaming", href: "/shop?category=accessories" },
-    { label: "Studio", href: "/shop?category=accessories" },
+    { label: "Over-Ear ANC", href: "/category/headphones" },
+    { label: "Wireless Earbuds", href: "/category/headphones" },
   ],
 };
 
 const navLinks: NavLink[] = [
   { label: "Home", href: "/", hasDropdown: true, active: true },
-  { label: "Laptops", href: "/shop?category=electronics", hasDropdown: true },
-  { label: "Smartphone", href: "/shop?category=mobiles", hasDropdown: true },
-  { label: "Headphones", href: "/shop?category=accessories", hasDropdown: true },
-  { label: "Camera", href: "/shop?category=electronics" },
+  { label: "Laptops", href: "/category/laptops", hasDropdown: true },
+  { label: "Headphones", href: "/category/headphones", hasDropdown: true },
+  { label: "Television", href: "/category/television", hasDropdown: true },
+  { label: "Gadgets", href: "/category/gadgets" },
 ];
 
 export default function SubNavbar() {

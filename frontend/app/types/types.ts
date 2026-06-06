@@ -191,4 +191,11 @@ export interface SlideData {
   price: string;
   image: string | StaticImageData;
   bg: string;
+  link?: string;
+}
+
+export interface mobileBannerImage {
+  src: string | StaticImageData;
+  href: string;
+  alt: string;
 }

@@ -42,10 +42,10 @@ const footerLinks: FooterLinkGroup[] = [
   {
     title: "Popular Categories",
     links: [
-      { label: "Electronics", href: "/shop?category=electronics" },
-      { label: "Mobiles", href: "/shop?category=mobiles" },
-      { label: "Accessories", href: "/shop?category=accessories" },
-      { label: "Gaming Zone", href: "/shop?category=gaming" },
+      { label: "Laptops", href: "/category/laptops" },
+      { label: "Television", href: "/category/television" },
+      { label: "Headphones", href: "/category/headphones" },
+      { label: "Smart Gadgets", href: "/category/gadgets" },
     ],
   },
 ];

@@ -100,13 +100,13 @@ export default function AccountPage() {
             {/* PROFILE TAB */}
             {activeTab === "profile" && (
               <div className="space-y-6">
-                <h3 className="text-xl font-bold text-gray-900 border-b pb-4">Personal Profile</h3>
+                <h3 className="text-base sm:text-xl font-bold text-gray-900 border-b pb-4">Personal Profile</h3>
                 <div className="flex items-center gap-6">
-                  <div className="h-24 w-24 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-3xl font-bold uppercase">
+                  <div className="h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-xl sm:text-3xl font-bold uppercase">
                     {userState.user?.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="text-2xl font-bold text-gray-900">{userState.user?.name}</h4>
+                    <h4 className="text-lg sm:text-2xl font-bold text-gray-900">{userState.user?.name}</h4>
                     <p className="text-gray-500">{userState.user?.email}</p>
                     <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs font-bold uppercase rounded-full">
                       Active Member
@@ -120,7 +120,7 @@ export default function AccountPage() {
             {activeTab === "addresses" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center border-b pb-4">
-                  <h3 className="text-xl font-bold text-gray-900">Saved Addresses</h3>
+                  <h3 className="text-base sm:text-xl font-bold text-gray-900">Saved Addresses</h3>
                   {!isAddingAddress && (
                     <button
                       onClick={openAddAddress}
@@ -240,7 +240,7 @@ export default function AccountPage() {
             {/* ORDERS TAB */}
             {activeTab === "orders" && (
               <div className="space-y-6">
-                <h3 className="text-xl font-bold text-gray-900 border-b pb-4">Order History</h3>
+                <h3 className="text-base sm:text-xl font-bold text-gray-900 border-b pb-4">Order History</h3>
                 
                 {userState.orders.length === 0 ? (
                   <div className="text-center py-12">

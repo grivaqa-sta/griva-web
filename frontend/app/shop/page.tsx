@@ -94,7 +94,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   }, [searchVal, selectedCategory, maxPrice, minRating, sortBy]);
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-8">
+    <div className="bg-gray-50/50 min-h-screen ">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading title="Shop Products" subtitle="Browse, filter, and find your perfect gear" />
 
@@ -106,7 +106,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
               <div className="flex items-center justify-between border-b pb-4">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  <SlidersHorizontal className="h-4. w-4." /> Filters
+                  <SlidersHorizontal className="h-4 w-4" /> Filters
                 </h3>
                 <button
                   onClick={handleResetFilters}
@@ -216,60 +216,36 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
              ──────────────────────────────────────────────────────── */}
           <div className="lg:col-span-3 space-y-6">
             {/* Header / Controls */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm flex items-center justify-between">
 
-              {/* Desktop Product Count */}
-              <div className="hidden lg:block">
-                <span className="text-xs text-gray-500 font-semibold">
-                  Found {processedProducts.length} {processedProducts.length === 1 ? "product" : "products"}
-                </span>
-              </div>
+              {/* Product Count — both mobile and desktop */}
+              <span className="text-xs text-gray-500 font-semibold">
+                Found {processedProducts.length} {processedProducts.length === 1 ? "product" : "products"}
+              </span>
 
-              {/* Mobile controls (Filters + Sort side by side) */}
-              <div className="flex lg:hidden w-full gap-3">
+              <div className="flex items-center gap-2">
+                {/* Mobile: Filters button only (no sort) */}
                 <button
                   onClick={() => setMobileFiltersOpen(true)}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                  className="lg:hidden flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
                 >
                   <SlidersHorizontal className="h-4 w-4" /> Filters
                 </button>
-                <div className="flex-1 relative">
+
+                {/* Desktop: Sort By Dropdown only */}
+                <div className="hidden lg:flex items-center gap-2">
+                  <span className="text-xs text-gray-500 font-semibold">Sort by:</span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
                   >
-                    <option value="featured">Sort: Featured</option>
-                    <option value="price-low-to-high">Sort: Lowest Price</option>
-                    <option value="price-high-to-low">Sort: Highest Price</option>
-                    <option value="rating">Sort: Top Rated</option>
+                    <option value="featured">Featured</option>
+                    <option value="price-low-to-high">Price: Low to High</option>
+                    <option value="price-high-to-low">Price: High to Low</option>
+                    <option value="rating">Rating</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                    <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                  </div>
                 </div>
-              </div>
-
-              {/* Mobile Product Count */}
-              <div className="lg:hidden text-center w-full border-t border-gray-100 pt-3">
-                <span className="text-xs text-gray-500 font-semibold">
-                  Found {processedProducts.length} {processedProducts.length === 1 ? "product" : "products"}
-                </span>
-              </div>
-
-              {/* Desktop Sort By Dropdown */}
-              <div className="hidden lg:flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-semibold">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="price-low-to-high">Price: Low to High</option>
-                  <option value="price-high-to-low">Price: High to Low</option>
-                  <option value="rating">Rating</option>
-                </select>
               </div>
             </div>
 

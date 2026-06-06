@@ -189,12 +189,12 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => alert("Checkout Demo: Payment gateway is a mockup.")}
+                <Link
+                  href="/checkout"
                   className="w-full flex items-center justify-center rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/10 cursor-pointer"
                 >
                   Proceed to Checkout
-                </button>
+                </Link>
 
                 <div className="pt-2 text-center text-xs text-gray-400">
                   Secured by 256-bit SSL connection

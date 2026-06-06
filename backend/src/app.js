@@ -22,9 +22,15 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Import API Routes (Add your routes here)
-// const productRoutes = require("./routes/product");
-// app.use("/api/products", productRoutes);
+// Import API Routers
+const authRoutes = require("./routes/authRoutes");
+const productRoutes = require("./routes/productRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+
+// Mount API Routers
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

@@ -103,12 +103,13 @@ export default function CartDrawer() {
                   >
                     View Full Cart
                   </Link>
-                  <button
-                    onClick={() => alert("Checkout demo: This is a placeholder checkout button.")}
+                  <Link
+                    href="/checkout"
+                    onClick={closeDrawer}
                     className="flex w-full items-center justify-center rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/10 cursor-pointer"
                   >
                     Proceed to Checkout
-                  </button>
+                  </Link>
                 </div>
               </div>
             )}

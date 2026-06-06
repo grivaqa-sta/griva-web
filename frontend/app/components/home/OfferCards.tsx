@@ -8,7 +8,7 @@ function OfferCards({ offer }: { offer: OfferCard }) {
   return (
     <Link
       href={offer.href}
-      className={`group relative h-[300px] overflow-hidden rounded-[32px] ${offer.bgColor}
+      className={`group relative h-[200px] md:h-[250px] overflow-hidden rounded-[10px] ${offer.bgColor}
       border border-black/5 transition-all duration-700
       lg:hover:-translate-y-3
       lg:hover:shadow-[0_40px_100px_rgba(0,0,0,0.15)]`}
@@ -23,35 +23,31 @@ function OfferCards({ offer }: { offer: OfferCard }) {
       <div className="absolute right-5 top-5 h-14 w-14 rounded-full border border-white/30 opacity-70 transition-all duration-700 group-hover:scale-125" />
 
       {/* Content */}
-      <div className="relative z-20 flex flex-col items-center text-center px-8 pt-8">
+      <div className="relative z-20 flex flex-col items-center text-center px-2 pt-4 lg:pt-8">
         {/* Badge */}
-        <span className="rounded-full bg-orange-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">
+        <span className="rounded-full bg-white/60 px-3 py-1 text-[7px] font-semibold uppercase tracking-[0.25em] text-black/70">
           {offer.badge}
         </span>
 
         {/* Title */}
-        <h2 className="mt-5 max-w-[240px] font-semibold text-2xl font-black leading-[0.95] tracking-tight text-black  ">
+        <h2 className="mt-3 text-[19px] max-w-[240px] font-semibold leading-[0.95] tracking-tight text-black">
           {offer.title}
         </h2>
 
         {/* Subtitle */}
-        <p className="mt-3 text-[11px] uppercase tracking-[0.35em] text-black/45">
+        <p className="mt-2 text-[9px] uppercase tracking-[0.35em] text-black/45">
           {offer.subtitle}
         </p>
-
-        {/* CTA */}
-      
       </div>
 
       {/* Product Image */}
-      <div className="absolute bottom-[-20px] left-1/2 z-10 -translate-x-1/2">
+      <div className="absolute bottom-[-20px] lg:bottom-[-20px] left-1/2 z-10 -translate-x-1/2">
         <Image
           src={offer.image}
           alt={offer.title}
           width={280}
           height={280}
-        className="object-contain transition-all duration-700 ease-out lg:group-hover:scale-110 lg:group-hover:-translate-y-5 lg:group-hover:rotate-2"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[160px] lg:w-full h-auto object-contain transition-all duration-700 ease-out lg:group-hover:scale-110 lg:group-hover:-translate-y-5 lg:group-hover:rotate-2"
         />
       </div>
 

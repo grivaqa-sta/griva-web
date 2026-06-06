@@ -170,8 +170,8 @@ export default function CategorySection() {
         id="categories-section"
         className="sticky top-[79px] z-30 bg-white/95 backdrop-blur-md block sm:hidden w-full overflow-x-auto no-scrollbar border-b border-gray-100/80 shadow-xs transition-all duration-300 ease-in-out"
         style={{
-          paddingTop: isCollapsed ? "8px" : "12px",
-          paddingBottom: isCollapsed ? "6px" : "12px",
+          paddingTop: isCollapsed ? "12px" : "12px",
+          paddingBottom: isCollapsed ? "12px" : "12px",
         }}
       >
         <div className="flex gap-4 px-2 min-w-max justify-around items-center">

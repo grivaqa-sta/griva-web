@@ -61,7 +61,7 @@ export default function Navbar() {
     <>
       <header
         className={`sticky top-[20px] sm:top-10 w-full border-b border-gray-100 bg-white transition-all duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-[10001]" : "z-40"
-          } ${scrolled ? "py-2 shadow-md" : "py-2"}`}
+          } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
        
       >
         {/* Desktop and Tablet Navbar Content (Visible on screens >= 640px) */}
@@ -247,7 +247,7 @@ export default function Navbar() {
 
             {/* Search Input Box */}
             <div className="flex-1 min-w-0 pb-0.5">
-              <div className="flex overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
+              <div className="flex overflow-hidden rounded-[5px] border border-gray-200 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
                 <div className="flex flex-1 items-center px-3 gap-1.5 h-8">
                   <Search size={14} className="text-gray-400 shrink-0" />
                   <input
@@ -268,7 +268,7 @@ export default function Navbar() {
                 </div>
                 <Link
                   href={`/shop?search=${encodeURIComponent(searchQuery)}`}
-                  className="bg-orange-500 flex items-center justify-center px-3.5 text-white hover:bg-orange-600 transition-colors shrink-0"
+                  className="hidden bg-orange-500 items-center justify-center px-3.5 text-white hover:bg-orange-600 transition-colors shrink-0"
                 >
                   <Search size={12} />
                 </Link>

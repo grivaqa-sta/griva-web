@@ -17,7 +17,7 @@ export default function SectionHeading({
   viewAllText = "View All",
 }: SectionHeadingProps) {
   return (
-    <div className="flex items-end justify-between border-b border-gray-100 pb-4 mb-8">
+    <div className="flex items-end justify-between border-b border-gray-100 pb-4 ">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
           {title}

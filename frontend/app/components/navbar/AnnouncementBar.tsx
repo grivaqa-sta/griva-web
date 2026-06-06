@@ -27,7 +27,7 @@ const marqueeItems = [
   { icon: Star, text: "4.9 RATED BY 2,400 CUSTOMERS" },
 ];
 
-// ✅ Moved outside component — stable, no re-creation on render
+// Stable outside component — no re-creation on render
 function MarqueeContent() {
   return (
     <div className="flex items-center gap-[48px] pr-[48px] shrink-0 flex-nowrap">
@@ -51,24 +51,30 @@ function MarqueeContent() {
 }
 
 export default function AnnouncementBar() {
-  // ✅ Start with null — same on server and client, no random value
+  // ✅ FIX 1: Track mount state to avoid SSR/CSR mismatch
+  const [mounted, setMounted] = useState(false);
+
+  // Start with null — same on server and client
   const [shoppersCount, setShoppersCount] = useState<number | null>(null);
   const [trend, setTrend] = useState<"up" | "down" | "neutral">("neutral");
-  
-  // ✅ Use ref to track previous count for trend — avoids setState in setState
+
+  // Use ref to track previous count for trend
   const prevCountRef = useRef<number>(SHOPPER_BASE);
 
   useEffect(() => {
-    // ✅ Random value only set on client, after mount
-    const initial = SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
+    // ✅ FIX 2: Set mounted FIRST so the full UI renders only on client
+    setMounted(true);
+
+    // Random value only set on client, after mount
+    const initial =
+      SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
     setShoppersCount(initial);
     prevCountRef.current = initial;
 
     const timer = setInterval(() => {
       const steps = [-2, -1, 0, 1, 2];
       const delta = steps[Math.floor(Math.random() * steps.length)];
-      
-      // ✅ Calculate trend separately — not inside setState updater
+
       if (delta > 0) setTrend("up");
       else if (delta < 0) setTrend("down");
       else setTrend("neutral");
@@ -76,8 +82,7 @@ export default function AnnouncementBar() {
       setShoppersCount((prev) => {
         const current = prev ?? initial;
         const next = current + delta;
-        
-        // ✅ Clamp values
+
         if (next < SHOPPER_MIN) return SHOPPER_MIN + 6;
         if (next > SHOPPER_MAX) return SHOPPER_MAX - 8;
         return next;
@@ -87,6 +92,19 @@ export default function AnnouncementBar() {
     return () => clearInterval(timer);
   }, []);
 
+  // ✅ FIX 3: Render a stable placeholder BEFORE mount.
+  // Same classNames as the real bar so layout doesn't shift.
+  // This is what the server renders — no dynamic content at all.
+  if (!mounted) {
+    return (
+      <div
+        className="h-7 md:h-10 bg-gradient-to-r from-brand-orange via-brand-orange to-brand-orange-dark sticky top-0 z-[9999] border-b border-white/10 shadow-[0_1px_0_rgba(0,0,0,0.08)] w-full select-none"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  // ✅ Full component renders only on client after mount
   const trendClass =
     trend === "up"
       ? "text-[#4ADE80] font-bold scale-[1.03]"
@@ -105,7 +123,7 @@ export default function AnnouncementBar() {
           <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-brand-orange to-transparent z-10 pointer-events-none" />
 
           <div className="w-full overflow-hidden flex items-center">
-            {/* ✅ Only 2 copies needed for seamless loop */}
+            {/* Only 2 copies needed for seamless loop */}
             <div className="flex flex-row flex-nowrap shrink-0 animate-[marquee_30s_linear_infinite] hover:[animation-play-state:paused]">
               <MarqueeContent />
               <MarqueeContent />
@@ -115,7 +133,7 @@ export default function AnnouncementBar() {
 
         {/* Right Section */}
         <div className="hidden sm:flex w-[30%] h-full items-center text-white border-l border-white/15 shrink-0">
-          
+
           {/* Zone A: Live Shoppers */}
           <div className="w-1/2 h-full flex items-center justify-center gap-2 px-3 lg:px-4 bg-black/15">
             <span className="relative flex h-2 w-2 shrink-0">
@@ -123,8 +141,10 @@ export default function AnnouncementBar() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
             </span>
             <Users size={12} className="text-white shrink-0" />
-            {/* ✅ suppressHydrationWarning on the element with dynamic content */}
             <span className="font-body text-[8px] lg:text-[10px] font-medium tracking-[0.5px] text-white whitespace-nowrap">
+              {/* ✅ FIX 4: suppressHydrationWarning on BOTH the count span
+                  AND its className-changing wrapper since both differ
+                  between server (null/"—"/neutral) and client */}
               <span
                 className={`inline-block transition-all duration-300 ${trendClass}`}
                 suppressHydrationWarning

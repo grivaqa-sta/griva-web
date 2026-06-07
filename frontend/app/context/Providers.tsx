@@ -5,17 +5,20 @@ import { CartProvider } from "./CartContext";
 import { WishlistProvider } from "./WishlistContext";
 import { SearchProvider } from "./SearchContext";
 import { UserProvider } from "./UserContext";
+import { AdminProvider } from "./AdminContext";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <UserProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <SearchProvider>
-            {children}
-          </SearchProvider>
-        </WishlistProvider>
-      </CartProvider>
-    </UserProvider>
+    <AdminProvider>
+      <UserProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <SearchProvider>
+              {children}
+            </SearchProvider>
+          </WishlistProvider>
+        </CartProvider>
+      </UserProvider>
+    </AdminProvider>
   );
 }

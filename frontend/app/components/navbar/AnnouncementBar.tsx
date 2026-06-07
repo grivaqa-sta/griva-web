@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
+import { useAdminSettings } from "../../context/AdminContext";
 import {
   Truck,
   Zap,
@@ -84,6 +86,11 @@ export default function AnnouncementBar() {
 
     return () => clearInterval(timer);
   }, []);
+
+  const { announcementBarEnabled } = useAdminSettings();
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
+  if (!announcementBarEnabled) return null;
 
   const trendClass =
     trend === "up"

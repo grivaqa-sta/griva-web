@@ -1,9 +1,9 @@
 "use client";
 
-import { categories } from "@/app/data/data";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAdminSettings } from "@/app/context/AdminContext";
 import { Gamepad2, Tv, Speaker, Headphones, Smartphone, Laptop } from "lucide-react";
 
 function getCategoryIcon(title: string, isCollapsed: boolean) {
@@ -35,9 +35,7 @@ function getCategoryIcon(title: string, isCollapsed: boolean) {
 
 const GAP = 16;
 const INTERVAL = 1200;
-const TOTAL_CARDS = categories.length;
-
-const loopedCards = [...categories, ...categories, ...categories];
+// We will compute TOTAL_CARDS and loopedCards inside the component since they depend on context
 
 function getVisibleCards(width: number): number {
   if (width < 640) return 3;
@@ -46,6 +44,10 @@ function getVisibleCards(width: number): number {
 }
 
 export default function CategorySection() {
+  const { cmsCategories: categories } = useAdminSettings();
+  const TOTAL_CARDS = categories.length;
+  const loopedCards = [...categories, ...categories, ...categories];
+
   const containerRef = useRef<HTMLDivElement>(null);
   const indexRef = useRef(0);
   const cardWidthRef = useRef(0);

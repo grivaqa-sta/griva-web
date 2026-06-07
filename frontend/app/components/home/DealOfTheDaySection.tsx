@@ -1,6 +1,6 @@
 "use client";
 
-import { slides, products } from "@/app/data/data";
+import { products } from "@/app/data/data";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
@@ -9,9 +9,11 @@ import Rating from "../rating/Rating";
 import { useCountdown } from "@/app/hooks/useCountdown";
 import { useCart } from "@/app/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAdminSettings } from "@/app/context/AdminContext";
 
 export default function DealOfTheDaySection() {
-  const { hours, mins, secs } = useCountdown(15);
+  const { cmsDealTargetDate, cmsDealSlides: slides } = useAdminSettings();
+  const { hours, mins, secs } = useCountdown(cmsDealTargetDate);
   const { addToCart } = useCart();
 
   const [current, setCurrent] = useState<number>(0);

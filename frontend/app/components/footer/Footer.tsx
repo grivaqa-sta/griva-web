@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   FaFacebookF,
   FaTwitter,
@@ -66,6 +67,9 @@ export default function Footer() {
   const toggleAccordion = (title: string) => {
     setOpenAccordion(openAccordion === title ? null : title);
   };
+
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <footer className="w-full bg-black pt-12 border-t border-zinc-800 text-white">

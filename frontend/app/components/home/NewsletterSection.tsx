@@ -2,7 +2,7 @@
 
 export default function NewsletterSection() {
   return (
-    <section className="w-full  py-10 mb-10 px-4 sm:px-6 lg:px-0">
+    <section className="w-full  md:py-10 px-4 sm:px-6 lg:px-0">
       <div className="mx-auto max-w-7xl rounded-[8px] p-4 bg-[#8990f1] sm:p-6 lg:p-8">
         <div className="flex flex-col items-center gap-3 text-center lg:flex-row lg:justify-between lg:text-left">
 

@@ -50,7 +50,7 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       <Link href={`/product/${product.id}`} className="block flex-1">
         {/* Badges */}
-        <div className="absolute left-2.5 top-2.5 z-10 flex flex-col gap-1">
+        <div className="absolute left-2.5 top-2.5 z-10 flex fle gap-1">
           {product.badge && (
             <div className={`rounded px-2 py-0.5 text-[9px] font-extrabold text-white uppercase ${product.badgeColor || "bg-orange-500"}`}>
               {product.badge}
@@ -97,7 +97,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </p>
 
         {/* Title */}
-        <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-[1.4] text-gray-900 transition-colors group-hover:text-orange-500">
+        <h3 className="mt-1 line-clamp-1 text-sm font-semibold leading-[1.4] text-gray-900 transition-colors group-hover:text-orange-500">
           {product.title}
         </h3>
 

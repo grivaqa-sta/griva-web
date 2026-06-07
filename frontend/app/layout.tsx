@@ -44,7 +44,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <CartDrawer />
-          {/* <NotificationBubble /> */}
+          <NotificationBubble />
           <BackToTop />
         </Providers>
       </body>

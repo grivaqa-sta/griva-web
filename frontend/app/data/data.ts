@@ -300,7 +300,7 @@ const banners: BannerItem[] = [
   {
     id: 2,
     category: "Smart Airbuds",
-    title: 'MONOFILM xT-200\nPhotograph "SMARTER"',
+    title: 'MONOFILM xT-200 Camera\n',
     image: airbuds,
     buttonText: "To Shop",
     href: "/shop",

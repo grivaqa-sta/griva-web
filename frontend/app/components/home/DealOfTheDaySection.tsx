@@ -75,7 +75,7 @@ export default function DealOfTheDaySection() {
     <section className="w-full py-5">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
 
-        {/* ── LEFT TIMER CARD — desktop only, completely unchanged ── */}
+        {/* ── LEFT TIMER CARD — desktop only ── */}
         <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl border border-orange-100 bg-white px-6 py-8 text-center shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-[3px] text-red-500">
             Only For Today
@@ -96,7 +96,7 @@ export default function DealOfTheDaySection() {
           </div>
         </div>
 
-        {/* ── PRODUCT CARD — desktop unchanged, mobile gets unified card ── */}
+        {/* ── PRODUCT CARD ── */}
         <div
           className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm touch-pan-y"
           onMouseEnter={() => setIsPaused(true)}
@@ -104,10 +104,8 @@ export default function DealOfTheDaySection() {
           onTouchStart={() => setIsPaused(true)}
           onTouchEnd={() => setIsPaused(false)}
         >
-
-          {/* ── MOBILE ONLY: orange timer banner at top ── */}
+          {/* ── MOBILE ONLY: orange timer banner ── */}
           <div className="lg:hidden bg-gradient-to-br from-orange-600 via-orange-500 to-amber-400 px-5 py-4 flex items-center justify-between gap-4">
-            {/* Left: title */}
             <div className="flex flex-col">
               <span className="text-[8px] font-black uppercase tracking-[2.5px] text-orange-100">
                 Only For Today
@@ -119,7 +117,6 @@ export default function DealOfTheDaySection() {
                 Lightning deals on electronics!
               </p>
             </div>
-            {/* Right: countdown */}
             <div className="flex items-center gap-1">
               {timerBlocks.map(({ value, label }, i) => (
                 <div key={label} className="flex items-center gap-1">
@@ -134,16 +131,14 @@ export default function DealOfTheDaySection() {
                     </span>
                   </div>
                   {i < 2 && (
-                    <span className="mb-4 text-[18px] font-black text-white/50 select-none">
-                      :
-                    </span>
+                    <span className="mb-4 text-[18px] font-black text-white/50 select-none">:</span>
                   )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ── SLIDE CONTENT (desktop: p-6 flex-row, mobile: p-4 flex-col) ── */}
+          {/* ── SLIDE CONTENT ── */}
           <AnimatePresence mode="wait">
             <motion.div
               key={current}
@@ -158,12 +153,12 @@ export default function DealOfTheDaySection() {
                 if (offset.x < -50) next();
                 else if (offset.x > 50) prev();
               }}
-              className="flex h-full flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6 cursor-grab active:cursor-grabbing"
+              // ✅ CHANGED: mobile flex-col with full width, desktop flex-row
+              className="flex w-full flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6 cursor-grab active:cursor-grabbing"
             >
               {/* ── IMAGE SECTION ── */}
-              <div className="flex shrink-0 items-start gap-3 lg:items-start">
-
-                {/* Thumbnails — hidden on mobile, shown on desktop */}
+              <div className="flex shrink-0 items-start gap-3">
+                {/* Thumbnails */}
                 <div className="flex shrink-0 flex-col gap-2">
                   {slide.thumbs.slice(0, 3).map((image, index) => (
                     <div
@@ -180,7 +175,7 @@ export default function DealOfTheDaySection() {
                   ))}
                 </div>
 
-                {/* Main image — centered on mobile, left-aligned on desktop */}
+                {/* Main image */}
                 <div className="relative mx-auto flex h-[220px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50/50 p-4 pointer-events-none lg:mx-0 lg:h-[240px] lg:w-[240px]">
                   <Image
                     src={displayImage}
@@ -193,7 +188,8 @@ export default function DealOfTheDaySection() {
               </div>
 
               {/* ── PRODUCT CONTENT ── */}
-              <div className="flex min-w-0 flex-1 flex-col justify-between">
+              {/* ✅ CHANGED: w-full on mobile so content + button fill the card */}
+              <div className="flex w-full min-w-0 flex-col gap-3 lg:flex-1 lg:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-orange-500 px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">
@@ -223,9 +219,10 @@ export default function DealOfTheDaySection() {
                   </p>
                 </div>
 
+                {/* ✅ CHANGED: w-full on all screens, lg:w-44 on desktop only */}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
-                  className="z-10 mt-6 flex h-10 w-full sm:w-44 cursor-pointer items-center justify-center gap-2 rounded-xl bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/10 transition hover:bg-orange-600"
+                  className="z-10 mt-2 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 lg:w-44"
                 >
                   <ShoppingCart size={14} /> Add To Cart
                 </button>

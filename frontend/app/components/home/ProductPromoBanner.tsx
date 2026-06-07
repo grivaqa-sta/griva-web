@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useAdminSettings } from "@/app/context/AdminContext";
 
 const ProductPromoBanner = () => {
+  const { cmsProductPromo } = useAdminSettings();
   // ✅ ADDED: animation state + ref
   const imageRef = useRef<HTMLDivElement>(null);
   const [showImage, setShowImage] = useState(false);
@@ -38,17 +40,15 @@ const ProductPromoBanner = () => {
             {/* DESKTOP CONTENT */}
             <div className="hidden lg:block relative z-20 max-w-[520px]">
               <span className="inline-block text-[11px] font-bold uppercase tracking-[4px] text-orange-500">
-                Exclusive Headphone
+                {cmsProductPromo.tagline}
               </span>
 
-              <h2 className="mt-3 text-5xl leading-[1.05] font-black text-black">
-                Discounts 50% On
-                <span className="block">All Headphone</span>
+              <h2 className="mt-3 text-5xl leading-[1.05] font-black text-black whitespace-pre-line">
+                {cmsProductPromo.heading}
               </h2>
 
               <p className="mt-4 max-w-md text-base leading-7 text-gray-600">
-                Discover premium wireless headphones with immersive sound,
-                active noise cancellation, and unbeatable comfort.
+                {cmsProductPromo.description}
               </p>
 
               <div className="mt-8">
@@ -64,17 +64,15 @@ const ProductPromoBanner = () => {
             {/* MOBILE CONTENT */}
             <div className="lg:hidden relative z-20 mt-[190px] text-left">
               <span className="inline-block text-[10px] font-bold uppercase tracking-[4px] text-orange-500">
-                Exclusive Headphone
+                {cmsProductPromo.tagline}
               </span>
 
-              <h2 className="mt-3 text-[34px] leading-[1.05] font-black text-black">
-                Discounts 50% On
-                <span className="block">All Headphone</span>
+              <h2 className="mt-3 text-[34px] leading-[1.05] font-black text-black whitespace-pre-line">
+                {cmsProductPromo.heading}
               </h2>
 
               <p className="mt-4 text-[13px] leading-7 text-gray-600">
-                Discover premium wireless headphones with immersive sound,
-                active noise cancellation, and unbeatable comfort.
+                {cmsProductPromo.description}
               </p>
 
               <div className="mt-6 w-full">
@@ -98,8 +96,8 @@ const ProductPromoBanner = () => {
               />
 
               <Image
-                src="/images/HeadphoneNew@.png"
-                alt="Premium Headphones"
+                src={cmsProductPromo.image}
+                alt={cmsProductPromo.tagline}
                 width={450}
                 height={350}
                 priority

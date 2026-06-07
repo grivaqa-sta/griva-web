@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAdminSettings } from "../context/AdminContext";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -35,8 +37,23 @@ import {
 // Seed data
 import { products as initialProducts, slide as initialSlides, offers as initialOffers, categories as initialCategories } from "../data/data";
 import { Product, SlideData, OfferCard, CategoryItem } from "../types/types";
+import OverviewTab from './components/OverviewTab';
+import ProductsTab from './components/ProductsTab';
+import BannersTab from './components/BannersTab';
+import SubscribersTab from './components/SubscribersTab';
+
 
 export default function AdminDashboard() {
+  const router = useRouter();
+
+  // Auth guard — redirect to admin login if not authenticated
+  useEffect(() => {
+    const isAuth = localStorage.getItem("griva_admin_auth");
+    if (!isAuth) {
+      router.replace("/admin/login");
+    }
+  }, [router]);
+
   // Navigation State
   const [activeTab, setActiveTab] = useState<"overview" | "products" | "banners" | "subscribers">("overview");
 
@@ -46,10 +63,17 @@ export default function AdminDashboard() {
   const [offersList, setOffersList] = useState<OfferCard[]>(initialOffers);
   const [categoriesList, setCategoriesList] = useState<CategoryItem[]>(initialCategories);
 
-  // Global Campaign Toggles (Friday Sale / Midnight Sale / Announcement Bar)
-  const [announcementBarEnabled, setAnnouncementBarEnabled] = useState(true);
-  const [fridaySaleEnabled, setFridaySaleEnabled] = useState(true);
-  const [midnightSaleEnabled, setMidnightSaleEnabled] = useState(false);
+  // Global Campaign Toggles — driven by AdminContext (persisted to localStorage)
+  const {
+    announcementBarEnabled,
+    setAnnouncementBarEnabled,
+    fridaySaleEnabled,
+    setFridaySaleEnabled,
+    midnightSaleEnabled,
+    setMidnightSaleEnabled,
+    cmsMobileBanners: mobileBannersList,
+    setCmsMobileBanners: setMobileBannersList,
+  } = useAdminSettings();
 
   // Layout Hover State (Highlights corresponding admin section when hovering the homepage schema)
   const [highlightedSchemaSection, setHighlightedSchemaSection] = useState<string | null>(null);
@@ -68,6 +92,8 @@ export default function AdminDashboard() {
   const [newDesc, setNewDesc] = useState("");
   const [newBadge, setNewBadge] = useState("");
   const [newMainImage, setNewMainImage] = useState("https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=800&auto=format&fit=crop");
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [newGalleryImage, setNewGalleryImage] = useState("");
 
   // Specs and Colors
   const [specsList, setSpecsList] = useState<{ label: string; value: string }[]>([]);
@@ -108,6 +134,14 @@ export default function AdminDashboard() {
     }
   };
 
+  // Add Gallery Image Helper
+  const handleAddGalleryImage = () => {
+    if (newGalleryImage) {
+      setGalleryImages((prev) => [...prev, newGalleryImage]);
+      setNewGalleryImage("");
+    }
+  };
+
   // Handle Dispatching Broadcast Campaigns
   const handleSendBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +166,7 @@ export default function AdminDashboard() {
       title: newTitle,
       category: newCategory,
       image: newMainImage as any,
-      images: [newMainImage as any],
+      images: [newMainImage, ...galleryImages] as any,
       price: `$${parseFloat(newPrice).toFixed(2)}`,
       oldPrice: newOldPrice ? `$${parseFloat(newOldPrice).toFixed(2)}` : undefined,
       badge: newBadge || undefined,
@@ -158,6 +192,7 @@ export default function AdminDashboard() {
     setNewBadge("");
     setSpecsList([]);
     setColorsList([]);
+    setGalleryImages([]);
     setIsAddModalOpen(false);
   };
 
@@ -207,27 +242,22 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex font-sans antialiased selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-white text-gray-900 flex font-sans antialiased selection:bg-orange-500 selection:text-white">
 
       {/* Sidebar Panel */}
-      <aside className="w-64 bg-gray-900/60 border-r border-gray-800 backdrop-blur-xl flex flex-col justify-between p-6 shrink-0 h-screen sticky top-0">
+      <aside className="w-64 bg-white border-r border-orange-500/30 backdrop-blur-xl flex flex-col justify-between p-6 shrink-0 h-screen sticky top-0">
         <div>
-          <div className="flex items-center gap-2 px-2 py-4 mb-6 border-b border-gray-800">
-            <div className="h-8 w-8 rounded-lg bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <div>
+          <div className="flex flex-col justify-center items-center place-items-center px-6 h-20 -mt-6 -mx-6 mb-6 border-b border-orange-500/30">
               <span className="font-black text-lg tracking-wider bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">GRIVA</span>
-              <span className="text-[9px] block text-gray-400 font-bold tracking-widest uppercase">Admin Panel</span>
-            </div>
+              <span className="text-[9px] block text-gray-500 font-bold tracking-widest uppercase">Admin Panel</span>
           </div>
 
           <nav className="space-y-1.5">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "overview"
+              className={`w-full flex items-center text-left gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "overview"
                 ? "bg-gradient-to-r from-orange-500/20 to-amber-500/10 text-orange-400 border-l-4 border-orange-500"
-                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/40"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 }`}
             >
               <LayoutDashboard className="h-4.5 w-4.5" />
@@ -236,9 +266,9 @@ export default function AdminDashboard() {
 
             <button
               onClick={() => setActiveTab("products")}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "products"
+              className={`w-full flex items-center text-left gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "products"
                 ? "bg-gradient-to-r from-orange-500/20 to-amber-500/10 text-orange-400 border-l-4 border-orange-500"
-                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/40"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 }`}
             >
               <Package className="h-4.5 w-4.5" />
@@ -247,9 +277,9 @@ export default function AdminDashboard() {
 
             <button
               onClick={() => setActiveTab("banners")}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "banners"
+              className={`w-full flex items-center text-left gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "banners"
                 ? "bg-gradient-to-r from-orange-500/20 to-amber-500/10 text-orange-400 border-l-4 border-orange-500"
-                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/40"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 }`}
             >
               <Sliders className="h-4.5 w-4.5" />
@@ -258,9 +288,9 @@ export default function AdminDashboard() {
 
             <button
               onClick={() => setActiveTab("subscribers")}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "subscribers"
+              className={`w-full flex items-center text-left gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === "subscribers"
                 ? "bg-gradient-to-r from-orange-500/20 to-amber-500/10 text-orange-400 border-l-4 border-orange-500"
-                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/40"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 }`}
             >
               <Users className="h-4.5 w-4.5" />
@@ -269,13 +299,13 @@ export default function AdminDashboard() {
           </nav>
         </div>
 
-        <div className="pt-4 border-t border-gray-800 space-y-4">
+        <div className="pt-4 border-t border-orange-500/30 space-y-4">
           <div className="flex items-center gap-3 px-2">
             <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-bold text-sm text-white">
               JD
             </div>
             <div>
-              <span className="text-xs font-bold block text-gray-200">John Doe</span>
+              <span className="text-xs font-bold block text-gray-800">John Doe</span>
               <span className="text-[9px] text-green-400 font-bold tracking-wider flex items-center gap-1 uppercase">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
                 Store Admin
@@ -284,711 +314,110 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/"
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-800 text-xs font-bold text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-300 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-orange-500/30 text-xs font-bold text-gray-700 hover:bg-orange-500/10 hover:text-gray-900 transition-all duration-300 cursor-pointer"
           >
             <ArrowUpRight className="h-3.5 w-3.5 text-orange-500" />
             View Live Store
           </Link>
+          <button
+            onClick={() => {
+              localStorage.removeItem("griva_admin_auth");
+              router.replace("/admin/login");
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-500/30 text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300 cursor-pointer"
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+            Sign Out
+          </button>
         </div>
       </aside>
 
       {/* Main Panel Workspace */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
-        <header className="h-16 border-b border-gray-800 bg-gray-950/60 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-40">
-          <h1 className="text-lg font-bold text-white capitalize">{activeTab} Control Room</h1>
-          <div className="text-xs text-gray-400 flex items-center gap-1.5 font-semibold bg-gray-900 px-3 py-1.5 rounded-full border border-gray-800">
+        <header className="h-20 border-b border-orange-500/30 bg-white backdrop-blur-md px-12 flex items-center justify-between sticky top-0 z-40">
+          <h1 className="text-xl font-bold py-10 text-gray-900 capitalize">{activeTab} Control Room</h1>
+          <div className="text-xs text-gray-500 flex items-center gap-1.5 font-semibold bg-white px-3 py-1.5 rounded-full border border-orange-500/30">
             <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            Azure Doha: <span className="text-white font-extrabold">Online</span>
+            Azure Doha: <span className="text-gray-900 font-extrabold">Online</span>
           </div>
         </header>
 
-        <div className="p-8 max-w-7xl w-full mx-auto flex-1">
+        <div className="p-12 max-w-7xl w-full mx-auto flex-1">
           {/* ─────────────────────────────────────────────────────────
               TAB 1: OVERVIEW & CAMPAIGNS (Friday/Midnight Sale controls)
               ───────────────────────────────────────────────────────── */}
-          {activeTab === "overview" && (
-            <div className="space-y-8 animate-in fade-in-50 duration-300">
 
-              {/* Campaign Switches (Friday / Midnight Sales) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                {/* Announcement Bar Toggle */}
-                <div className="bg-gray-900/40 border border-gray-800 p-6 rounded-2xl flex flex-col justify-between hover:border-gray-700 transition-colors">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Top Banner</span>
-                      {announcementBarEnabled ? (
-                        <CheckCircle className="h-4.5 w-4.5 text-green-400" />
-                      ) : (
-                        <EyeOff className="h-4.5 w-4.5 text-gray-500" />
-                      )}
-                    </div>
-                    <h4 className="text-sm font-bold text-white mt-3">Storefront Top Bar</h4>
-                    <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">
-                      Enables the sliding marquee announcement ticker ("Active Shoppers count") at the very top of the website.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setAnnouncementBarEnabled(!announcementBarEnabled)}
-                    className="flex items-center gap-2 mt-6 py-2.5 px-4 rounded-xl text-xs font-bold w-full justify-center border transition-all duration-300 cursor-pointer bg-gray-900 border-gray-800 hover:bg-gray-800 text-white"
-                  >
-                    {announcementBarEnabled ? (
-                      <div>
-                        <ToggleRight className="h-5 w-5 text-orange-500" />
-                        Enabled (Showing)
-                      </div>
-                    ) : (
-                      <div>
-                        <ToggleLeft className="h-5 w-5 text-gray-500" />
-                        Disabled (Hidden)
-                      </div>
-                    )}
-                  </button>
-                </div>
-
-                {/* Friday Super Sale Toggle */}
-                <div className="bg-gray-900/40 border border-gray-800 p-6 rounded-2xl flex flex-col justify-between hover:border-gray-700 transition-colors">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Weekly Offer</span>
-                      {fridaySaleEnabled ? (
-                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      ) : (
-                        <span className="h-2 w-2 rounded-full bg-gray-600" />
-                      )}
-                    </div>
-                    <h4 className="text-sm font-bold text-white mt-3">Friday Super Sale</h4>
-                    <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">
-                      Applies a dynamic "-26%" discount badge and special badge styling to products and hero promotion banners on the homepage.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setFridaySaleEnabled(!fridaySaleEnabled)}
-                    className="flex items-center gap-2 mt-6 py-2.5 px-4 rounded-xl text-xs font-bold w-full justify-center border transition-all duration-300 cursor-pointer bg-gray-900 border-gray-800 hover:bg-gray-800 text-white"
-                  >
-                    {fridaySaleEnabled ? (
-                      <div>
-                        <ToggleRight className="h-5 w-5 text-green-500" />
-                        Active (26% Off Applied)
-                      </div>
-                    ) : (
-                      <div>
-                        <ToggleLeft className="h-5 w-5 text-gray-500" />
-                        Inactive
-                      </div>
-                    )}
-                  </button>
-                </div>
-
-                {/* Midnight Flash Sale Toggle */}
-                <div className="bg-gray-900/40 border border-gray-800 p-6 rounded-2xl flex flex-col justify-between hover:border-gray-700 transition-colors">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Midnight Flash</span>
-                      {midnightSaleEnabled ? (
-                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      ) : (
-                        <span className="h-2 w-2 rounded-full bg-gray-600" />
-                      )}
-                    </div>
-                    <h4 className="text-sm font-bold text-white mt-3">Midnight Flash Sale</h4>
-                    <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">
-                      Forces the storefront into Midnight theme mode, updating prices to 75% off and highlighting the "Deal of the Day" countdown timer.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setMidnightSaleEnabled(!midnightSaleEnabled)}
-                    className="flex items-center gap-2 mt-6 py-2.5 px-4 rounded-xl text-xs font-bold w-full justify-center border transition-all duration-300 cursor-pointer bg-gray-900 border-gray-800 hover:bg-gray-800 text-white"
-                  >
-                    {midnightSaleEnabled ? (
-                      <div>
-                        <ToggleRight className="h-5 w-5 text-red-500" />
-                        Active (75% Off Applied)
-                      </div>
-                    ) : (
-                      <div>
-                        <ToggleLeft className="h-5 w-5 text-gray-500" />
-                        Inactive
-                      </div>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Layout Visual Mapper: Showing how admin matches the Homepage UI */}
-              <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6">
-                <div className="pb-4 mb-6 border-b border-gray-850">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">Visual Storefront Mapping Schema</h4>
-                  <p className="text-[10px] text-gray-500 mt-1">
-                    Hover over any component of the homepage layout below to instantly see which admin module manages its cover content and settings.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-
-                  {/* Left Column: Homepage schema */}
-                  <div className="lg:col-span-7 space-y-3 bg-gray-950 p-6 rounded-2xl border border-gray-850">
-                    <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest block text-center mb-3">GriVA Storefront Homepage Layout</span>
-
-                    {/* Schema Element: Announcement Bar */}
-                    <div
-                      onMouseEnter={() => setHighlightedSchemaSection("announcement")}
-                      onMouseLeave={() => setHighlightedSchemaSection(null)}
-                      onClick={() => setActiveTab("overview")}
-                      className={`py-1.5 px-3 rounded text-[9px] font-bold text-center border cursor-pointer transition-all duration-300 ${announcementBarEnabled ? "bg-orange-500/10 border-orange-500/40 text-orange-400" : "bg-gray-900 border-gray-850 text-gray-600"
-                        } ${highlightedSchemaSection === "announcement" ? "scale-[1.02] ring-2 ring-orange-500" : ""}`}
-                    >
-                      Top Announcement Bar {announcementBarEnabled ? "(ACTIVE)" : "(DISABLED)"}
-                    </div>
-
-                    {/* Schema Element: Main Header */}
-                    <div className="py-2.5 px-3 rounded text-[9px] font-bold text-center border bg-gray-900 border-gray-850 text-gray-500">
-                      Website Navigation Header (Search, Wishlist, Cart)
-                    </div>
-
-                    {/* Schema Element: Hero Carousel */}
-                    <div
-                      onMouseEnter={() => setHighlightedSchemaSection("hero")}
-                      onMouseLeave={() => setHighlightedSchemaSection(null)}
-                      onClick={() => setActiveTab("banners")}
-                      className={`py-8 px-3 rounded text-[10px] font-black text-center border cursor-pointer transition-all duration-300 ${highlightedSchemaSection === "hero" ? "bg-orange-500/20 border-orange-500 text-orange-400 scale-[1.01]" : "bg-gray-900/60 border-gray-800 text-gray-400"
-                        }`}
-                    >
-                      Hero Promo Carousel Slides (Manage {slidesList.length} Slides)
-                    </div>
-
-                    {/* Schema Element: Categories */}
-                    <div
-                      onMouseEnter={() => setHighlightedSchemaSection("categories")}
-                      onMouseLeave={() => setHighlightedSchemaSection(null)}
-                      onClick={() => setActiveTab("banners")}
-                      className={`py-3.5 px-3 rounded text-[9px] font-bold text-center border cursor-pointer transition-all duration-300 ${highlightedSchemaSection === "categories" ? "bg-orange-500/20 border-orange-500 text-orange-400 scale-[1.01]" : "bg-gray-900/60 border-gray-800 text-gray-400"
-                        }`}
-                    >
-                      Category Quick Nav Banners (Manage {categoriesList.length} Categories)
-                    </div>
-
-                    {/* Schema Element: Offer Cards */}
-                    <div
-                      onMouseEnter={() => setHighlightedSchemaSection("offers")}
-                      onMouseLeave={() => setHighlightedSchemaSection(null)}
-                      onClick={() => setActiveTab("banners")}
-                      className={`grid grid-cols-4 gap-2 text-center text-[8px] font-bold cursor-pointer transition-all duration-300 ${highlightedSchemaSection === "offers" ? "scale-[1.01]" : ""
-                        }`}
-                    >
-                      {offersList.map((o) => (
-                        <div
-                          key={o.id}
-                          className={`p-2.5 border rounded ${o.badge === "DISABLED" ? "bg-gray-900 border-gray-850 text-gray-600" : "bg-orange-500/10 border-orange-500/30 text-orange-400"
-                            } ${highlightedSchemaSection === "offers" ? "border-orange-500" : ""}`}
-                        >
-                          {o.title}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Schema Element: Product Grid */}
-                    <div
-                      onMouseEnter={() => setHighlightedSchemaSection("products")}
-                      onMouseLeave={() => setHighlightedSchemaSection(null)}
-                      onClick={() => setActiveTab("products")}
-                      className={`py-6 px-3 rounded text-[10px] font-black text-center border cursor-pointer transition-all duration-300 ${highlightedSchemaSection === "products" ? "bg-orange-500/20 border-orange-500 text-orange-400 scale-[1.01]" : "bg-gray-900/60 border-gray-800 text-gray-400"
-                        }`}
-                    >
-                      Catalog Product Grids (Filterable Category Shop views)
-                    </div>
-                  </div>
-
-                  {/* Right Column: Explanatory Context Details */}
-                  <div className="lg:col-span-5 space-y-4">
-                    <div className="p-4 bg-gray-950/40 border border-gray-850 rounded-xl">
-                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Selected Component Controller</span>
-
-                      {highlightedSchemaSection === null && (
-                        <p className="text-xs text-gray-400 mt-2">Hover over the storefront layout schema components to inspect mapping.</p>
-                      )}
-
-                      {highlightedSchemaSection === "announcement" && (
-                        <div className="mt-2 space-y-2">
-                          <h5 className="text-xs font-bold text-white">Announcement Marquee</h5>
-                          <p className="text-[10px] text-gray-400 leading-relaxed">
-                            Controlled under **Overview & Campaigns** page via the "Storefront Top Bar" switch. Displays custom notifications like "Worldwide Free shipping over $50" to shoppers in Qatar.
-                          </p>
-                        </div>
-                      )}
-
-                      {highlightedSchemaSection === "hero" && (
-                        <div className="mt-2 space-y-2">
-                          <h5 className="text-xs font-bold text-white">Hero Slideshow Carousel</h5>
-                          <p className="text-[10px] text-gray-400 leading-relaxed">
-                            Controlled under **Banners & Layouts** page. Edit text titles, add cover image URLs, configure promotional pricing labels, and change background slide colors dynamically.
-                          </p>
-                        </div>
-                      )}
-
-                      {highlightedSchemaSection === "categories" && (
-                        <div className="mt-2 space-y-2">
-                          <h5 className="text-xs font-bold text-white">Category Grid Elements</h5>
-                          <p className="text-[10px] text-gray-400 leading-relaxed">
-                            Controlled under **Banners & Layouts** page. Modify category cover images (e.g. Speakers, Television) to match promotional inventory styles.
-                          </p>
-                        </div>
-                      )}
-
-                      {highlightedSchemaSection === "offers" && (
-                        <div className="mt-2 space-y-2">
-                          <h5 className="text-xs font-bold text-white">Promotion Offer Tiles</h5>
-                          <p className="text-[10px] text-gray-400 leading-relaxed">
-                            Controlled under **Banners & Layouts** page. Each tile can be toggled Active/Disabled. Turning a tile off automatically hides it from the homepage grid wrapper.
-                          </p>
-                        </div>
-                      )}
-
-                      {highlightedSchemaSection === "products" && (
-                        <div className="mt-2 space-y-2">
-                          <h5 className="text-xs font-bold text-white">Catalog Product Inventory</h5>
-                          <p className="text-[10px] text-gray-400 leading-relaxed">
-                            Controlled under **Manage Products** page. Edit stock parameters, modify prices, configure specifications details list, and upload WebP images to Cloudflare R2 storage.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {activeTab === 'overview' && (
+            <OverviewTab 
+              announcementBarEnabled={announcementBarEnabled}
+              setAnnouncementBarEnabled={setAnnouncementBarEnabled}
+              fridaySaleEnabled={fridaySaleEnabled}
+              setFridaySaleEnabled={setFridaySaleEnabled}
+              midnightSaleEnabled={midnightSaleEnabled}
+              setMidnightSaleEnabled={setMidnightSaleEnabled}
+              highlightedSchemaSection={highlightedSchemaSection}
+              setHighlightedSchemaSection={setHighlightedSchemaSection}
+              setActiveTab={setActiveTab}
+              slidesList={slidesList}
+              categoriesList={categoriesList}
+              offersList={offersList}
+            />
           )}
 
-          {/* ─────────────────────────────────────────────────────────
-              TAB 2: PRODUCT INVENTORY MANAGER
-              ───────────────────────────────────────────────────────── */}
-          {activeTab === "products" && (
-            <div className="space-y-6 animate-in fade-in-50 duration-300">
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-gray-900/40 p-4 rounded-xl border border-gray-800">
-                <div className="flex flex-1 gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                    <input
-                      type="text"
-                      placeholder="Search product title, tags..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-9 pr-4 py-2 text-xs text-gray-200 focus:outline-none"
-                    />
-                  </div>
-
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-400 focus:outline-none focus:border-orange-500 cursor-pointer"
-                  >
-                    <option value="all">All Categories</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white rounded-xl cursor-pointer w-full sm:w-auto justify-center"
-                >
-                  <Plus className="h-4.5 w-4.5" />
-                  Add Catalog Product
-                </button>
-              </div>
-
-              <div className="bg-gray-900/20 border border-gray-800 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-800 text-[10px] text-gray-500 font-bold uppercase tracking-wider bg-gray-950/40">
-                      <th className="p-4">Product Details</th>
-                      <th className="p-4">Category</th>
-                      <th className="p-4">Price</th>
-                      <th className="p-4 text-center">Stock Inventory</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-850">
-                    {filteredProducts.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="p-8 text-center text-xs text-gray-500">No products matched the active filters.</td>
-                      </tr>
-                    ) : (
-                      filteredProducts.map((p) => (
-                        <tr key={p.id} className="hover:bg-gray-900/40 transition-colors group">
-                          <td className="p-4 flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-gray-950 p-1 flex items-center justify-center shrink-0 border border-gray-800">
-                              {p.image && typeof p.image === "object" ? (
-                                <span className="text-[10px] font-black text-orange-500">GRIVA</span>
-                              ) : (
-                                <img src={p.image as string} alt="" className="h-full w-full object-contain" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-xs font-bold text-gray-100 block truncate max-w-sm group-hover:text-orange-400 transition-colors">{p.title}</span>
-                              <div className="flex gap-2 items-center mt-1">
-                                {p.badge && (
-                                  <span className="text-[8px] font-bold text-white bg-blue-600 px-1.5 py-0.5 rounded uppercase">{p.badge}</span>
-                                )}
-                                <span className="text-[9px] text-gray-500 font-semibold">ID: #{p.id}</span>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="p-4">
-                            <span className="text-xs text-gray-300 font-semibold bg-gray-900 border border-gray-800 px-2.5 py-1 rounded-lg">
-                              {p.category}
-                            </span>
-                          </td>
-
-                          <td className="p-4">
-                            <div>
-                              <span className="text-xs font-black text-gray-100">{p.price}</span>
-                              {p.oldPrice && (
-                                <span className="text-[10px] text-gray-500 line-through block mt-0.5">{p.oldPrice}</span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="p-4">
-                            <div className="flex items-center justify-center gap-3 w-fit mx-auto bg-gray-950 border border-gray-855 px-2.5 py-1 rounded-xl">
-                              <button
-                                onClick={() => handleStockAdjustment(p.id, -1)}
-                                className="h-6 w-6 rounded bg-gray-900 hover:bg-orange-500/10 hover:text-orange-400 text-xs font-bold text-gray-500 flex items-center justify-center transition-colors cursor-pointer"
-                              >
-                                -
-                              </button>
-                              <span className={`w-8 text-center text-xs font-black ${p.stock && p.stock <= 5 ? "text-orange-400 font-black" : "text-gray-200"}`}>
-                                {p.stock}
-                              </span>
-                              <button
-                                onClick={() => handleStockAdjustment(p.id, 1)}
-                                className="h-6 w-6 rounded bg-gray-900 hover:bg-orange-500/10 hover:text-orange-400 text-xs font-bold text-gray-500 flex items-center justify-center transition-colors cursor-pointer"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </td>
-
-                          <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2.5">
-                              <button
-                                onClick={() => alert("Loading Product ID: #" + p.id + " inside details editor...")}
-                                className="p-2 text-gray-400 hover:text-white bg-gray-900 hover:bg-gray-850 rounded-lg transition-colors cursor-pointer border border-gray-800"
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (confirm("Delete product?")) {
-                                    setProductsList((prev) => prev.filter((productItem) => productItem.id !== p.id));
-                                  }
-                                }}
-                                className="p-2 text-gray-400 hover:text-red-400 bg-gray-900 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer border border-gray-800"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          {activeTab === 'products' && (
+            <ProductsTab
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filterCategory={filterCategory}
+              setFilterCategory={setFilterCategory}
+              categories={categories}
+              setIsAddModalOpen={setIsAddModalOpen}
+              filteredProducts={filteredProducts}
+              handleStockAdjustment={handleStockAdjustment}
+              setProductsList={setProductsList}
+            />
           )}
 
-          {/* ─────────────────────────────────────────────────────────
-              TAB 3: BANNERS & LAYOUTS (Carousels, Categories, Offer Cards)
-              ───────────────────────────────────────────────────────── */}
-          {activeTab === "banners" && (
-            <div className="space-y-10 animate-in fade-in-50 duration-300">
-
-              {/* Section A: Hero Slideshow Carousel Banners */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-gray-850">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">A. Homepage Hero Slideshow Carousels</h4>
-                  <button
-                    onClick={() => alert("Creating a new slideshow slide...")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-[10px] font-bold text-white rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add Slide
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {slidesList.map((slideItem, index) => {
-                    const isSlideDisabled = slideItem.badge === "DISABLED";
-                    return (
-                      <div
-                        key={index}
-                        className={`rounded-2xl border border-gray-800 overflow-hidden bg-gray-900/30 flex flex-col justify-between transition-opacity duration-300 ${isSlideDisabled ? "opacity-45" : "opacity-100"
-                          }`}
-                      >
-                        <div
-                          className="h-36 p-5 flex flex-col justify-between relative"
-                          style={{ backgroundColor: slideItem.bg }}
-                        >
-                          <span className="text-[9px] font-bold text-white bg-black/40 px-2 py-0.5 rounded-full w-fit uppercase tracking-widest">
-                            {slideItem.badge}
-                          </span>
-                          <div className="text-white">
-                            <span className="text-[9px] font-bold tracking-widest text-white/70 block uppercase">{slideItem.subtitle}</span>
-                            <h5 className="text-md font-extrabold mt-1 whitespace-pre-line leading-snug">{slideItem.title}</h5>
-                          </div>
-                        </div>
-
-                        <div className="p-4 bg-gray-950/60 flex items-center justify-between border-t border-gray-800">
-                          <div>
-                            <span className="text-[10px] text-gray-500 font-semibold block">Store Price Tag</span>
-                            <span className="text-xs font-black text-orange-400 mt-0.5 block">{slideItem.price}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleToggleSlide(index)}
-                              className="p-1.5 bg-gray-900 border border-gray-800 hover:text-white rounded-lg transition-colors cursor-pointer"
-                              title={isSlideDisabled ? "Enable Slide" : "Disable Slide"}
-                            >
-                              {isSlideDisabled ? (
-                                <ToggleLeft className="h-5 w-5 text-gray-500" />
-                              ) : (
-                                <ToggleRight className="h-5 w-5 text-green-500" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => alert("Opening slide configuration details...")}
-                              className="px-2.5 py-1.5 bg-gray-900 border border-gray-800 hover:bg-gray-800 text-[10px] font-bold text-gray-200 rounded-lg transition-colors cursor-pointer"
-                            >
-                              Modify Content
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Section B: Category Banner Images & Links */}
-              <div className="space-y-4">
-                <div className="pb-3 border-b border-gray-850">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">B. Category Navigation Cover Contents</h4>
-                  <p className="text-[10px] text-gray-500 mt-1">Manage title and custom cover image folders for homepage category navigation blocks.</p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                  {categoriesList.map((cat, idx) => (
-                    <div key={idx} className="bg-gray-900/40 border border-gray-800 p-4 rounded-xl flex flex-col justify-between items-center text-center">
-                      <div className="h-10 w-10 rounded-lg bg-gray-950 p-1 flex items-center justify-center border border-gray-850">
-                        {cat.image && typeof cat.image === "object" ? (
-                          <ImageIcon className="h-5 w-5 text-orange-500" />
-                        ) : (
-                          <img src={cat.image as string} alt="" className="h-full w-full object-contain" />
-                        )}
-                      </div>
-                      <span className="text-xs font-bold text-gray-200 mt-3 block">{cat.title}</span>
-                      <button
-                        onClick={() => alert("Updating Category: " + cat.title + " cover images...")}
-                        className="mt-3 text-[9px] font-bold text-orange-500 hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <Edit className="h-3 w-3" /> Change Cover
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Section C: Homepage Offer Promotion Cards */}
-              <div className="space-y-4">
-                <div className="pb-3 border-b border-gray-850">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">C. Homepage Promotion Card Banners</h4>
-                  <p className="text-[10px] text-gray-500 mt-1">Toggle active promotional display cards on the website grid.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {offersList.map((offer) => {
-                    const isOfferDisabled = offer.badge === "DISABLED";
-                    return (
-                      <div
-                        key={offer.id}
-                        className={`p-5 rounded-2xl border border-gray-800 bg-gray-900/30 flex flex-col justify-between transition-opacity duration-300 ${isOfferDisabled ? "opacity-45" : "opacity-100"
-                          }`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-bold text-gray-500 uppercase">{offer.badge}</span>
-                            <span className="text-[9px] text-gray-500 font-semibold bg-gray-900 px-2 py-0.5 rounded border border-gray-850">
-                              Grid Item
-                            </span>
-                          </div>
-                          <span className="text-[10px] font-bold text-orange-500 mt-3 block">{offer.subtitle}</span>
-                          <h5 className="text-xs font-bold text-gray-200 mt-1">{offer.title}</h5>
-                        </div>
-
-                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-850">
-                          <button
-                            onClick={() => handleToggleOffer(offer.id)}
-                            className="flex items-center gap-1.5 text-[10px] font-bold text-gray-300 hover:text-white transition-colors cursor-pointer"
-                          >
-                            {isOfferDisabled ? (
-                              <div>
-                                <ToggleLeft className="h-5 w-5 text-gray-500" />
-                                Disabled
-                              </div>
-                            ) : (
-                              <div>
-                                <ToggleRight className="h-5 w-5 text-orange-500" />
-                                Active
-                              </div>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => alert("Updating offer content...")}
-                            className="text-[9px] font-bold text-orange-500 hover:underline"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+          {activeTab === 'banners' && (
+            <BannersTab
+              slidesList={slidesList}
+              categoriesList={categoriesList}
+              offersList={offersList}
+              handleToggleSlide={handleToggleSlide}
+              handleToggleOffer={handleToggleOffer}
+              mobileBannersList={mobileBannersList}
+              setMobileBannersList={setMobileBannersList}
+            />
           )}
 
-          {/* ─────────────────────────────────────────────────────────
-              TAB 4: SUBSCRIBER HUB
-              ───────────────────────────────────────────────────────── */}
-          {activeTab === "subscribers" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in-50 duration-300">
-              <div className="lg:col-span-7 space-y-6">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!newSubEmail) return;
-                    setSubscribersList((prev) => [
-                      { email: newSubEmail, joinedDate: "June 05, 2026", country: "Qatar" },
-                      ...prev,
-                    ]);
-                    setNewSubEmail("");
-                  }}
-                  className="flex gap-3 bg-gray-900/40 p-4 rounded-xl border border-gray-800"
-                >
-                  <input
-                    type="email"
-                    placeholder="Add manual subscriber email..."
-                    value={newSubEmail}
-                    onChange={(e) => setNewSubEmail(e.target.value)}
-                    required
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-200 focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white rounded-xl transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-4.5 w-4.5" /> Add
-                  </button>
-                </form>
-
-                <div className="bg-gray-900/20 border border-gray-800 rounded-2xl overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-800 text-[10px] text-gray-500 font-bold uppercase tracking-wider bg-gray-950/40">
-                        <th className="p-4">Subscriber Email</th>
-                        <th className="p-4">Joined Date</th>
-                        <th className="p-4">Country</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-850">
-                      {subscribersList.map((sub, idx) => (
-                        <tr key={idx} className="hover:bg-gray-900/40 transition-colors">
-                          <td className="p-4 text-xs font-bold text-gray-200">{sub.email}</td>
-                          <td className="p-4 text-xs text-gray-400">{sub.joinedDate}</td>
-                          <td className="p-4 text-xs text-gray-400">{sub.country}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="lg:col-span-5">
-                <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 space-y-4">
-                  <div className="flex items-center gap-2 pb-3 border-b border-gray-800">
-                    <Mail className="h-4.5 w-4.5 text-orange-500" />
-                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">Campaign Broadcast Composer</h4>
-                  </div>
-                  <p className="text-[10px] text-gray-500 leading-relaxed">
-                    Write and dispatch newsletter announcements to all ({subscribersList.length}) subscribers simultaneously.
-                  </p>
-                  <form onSubmit={handleSendBroadcast} className="space-y-4">
-                    <div>
-                      <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Broadcast Subject</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Exclusive Weekend Sale - Up to 50% Off!"
-                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Email Message Body</label>
-                      <textarea
-                        rows={6}
-                        placeholder="Write your email markup details here..."
-                        value={broadcastMessage}
-                        onChange={(e) => setBroadcastMessage(e.target.value)}
-                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none resize-none"
-                        required
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={broadcastStatus !== "idle"}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-800 disabled:text-gray-500 text-xs font-bold text-white rounded-xl transition-all cursor-pointer shadow-lg"
-                    >
-                      {broadcastStatus === "idle" && (
-                        <div>
-                          <Send className="h-4 w-4" />
-                          Send Broadcast to {subscribersList.length} Emails
-                        </div>
-                      )}
-                      {broadcastStatus === "sending" && (
-                        <div>
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                          Sending Emails...
-                        </div>
-                      )}
-                      {broadcastStatus === "sent" && (
-                        <div>
-                          <Sparkles className="h-4 w-4 text-green-400" />
-                          Broadcast Dispatched Successfully!
-                        </div>
-                      )}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
+          {activeTab === 'subscribers' && (
+            <SubscribersTab
+              subscribersList={subscribersList}
+              setSubscribersList={setSubscribersList}
+              newSubEmail={newSubEmail}
+              setNewSubEmail={setNewSubEmail}
+              broadcastMessage={broadcastMessage}
+              setBroadcastMessage={setBroadcastMessage}
+              broadcastStatus={broadcastStatus}
+              handleSendBroadcast={handleSendBroadcast}
+            />
           )}
-        </div>
+
+</div>
       </main>
 
       {/* "ADD NEW PRODUCT" MODAL */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in-20 duration-300">
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 md:p-8 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-855">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in-20 duration-300">
+          <div className="bg-white border border-orange-500/30 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 md:p-8 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-200">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-orange-500" />
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Add Catalog Product</h4>
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Add Catalog Product</h4>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-orange-500/10 rounded-lg text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -997,23 +426,23 @@ export default function AdminDashboard() {
             <form onSubmit={handleAddProductSubmit} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Product Title</label>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Product Title</label>
                   <input
                     type="text"
                     required
                     placeholder="Samsung Galaxy S23 Ultra..."
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none"
+                    className="w-full bg-white border border-orange-500/30 rounded-xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Category</label>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Category</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-400 focus:outline-none cursor-pointer"
+                    className="w-full bg-white border border-orange-500/30 rounded-xl px-4 py-2.5 text-xs text-gray-500 focus:outline-none cursor-pointer"
                   >
                     <option value="Gadgets">Gadgets</option>
                     <option value="Laptops">Laptops</option>
@@ -1023,11 +452,52 @@ export default function AdminDashboard() {
                     <option value="Gaming">Gaming</option>
                   </select>
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Main Image URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/image.jpg or /images/product.png"
+                    value={newMainImage}
+                    onChange={(e) => setNewMainImage(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Additional Gallery Images</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="Add another image URL..."
+                      value={newGalleryImage}
+                      onChange={(e) => setNewGalleryImage(e.target.value)}
+                      className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddGalleryImage}
+                      className="px-3 bg-orange-500/10 hover:bg-gray-50 text-xs font-bold text-gray-900 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Add Image
+                    </button>
+                  </div>
+                  {galleryImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                      {galleryImages.map((img, idx) => (
+                        <span key={idx} className="text-[9px] font-bold text-gray-500 bg-white border border-gray-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 max-w-xs truncate">
+                          {img}
+                          <X className="h-3 w-3 text-red-500 hover:text-red-400 cursor-pointer shrink-0" onClick={() => setGalleryImages(prev => prev.filter((_, i) => i !== idx))} />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Sale Price ($)</label>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Sale Price ($)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1035,88 +505,88 @@ export default function AdminDashboard() {
                     placeholder="699.99"
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none"
+                    className="w-full bg-white border border-orange-500/30 rounded-xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Original Price ($)</label>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Original Price ($)</label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="949.99"
                     value={newOldPrice}
                     onChange={(e) => setNewOldPrice(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none"
+                    className="w-full bg-white border border-orange-500/30 rounded-xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Initial Stock</label>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Initial Stock</label>
                   <input
                     type="number"
                     required
                     placeholder="12"
                     value={newStock}
                     onChange={(e) => setNewStock(parseInt(e.target.value))}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none"
+                    className="w-full bg-white border border-orange-500/30 rounded-xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Description</label>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Description</label>
                   <textarea
                     rows={3}
                     placeholder="High power mobile device..."
                     value={newDesc}
                     onChange={(e) => setNewDesc(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-200 focus:outline-none resize-none"
+                    className="w-full bg-white border border-orange-500/30 rounded-xl px-4 py-2 text-xs text-gray-800 focus:outline-none resize-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Promo Badge Text (Optional)</label>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Promo Badge Text (Optional)</label>
                   <input
                     type="text"
                     placeholder="e.g. -26% or HOT"
                     value={newBadge}
                     onChange={(e) => setNewBadge(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-855 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Add Technical Specs</label>
+                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Add Technical Specs</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     placeholder="Label: Display"
                     value={newSpecLabel}
                     onChange={(e) => setNewSpecLabel(e.target.value)}
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none"
+                    className="flex-1 bg-white border border-orange-500/30 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none"
                   />
                   <input
                     type="text"
                     placeholder="Value: 6.8 inch screen"
                     value={newSpecValue}
                     onChange={(e) => setNewSpecValue(e.target.value)}
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none"
+                    className="flex-1 bg-white border border-orange-500/30 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={handleAddSpec}
-                    className="px-3 bg-gray-800 hover:bg-gray-705 text-xs font-bold text-white rounded-xl transition-colors cursor-pointer"
+                    className="px-3 bg-orange-500/10 hover:bg-orange-500/20 text-xs font-bold text-orange-500 rounded-xl transition-colors cursor-pointer"
                   >
                     Add Spec
                   </button>
                 </div>
                 {specsList.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2 bg-gray-955/45 p-2 rounded-xl border border-gray-850">
+                  <div className="flex flex-wrap gap-2 mt-2 bg-gray-50 p-2 rounded-xl border border-orange-500/20">
                     {specsList.map((spec, idx) => (
-                      <span key={idx} className="text-[9px] font-bold text-gray-400 bg-gray-900 border border-gray-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                      <span key={idx} className="text-[9px] font-bold text-gray-500 bg-white border border-orange-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                         {spec.label}: {spec.value}
                         <X className="h-3 w-3 text-red-500 hover:text-red-400 cursor-pointer" onClick={() => setSpecsList(prev => prev.filter((_, i) => i !== idx))} />
                       </span>
@@ -1126,14 +596,14 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Add Colors</label>
+                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Add Colors</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     placeholder="Color Name: Cream"
                     value={newColorName}
                     onChange={(e) => setNewColorName(e.target.value)}
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none"
+                    className="flex-1 bg-white border border-orange-500/30 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none"
                   />
                   <input
                     type="color"
@@ -1144,15 +614,15 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={handleAddColor}
-                    className="px-3 bg-gray-800 hover:bg-gray-705 text-xs font-bold text-white rounded-xl transition-colors cursor-pointer"
+                    className="px-3 bg-orange-500/10 hover:bg-orange-500/20 text-xs font-bold text-orange-500 rounded-xl transition-colors cursor-pointer"
                   >
                     Add Color
                   </button>
                 </div>
                 {colorsList.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2 bg-gray-955/45 p-2 rounded-xl border border-gray-855">
+                  <div className="flex flex-wrap gap-2 mt-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
                     {colorsList.map((color, idx) => (
-                      <span key={idx} className="text-[9px] font-bold text-gray-400 bg-gray-900 border border-gray-800 px-2.5 py-1 rounded-lg flex items-center gap-2">
+                      <span key={idx} className="text-[9px] font-bold text-gray-500 bg-white border border-orange-500/30 px-2.5 py-1 rounded-lg flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ backgroundColor: color.hex }} />
                         {color.name}
                         <X className="h-3 w-3 text-red-500 hover:text-red-400 cursor-pointer" onClick={() => setColorsList(prev => prev.filter((_, i) => i !== idx))} />
@@ -1163,22 +633,22 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Product Image Cover URL</label>
+                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1.5">Product Image Cover URL</label>
                 <input
                   type="text"
                   required
                   placeholder="https://pub-xxxxxx.r2.dev/iphone15.png"
                   value={newMainImage}
                   onChange={(e) => setNewMainImage(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 focus:outline-none"
+                  className="w-full bg-white border border-orange-500/30 rounded-xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-855">
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-3 bg-gray-950 border border-gray-800 hover:bg-gray-850 text-xs font-bold text-gray-450 hover:text-white rounded-xl transition-all cursor-pointer"
+                  className="flex-1 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-xs font-bold text-gray-500 hover:text-gray-900 rounded-xl transition-all cursor-pointer"
                 >
                   Cancel
                 </button>

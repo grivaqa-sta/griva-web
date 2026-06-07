@@ -1,14 +1,15 @@
 "use client";
 
-import { mobilebanners, slide } from "@/app/data/data";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ShieldCheck, Truck, Star } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
+import { useAdminSettings } from "@/app/context/AdminContext";
 
 // ─── Mobile Banner Component ───────────────────────────────────────────────
 function MobileAdBanner() {
+  const { cmsMobileBanners: mobilebanners } = useAdminSettings();
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
@@ -94,6 +95,7 @@ function MobileAdBanner() {
 
 // ─── Main HeroBanner Component ─────────────────────────────────────────────
 export default function HeroBanner() {
+  const { cmsHeroSlides: slide, fridaySaleEnabled, midnightSaleEnabled } = useAdminSettings();
   const [current, setCurrent] = useState(0);
   const busyRef = useRef(false);
 
@@ -143,6 +145,16 @@ export default function HeroBanner() {
             transition={{ duration: 0.7 }}
             className="relative overflow-hidden lg:rounded-[10px] rounded-[10px]"
           >
+            {/* Friday Sale overlay ribbon */}
+            {fridaySaleEnabled && (
+              <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-center gap-2 bg-orange-500/90 py-1 text-[9px] font-black uppercase tracking-widest text-white">
+                🔥 FRIDAY SUPER SALE — EXTRA -26% OFF ALL ITEMS TODAY ONLY
+              </div>
+            )}
+            {/* Midnight Sale dark overlay */}
+            {midnightSaleEnabled && (
+              <div className="absolute inset-0 z-20 bg-black/40 pointer-events-none rounded-[10px]" />
+            )}
             <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
             <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl" />
 

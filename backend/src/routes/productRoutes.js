@@ -51,4 +51,10 @@ router.post("/", authenticateJWT, isAdmin, productController.createProduct);
 // Maps to: PATCH /api/products/:id/stock (e.g. /api/products/12/stock)
 router.patch("/:id/stock", authenticateJWT, isAdmin, productController.updateProductStock);
 
+// Maps to: PUT /api/products/:id (e.g. /api/products/12)
+router.put("/:id", authenticateJWT, isAdmin, productController.updateProduct);
+
+// Maps to: DELETE /api/products/:id (e.g. /api/products/12)
+router.delete("/:id", authenticateJWT, isAdmin, productController.deleteProduct);
+
 module.exports = router;

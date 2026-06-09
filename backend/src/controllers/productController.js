@@ -233,3 +233,84 @@ exports.updateProductStock = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Admin Action: Delete Product Catalog Item
+ */
+exports.deleteProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findByPk(id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    await product.destroy();
+
+    res.status(200).json({
+      message: "Product deleted successfully from catalog.",
+      productId: id,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Admin Action: Edit / Update Product details
+ */
+exports.updateProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      category_id,
+      title,
+      price,
+      old_price,
+      badge,
+      description,
+      stock,
+      specs,
+      colors,
+      storage_options,
+      main_image_url,
+      gallery_image_urls,
+    } = req.body;
+
+    const product = await Product.findByPk(id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    // Optional category verification
+    if (category_id) {
+      const category = await Category.findByPk(category_id);
+      if (!category) {
+        return res.status(400).json({ error: "Invalid Category ID lookup." });
+      }
+      product.category_id = category_id;
+    }
+
+    if (title !== undefined) product.title = title;
+    if (price !== undefined) product.price = price;
+    if (old_price !== undefined) product.old_price = old_price;
+    if (badge !== undefined) product.badge = badge;
+    if (description !== undefined) product.description = description;
+    if (stock !== undefined) product.stock = stock;
+    if (specs !== undefined) product.specs = specs;
+    if (colors !== undefined) product.colors = colors;
+    if (storage_options !== undefined) product.storage_options = storage_options;
+    if (main_image_url !== undefined) product.main_image_url = main_image_url;
+    if (gallery_image_urls !== undefined) product.gallery_image_urls = gallery_image_urls;
+
+    await product.save();
+
+    res.status(200).json({
+      message: "Product updated successfully.",
+      product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

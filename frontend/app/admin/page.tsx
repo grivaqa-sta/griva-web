@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -32,9 +32,23 @@ import {
   EyeOff,
 } from "lucide-react";
 
-// Seed data
+// Seed data and types
 import { products as initialProducts, slide as initialSlides, offers as initialOffers, categories as initialCategories } from "../data/data";
 import { Product, SlideData, OfferCard, CategoryItem } from "../types/types";
+
+// API Helpers
+import {
+  getProductsApi,
+  createProductApi,
+  updateProductStockApi,
+  deleteProductApi,
+  getSettingsApi,
+  updateSettingsApi,
+  getSubscribersApi,
+  addSubscriberApi,
+  broadcastNewsletterApi,
+  SubscriberInfo,
+} from "../utils/api";
 
 export default function AdminDashboard() {
   // Navigation State
@@ -78,17 +92,30 @@ export default function AdminDashboard() {
   const [newColorHex, setNewColorHex] = useState("#000000");
 
   // Subscribers States
-  const [subscribersList, setSubscribersList] = useState([
-    { email: "jassim.althani@gmail.com", joinedDate: "June 01, 2026", country: "Qatar" },
-    { email: "fatima.almansouri@yahoo.com", joinedDate: "May 29, 2026", country: "Qatar" },
-    { email: "john.doe@verizon.com", joinedDate: "May 25, 2026", country: "United States" },
-  ]);
+  const [subscribersList, setSubscribersList] = useState<SubscriberInfo[]>([]);
   const [newSubEmail, setNewSubEmail] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   // Categories helper
   const categories = Array.from(new Set(productsList.map((p) => p.category)));
+
+  // Load from Express APIs on Mount
+  useEffect(() => {
+    async function loadData() {
+      const dbProducts = await getProductsApi();
+      setProductsList(dbProducts);
+
+      const dbSettings = await getSettingsApi();
+      setAnnouncementBarEnabled(dbSettings.announcementBarEnabled);
+      setFridaySaleEnabled(dbSettings.fridaySaleEnabled);
+      setMidnightSaleEnabled(dbSettings.midnightSaleEnabled);
+
+      const dbSubs = await getSubscribersApi();
+      setSubscribersList(dbSubs);
+    }
+    loadData();
+  }, []);
 
   // Add Spec Tag Helper
   const handleAddSpec = () => {
@@ -108,38 +135,55 @@ export default function AdminDashboard() {
     }
   };
 
+  // Campaign switches hooks
+  const handleToggleAnnouncement = async () => {
+    const nextVal = !announcementBarEnabled;
+    setAnnouncementBarEnabled(nextVal);
+    await updateSettingsApi({ announcementBarEnabled: nextVal });
+  };
+
+  const handleToggleFridaySale = async () => {
+    const nextVal = !fridaySaleEnabled;
+    setFridaySaleEnabled(nextVal);
+    await updateSettingsApi({ fridaySaleEnabled: nextVal });
+  };
+
+  const handleToggleMidnightSale = async () => {
+    const nextVal = !midnightSaleEnabled;
+    setMidnightSaleEnabled(nextVal);
+    await updateSettingsApi({ midnightSaleEnabled: nextVal });
+  };
+
   // Handle Dispatching Broadcast Campaigns
-  const handleSendBroadcast = (e: React.FormEvent) => {
+  const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastMessage) return;
     setBroadcastStatus("sending");
-    setTimeout(() => {
+    const res = await broadcastNewsletterApi(broadcastMessage);
+    if (res) {
       setBroadcastStatus("sent");
       setTimeout(() => {
         setBroadcastStatus("idle");
         setBroadcastMessage("");
       }, 3000);
-    }, 1500);
+    } else {
+      setBroadcastStatus("idle");
+    }
   };
 
   // Add New Product Submission Handler
-  const handleAddProductSubmit = (e: React.FormEvent) => {
+  const handleAddProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle || !newPrice) return;
 
-    const newProductItem: Product = {
-      id: Date.now(),
+    const newProductItem = {
       title: newTitle,
       category: newCategory,
-      image: newMainImage as any,
-      images: [newMainImage as any],
+      image: newMainImage,
       price: `$${parseFloat(newPrice).toFixed(2)}`,
       oldPrice: newOldPrice ? `$${parseFloat(newOldPrice).toFixed(2)}` : undefined,
       badge: newBadge || undefined,
       badgeColor: newBadge ? "bg-blue-600" : undefined,
-      buttonText: "ADD TO CART",
-      rating: 5,
-      reviewCount: 0,
       stock: newStock,
       description: newDesc,
       specs: specsList,
@@ -147,7 +191,10 @@ export default function AdminDashboard() {
       storageOptions: [{ label: "256GB", value: "256gb" }],
     };
 
-    setProductsList((prev) => [newProductItem, ...prev]);
+    const savedProduct = await createProductApi(newProductItem);
+    if (savedProduct) {
+      setProductsList((prev) => [savedProduct, ...prev]);
+    }
 
     // Reset Form fields
     setNewTitle("");
@@ -173,7 +220,6 @@ export default function AdminDashboard() {
     setSlidesList((prev) =>
       prev.map((s, idx) => {
         if (idx === index) {
-          // In real-world, we toggle a visible flag. Here we toggle values to simulate deactivation.
           return { ...s, badge: s.badge === "DISABLED" ? "ACTIVE DEAL" : "DISABLED" };
         }
         return s;
@@ -194,16 +240,25 @@ export default function AdminDashboard() {
   };
 
   // Adjust stock count inline
-  const handleStockAdjustment = (productId: number, delta: number) => {
+  const handleStockAdjustment = async (productId: number, delta: number) => {
+    const targetProduct = productsList.find((p) => p.id === productId);
+    if (!targetProduct) return;
+    const nextStock = Math.max(0, (targetProduct.stock || 0) + delta);
+
+    // Optimistic UI update
     setProductsList((prev) =>
-      prev.map((p) => {
-        if (p.id === productId) {
-          const nextStock = (p.stock || 0) + delta;
-          return { ...p, stock: nextStock < 0 ? 0 : nextStock };
-        }
-        return p;
-      })
+      prev.map((p) => (p.id === productId ? { ...p, stock: nextStock } : p))
     );
+
+    await updateProductStockApi(productId, nextStock);
+  };
+
+  // Delete product handler
+  const handleDeleteProduct = async (id: number) => {
+    if (confirm("Are you sure you want to delete this product from the catalog?")) {
+      setProductsList((prev) => prev.filter((p) => p.id !== id));
+      await deleteProductApi(id);
+    }
   };
 
   return (
@@ -329,7 +384,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => setAnnouncementBarEnabled(!announcementBarEnabled)}
+                    onClick={handleToggleAnnouncement}
                     className="flex items-center gap-2 mt-6 py-2.5 px-4 rounded-xl text-xs font-bold w-full justify-center border transition-all duration-300 cursor-pointer bg-gray-900 border-gray-800 hover:bg-gray-800 text-white"
                   >
                     {announcementBarEnabled ? (
@@ -363,7 +418,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => setFridaySaleEnabled(!fridaySaleEnabled)}
+                    onClick={handleToggleFridaySale}
                     className="flex items-center gap-2 mt-6 py-2.5 px-4 rounded-xl text-xs font-bold w-full justify-center border transition-all duration-300 cursor-pointer bg-gray-900 border-gray-800 hover:bg-gray-800 text-white"
                   >
                     {fridaySaleEnabled ? (
@@ -397,7 +452,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => setMidnightSaleEnabled(!midnightSaleEnabled)}
+                    onClick={handleToggleMidnightSale}
                     className="flex items-center gap-2 mt-6 py-2.5 px-4 rounded-xl text-xs font-bold w-full justify-center border transition-all duration-300 cursor-pointer bg-gray-900 border-gray-800 hover:bg-gray-800 text-white"
                   >
                     {midnightSaleEnabled ? (
@@ -680,11 +735,7 @@ export default function AdminDashboard() {
                                 <Edit className="h-3.5 w-3.5" />
                               </button>
                               <button
-                                onClick={() => {
-                                  if (confirm("Delete product?")) {
-                                    setProductsList((prev) => prev.filter((productItem) => productItem.id !== p.id));
-                                  }
-                                }}
+                                onClick={() => handleDeleteProduct(p.id)}
                                 className="p-2 text-gray-400 hover:text-red-400 bg-gray-900 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer border border-gray-800"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />

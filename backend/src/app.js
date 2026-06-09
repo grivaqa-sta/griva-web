@@ -26,11 +26,15 @@ app.get("/health", (req, res) => {
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const settingRoutes = require("./routes/settingRoutes");
+const subscriberRoutes = require("./routes/subscriberRoutes");
 
 // Mount API Routers
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/settings", settingRoutes);
+app.use("/api/subscribers", subscriberRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

@@ -145,7 +145,7 @@ export default function AnnouncementBar() {
 
           {/* Zone B: Exclusive Deals CTA */}
           <Link
-            href="/exclusive-deals"
+            href="/exclusive-offers"
             className="group w-1/2 h-full flex items-center justify-center gap-1.5 px-3 lg:px-4 bg-black/25 hover:bg-black/40 border-l border-white/10 transition-colors duration-200 cursor-pointer whitespace-nowrap"
           >
             <span className="font-body text-[8px] lg:text-[10px] font-semibold text-white tracking-wide">

@@ -122,7 +122,11 @@ function loadFromStorage(): AdminSettings {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaults;
     const parsed = JSON.parse(raw);
-    return { ...defaults, ...parsed };
+    return {
+      ...defaults,
+      ...parsed,
+      cmsCategories: defaults.cmsCategories,
+    };
   } catch {
     return defaults;
   }

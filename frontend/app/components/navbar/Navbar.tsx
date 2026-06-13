@@ -65,9 +65,10 @@ export default function Navbar() {
 
   return (
     <div>
+      <div aria-hidden="true" className="h-19 sm:h-20" />
       <header
-        className={`w-full border-b border-gray-100 bg-white transition-all duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-[10001]" : "z-40"
-          } ${scrolled ? "fixed top-[28px] sm:top-10 py-2 sm:shadow-md shadow-none" : "sticky top-[28px] sm:top-10 py-2"}`}
+        className={`fixed left-0 right-0 top-7 sm:top-10 w-full border-b border-gray-100 bg-white transition-shadow duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
+          } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
 
       >
         {/* Desktop and Tablet Navbar Content (Visible on screens >= 640px) */}
@@ -179,7 +180,7 @@ export default function Navbar() {
               </div>
               <div className="text-left leading-tight">
                 <p className="text-[10px] text-gray-400">{userState.isLoggedIn ? "Account" : "Welcome"}</p>
-                <p className="text-xs font-bold text-black group-hover:text-orange-500 transition-colors truncate max-w-[80px]">
+                <p className="text-xs font-bold text-black group-hover:text-orange-500 transition-colors truncate max-w-20">
                   {userState.isLoggedIn ? userState.user?.name : "Sign In"}
                 </p>
               </div>

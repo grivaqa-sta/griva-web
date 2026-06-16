@@ -67,10 +67,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const storedUser = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("griva_user");
       const storedAddresses = localStorage.getItem("griva_addresses");
       const storedOrders = localStorage.getItem("griva_orders");
-      
+
       // Fallback for previous single address storage
       const legacyAddress = localStorage.getItem("griva_address");
       let addresses: Address[] = [];
@@ -82,7 +83,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       setState((prev) => ({
         ...prev,
-        isLoggedIn: !!storedUser,
+        isLoggedIn: !!token,
         user: storedUser ? JSON.parse(storedUser) : null,
         addresses,
         orders: storedOrders ? JSON.parse(storedOrders) : [],
@@ -109,12 +110,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const login = (user: User) => {
     setState((prev) => ({ ...prev, isLoggedIn: true, user }));
-    localStorage.setItem("token", JSON.stringify(user));
+    // Store user info separately — do NOT overwrite "token" (the raw JWT)
+    localStorage.setItem("griva_user", JSON.stringify(user));
   };
 
   const logout = () => {
-    setState((prev) => ({ ...prev, isLoggedIn: false, user: null }));
+    setState((prev) => ({ ...prev, isLoggedIn: false, user: null, profileData: null }));
     localStorage.removeItem("token");
+    localStorage.removeItem("griva_user");
   };
 
   const addAddress = (address: Address) => {

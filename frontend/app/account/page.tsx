@@ -49,6 +49,7 @@ export default function AccountPage() {
         setProfileError("");
         try {
           const data = await authService.getProfile();
+          console.log("Profile data:", data);
           if (data.success) {
             setProfile(data.user);
           } else {

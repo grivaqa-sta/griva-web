@@ -3,11 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Eye, EyeOff, Lock, Mail, ShieldAlert } from "lucide-react";
-import { loginApi } from "../../utils/api";
-
-const FALLBACK_EMAIL = "admin@griva.qa";
-const FALLBACK_PASSWORD = "AdminPassword123!";
-const ADMIN_KEY = "griva_admin_auth";
+import { authService } from "@/app/services/auth.service";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -23,19 +19,10 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      // Try backend first
-      const result = await loginApi(email, password);
+      const result = await authService.login({ email, password });
       if (result && result.token) {
-        localStorage.setItem(ADMIN_KEY, "true");
         localStorage.setItem("token", result.token);
-        localStorage.setItem("admin_user", JSON.stringify(result.user));
-        router.push("/admin");
-        return;
-      }
-
-      // Fallback to hardcoded credentials if backend offline
-      if (email === FALLBACK_EMAIL && password === FALLBACK_PASSWORD) {
-        localStorage.setItem(ADMIN_KEY, "true");
+        localStorage.setItem("user", JSON.stringify(result.user));
         router.push("/admin");
         return;
       }
@@ -91,7 +78,7 @@ export default function AdminLoginPage() {
                 <input
                   type="email"
                   required
-                  placeholder="admin@griva.qa"
+                  placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-white border border-orange-500/30 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
@@ -142,14 +129,18 @@ export default function AdminLoginPage() {
                 </>
               )}
             </button>
-          </form>
 
-          {/* Credentials hint */}
-          <div className="mt-6 p-3 rounded-xl bg-orange-500/5 border border-orange-500/20">
-            <p className="text-center text-[10px] text-gray-500 font-semibold">
-              Default: <span className="text-orange-500 font-bold">admin@griva.qa</span> / <span className="text-orange-500 font-bold">AdminPassword123!</span>
-            </p>
-          </div>
+            {/* Forgot Password */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => router.push("/admin/auth/forgot-password")}
+                className="text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors cursor-pointer"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

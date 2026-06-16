@@ -172,7 +172,7 @@ export default function Navbar() {
 
             {/* User */}
             <Link
-              href={userState.isLoggedIn ? "/account" : "/login"}
+              href={userState.isLoggedIn ? "/account" : "/auth/login"}
               className="relative flex items-center gap-2 group cursor-pointer"
             >
               <div className="relative">
@@ -226,7 +226,7 @@ export default function Navbar() {
 
             {/* User Button */}
             <Link
-              href={userState.isLoggedIn ? "/account" : "/login"}
+              href={userState.isLoggedIn ? "/account" : "/auth/login"}
               className="p-2 text-gray-700 hover:text-orange-500 transition-colors rounded-lg"
             >
               <User size={20} />
@@ -333,9 +333,8 @@ export default function Navbar() {
             {/* Home */}
             <Link
               href="/"
-              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
-                pathname === "/" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
-              }`}
+              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${pathname === "/" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
+                }`}
             >
               <Home size={20} />
               <span className="text-[10px] mt-1 font-medium tracking-tight">Home</span>
@@ -368,10 +367,9 @@ export default function Navbar() {
 
             {/* Account / User */}
             <Link
-              href={userState.isLoggedIn ? "/account" : "/login"}
-              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
-                pathname === "/account" || pathname === "/login" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
-              }`}
+              href={userState.isLoggedIn ? "/account" : "/auth/login"}
+              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${pathname === "/account" || pathname === "/auth/login" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
+                }`}
             >
               <User size={20} />
               <span className="text-[10px] mt-1 font-medium tracking-tight">

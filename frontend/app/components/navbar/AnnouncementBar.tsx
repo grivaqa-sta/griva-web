@@ -96,8 +96,8 @@ export default function AnnouncementBar() {
     trend === "up"
       ? "text-[#4ADE80] font-bold scale-[1.03]"
       : trend === "down"
-      ? "text-neutral-300"
-      : "text-white";
+        ? "text-neutral-300"
+        : "text-white";
 
   return (
     <div

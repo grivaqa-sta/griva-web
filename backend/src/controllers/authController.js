@@ -179,9 +179,13 @@ exports.forgotPassword = async (req, res, next) => {
       resetPasswordToken: resetToken,
       resetPasswordExpire,
     });
-
-    const resetUrl =`${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
+    let resetUrl;
+    if(user.role === "customer"){
+        resetUrl =`${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
+    }else{
+        resetUrl =`${process.env.FRONTEND_URL}/admin/auth/reset-password/${resetToken}`;
+    }
+    
     console.log("Reset URL:", resetUrl);
 
     return res.status(200).json({

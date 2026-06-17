@@ -1,32 +1,6 @@
-/**
- * USER MODEL (User.js)
- * 
- * ─── JAVA COMPARISON ──────────────────────────────────────────────────────────
- * In Spring Boot, this is equivalent to your @Entity class (e.g. User.java).
- * Fields are mapped using class variables and annotations (@Id, @Column, @Enumerated).
- * Lifecycle hooks like @PrePersist/@PreUpdate map directly to Sequelize "hooks".
- * 
- * ─── SUPABASE COMPARISON ──────────────────────────────────────────────────────
- * In Supabase, you do not write model code; you create tables via SQL in the 
- * dashboard (auth.users schema). Here, we explicitly declare the model 
- * so our JavaScript codebase knows exactly what table attributes exist.
- * 
- * ─── REAL-WORLD USE CASE ──────────────────────────────────────────────────────
- * Authentication tables must never store raw passwords. We use hooks to run 
- * bcrypt hashing before saving user records to database columns.
- * 
- * ─── WITHOUT THIS ─────────────────────────────────────────────────────────────
- * Without a defined Sequelize model, JavaScript has no programmatic schema awareness, 
- * meaning you'd have to write raw, manual SQL queries for every auth transaction.
- * 
- * ─── UNIQUE SENIOR TIPS ───────────────────────────────────────────────────────
- * Always select a specific set of attributes in queries (e.g., exclude password hashes 
- * by default using defaultScopes) to protect user passwords from leaking in API responses.
- */
-
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
-const bcrypt = require("bcryptjs"); // Used to hash user passwords safely
+const bcrypt = require("bcryptjs");
 
 const User = sequelize.define(
   "User",
@@ -34,38 +8,66 @@ const User = sequelize.define(
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
-      primaryKey: true, // JPA @Id equivalent
+      primaryKey: true,
     },
+
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
+
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
+      set(value) {
+        if (value) {
+          this.setDataValue("email", value.toLowerCase().trim());
+        }
+      },
       validate: {
-        isEmail: true, // Auto-validates email format before saving (like Hibernate Validation)
+        isEmail: true,
+        notEmpty: true,
       },
     },
+
     password: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    role: {
-      type: DataTypes.STRING,
-      defaultValue: "customer", // Roles: "customer" or "admin"
       validate: {
-        isIn: [["customer", "admin"]], // Prevents invalid role entries (like Java Enums)
+        len: [6, 255],
       },
+    },
+
+    role: {
+      type: DataTypes.ENUM("customer", "admin"),
+      allowNull: false,
+      defaultValue: "customer",
+    },
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    resetPasswordExpire: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt columns
+    timestamps: true,
+
     hooks: {
-      // JPA Lifecycle @PrePersist / @PreUpdate equivalent: hashes password before database write
       beforeCreate: async (user) => {
         if (user.password) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }
       },
+
       beforeUpdate: async (user) => {
         if (user.changed("password")) {
           const salt = await bcrypt.genSalt(10);
@@ -73,22 +75,35 @@ const User = sequelize.define(
         }
       },
     },
+
     defaultScope: {
-      // Excludes sensitive password from default query queries
-      attributes: { exclude: ["password"] },
-    },
-    scopes: {
-      // Scope to include password when executing authentication / logins
-      withPassword: {
-        attributes: {},
+      attributes: {
+        exclude: ["password"],
       },
     },
-  }
+
+    scopes: {
+      withPassword: {
+        attributes: {
+          include: ["password"],
+        },
+      },
+    },
+  },
 );
 
-// Prototype helper method (like standard helper methods on a Java class instance)
+/**
+ * Compare entered password with hashed password
+ */
 User.prototype.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+User.associate = (models) => {
+  User.hasMany(models.Address, {
+    foreignKey: "userId",
+    as: "addresses",
+  });
 };
 
 module.exports = User;

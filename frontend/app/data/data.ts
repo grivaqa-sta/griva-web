@@ -18,11 +18,7 @@ import iwatch from "../../public/images/iwach.png";
 import macb from "../../public/images/macb.png";
 import iphone13 from "../../public/images/iphone13.png"; // Kept for image references if needed
 import bsspeaker from "../../public/images/bspeaker.png";
-import gamejoystic from "../../public/images/gamejoystic.png";
-import laptop from "../../public/images/laptop.jpeg";
-import catespeaker from "../../public/images/catespeaker.png";
-import catetv from "../../public/images/catetv.png";
-import cateheadphone from "../../public/images/cateheadphone.png";
+
 import nbg from "../../public/images/nbg.png";
 import headphoneNew from "../../public/images/headphonenew.png";
 import gamejoysticnew from "../../public/images/gamejoysticnew.png";
@@ -31,6 +27,13 @@ import headphone123 from "../../public/images/HeadphoneNew@.png";
 import banner1 from "../../public/images/banner1.png";
 import banner2 from "../../public/images/banner2.png";
 import banner3 from "../../public/images/banner3.png";
+
+import baby from "../../public/images/category/babby.png"
+import gadget from "../../public/images/category/gadgets.png"
+import gaming from "../../public/images/category/gamming-accessories.png"
+import kitchen from "../../public/images/category/home-applience.png"
+import perfume from "../../public/images/category/perfum.png"
+import toy from "../../public/images/category/toys.png"
 
 // ───────────────────────────────────────────────────────── 
 // Products (Gaggets/Wearables/Laptops/etc. No Mobiles!)
@@ -609,38 +612,38 @@ const categories: CategoryItem[] = [
   {
     title: "Perfumes & Buhoor",
     href: "/category/perfumes-buhoor",
-    image: "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=600",
+    image: perfume,
   },
   {
     title: "Toys",
     href: "/category/toys",
-    image: "https://images.unsplash.com/photo-1558060370-d644479cb6f7?q=80&w=600",
+    image: toy,
   },
   {
     title: "Baby Products",
     href: "/category/baby-products",
-    image: "https://images.unsplash.com/photo-1515488042361-404e9250afef?q=80&w=600",
+    image: baby,
   },
   {
     title: "Gadgets & Electronics",
     href: "/category/gadgets-electronics",
-    image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?q=80&w=600",
+    image: gadget,
   },
   {
     title: "Gaming Accessories",
     href: "/category/gaming-accessories",
-    image: "https://images.unsplash.com/photo-1600861195091-690c92f1d2cc?q=80&w=600",
+    image: gaming,
   },
   {
     title: "Kitchen Appliances & Essentials",
     href: "/category/kitchen-appliances-essentials",
-    image: "https://images.unsplash.com/photo-1588854337236-6889d631faa8?q=80&w=600",
+    image: kitchen,
   },
 ];
 
 const categoriesTree = [
   {
-    title: "Perfumes & Buhoor",
+    title: "Perfumes & Buhoor" ,
     href: "/category/perfumes-buhoor",
     image: "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=600",
     subcategories: [

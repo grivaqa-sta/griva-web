@@ -1,5 +1,103 @@
 import { StaticImageData } from "next/image";
 
+
+
+
+// ─────────────────────────────────────────────────────────
+//authentication
+// ─────────────────────────────────────────────────────────
+export interface AuthUser {
+  id: number;
+  name?: string;
+  email: string;
+  role: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  message?: string;
+  token?: string;
+  user?: AuthUser;
+}
+
+export interface GenericMessageResponse {
+  message: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  resetUrl: string;
+  success: boolean;
+}
+
+export interface ProfileData {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
+// ─────────────────────────────────────────────────────────
+//address
+// ─────────────────────────────────────────────────────────
+
+
+export interface AddressRequest {
+  label: "home" | "office" | "other";
+  fullName: string;
+  mobile: string;
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  city: string;
+  district?: string;
+  state: string;
+  country?: string;
+  pincode: string;
+  isDefault?: boolean;
+}
+
+export interface Address {
+  id: number;
+  userId: number;
+  label: "home" | "office" | "other";
+  fullName: string;
+  mobile: string;
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  city: string;
+  district?: string;
+  state: string;
+  country: string;
+  pincode: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────────────────────
 // Core Product Types
 // ─────────────────────────────────────────────────────────

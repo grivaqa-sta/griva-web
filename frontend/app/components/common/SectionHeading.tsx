@@ -19,7 +19,7 @@ export default function SectionHeading({
   return (
     <div className="flex items-end justify-between border-b border-gray-100 pb-4 ">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        <h2 className="text-[10px] font-bold tracking-tight text-gray-900 sm:text-3xl">
           {title}
         </h2>
         {subtitle && (

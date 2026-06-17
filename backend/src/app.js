@@ -54,6 +54,7 @@ const flashSaleRoutes = require("./routes/flashSaleRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
+const addressRoutes = require("./routes/addressRoutes");
 
 // Mount API Routers
 app.use("/api/auth", authRoutes);
@@ -66,6 +67,7 @@ app.use("/api/flash-sales", flashSaleRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/banners", bannerRoutes);
+app.use("/api/addresses", addressRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  LayoutDashboard, Package, Sliders, Users, Search, Bell, Plus, Trash2, RefreshCw, TrendingUp, DollarSign, ShoppingCart, Percent, ChevronRight, Edit, ArrowUpRight, Mail, Send, Eye, AlertTriangle, X, Sparkles, ToggleLeft, ToggleRight, Image as ImageIcon, CheckCircle, EyeOff
+  Plus, Trash2, Edit, ToggleLeft, ToggleRight, Image as ImageIcon, Upload, Check, Loader
 } from 'lucide-react';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+const CATEGORY_SLUGS = [
+  { slug: 'toys', label: 'Toys & Games', defaultBanner: '/banners/banner_toys.png' },
+  { slug: 'perfumes-buhoor', label: 'Perfumes & Buhoor', defaultBanner: '/banners/banner_perfumes-buhoor.png' },
+  { slug: 'gadgets-electronics', label: 'Gadgets & Electronics', defaultBanner: '/banners/banner_gadgets-electronics.png' },
+  { slug: 'gaming-accessories', label: 'Gaming Accessories', defaultBanner: '/banners/banner_gaming-accessories.png' },
+  { slug: 'baby-products', label: 'Baby Products', defaultBanner: '/banners/banner_baby-products.png' },
+  { slug: 'kitchen-appliances-essentials', label: 'Kitchen Appliances', defaultBanner: '/banners/banner_kitchen-appliances-essentials.png' },
+];
+
 interface BannersTabProps {
   slidesList: any[];
   categoriesList: any[];
@@ -14,6 +26,45 @@ interface BannersTabProps {
 
 export default function BannersTab(props: BannersTabProps) {
   const { slidesList, categoriesList, offersList, handleToggleSlide, handleToggleOffer, mobileBannersList, setMobileBannersList } = props;
+
+  // State for per-category banner management
+  const [categoryBanners, setCategoryBanners] = useState<Record<string, string>>(
+    Object.fromEntries(CATEGORY_SLUGS.map(c => [c.slug, c.defaultBanner]))
+  );
+  const [uploadingSlug, setUploadingSlug] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const handleCategoryBannerUpload = async (slug: string, file: File) => {
+    setUploadingSlug(slug);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${API_BASE_URL}/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCategoryBanners(prev => ({ ...prev, [slug]: data.url }));
+        setUploadSuccess(slug);
+        setTimeout(() => setUploadSuccess(null), 2500);
+      }
+    } catch (e) {
+      console.error('Banner upload failed', e);
+    } finally {
+      setUploadingSlug(null);
+    }
+  };
+
+  const handleCategoryBannerURLSave = (slug: string, url: string) => {
+    setCategoryBanners(prev => ({ ...prev, [slug]: url }));
+    setUploadSuccess(slug);
+    setTimeout(() => setUploadSuccess(null), 2500);
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in-50 duration-300">
 
@@ -244,6 +295,107 @@ export default function BannersTab(props: BannersTabProps) {
                   })}
                 </div>
               </div>
+
+              {/* Section D: Category Hero Banners — NEW PREMIUM FEATURE */}
+              <div className="space-y-4">
+                <div className="pb-3 border-b border-orange-500/20">
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">D. Category Hero Banner Images</h4>
+                  <p className="text-[10px] text-gray-400 mt-1">Upload or change the full-width hero banner image shown at the top of each category page. Supports JPEG, PNG, WebP.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {CATEGORY_SLUGS.map((cat) => {
+                    const currentBanner = categoryBanners[cat.slug];
+                    const isUploading = uploadingSlug === cat.slug;
+                    const isSuccess = uploadSuccess === cat.slug;
+
+                    return (
+                      <div key={cat.slug} className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
+                        {/* Banner preview */}
+                        <div className="relative h-32 bg-gray-100 overflow-hidden">
+                          {currentBanner ? (
+                            <img
+                              src={currentBanner.startsWith('/') ? currentBanner : `http://localhost:8080${currentBanner}`}
+                              alt={cat.label}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                              <ImageIcon className="h-10 w-10" />
+                            </div>
+                          )}
+                          {/* Dark overlay with category label */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-3">
+                            <span className="text-xs font-bold text-white">{cat.label}</span>
+                          </div>
+                          {/* Success flash */}
+                          {isSuccess && (
+                            <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                              <div className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
+                                <Check className="h-3.5 w-3.5" /> Updated!
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Upload controls */}
+                        <div className="p-4 space-y-3">
+                          {/* File upload button */}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            ref={(el) => { fileInputRefs.current[cat.slug] = el; }}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleCategoryBannerUpload(cat.slug, file);
+                            }}
+                          />
+                          <button
+                            onClick={() => fileInputRefs.current[cat.slug]?.click()}
+                            disabled={isUploading}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                          >
+                            {isUploading ? (
+                              <><Loader className="h-3.5 w-3.5 animate-spin" /> Uploading...</>
+                            ) : (
+                              <><Upload className="h-3.5 w-3.5" /> Upload New Banner Image</>
+                            )}
+                          </button>
+
+                          {/* Or paste URL */}
+                          <div className="flex gap-2">
+                            <input
+                              type="url"
+                              placeholder="Or paste image URL..."
+                              className="flex-1 text-[10px] border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-400"
+                              onBlur={(e) => {
+                                if (e.target.value.startsWith('http')) {
+                                  handleCategoryBannerURLSave(cat.slug, e.target.value);
+                                }
+                              }}
+                            />
+                            <button
+                              className="px-3 bg-gray-50 border border-gray-200 text-[10px] font-bold text-gray-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                              onClick={() => {
+                                const input = fileInputRefs.current[cat.slug]?.previousElementSibling as HTMLInputElement;
+                                // handled via onBlur
+                              }}
+                            >
+                              Set URL
+                            </button>
+                          </div>
+
+                          <p className="text-[9px] text-gray-400 text-center">
+                            Recommended: 1400×420px, JPEG/WebP. Max 5MB.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
   );
 }

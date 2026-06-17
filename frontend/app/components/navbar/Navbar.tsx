@@ -33,6 +33,9 @@ export default function Navbar() {
   const { searchQuery, setSearchQuery, filters, setFilters } = useSearch();
   const { state: userState } = useUser();
 
+  // Only treat user as logged-in on the frontend if they are a customer (not admin)
+  const isCustomerLoggedIn = userState.isLoggedIn && userState.role !== "admin";
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -65,9 +68,10 @@ export default function Navbar() {
 
   return (
     <div>
+      <div aria-hidden="true" className="h-19 sm:h-20" />
       <header
-        className={`w-full border-b border-gray-100 bg-white transition-all duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-[10001]" : "z-40"
-          } ${scrolled ? "fixed top-[28px] sm:top-10 py-2 sm:shadow-md shadow-none" : "sticky top-[28px] sm:top-10 py-2"}`}
+        className={`fixed left-0 right-0 top-7 sm:top-10 w-full border-b border-gray-100 bg-white transition-shadow duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
+          } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
 
       >
         {/* Desktop and Tablet Navbar Content (Visible on screens >= 640px) */}
@@ -171,16 +175,16 @@ export default function Navbar() {
 
             {/* User */}
             <Link
-              href={userState.isLoggedIn ? "/account" : "/login"}
+              href={isCustomerLoggedIn ? "/account" : "/auth/login"}
               className="relative flex items-center gap-2 group cursor-pointer"
             >
               <div className="relative">
                 <User size={18} className="text-black group-hover:text-orange-500 transition-colors" />
               </div>
               <div className="text-left leading-tight">
-                <p className="text-[10px] text-gray-400">{userState.isLoggedIn ? "Account" : "Welcome"}</p>
-                <p className="text-xs font-bold text-black group-hover:text-orange-500 transition-colors truncate max-w-[80px]">
-                  {userState.isLoggedIn ? userState.user?.name : "Sign In"}
+                <p className="text-[10px] text-gray-400">{isCustomerLoggedIn ? "Account" : "Welcome"}</p>
+                <p className="text-xs font-bold text-black group-hover:text-orange-500 transition-colors truncate max-w-20">
+                  {isCustomerLoggedIn ? userState.user?.name : "Sign In"}
                 </p>
               </div>
             </Link>
@@ -225,7 +229,7 @@ export default function Navbar() {
 
             {/* User Button */}
             <Link
-              href={userState.isLoggedIn ? "/account" : "/login"}
+              href={isCustomerLoggedIn ? "/account" : "/auth/login"}
               className="p-2 text-gray-700 hover:text-orange-500 transition-colors rounded-lg"
             >
               <User size={20} />
@@ -332,9 +336,8 @@ export default function Navbar() {
             {/* Home */}
             <Link
               href="/"
-              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
-                pathname === "/" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
-              }`}
+              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${pathname === "/" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
+                }`}
             >
               <Home size={20} />
               <span className="text-[10px] mt-1 font-medium tracking-tight">Home</span>
@@ -367,14 +370,13 @@ export default function Navbar() {
 
             {/* Account / User */}
             <Link
-              href={userState.isLoggedIn ? "/account" : "/login"}
-              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
-                pathname === "/account" || pathname === "/login" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
-              }`}
+              href={isCustomerLoggedIn ? "/account" : "/auth/login"}
+              className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${pathname === "/account" || pathname === "/auth/login" ? "text-orange-500" : "text-gray-600 hover:text-orange-500"
+                }`}
             >
               <User size={20} />
               <span className="text-[10px] mt-1 font-medium tracking-tight">
-                {userState.isLoggedIn ? "Account" : "Sign In"}
+                {isCustomerLoggedIn ? "Account" : "Sign In"}
               </span>
             </Link>
 

@@ -8,6 +8,7 @@ import TrendingProductsSection from "./components/home/TrendingProductsSection";
 import NewsletterSection from "./components/home/NewsletterSection";
 import DealOfTheDaySection from "./components/home/DealOfTheDaySection";
 import ProductPromoBanner from "./components/home/ProductPromoBanner";
+import LazyFridayDeals from "./components/home/LazyFridayDeals";
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       <div className="px-0 sm:px-4 md:px-6 lg:px-8 pb-1 bg-[#ffff]">
         <CategorySection />
         <HeroBanner />
+        <LazyFridayDeals />
         <DealOfTheDaySection />
         <ProductSection />
         <PromoBannerSection />

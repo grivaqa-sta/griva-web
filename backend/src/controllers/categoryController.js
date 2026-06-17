@@ -71,7 +71,7 @@ exports.createCategory = async (req, res, next) => {
 exports.updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, href, image_url, parent_id } = req.body;
+    const { title, href, image_url, banner_image_url, parent_id } = req.body;
 
     const category = await Category.findByPk(id);
     if (!category) {
@@ -81,6 +81,7 @@ exports.updateCategory = async (req, res, next) => {
     if (title !== undefined) category.title = title;
     if (href !== undefined) category.href = href;
     if (image_url !== undefined) category.image_url = image_url;
+    if (banner_image_url !== undefined) category.banner_image_url = banner_image_url;
     if (parent_id !== undefined) category.parent_id = parent_id || null;
 
     await category.save();

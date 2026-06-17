@@ -13,6 +13,8 @@ interface CategoryMetadata {
   title: string;
   tagline: string;
   gradient: string;
+  bannerImage: string; // Path to hero banner image under /public/banners/
+  accentColor: string; // Tailwind color for glow accents
   icon: React.ReactNode;
 }
 
@@ -21,36 +23,48 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     title: "Perfumes & Buhoor",
     tagline: "Premium French perfumes, local Buhoor & Oud oils",
     gradient: "from-amber-700 via-rose-800 to-amber-900",
+    bannerImage: "/banners/banner_perfumes-buhoor.png",
+    accentColor: "#f59e0b",
     icon: <Sparkles className="h-6 w-6 text-white" />,
   },
   "toys": {
     title: "Toys & Games",
     tagline: "Learning toys, Islamic learning kits & RC vehicles",
     gradient: "from-sky-500 via-indigo-600 to-purple-700",
+    bannerImage: "/banners/banner_toys.png",
+    accentColor: "#f97316",
     icon: <Smile className="h-6 w-6 text-white" />,
   },
   "baby-products": {
     title: "Baby Products",
     tagline: "Baby storage, play mats, bath access & bouncers",
     gradient: "from-teal-400 via-cyan-500 to-emerald-600",
+    bannerImage: "/banners/banner_baby-products.png",
+    accentColor: "#34d399",
     icon: <Baby className="h-6 w-6 text-white" />,
   },
   "gadgets-electronics": {
     title: "Gadgets & Electronics",
     tagline: "Power banks, premium chargers, cables & smart wearables",
     gradient: "from-blue-600 via-indigo-700 to-purple-800",
+    bannerImage: "/banners/banner_gadgets-electronics.png",
+    accentColor: "#3b82f6",
     icon: <Smartphone className="h-6 w-6 text-white" />,
   },
   "gaming-accessories": {
     title: "Gaming Accessories",
     tagline: "Mobile game triggers, cooling fans & high-grade audio",
-    gradient: "from-violet-600 via-purple-750 to-fuchsia-850",
+    gradient: "from-violet-600 via-purple-700 to-fuchsia-800",
+    bannerImage: "/banners/banner_gaming-accessories.png",
+    accentColor: "#8b5cf6",
     icon: <Gamepad2 className="h-6 w-6 text-white" />,
   },
   "kitchen-appliances-essentials": {
     title: "Kitchen Appliances & Essentials",
     tagline: "Storage racks, automated coffee makers & smart egg boilers",
     gradient: "from-orange-500 via-amber-600 to-red-700",
+    bannerImage: "/banners/banner_kitchen-appliances-essentials.png",
+    accentColor: "#f97316",
     icon: <Utensils className="h-6 w-6 text-white" />,
   },
 };
@@ -72,6 +86,8 @@ export default function CategoryPage() {
     title: slug.charAt(0).toUpperCase() + slug.slice(1),
     tagline: "Browse our premium selected catalog products",
     gradient: "from-zinc-800 via-zinc-900 to-black",
+    bannerImage: "",
+    accentColor: "#f97316",
     icon: <Sparkles className="h-6 w-6 text-white" />,
   };
 
@@ -136,21 +152,83 @@ export default function CategoryPage() {
           <span className="text-gray-900 capitalize font-bold">{meta.title}</span>
         </nav>
 
-        {/* Dynamic Glassmorphic Category Banner */}
-        <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${meta.gradient} p-8 md:p-12 text-white shadow-xl shadow-zinc-950/10`}>
-          <div className="absolute -right-16 -top-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute right-10 bottom-10 opacity-10 blur-xs">
-            {meta.icon}
-          </div>
-          <div className="relative max-w-2xl space-y-3">
+        {/* Premium Full-Bleed Category Hero Banner */}
+        <div
+          className="relative overflow-hidden rounded-3xl text-white shadow-2xl"
+          style={{
+            minHeight: "220px",
+            background: meta.bannerImage
+              ? `url(${meta.bannerImage}) center/cover no-repeat`
+              : `linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)`,
+          }}
+        >
+          {/* Dark overlay for text legibility — lighter on right to show image */}
+          <div
+            className="absolute inset-0 rounded-3xl"
+            style={{
+              background: meta.bannerImage
+                ? "linear-gradient(to right, rgba(10,10,15,0.88) 0%, rgba(10,10,15,0.6) 50%, rgba(10,10,15,0.15) 100%)"
+                : "rgba(0,0,0,0.3)",
+            }}
+          />
+
+          {/* Subtle orange glow accent top-left */}
+          <div
+            className="absolute -top-10 -left-10 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"
+            style={{ backgroundColor: meta.accentColor }}
+          />
+
+          {/* Bottom orange glow line accent */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-0.5 opacity-60"
+            style={{ background: `linear-gradient(to right, ${meta.accentColor}, transparent)` }}
+          />
+
+          {/* Content */}
+          <div className="relative p-8 md:p-12 max-w-2xl space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
+              <div
+                className="p-2.5 rounded-xl border border-white/20 backdrop-blur-md"
+                style={{ background: "rgba(255,255,255,0.08)" }}
+              >
                 {meta.icon}
               </div>
-              <span className="text-[10px] font-black tracking-widest uppercase text-white/80">Category Catalog</span>
+              <span className="text-[10px] font-black tracking-[3px] uppercase text-white/60">
+                Category Catalog
+              </span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{meta.title}</h1>
-            <p className="text-sm md:text-base text-white/85 leading-relaxed">{meta.tagline}</p>
+
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+              {meta.title.includes("&") ? (
+                <>
+                  {meta.title.split("&")[0]}
+                  <span style={{ color: meta.accentColor }}>&</span>
+                  {meta.title.split("&")[1]}
+                </>
+              ) : meta.title}
+            </h1>
+
+            <p className="text-sm md:text-base text-white/75 leading-relaxed max-w-md">
+              {meta.tagline}
+            </p>
+
+            {/* Trust badges row */}
+            <div className="flex flex-wrap gap-3 pt-2">
+              {[
+                { icon: "🚚", label: "Qatar-Wide Delivery" },
+                { icon: "💳", label: "Cash on Delivery" },
+                { icon: "↩️", label: "7-Day Returns" },
+              ].map((badge) => (
+                <span
+                  key={badge.label}
+                  className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-full border border-white/20"
+                  style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}
+                >
+                  <span>{badge.icon}</span>
+                  <span className="text-white/80">{badge.label}</span>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 

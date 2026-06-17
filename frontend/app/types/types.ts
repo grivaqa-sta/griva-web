@@ -50,6 +50,44 @@ export interface ProfileData {
 }
 
 
+// ─────────────────────────────────────────────────────────
+//address
+// ─────────────────────────────────────────────────────────
+
+
+export interface AddressRequest {
+  label: "home" | "office" | "other";
+  fullName: string;
+  mobile: string;
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  city: string;
+  district?: string;
+  state: string;
+  country?: string;
+  pincode: string;
+  isDefault?: boolean;
+}
+
+export interface Address {
+  id: number;
+  userId: number;
+  label: "home" | "office" | "other";
+  fullName: string;
+  mobile: string;
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  city: string;
+  district?: string;
+  state: string;
+  country: string;
+  pincode: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 
 

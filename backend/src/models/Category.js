@@ -47,6 +47,11 @@ const Category = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    banner_image_url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "Full-width hero banner image for this category page",
+    },
     parent_id: {
       type: DataTypes.INTEGER,
       allowNull: true,

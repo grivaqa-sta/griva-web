@@ -1,6 +1,7 @@
 const Cart = require("../models/Cart");
 const CartItem = require("../models/CartItem");
 const Product = require("../models/Product");
+const SubCategory = require("../models/SubCategory");
 const Category = require("../models/Category");
 
 /**
@@ -20,8 +21,14 @@ const getFormattedCart = async (userId) => {
         as: "product",
         include: [
           {
-            model: Category,
-            as: "category",
+            model: SubCategory,
+            as: "subcategory",
+            include: [
+              {
+                model: Category,
+                as: "category",
+              },
+            ],
           },
         ],
       },
@@ -44,7 +51,7 @@ const getFormattedCart = async (userId) => {
       quantity: item.quantity,
       selectedColor: item.selected_color,
       selectedStorage: item.selected_storage,
-      category: p && p.category ? p.category.title : "Gadgets",
+      category: p && p.subcategory && p.subcategory.category ? p.subcategory.category.title : "Gadgets",
     };
   });
 

@@ -308,21 +308,21 @@ exports.getAnalytics = async (req, res, next) => {
         {
           model: OrderItem,
           as: "items",
-          include: {
+          include: [{
             model: Product,
             as: "product",
             attributes: ["id", "title", "price"],
-            include: {
+            include: [{
               model: SubCategory,
               as: "subcategory",
               attributes: ["id", "title"],
-              include: {
+              include: [{
                 model: Category,
                 as: "category",
                 attributes: ["id", "title"],
-              }
-            }
-          }
+              }]
+            }]
+          }]
         }
       ]
     });

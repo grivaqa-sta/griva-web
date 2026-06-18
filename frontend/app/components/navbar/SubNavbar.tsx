@@ -1,93 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import { Category, SubCategory } from "@/app/types/types";
+import { categoryService } from "@/app/services/category.service";
 
-const navLinks: {
-  label: string;
-  href: string;
-  badge?: string;
-  badgeColor?: string;
-  items: { label: string; href: string }[];
-}[] = [
-  {
-    label: "Perfumes & Buhoor",
-    href: "/category/perfumes-buhoor",
-    items: [
-      { label: "Perfumes", href: "/category/perfumes-buhoor?sub=perfumes" },
-      { label: "Body Lotion", href: "/category/perfumes-buhoor?sub=body-lotion" },
-      { label: "Car Fragrance", href: "/category/perfumes-buhoor?sub=car-fragrance" },
-      { label: "Buhoor", href: "/category/perfumes-buhoor?sub=buhoor" },
-      { label: "Body Spray", href: "/category/perfumes-buhoor?sub=body-spray" },
-    ],
-  },
-  {
-    label: "Toys & Baby",
-    href: "/category/toys",
-    badge: "New",
-    badgeColor: "bg-green-500",
-    items: [
-      { label: "Newborn Toys", href: "/category/toys?sub=newborn-toys" },
-      { label: "Learning Toys", href: "/category/toys?sub=learning-toys" },
-      { label: "Islamic Learning Toys", href: "/category/toys?sub=islamic-learning-toys" },
-      { label: "Remote Control Cars & Toys", href: "/category/toys?sub=remote-control-cars-toys" },
-      { label: "Metal Toys", href: "/category/toys?sub=metal-toys" },
-      { label: "Baby Clothes Storage", href: "/category/baby-products?sub=baby-clothes-storage" },
-      { label: "Baby Bath Accessories", href: "/category/baby-products?sub=baby-bath-accessories" },
-      { label: "Baby Play Mats", href: "/category/baby-products?sub=baby-play-mats" },
-      { label: "Baby Bouncers & Cradles", href: "/category/baby-products?sub=baby-bouncers-cradles" },
-    ],
-  },
-  {
-    label: "Gadgets & Electronics",
-    href: "/category/gadgets-electronics",
-    items: [
-      { label: "Power Banks", href: "/category/gadgets-electronics?sub=power-banks" },
-      { label: "Chargers", href: "/category/gadgets-electronics?sub=chargers" },
-      { label: "Cables", href: "/category/gadgets-electronics?sub=cables" },
-      { label: "Earphones", href: "/category/gadgets-electronics?sub=earphones" },
-      { label: "Speakers", href: "/category/gadgets-electronics?sub=speakers" },
-      { label: "Screen Protectors", href: "/category/gadgets-electronics?sub=screen-protectors" },
-      { label: "Phone Cases", href: "/category/gadgets-electronics?sub=phone-cases" },
-      { label: "Smartwatches", href: "/category/gadgets-electronics?sub=smartwatches" },
-      { label: "Fitness Bands", href: "/category/gadgets-electronics?sub=fitness-bands" },
-    ],
-  },
-  {
-    label: "Gaming Accessories",
-    href: "/category/gaming-accessories",
-    badge: "Hot",
-    badgeColor: "bg-red-500",
-    items: [
-      { label: "Mobile Game Controllers", href: "/category/gaming-accessories?sub=mobile-game-controllers" },
-      { label: "Triggers", href: "/category/gaming-accessories?sub=triggers" },
-      { label: "Gaming Earbuds", href: "/category/gaming-accessories?sub=gaming-earbuds" },
-      { label: "Gaming Headsets", href: "/category/gaming-accessories?sub=gaming-headsets" },
-      { label: "Phone Coolers", href: "/category/gaming-accessories?sub=phone-coolers" },
-      { label: "Gaming Finger Sleeves", href: "/category/gaming-accessories?sub=gaming-finger-sleeves" },
-      { label: "Gaming Grip Stands", href: "/category/gaming-accessories?sub=gaming-grip-stands" },
-    ],
-  },
-  {
-    label: "Kitchen Essentials",
-    href: "/category/kitchen-appliances-essentials",
-    items: [
-      { label: "Kitchen Rack", href: "/category/kitchen-appliances-essentials?sub=kitchen-rack" },
-      { label: "Shoe Rack", href: "/category/kitchen-appliances-essentials?sub=shoe-rack" },
-      { label: "Washing Machine Rack", href: "/category/kitchen-appliances-essentials?sub=washing-machine-rack" },
-      { label: "Vegetable Rack", href: "/category/kitchen-appliances-essentials?sub=vegetable-rack" },
-      { label: "Electronic Coffee Maker", href: "/category/kitchen-appliances-essentials?sub=electronic-coffee-maker" },
-      { label: "Egg Boilers", href: "/category/kitchen-appliances-essentials?sub=egg-boilers" },
-      { label: "Egg Beaters", href: "/category/kitchen-appliances-essentials?sub=egg-beaters" },
-    ],
-  },
-];
+
+interface CategoryWithSubcategories extends Category {
+  subcategories: SubCategory[];
+}
 
 export default function SubNavbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [navLinks, setNavLinks] = useState<CategoryWithSubcategories[]>([]);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await categoryService.getCategoriesWithSubcategories();
+        console.log("API response:", res);
+
+        const raw: CategoryWithSubcategories[] =
+          Array.isArray(res) ? res :
+          Array.isArray(res?.data) ? res.data :
+          Array.isArray(res?.categories) ? res.categories :
+          [];
+
+        setNavLinks(raw.filter((cat) => cat.is_active));
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+        try {
+          const fallbackRes = await categoryService.getCategories();
+          const raw: Category[] =
+            Array.isArray(fallbackRes) ? fallbackRes :
+            Array.isArray(fallbackRes?.data) ? fallbackRes.data :
+            Array.isArray(fallbackRes?.categories) ? fallbackRes.categories :
+            [];
+
+          setNavLinks(
+            raw
+              .filter((cat) => cat.is_active)
+              .map((cat) => ({ ...cat, subcategories: [] }))
+          );
+        } catch (fallbackErr) {
+          console.error("Fallback fetch also failed:", fallbackErr);
+        }
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   return (
     <div className="hidden lg:block w-full border-y border-gray-200 bg-white px-4 sm:px-6 lg:px-8 xl:px-10">
@@ -97,11 +62,15 @@ export default function SubNavbar() {
         <nav className="flex items-center gap-1">
           {navLinks.map((link) => {
             const isActive = pathname.startsWith(link.href);
+            const activeSubcategories = link.subcategories?.filter(
+              (sub) => sub.is_active
+            ) ?? [];
+
             return (
               <div
-                key={link.label}
+                key={link.id}
                 className="relative flex h-14 items-center"
-                onMouseEnter={() => setActiveDropdown(link.label)}
+                onMouseEnter={() => setActiveDropdown(link.slug)}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
                 <Link
@@ -109,34 +78,31 @@ export default function SubNavbar() {
                   className={`relative flex items-center gap-1 px-3 text-[13px] font-semibold transition-colors duration-200 whitespace-nowrap
                     ${isActive ? "text-orange-500" : "text-black hover:text-orange-500"}`}
                 >
-                  {/* Active underline indicator */}
                   {isActive && (
                     <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-orange-500" />
                   )}
-                  {link.label}
-                  {link.badge && (
-                    <span className={`rounded px-1 py-[1px] text-[9px] font-bold uppercase text-white leading-none ${link.badgeColor}`}>
-                      {link.badge}
-                    </span>
+                  {link.title}
+                  {activeSubcategories.length > 0 && (
+                    <ChevronDown size={12} className="text-gray-400" />
                   )}
-                  <ChevronDown size={12} className="text-gray-400" />
                 </Link>
 
-                {/* Dropdown */}
-                {activeDropdown === link.label && (
+                {activeDropdown === link.slug && activeSubcategories.length > 0 && (
                   <div className="absolute left-0 top-full z-50 pt-1">
                     <div className="min-w-[200px] overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
                       <div className="bg-orange-50 px-4 py-2 border-b border-orange-100">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-orange-500">{link.label}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-orange-500">
+                          {link.title}
+                        </p>
                       </div>
-                      {link.items.map((item) => (
+                      {activeSubcategories.map((item) => (
                         <Link
-                          key={item.label}
+                          key={item.id}
                           href={item.href}
                           className="flex items-center gap-2 px-4 py-2 text-[13px] text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors"
                         >
                           <span className="h-1 w-1 rounded-full bg-gray-300 shrink-0" />
-                          {item.label}
+                          {item.title}
                         </Link>
                       ))}
                     </div>

@@ -11,8 +11,6 @@ exports.createCategory = async (req, res) => {
       data: category,
     });
   } catch (error) {
-    console.log(error);
-
     res.status(400).json({
       success: false,
       message: error.message,
@@ -60,8 +58,6 @@ exports.getCategoryById = async (req, res) => {
       data: category,
     });
   } catch (error) {
-    console.log(error);
-
     res.status(400).json({
       success: false,
       message: error.message,
@@ -93,8 +89,6 @@ exports.updateCategory = async (req, res) => {
       data: category,
     });
   } catch (error) {
-    console.log(error);
-
     res.status(400).json({
       success: false,
       message: error.message,
@@ -125,8 +119,6 @@ exports.deleteCategory = async (req, res) => {
       message: "Category deleted successfully",
     });
   } catch (error) {
-    console.log(error);
-
     res.status(400).json({
       success: false,
       message: error.message,

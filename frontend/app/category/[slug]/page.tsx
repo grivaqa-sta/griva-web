@@ -1,20 +1,22 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, Star, RotateCcw, X, ChevronRight, Gamepad2, Sparkles, Smile, Baby, Smartphone, Utensils } from "lucide-react";
-import { products, parsePriceNumber } from "@/app/data/data";
+import { useAllProducts } from "@/app/hooks/useProducts";
+import { ApiProduct, Category, SubCategory } from "@/app/types/types";
+import { categoryService } from "@/app/services/category.service";
+import { subCategoryService } from "@/app/services/subCategory.service";
 import ProductCard from "@/app/components/product/ProductCard";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Helper to resolve styling/taglines based on category slug
 interface CategoryMetadata {
   title: string;
   tagline: string;
   gradient: string;
-  bannerImage: string; // Path to hero banner image under /public/banners/
-  accentColor: string; // Tailwind color for glow accents
+  bannerImage: string;
+  accentColor: string;
   icon: React.ReactNode;
 }
 
@@ -69,6 +71,20 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
   },
 };
 
+// Skeleton card
+function ProductCardSkeleton() {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-[22px] border border-gray-100 bg-white p-3 sm:rounded-[28px] sm:p-4 animate-pulse">
+      <div className="h-[170px] sm:h-[240px] rounded-[18px] sm:rounded-[24px] bg-gray-100" />
+      <div className="mt-4 space-y-2">
+        <div className="h-4 rounded bg-gray-100 w-3/4" />
+        <div className="h-4 rounded bg-gray-100 w-1/2" />
+        <div className="h-3 rounded bg-gray-100 w-1/3" />
+      </div>
+    </div>
+  );
+}
+
 export default function CategoryPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -81,7 +97,99 @@ export default function CategoryPage() {
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Get metadata
+  // Category/subcategory lookup
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [taxonomyLoading, setTaxonomyLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadTaxonomy() {
+      try {
+        const [catRes, subRes] = await Promise.all([
+          categoryService.getCategories(),
+          subCategoryService.getSubCategories(),
+        ]);
+        const cData = catRes?.data || catRes;
+        const sData = subRes?.data || subRes;
+        setCategories(Array.isArray(cData) ? cData : []);
+        setSubCategories(Array.isArray(sData) ? sData : []);
+      } catch (err) {
+        console.error("[CategoryPage] Failed to load taxonomy:", err);
+      } finally {
+        setTaxonomyLoading(false);
+      }
+    }
+    loadTaxonomy();
+  }, []);
+
+  // Fetch all products from API
+  const { products: allProducts, loading: productsLoading } = useAllProducts();
+
+  const loading = taxonomyLoading || productsLoading;
+
+  // Resolve subcategory IDs that belong to the current category slug
+  const validSubcategoryIds = useMemo(() => {
+    const matchedCategory = categories.find(
+      (c) => c.slug === slug || c.href?.includes(slug)
+    );
+    if (!matchedCategory) return new Set<number>();
+    return new Set(
+      subCategories
+        .filter((s) => s.category_id === matchedCategory.id)
+        .map((s) => s.id)
+    );
+  }, [categories, subCategories, slug]);
+
+  // Filter and Sort Logic
+  const filteredProducts = useMemo((): ApiProduct[] => {
+    // 1. Match by subcategory_id → category
+    let result = allProducts.filter((p) =>
+      validSubcategoryIds.has(p.subcategory_id)
+    );
+
+    // If no category mapping resolved (e.g. backend has no data yet), show all
+    if (validSubcategoryIds.size === 0 && !taxonomyLoading) {
+      result = [...allProducts];
+    }
+
+    // 2. Subcategory keyword filter (sub param from URL)
+    if (subParam) {
+      const subKeyword = subParam.replace(/-/g, " ").toLowerCase();
+      const subResult = result.filter(
+        (p) =>
+          p.title.toLowerCase().includes(subKeyword) ||
+          (p.description || "").toLowerCase().includes(subKeyword) ||
+          (p.short_description || "").toLowerCase().includes(subKeyword)
+      );
+      if (subResult.length > 0) result = subResult;
+    }
+
+    // 3. Price filter
+    result = result.filter((p) => Number(p.price) <= maxPrice);
+
+    // 4. Rating filter
+    if (minRating > 0) {
+      result = result.filter((p) => p.rating >= minRating);
+    }
+
+    // 5. Sorting
+    if (sortBy === "price-low-to-high") {
+      result.sort((a, b) => Number(a.price) - Number(b.price));
+    } else if (sortBy === "price-high-to-low") {
+      result.sort((a, b) => Number(b.price) - Number(a.price));
+    } else if (sortBy === "rating") {
+      result.sort((a, b) => b.rating - a.rating);
+    }
+
+    return result;
+  }, [allProducts, validSubcategoryIds, taxonomyLoading, subParam, maxPrice, minRating, sortBy]);
+
+  const handleResetFilters = () => {
+    setMaxPrice(2000);
+    setMinRating(0);
+    setSortBy("featured");
+  };
+
   const meta = CATEGORY_META[slug] || {
     title: slug.charAt(0).toUpperCase() + slug.slice(1),
     tagline: "Browse our premium selected catalog products",
@@ -91,59 +199,11 @@ export default function CategoryPage() {
     icon: <Sparkles className="h-6 w-6 text-white" />,
   };
 
-  // Filter and Sort Logic
-  const filteredProducts = useMemo(() => {
-    // 1. Match category
-    let result = products.filter(
-      (p) => p.category.toLowerCase() === slug
-    );
-
-    // 2. Filter by subcategory if parameter is present
-    if (subParam) {
-      const subKeyword = subParam.replace(/-/g, " ");
-      const subResult = result.filter(p => 
-        p.title.toLowerCase().includes(subKeyword.toLowerCase()) || 
-        p.description?.toLowerCase().includes(subKeyword.toLowerCase())
-      );
-      if (subResult.length > 0) {
-        result = subResult;
-      }
-    }
-
-    // 3. Price filter
-    result = result.filter((p) => {
-      const priceNum = parsePriceNumber(p.price);
-      return priceNum <= maxPrice;
-    });
-
-    // 4. Rating filter
-    if (minRating > 0) {
-      result = result.filter((p) => p.rating >= minRating);
-    }
-
-    // 5. Sorting
-    if (sortBy === "price-low-to-high") {
-      result.sort((a, b) => parsePriceNumber(a.price) - parsePriceNumber(b.price));
-    } else if (sortBy === "price-high-to-low") {
-      result.sort((a, b) => parsePriceNumber(b.price) - parsePriceNumber(a.price));
-    } else if (sortBy === "rating") {
-      result.sort((a, b) => b.rating - a.rating);
-    }
-
-    return result;
-  }, [slug, subParam, maxPrice, minRating, sortBy]);
-
-  const handleResetFilters = () => {
-    setMaxPrice(2000);
-    setMinRating(0);
-    setSortBy("featured");
-  };
-
   return (
     <div className="bg-gray-50/40 min-h-screen py-8 selection:bg-orange-500 selection:text-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
-        
-        {/* Breadcrumbs (SEO compliance) */}
+
+        {/* Breadcrumbs */}
         <nav className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
           <Link href="/" className="hover:text-orange-500 transition-colors">Home</Link>
           <ChevronRight className="h-3.5 w-3.5" />
@@ -152,7 +212,7 @@ export default function CategoryPage() {
           <span className="text-gray-900 capitalize font-bold">{meta.title}</span>
         </nav>
 
-        {/* Premium Full-Bleed Category Hero Banner */}
+        {/* Category Hero Banner */}
         <div
           className="relative overflow-hidden rounded-3xl text-white shadow-2xl"
           style={{
@@ -162,7 +222,6 @@ export default function CategoryPage() {
               : `linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)`,
           }}
         >
-          {/* Dark overlay for text legibility — lighter on right to show image */}
           <div
             className="absolute inset-0 rounded-3xl"
             style={{
@@ -171,20 +230,14 @@ export default function CategoryPage() {
                 : "rgba(0,0,0,0.3)",
             }}
           />
-
-          {/* Subtle orange glow accent top-left */}
           <div
             className="absolute -top-10 -left-10 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"
             style={{ backgroundColor: meta.accentColor }}
           />
-
-          {/* Bottom orange glow line accent */}
           <div
             className="absolute bottom-0 left-0 right-0 h-0.5 opacity-60"
             style={{ background: `linear-gradient(to right, ${meta.accentColor}, transparent)` }}
           />
-
-          {/* Content */}
           <div className="relative p-8 md:p-12 max-w-2xl space-y-4">
             <div className="flex items-center gap-2.5">
               <div
@@ -197,7 +250,6 @@ export default function CategoryPage() {
                 Category Catalog
               </span>
             </div>
-
             <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
               {meta.title.includes("&") ? (
                 <>
@@ -207,12 +259,9 @@ export default function CategoryPage() {
                 </>
               ) : meta.title}
             </h1>
-
             <p className="text-sm md:text-base text-white/75 leading-relaxed max-w-md">
               {meta.tagline}
             </p>
-
-            {/* Trust badges row */}
             <div className="flex flex-wrap gap-3 pt-2">
               {[
                 { icon: "🚚", label: "Qatar-Wide Delivery" },
@@ -234,7 +283,7 @@ export default function CategoryPage() {
 
         {/* Filters and Grid Wrapper */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
+
           {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block space-y-6">
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-6">
@@ -253,41 +302,31 @@ export default function CategoryPage() {
               {/* Price Filter */}
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Max Price
-                  </h4>
-                  <span className="text-xs font-bold text-orange-500">${maxPrice}</span>
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
+                  <span className="text-xs font-bold text-orange-500">QAR {maxPrice}</span>
                 </div>
                 <input
-                  type="range"
-                  min="0"
-                  max="2000"
-                  step="50"
-                  value={maxPrice}
+                  type="range" min="0" max="2000" step="50" value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                 />
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-semibold">
-                  <span>$0</span>
-                  <span>$2,000</span>
+                  <span>QAR 0</span><span>QAR 2,000</span>
                 </div>
               </div>
 
               {/* Ratings Filter */}
               <div>
-                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
-                  Min Rating
-                </h4>
+                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Min Rating</h4>
                 <div className="space-y-2">
                   {[4, 3, 2, 0].map((rating) => (
                     <button
                       key={rating}
                       onClick={() => setMinRating(rating)}
-                      className={`flex w-full items-center gap-2 text-xs py-1 px-2 rounded-md transition cursor-pointer ${
-                        minRating === rating
-                          ? "bg-orange-505 bg-orange-500 text-white font-semibold"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
+                      className={`flex w-full items-center gap-2 text-xs py-1 px-2 rounded-md transition cursor-pointer ${minRating === rating
+                        ? "bg-orange-500 text-white font-semibold"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
                     >
                       {rating === 0 ? (
                         <span>Any Rating</span>
@@ -295,19 +334,10 @@ export default function CategoryPage() {
                         <div className="flex items-center gap-1.5">
                           <div className="flex items-center gap-0.5">
                             {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-3 w-3 ${
-                                  i < rating
-                                    ? minRating === rating
-                                      ? "fill-white text-white"
-                                      : "fill-orange-400 text-orange-400"
-                                    : "text-gray-200"
-                                }`}
-                              />
+                              <Star key={i} className={`h-3 w-3 ${i < rating ? (minRating === rating ? "fill-white text-white" : "fill-orange-400 text-orange-400") : "text-gray-200"}`} />
                             ))}
                           </div>
-                          <span>&amp; Up</span>
+                          <span>& Up</span>
                         </div>
                       )}
                     </button>
@@ -319,12 +349,11 @@ export default function CategoryPage() {
 
           {/* Catalog view grid */}
           <div className="lg:col-span-3 space-y-6">
-            
-            {/* Header control board */}
             <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-gray-500 font-semibold">
-                  Found {filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"} in <span className="text-gray-900 font-bold capitalize">{meta.title}</span>
+                  {loading ? "Loading..." : `Found ${filteredProducts.length} ${filteredProducts.length === 1 ? "product" : "products"} in `}
+                  {!loading && <span className="text-gray-900 font-bold capitalize">{meta.title}</span>}
                 </span>
               </div>
 
@@ -336,21 +365,18 @@ export default function CategoryPage() {
                 >
                   <SlidersHorizontal className="h-4 w-4" /> Filters
                 </button>
-                <div className="flex-1 relative">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-                  >
-                    <option value="featured">Sort: Featured</option>
-                    <option value="price-low-to-high">Sort: Lowest Price</option>
-                    <option value="price-high-to-low">Sort: Highest Price</option>
-                    <option value="rating">Sort: Top Rated</option>
-                  </select>
-                </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="flex-1 appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <option value="featured">Sort: Featured</option>
+                  <option value="price-low-to-high">Sort: Lowest Price</option>
+                  <option value="price-high-to-low">Sort: Highest Price</option>
+                  <option value="rating">Sort: Top Rated</option>
+                </select>
               </div>
 
-              {/* Desktop sort by selector */}
               <div className="hidden lg:flex items-center gap-2">
                 <span className="text-xs text-gray-500 font-semibold">Sort by:</span>
                 <select
@@ -367,11 +393,13 @@ export default function CategoryPage() {
             </div>
 
             {/* Product card loop */}
-            {filteredProducts.length > 0 ? (
+            {loading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                {filteredProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
+                {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+                {filteredProducts.map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
@@ -395,17 +423,12 @@ export default function CategoryPage() {
         {mobileFiltersOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }}
               onClick={() => setMobileFiltersOpen(false)}
               className="fixed inset-0 z-50 bg-black lg:hidden"
             />
-
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
               className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl lg:hidden flex flex-col"
             >
@@ -414,77 +437,37 @@ export default function CategoryPage() {
                   <SlidersHorizontal className="h-5 w-5" /> Filter Settings
                 </h3>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      handleResetFilters();
-                      setMobileFiltersOpen(false);
-                    }}
-                    className="text-xs font-semibold text-orange-500"
-                  >
-                    Reset All
-                  </button>
-                  <button
-                    onClick={() => setMobileFiltersOpen(false)}
-                    className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
-                  >
+                  <button onClick={() => { handleResetFilters(); setMobileFiltersOpen(false); }} className="text-xs font-semibold text-orange-500">Reset All</button>
+                  <button onClick={() => setMobileFiltersOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
               </div>
 
               <div className="space-y-6 overflow-y-auto pr-1">
-                {/* Price Slider */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                      Max Price
-                    </h4>
-                    <span className="text-xs font-bold text-orange-500">${maxPrice}</span>
+                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
+                    <span className="text-xs font-bold text-orange-500">QAR {maxPrice}</span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="2000"
-                    step="50"
-                    value={maxPrice}
+                  <input type="range" min="0" max="2000" step="50" value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                  />
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500" />
                 </div>
-
-                {/* Ratings */}
                 <div>
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
-                    Minimum Rating
-                  </h4>
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Minimum Rating</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {[4, 3, 2, 0].map((rating) => (
-                      <button
-                        key={rating}
-                        onClick={() => setMinRating(rating)}
-                        className={`flex items-center justify-center gap-1.5 text-xs py-2 px-3 rounded-lg border transition cursor-pointer ${
-                          minRating === rating
-                            ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
-                            : "border-gray-200 text-gray-650 bg-white"
-                        }`}
-                      >
-                        {rating === 0 ? (
-                          <span>Any Rating</span>
-                        ) : (
+                      <button key={rating} onClick={() => setMinRating(rating)}
+                        className={`flex items-center justify-center gap-1.5 text-xs py-2 px-3 rounded-lg border transition cursor-pointer ${minRating === rating ? "border-orange-500 bg-orange-50 text-orange-500 font-bold" : "border-gray-200 text-gray-600 bg-white"}`}>
+                        {rating === 0 ? <span>Any Rating</span> : (
                           <div className="flex items-center gap-1">
                             <div className="flex items-center gap-0.5">
                               {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-3 w-3 ${
-                                    i < rating
-                                      ? "fill-orange-400 text-orange-400"
-                                      : "text-gray-200"
-                                  }`}
-                                />
+                                <Star key={i} className={`h-3 w-3 ${i < rating ? "fill-orange-400 text-orange-400" : "text-gray-200"}`} />
                               ))}
                             </div>
-                            <span>&amp; Up</span>
+                            <span>& Up</span>
                           </div>
                         )}
                       </button>
@@ -493,10 +476,8 @@ export default function CategoryPage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setMobileFiltersOpen(false)}
-                className="mt-8 w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/10 cursor-pointer"
-              >
+              <button onClick={() => setMobileFiltersOpen(false)}
+                className="mt-8 w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/10 cursor-pointer">
                 Show {filteredProducts.length} Results
               </button>
             </motion.div>

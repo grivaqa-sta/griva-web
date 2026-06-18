@@ -14,11 +14,10 @@ import {
   Minus,
   Star,
 } from "lucide-react";
-import { products } from "@/app/data/data";
+import { useProduct, useAllProducts } from "@/app/hooks/useProducts";
 import { useCart } from "@/app/context/CartContext";
 import { useWishlist } from "@/app/context/WishlistContext";
 import ProductGallery from "@/app/components/product/ProductGallery";
-import ReviewCard from "@/app/components/product/ReviewCard";
 import ProductCard from "@/app/components/product/ProductCard";
 import ScrollReveal from "@/app/components/common/ScrollReveal";
 
@@ -26,42 +25,76 @@ interface ProductPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Full-page skeleton while product loads
+function ProductSkeleton() {
+  return (
+    <div className="bg-gray-50/50 min-h-screen py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 animate-pulse">
+        <div className="h-4 w-48 rounded bg-gray-100 mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+          <div className="lg:col-span-6 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm h-[420px]" />
+          <div className="lg:col-span-6 bg-white rounded-2xl p-8 border border-gray-100 shadow-sm space-y-4">
+            <div className="h-4 w-24 rounded bg-gray-100" />
+            <div className="h-8 w-3/4 rounded bg-gray-100" />
+            <div className="h-4 w-1/2 rounded bg-gray-100" />
+            <div className="h-10 w-1/3 rounded bg-gray-100" />
+            <div className="h-12 rounded-xl bg-gray-100 mt-8" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductPage({ params }: ProductPageProps) {
   const { id: paramId } = React.use(params);
   const productId = parseInt(paramId);
 
-  const product = products.find((p) => p.id === productId);
+  const { product, loading } = useProduct(productId);
+  const { products: allProducts } = useAllProducts();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
   const [selectedColor, setSelectedColor] = useState<string>("");
-  const [selectedStorage, setSelectedStorage] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<"desc" | "specs" | "reviews">("desc");
 
+  // Loading state — full page skeleton
+  if (loading) return <ProductSkeleton />;
+
+  // Not found
   if (!product) {
     notFound();
   }
 
-  // Set default variants if not set
-  if (!selectedColor && product.colors && product.colors.length > 0) {
-    setSelectedColor(product.colors[0].name);
-  }
-  if (!selectedStorage && product.storageOptions && product.storageOptions.length > 0) {
-    setSelectedStorage(product.storageOptions[0].label);
-  }
-
   const isWishlisted = isInWishlist(product.id);
 
-  // Gallery images array
-  const galleryImages = product.images && product.images.length > 0
-    ? product.images
-    : [product.image];
+  // Gallery images — use gallery_images or fall back to main_image_url
+  const galleryImages =
+    product.gallery_images && product.gallery_images.length > 0
+      ? product.gallery_images
+      : [product.main_image_url];
 
-  // Related products
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
+  // Related products — same subcategory, exclude current
+  const relatedProducts = allProducts
+    .filter(
+      (p) => p.subcategory_id === product.subcategory_id && p.id !== product.id
+    )
     .slice(0, 4);
+
+  // Color variants — filter variants where color is defined
+  const colorVariants = (product.variants || []).filter((v) => v.color);
+
+  // Set defaults if not yet selected
+  if (!selectedColor && colorVariants.length > 0) {
+    setSelectedColor(colorVariants[0].color!);
+  }
+
+  const formatPrice = (price?: string | number) => {
+    if (!price) return "0.00";
+    return Number(price).toFixed(2);
+  };
 
   const handleQuantityIncrement = () => setQuantity((prev) => prev + 1);
   const handleQuantityDecrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
@@ -70,11 +103,11 @@ export default function ProductPage({ params }: ProductPageProps) {
     addToCart({
       id: product.id,
       title: product.title,
-      image: product.image,
-      price: product.price,
-      category: product.category,
+      image: product.main_image_url,
+      price: `QAR ${formatPrice(product.price)}`,
+      category: "Product",
       selectedColor: selectedColor || undefined,
-      selectedStorage: selectedStorage || undefined,
+      selectedStorage: selectedSize || undefined,
       quantity,
     });
   };
@@ -83,11 +116,11 @@ export default function ProductPage({ params }: ProductPageProps) {
     toggleWishlist({
       id: product.id,
       title: product.title,
-      image: product.image,
-      price: product.price,
-      oldPrice: product.oldPrice,
+      image: product.main_image_url,
+      price: `QAR ${formatPrice(product.price)}`,
+      oldPrice: product.old_price ? `QAR ${formatPrice(product.old_price)}` : undefined,
       rating: product.rating,
-      category: product.category,
+      category: "Product",
     });
   };
 
@@ -113,10 +146,12 @@ export default function ProductPage({ params }: ProductPageProps) {
           {/* Right Panel: Buying Panel */}
           <div className="lg:col-span-6 flex flex-col justify-between bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
             <div>
-              {/* Category */}
-              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2.5 py-1 rounded-full">
-                {product.category}
-              </span>
+              {/* Brand badge */}
+              {product.brand && (
+                <span className="text-xs font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2.5 py-1 rounded-full">
+                  {product.brand}
+                </span>
+              )}
 
               {/* Title */}
               <h1 className="mt-4 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
@@ -130,7 +165,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     <Star
                       key={i}
                       className={`h-4 w-4 ${
-                        i < product.rating
+                        i < Math.round(product.rating)
                           ? "fill-orange-400 text-orange-400"
                           : "text-gray-200"
                       }`}
@@ -138,70 +173,78 @@ export default function ProductPage({ params }: ProductPageProps) {
                   ))}
                 </div>
                 <span className="text-xs font-semibold text-gray-500 hover:underline cursor-pointer">
-                  {product.reviewCount ?? 0} Reviews
+                  {product.review_count ?? 0} Reviews
                 </span>
                 <span className="text-gray-300">|</span>
                 <span className="text-xs font-semibold text-green-600">
-                  {product.stock && product.stock > 0 ? `In Stock (${product.stock} left)` : "Out of Stock"}
+                  {product.stock > 0 ? `In Stock (${product.stock} left)` : "Out of Stock"}
                 </span>
               </div>
 
               {/* Price Panel */}
               <div className="mt-6 flex items-baseline gap-3 border-b pb-6">
                 <span className="text-3xl font-extrabold text-orange-500">
-                  {product.price}
+                  QAR {formatPrice(product.price)}
                 </span>
-                {product.oldPrice && (
+                {product.old_price && (
                   <span className="text-base text-gray-400 line-through font-medium">
-                    {product.oldPrice}
+                    QAR {formatPrice(product.old_price)}
+                  </span>
+                )}
+                {product.discount_percentage && product.discount_percentage > 0 && (
+                  <span className="text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full">
+                    -{product.discount_percentage}%
                   </span>
                 )}
               </div>
 
-              {/* Variant Selector: Colors */}
-              {product.colors && product.colors.length > 0 && (
+              {/* Color Variants */}
+              {colorVariants.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                     Select Color: <span className="text-gray-500 font-semibold">{selectedColor}</span>
                   </h3>
-                  <div className="flex items-center gap-3">
-                    {product.colors.map((color) => (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {colorVariants.map((v) => (
                       <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color.name)}
-                        className={`h-8 w-8 rounded-full border-2 transition-all cursor-pointer ${
-                          selectedColor === color.name
-                            ? "border-orange-500 scale-110 ring-4 ring-orange-100"
-                            : "border-gray-200 hover:scale-105"
+                        key={v.color}
+                        onClick={() => setSelectedColor(v.color!)}
+                        title={v.color}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                          selectedColor === v.color
+                            ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
+                            : "border-gray-200 text-gray-700 bg-white hover:bg-gray-50"
                         }`}
-                        style={{ backgroundColor: color.hex }}
-                        title={color.name}
-                      />
+                      >
+                        {v.color}
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Variant Selector: Storage/Sizes */}
-              {product.storageOptions && product.storageOptions.length > 0 && (
+              {/* Size Variants */}
+              {(product.variants || []).some((v) => v.size) && (
                 <div className="mt-6">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
-                    Select Storage: <span className="text-gray-500 font-semibold">{selectedStorage}</span>
+                    Select Size: <span className="text-gray-500 font-semibold">{selectedSize}</span>
                   </h3>
                   <div className="flex flex-wrap gap-2.5">
-                    {product.storageOptions.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setSelectedStorage(opt.label)}
-                        className={`px-4 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                          selectedStorage === opt.label
-                            ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
-                            : "border-gray-200 text-gray-700 bg-white hover:bg-gray-50"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                    {(product.variants || [])
+                      .filter((v) => v.size)
+                      .map((v) => (
+                        <button
+                          key={v.size}
+                          onClick={() => setSelectedSize(v.size!)}
+                          className={`px-4 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                            selectedSize === v.size
+                              ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
+                              : "border-gray-200 text-gray-700 bg-white hover:bg-gray-50"
+                          }`}
+                        >
+                          {v.size}
+                        </button>
+                      ))}
                   </div>
                 </div>
               )}
@@ -218,9 +261,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="w-12 text-center text-sm font-bold text-gray-800">
-                    {quantity}
-                  </span>
+                  <span className="w-12 text-center text-sm font-bold text-gray-800">{quantity}</span>
                   <button
                     onClick={handleQuantityIncrement}
                     className="flex h-10 w-10 items-center justify-center text-gray-500 hover:bg-orange-50 hover:text-orange-500 transition rounded-r-xl cursor-pointer"
@@ -231,19 +272,20 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
             </div>
 
-            {/* Actions Grid */}
+            {/* Actions */}
             <div className="mt-8 pt-6 border-t space-y-3">
               <div className="flex gap-4">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/10 cursor-pointer"
+                  disabled={product.stock === 0}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart className="h-4 w-4" />
-                  Add to Cart
+                  {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
                 </button>
                 <button
                   onClick={handleWishlistToggle}
-                  className={`flex h-12. w-12. items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-all cursor-pointer ${
                     isWishlisted
                       ? "border-red-200 bg-red-50 text-red-500"
                       : "border-gray-200 hover:bg-gray-50 text-gray-400 hover:text-gray-600"
@@ -253,7 +295,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </button>
               </div>
 
-              {/* Protection / Returns badges */}
+              {/* Trust badges */}
               <div className="grid grid-cols-3 gap-2.5 pt-4 text-[10px] text-gray-500">
                 <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
                   <Truck className="h-4 w-4 text-orange-500 mb-1" />
@@ -275,58 +317,38 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
 
-        {/* Tabbed Product Details Area */}
+        {/* Tabbed Product Details */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 mb-12">
-          {/* Tabs header */}
           <div className="flex border-b border-gray-100 gap-6">
-            <button
-              onClick={() => setActiveTab("desc")}
-              className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
-                activeTab === "desc"
-                  ? "border-orange-500 text-orange-500 font-extrabold"
-                  : "border-transparent text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              Description
-            </button>
-            <button
-              onClick={() => setActiveTab("specs")}
-              className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
-                activeTab === "specs"
-                  ? "border-orange-500 text-orange-500 font-extrabold"
-                  : "border-transparent text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              Specifications
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
-                activeTab === "reviews"
-                  ? "border-orange-500 text-orange-500 font-extrabold"
-                  : "border-transparent text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              Reviews ({product.reviews?.length ?? 0})
-            </button>
+            {(["desc", "specs", "reviews"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+                  activeTab === tab
+                    ? "border-orange-500 text-orange-500 font-extrabold"
+                    : "border-transparent text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {tab === "desc" ? "Description" : tab === "specs" ? "Specifications" : "Reviews (0)"}
+              </button>
+            ))}
           </div>
 
-          {/* Tabs contents */}
           <div className="py-6">
             {activeTab === "desc" && (
               <div className="text-sm text-gray-600 leading-relaxed max-w-4xl space-y-4">
-                <p>{product.description || "No description provided for this product."}</p>
-                <p>Designed to fit perfectly into your digital lifestyle, this device combines top-notch performance with advanced utility features that meet and exceed professional standards.</p>
+                <p>{product.description || product.short_description || "No description provided for this product."}</p>
               </div>
             )}
 
             {activeTab === "specs" && (
               <div className="max-w-xl">
-                {product.specs && product.specs.length > 0 ? (
+                {product.specifications && product.specifications.length > 0 ? (
                   <dl className="divide-y divide-gray-100">
-                    {product.specs.map((spec) => (
-                      <div key={spec.label} className="py-3.5 grid grid-cols-3 gap-4 text-sm">
-                        <dt className="font-semibold text-gray-500">{spec.label}</dt>
+                    {product.specifications.map((spec) => (
+                      <div key={spec.name} className="py-3.5 grid grid-cols-3 gap-4 text-sm">
+                        <dt className="font-semibold text-gray-500">{spec.name}</dt>
                         <dd className="font-medium text-gray-900 col-span-2">{spec.value}</dd>
                       </div>
                     ))}
@@ -338,24 +360,14 @@ export default function ProductPage({ params }: ProductPageProps) {
             )}
 
             {activeTab === "reviews" && (
-              <div>
-                {product.reviews && product.reviews.length > 0 ? (
-                  <div className="space-y-2">
-                    {product.reviews.map((rev) => (
-                      <ReviewCard key={rev.id} review={rev} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-sm text-gray-500">
-                    No reviews yet. Be the first to review this product!
-                  </div>
-                )}
+              <div className="text-center py-8 text-sm text-gray-500">
+                No reviews yet. Be the first to review this product!
               </div>
             )}
           </div>
         </div>
 
-        {/* Related Products Grid */}
+        {/* Related Products */}
         {relatedProducts.length > 0 && (
           <ScrollReveal>
             <div className="mb-12">

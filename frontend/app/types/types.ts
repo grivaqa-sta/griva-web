@@ -163,6 +163,41 @@ export interface ProductRequest  {
   meta_description?: string;
 };
 
+// ─────────────────────────────────────────────────────────
+// Backend API Product — exact field names from Product.js model
+// ─────────────────────────────────────────────────────────
+export interface ApiProduct {
+  id: number;
+  subcategory_id: number;
+  title: string;
+  slug: string;
+  short_description?: string;
+  description?: string;
+  price: string;               // DECIMAL returned as string from DB e.g. "49.99"
+  old_price?: string;          // Optional, e.g. "69.99"
+  discount_percentage?: number;
+  stock: number;
+  sku?: string;
+  brand?: string;
+  main_image_url: string;
+  gallery_images?: string[];
+  variants?: { color?: string; size?: string }[];
+  specifications?: { name: string; value: string }[];
+  tags?: string[];
+  rating: number;
+  review_count: number;
+  is_featured: boolean;
+  is_best_seller: boolean;
+  is_trending: boolean;
+  is_new: boolean;
+  is_active: boolean;
+  meta_title?: string;
+  meta_description?: string;
+  views_count?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 
 
 

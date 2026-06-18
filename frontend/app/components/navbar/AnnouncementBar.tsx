@@ -53,6 +53,7 @@ function MarqueeContent() {
 }
 
 export default function AnnouncementBar() {
+  const [mounted, setMounted] = useState(false);
   // Start with null — same on server and client, no random value
   const [shoppersCount, setShoppersCount] = useState<number | null>(null);
   const [trend, setTrend] = useState<"up" | "down" | "neutral">("neutral");
@@ -61,6 +62,7 @@ export default function AnnouncementBar() {
   const prevCountRef = useRef<number>(SHOPPER_BASE);
 
   useEffect(() => {
+    setMounted(true);
     // Random value only set on client, after mount
     const initial = SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
     setShoppersCount(initial);
@@ -89,6 +91,7 @@ export default function AnnouncementBar() {
 
   const { announcementBarEnabled } = useAdminSettings();
   const pathname = usePathname();
+  if (!mounted) return null;
   if (pathname.startsWith("/admin")) return null;
   if (!announcementBarEnabled) return null;
 

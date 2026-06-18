@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { Product } from "@/app/types/types";
+import { ApiProduct } from "@/app/types/types";
 import Rating from "../rating/Rating";
 import { useCart } from "@/app/context/CartContext";
 import { useWishlist } from "@/app/context/WishlistContext";
@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 export default function ProductCard({
   product,
 }: {
-  product?: Product;
+  product?: ApiProduct;
 }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -23,14 +23,8 @@ export default function ProductCard({
 
   const formatPrice = (price?: string | number) => {
     if (!price) return null;
-
-    const value =
-      typeof price === "string"
-        ? Number(price.replace(/[^0-9.]/g, ""))
-        : price;
-
-    if (Number.isNaN(value)) return price;
-
+    const value = typeof price === "string" ? Number(price) : price;
+    if (Number.isNaN(value)) return String(price);
     return value.toFixed(2);
   };
 
@@ -41,11 +35,11 @@ export default function ProductCard({
     toggleWishlist({
       id: product.id,
       title: product.title,
-      image: product.image,
-      price: product.price,
-      oldPrice: product.oldPrice,
+      image: product.main_image_url,
+      price: `QAR ${formatPrice(product.price)}`,
+      oldPrice: product.old_price ? `QAR ${formatPrice(product.old_price)}` : undefined,
       rating: product.rating,
-      category: product.category,
+      category: "Product",
     });
   };
 
@@ -56,9 +50,9 @@ export default function ProductCard({
     addToCart({
       id: product.id,
       title: product.title,
-      image: product.image,
-      price: product.price,
-      category: product.category,
+      image: product.main_image_url,
+      price: `QAR ${formatPrice(product.price)}`,
+      category: "Product",
       quantity: 1,
     });
   };
@@ -94,12 +88,19 @@ export default function ProductCard({
         <div className="relative flex h-[170px] items-center justify-center overflow-hidden rounded-[18px] bg-gradient-to-br from-blue-200 via-orange-200 to-blue-100 p-4 sm:h-[240px] sm:rounded-[24px] sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.08),transparent_45%)]" />
 
-          <div className="absolute left-3 top-3 max-w-[70%] truncate rounded-full bg-white px-2 py-1 text-[8px] font-semibold uppercase tracking-wider text-orange-500 shadow-sm sm:left-4 sm:top-4 sm:max-w-none sm:px-3 sm:text-[10px]">
-            {product.category}
-          </div>
+          {/* Discount badge */}
+          {product.discount_percentage && product.discount_percentage > 0 ? (
+            <div className="absolute left-3 top-3 max-w-[70%] truncate rounded-full bg-orange-500 px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-white shadow-sm sm:left-4 sm:top-4 sm:px-3 sm:text-[10px]">
+              -{product.discount_percentage}%
+            </div>
+          ) : (
+            <div className="absolute left-3 top-3 max-w-[70%] truncate rounded-full bg-white px-2 py-1 text-[8px] font-semibold uppercase tracking-wider text-orange-500 shadow-sm sm:left-4 sm:top-4 sm:max-w-none sm:px-3 sm:text-[10px]">
+              {product.brand || "Product"}
+            </div>
+          )}
 
           <Image
-            src={product.image}
+            src={product.main_image_url}
             alt={product.title}
             width={160}
             height={160}
@@ -129,14 +130,14 @@ export default function ProductCard({
               </div>
 
               {/* Old Price */}
-              {product.oldPrice && (
+              {product.old_price && (
                 <div className="flex items-center leading-none text-gray-400 line-through">
                   <span className="mr-1 flex items-center self-center text-[9px] font-semibold uppercase text-gray-400">
                     QAR
                   </span>
 
                   <span className="text-[11px] font-medium">
-                    {formatPrice(product.oldPrice)}
+                    {formatPrice(product.old_price)}
                   </span>
                 </div>
               )}
@@ -152,14 +153,14 @@ export default function ProductCard({
 
             {/* Prices - Same Row */}
             <div className="mt-2 flex items-center justify-between gap-3">
-              {product.oldPrice ? (
+              {product.old_price ? (
                 <div className="flex items-center leading-none text-gray-400 line-through">
                   <span className="mr-1 flex items-center self-center text-[10px] font-semibold uppercase text-gray-400">
                     QAR
                   </span>
 
                   <span className="text-sm font-medium">
-                    {formatPrice(product.oldPrice)}
+                    {formatPrice(product.old_price)}
                   </span>
                 </div>
               ) : (
@@ -183,7 +184,7 @@ export default function ProductCard({
             <Rating rating={product.rating} />
 
             <span className="text-[10px] font-medium text-gray-400 sm:text-xs">
-              ({product.reviewCount || "120"})
+              ({product.review_count || 0})
             </span>
           </div>
         </div>

@@ -5,7 +5,7 @@ import { Heart, ArrowLeft } from "lucide-react";
 import { useWishlist } from "@/app/context/WishlistContext";
 import ProductCard from "@/app/components/product/ProductCard";
 import SectionHeading from "@/app/components/common/SectionHeading";
-import { Product } from "@/app/types/types";
+import { ApiProduct } from "@/app/types/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function WishlistPage() {
@@ -33,17 +33,16 @@ export default function WishlistPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               <AnimatePresence>
                 {items.map((item) => {
-                  // Map WishlistItem to Product type to feed into ProductCard
-                  const productObj: Product = {
+                  // Map WishlistItem to ApiProduct type to feed into ProductCard
+                  const productObj = {
                     id: item.productId,
-                    category: item.category,
                     title: item.title,
-                    image: item.image,
-                    price: item.price,
-                    oldPrice: item.oldPrice,
+                    main_image_url: typeof item.image === "string" ? item.image : "",
+                    price: item.price.replace(/[^\d.]/g, ""),
+                    old_price: item.oldPrice ? item.oldPrice.replace(/[^\d.]/g, "") : undefined,
                     rating: item.rating,
-                    buttonText: "ADD TO CART",
-                  };
+                    brand: item.category,
+                  } as unknown as ApiProduct;
 
                   return (
                     <motion.div

@@ -1,6 +1,6 @@
 "use client";
 
-import { products } from "@/app/data/data";
+import { useAllProducts } from "@/app/hooks/useProducts";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
@@ -15,6 +15,7 @@ export default function DealOfTheDaySection() {
   const { cmsDealTargetDate, cmsDealSlides: slides } = useAdminSettings();
   const { hours, mins, secs } = useCountdown(cmsDealTargetDate);
   const { addToCart } = useCart();
+  const { products } = useAllProducts();
 
   const [current, setCurrent] = useState<number>(0);
   const [activeImage, setActiveImage] = useState<string | StaticImageData | null>(null);
@@ -52,9 +53,9 @@ export default function DealOfTheDaySection() {
       addToCart({
         id: matchedProduct.id,
         title: matchedProduct.title,
-        image: matchedProduct.image,
-        price: matchedProduct.price,
-        category: matchedProduct.category,
+        image: matchedProduct.main_image_url,
+        price: `QAR ${Number(matchedProduct.price).toFixed(2)}`,
+        category: "Product",
       });
     } else {
       addToCart({

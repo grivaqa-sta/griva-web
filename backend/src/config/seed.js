@@ -12,6 +12,7 @@ if (process.env.NODE_ENV === "production") {
 
 const { sequelize } = require("./db");
 const Category = require("../models/Category");
+const SubCategory = require("../models/SubCategory");
 const Product = require("../models/Product");
 const User = require("../models/User");
 const Subscriber = require("../models/Subscriber");
@@ -405,22 +406,26 @@ const seedDatabase = async () => {
     // 4. Seed Categories & Subcategories
     const categoryMap = {};
     for (const mainCat of SEED_CATEGORIES_TREE) {
-      const parentHref = `/category/${mainCat.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+      const parentSlug = mainCat.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const parentHref = `/category/${parentSlug}`;
       const dbParent = await Category.create({
         title: mainCat.title,
+        slug: parentSlug,
         href: parentHref,
         image_url: mainCat.image_url,
-        parent_id: null
+        is_active: true,
       });
-      categoryMap[mainCat.title] = dbParent.id;
 
       for (const subTitle of mainCat.subcategories) {
-        const subHref = `${parentHref}?sub=${subTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-        const dbSub = await Category.create({
+        const subSlug = subTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const subHref = `${parentHref}?sub=${subSlug}`;
+        const dbSub = await SubCategory.create({
+          category_id: dbParent.id,
           title: subTitle,
+          slug: subSlug,
           href: subHref,
           image_url: mainCat.image_url,
-          parent_id: dbParent.id
+          is_active: true,
         });
         categoryMap[subTitle] = dbSub.id;
       }
@@ -430,10 +435,10 @@ const seedDatabase = async () => {
     // 5. Seed Products
     const productMap = {};
     for (const prod of SEED_PRODUCTS) {
-      const catId = categoryMap[prod.categoryName];
-      if (catId) {
+      const subCatId = categoryMap[prod.categoryName];
+      if (subCatId) {
         const dbProd = await Product.create({
-          category_id: catId,
+          subcategory_id: subCatId,
           title: prod.title,
           slug: slugify(prod.title),
           sku: prod.sku,

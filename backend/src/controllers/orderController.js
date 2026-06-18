@@ -34,6 +34,7 @@ const { sequelize } = require("../config/db");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
+const SubCategory = require("../models/SubCategory");
 const Category = require("../models/Category");
 const User = require("../models/User");
 const Cart = require("../models/Cart");
@@ -312,9 +313,14 @@ exports.getAnalytics = async (req, res, next) => {
             as: "product",
             attributes: ["id", "title", "price"],
             include: {
-              model: Category,
-              as: "category",
+              model: SubCategory,
+              as: "subcategory",
               attributes: ["id", "title"],
+              include: {
+                model: Category,
+                as: "category",
+                attributes: ["id", "title"],
+              }
             }
           }
         }
@@ -350,7 +356,7 @@ exports.getAnalytics = async (req, res, next) => {
 
       if (order.items) {
         order.items.forEach((item) => {
-          const categoryTitle = item.product?.category?.title || "Other";
+          const categoryTitle = item.product?.subcategory?.category?.title || "Other";
           const itemPrice = typeof item.price_at_purchase === "string" 
             ? parseFloat(item.price_at_purchase.replace(/[$,]/g, "")) 
             : parseFloat(item.price_at_purchase) || 0;

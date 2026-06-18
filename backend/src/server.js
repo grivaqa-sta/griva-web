@@ -52,6 +52,6 @@ const createDefaultAdmin = async () => {
   }
 };
 
-startServer();
+startServer(); // trigger nodemon restart
 
 

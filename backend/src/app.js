@@ -3,6 +3,9 @@ const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
 
+// Initialize Database Models and Associations
+require("./models");
+
 const app = express();
 
 // Apply Global Middlewares

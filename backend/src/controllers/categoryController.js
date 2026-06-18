@@ -1,114 +1,165 @@
 const Category = require("../models/Category");
+const SubCategory = require("../models/SubCategory");
 
-exports.getCategories = async (req, res, next) => {
+//Create Category
+exports.createCategory = async (req, res) => {
   try {
-    const { tree } = req.query;
-    let categories;
-    if (tree === "true") {
-      categories = await Category.findAll({
-        where: { parent_id: null },
-        include: [{ model: Category, as: "subcategories" }],
-        order: [
-          ["title", "ASC"],
-          [{ model: Category, as: "subcategories" }, "title", "ASC"],
-        ],
-      });
-    } else {
-      categories = await Category.findAll({
-        include: [{ model: Category, as: "parent" }],
-        order: [["title", "ASC"]],
-      });
-    }
-    res.status(200).json({ categories });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.getCategoryById = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const category = await Category.findByPk(id, {
-      include: [
-        { model: Category, as: "parent" },
-        { model: Category, as: "subcategories" }
-      ]
-    });
-    if (!category) {
-      return res.status(404).json({ error: "Category not found." });
-    }
-    res.status(200).json({ category });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.createCategory = async (req, res, next) => {
-  try {
-    const { title, href, image_url, parent_id } = req.body;
-    if (!title) {
-      return res.status(400).json({ error: "Category title is required." });
-    }
-
-    const defaultHref = href || `/category/${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-
-    const category = await Category.create({
-      title,
-      href: defaultHref,
-      image_url,
-      parent_id: parent_id || null,
-    });
-
+    const category = await Category.create(req.body);
     res.status(201).json({
-      message: "Category created successfully.",
-      category,
+      success: true,
+      message: "Category created successfully",
+      data: category,
     });
   } catch (error) {
-    next(error);
+    console.log(error);
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+      errors: error.errors?.map((err) => ({
+        field: err.path,
+        message: err.message,
+      })),
+    });
   }
 };
 
-exports.updateCategory = async (req, res, next) => {
+//Get All Categories with out subcategories
+exports.getAllCategories = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, href, image_url, parent_id } = req.body;
-
-    const category = await Category.findByPk(id);
-    if (!category) {
-      return res.status(404).json({ error: "Category not found." });
-    }
-
-    if (title !== undefined) category.title = title;
-    if (href !== undefined) category.href = href;
-    if (image_url !== undefined) category.image_url = image_url;
-    if (parent_id !== undefined) category.parent_id = parent_id || null;
-
-    await category.save();
+    const categories = await Category.findAll({
+      order: [["id", "ASC"]],
+    });
 
     res.status(200).json({
-      message: "Category updated successfully.",
-      category,
+      success: true,
+      data: categories,
     });
   } catch (error) {
-    next(error);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-exports.deleteCategory = async (req, res, next) => {
+//Get Single Category
+exports.getCategoryById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const category = await Category.findByPk(id);
+    const category = await Category.findByPk(req.params.id);
+
     if (!category) {
-      return res.status(404).json({ error: "Category not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: category,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+      errors: error.errors?.map((err) => ({
+        field: err.path,
+        message: err.message,
+      })),
+    });
+  }
+};
+
+//Update Category
+exports.updateCategory = async (req, res) => {
+  try {
+    const category = await Category.findByPk(req.params.id);
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    await category.update(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Category updated successfully",
+      data: category,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+      errors: error.errors?.map((err) => ({
+        field: err.path,
+        message: err.message,
+      })),
+    });
+  }
+};
+
+//Delete Category
+exports.deleteCategory = async (req, res) => {
+  try {
+    const category = await Category.findByPk(req.params.id);
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
     }
 
     await category.destroy();
 
     res.status(200).json({
-      message: "Category deleted successfully.",
-      categoryId: id,
+      success: true,
+      message: "Category deleted successfully",
     });
   } catch (error) {
-    next(error);
+    console.log(error);
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+      errors: error.errors?.map((err) => ({
+        field: err.path,
+        message: err.message,
+      })),
+    });
+  }
+};
+
+// Get All Categories with subcategories
+exports.getAllCategoriesWithSubcategories = async (req, res) => {
+  try {
+    const categories = await Category.findAll({
+      include: [
+        {
+          model: SubCategory,
+          as: "subcategories",
+          required: false,
+        },
+      ],
+      order: [["id", "ASC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: categories,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

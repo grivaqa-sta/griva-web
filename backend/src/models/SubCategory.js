@@ -1,8 +1,8 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
 
-const Category = sequelize.define(
-  "Category",
+const SubCategory = sequelize.define(
+  "SubCategory",
   {
     id: {
       type: DataTypes.INTEGER,
@@ -10,19 +10,23 @@ const Category = sequelize.define(
       autoIncrement: true,
     },
 
+    category_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+
     title: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
+    href: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
 
     slug: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-    },
-
-    href: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
@@ -39,16 +43,21 @@ const Category = sequelize.define(
     },
   },
   {
-    tableName: "categories",
+    tableName: "sub_categories",
     timestamps: true,
-  },
+  }
 );
 
-Category.associate = (models) => {
-  Category.hasMany(models.SubCategory, {
+SubCategory.associate = (models) => {
+  SubCategory.belongsTo(models.Category, {
     foreignKey: "category_id",
-    as: "subcategories",
+    as: "category",
+  });
+
+  SubCategory.hasMany(models.Product, {
+    foreignKey: "subcategory_id",
+    as: "products",
   });
 };
 
-module.exports = Category;
+module.exports = SubCategory;

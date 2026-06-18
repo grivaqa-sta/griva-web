@@ -1,0 +1,92 @@
+@baseUrl = http://localhost:8080/api
+
+### 1. Authenticate / Login to get Token
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jassim.althani@gmail.com",
+  "password": "Customer123!"
+}
+
+### Save JWT Token variable from response
+@authToken = {{login.response.body.token}}
+
+
+### 2. Fetch User's Cart
+GET {{baseUrl}}/cart
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+
+### 3. Add Item to Cart (Oud Ispahan, Product ID 1)
+# @name addItem
+POST {{baseUrl}}/cart/items
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "selected_color": "Gold",
+  "selected_storage": "100ml",
+  "quantity": 2
+}
+
+### Save newly created item ID from response
+@itemId = {{addItem.response.body.cart.items[0].id}}
+
+
+### 4. Update Item Quantity (Capped at stock = 25)
+PATCH {{baseUrl}}/cart/items/{{itemId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "quantity": 5
+}
+
+
+### 5. Verify Inventory Stock Limits (Stock limit is 25 - Should return 400 error)
+PATCH {{baseUrl}}/cart/items/{{itemId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "quantity": 100
+}
+
+
+### 6. Merge Guest Cart Items
+POST {{baseUrl}}/cart/merge
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 3,
+      "selectedColor": "Gold",
+      "selectedStorage": "100ml"
+    },
+    {
+      "productId": 2,
+      "quantity": 2,
+      "selectedColor": "Black",
+      "selectedStorage": "50g"
+    }
+  ]
+}
+
+
+### 7. Remove Single Item by ID
+DELETE {{baseUrl}}/cart/items/{{itemId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+
+### 8. Clear Complete Cart
+DELETE {{baseUrl}}/cart
+Authorization: Bearer {{authToken}}
+Content-Type: application/json

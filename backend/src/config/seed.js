@@ -376,6 +376,7 @@ const seedDatabase = async () => {
 
     // 1. Seed Admin User
     const admin = await User.create({
+      name: "Admin",
       email: "admin@griva.qa",
       password: "AdminPassword123!", // Will be hashed automatically by user model hooks
       role: "admin",
@@ -383,10 +384,10 @@ const seedDatabase = async () => {
     console.log("➕ [SEED]: Default Admin account generated: admin@griva.qa / AdminPassword123!");
 
     // 2. Seed Customer Users
-    const customer1 = await User.create({ email: "jassim.althani@gmail.com", password: "Customer123!", role: "customer" });
-    const customer2 = await User.create({ email: "fatima.almansouri@yahoo.com", password: "Customer123!", role: "customer" });
-    const customer3 = await User.create({ email: "john.doe@verizon.com", password: "Customer123!", role: "customer" });
-    const customer4 = await User.create({ email: "sara.alkhanji@hotmail.com", password: "Customer123!", role: "customer" });
+    const customer1 = await User.create({ name: "Jassim Al-Thani", email: "jassim.althani@gmail.com", password: "Customer123!", role: "customer" });
+    const customer2 = await User.create({ name: "Fatima Al-Mansouri", email: "fatima.almansouri@yahoo.com", password: "Customer123!", role: "customer" });
+    const customer3 = await User.create({ name: "John Doe", email: "john.doe@verizon.com", password: "Customer123!", role: "customer" });
+    const customer4 = await User.create({ name: "Sara Al-Khanji", email: "sara.alkhanji@hotmail.com", password: "Customer123!", role: "customer" });
     console.log("➕ [SEED]: Customer accounts generated.");
 
     // 3. Seed Site Settings

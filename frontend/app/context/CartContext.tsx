@@ -6,16 +6,22 @@ import {
   useReducer,
   useEffect,
   useState,
+  useRef,
   ReactNode,
 } from "react";
 import { CartItem, CartState, CartAction } from "@/app/types/types";
 import { parsePriceNumber } from "@/app/data/data";
+import { useUser } from "./UserContext";
+import { cartService } from "../services/cart.service";
 
 // ─────────────────────────────────────────────────────────
 // Reducer
 // ─────────────────────────────────────────────────────────
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
+    case "SET_CART": {
+      return buildState(action.payload);
+    }
     case "ADD": {
       const existing = state.items.find(
         (item) =>
@@ -102,32 +108,90 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load from localStorage after hydration
+  const { state: userState } = useUser();
+  const isLoggedIn = userState.isLoggedIn && userState.role !== "admin";
+  const prevIsLoggedInRef = useRef<boolean | null>(null);
+
+  // Load from localStorage after hydration (if guest user)
   useEffect(() => {
+    if (isLoggedIn) {
+      setHydrated(true);
+      return;
+    }
     try {
       const stored = localStorage.getItem("griva-cart");
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          parsed.forEach((item) => dispatch({ type: "ADD", payload: item }));
+          dispatch({ type: "SET_CART", payload: parsed });
         }
       }
     } catch {
       // ignore
     }
     setHydrated(true);
-  }, []);
+  }, [isLoggedIn]);
 
-  // Persist to localStorage
+  // Persist to localStorage (only if guest user)
+  useEffect(() => {
+    if (!hydrated || isLoggedIn) return;
+    localStorage.setItem("griva-cart", JSON.stringify(state.items));
+  }, [state.items, hydrated, isLoggedIn]);
+
+  // Sync / merge cart when isLoggedIn state changes
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem("griva-cart", JSON.stringify(state.items));
-  }, [state.items, hydrated]);
+
+    const syncCartOnAuthChange = async () => {
+      if (isLoggedIn) {
+        try {
+          const stored = localStorage.getItem("griva-cart");
+          let guestItems = [];
+          if (stored) {
+            try {
+              guestItems = JSON.parse(stored);
+            } catch { /* ignore */ }
+          }
+
+          if (Array.isArray(guestItems) && guestItems.length > 0) {
+            console.log("Merging guest cart with database user cart...");
+            const mergeResponse = await cartService.mergeCart(
+              guestItems.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                selectedColor: item.selectedColor,
+                selectedStorage: item.selectedStorage,
+              }))
+            );
+            if (mergeResponse.success && mergeResponse.cart) {
+              dispatch({ type: "SET_CART", payload: mergeResponse.cart.items });
+              localStorage.removeItem("griva-cart");
+            }
+          } else {
+            console.log("Fetching database user cart...");
+            const getResponse = await cartService.getCart();
+            if (getResponse.success && getResponse.cart) {
+              dispatch({ type: "SET_CART", payload: getResponse.cart.items });
+            }
+          }
+        } catch (error) {
+          console.error("Failed to sync cart:", error);
+        }
+      } else if (prevIsLoggedInRef.current === true) {
+        // User logged out: clear memory cart
+        dispatch({ type: "CLEAR" });
+      }
+      
+      prevIsLoggedInRef.current = isLoggedIn;
+    };
+
+    syncCartOnAuthChange();
+  }, [isLoggedIn, hydrated]);
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
 
-  const addToCart = (product: {
+  const addToCart = async (product: {
     id: number;
     title: string;
     image: CartItem["image"];
@@ -137,34 +201,89 @@ export function CartProvider({ children }: { children: ReactNode }) {
     selectedStorage?: string;
     quantity?: number;
   }) => {
-    const cartItem: CartItem = {
-      id: Date.now() + Math.random(),
-      productId: product.id,
-      title: product.title,
-      image: product.image,
-      price: product.price,
-      priceNumber: parsePriceNumber(product.price),
-      quantity: product.quantity ?? 1,
-      category: product.category,
-      selectedColor: product.selectedColor,
-      selectedStorage: product.selectedStorage,
-    };
-    dispatch({ type: "ADD", payload: cartItem });
-    openDrawer();
+    const qty = product.quantity ?? 1;
+
+    if (isLoggedIn) {
+      try {
+        const response = await cartService.addItem(
+          product.id,
+          product.selectedColor,
+          product.selectedStorage,
+          qty
+        );
+        if (response.success && response.cart) {
+          dispatch({ type: "SET_CART", payload: response.cart.items });
+          openDrawer();
+        }
+      } catch (error: any) {
+        const errMsg = error.response?.data?.message || "Failed to add item to database cart.";
+        alert(errMsg);
+      }
+    } else {
+      const cartItem: CartItem = {
+        id: Date.now() + Math.random(),
+        productId: product.id,
+        title: product.title,
+        image: product.image,
+        price: product.price,
+        priceNumber: parsePriceNumber(product.price),
+        quantity: qty,
+        category: product.category,
+        selectedColor: product.selectedColor,
+        selectedStorage: product.selectedStorage,
+      };
+      dispatch({ type: "ADD", payload: cartItem });
+      openDrawer();
+    }
+  };
+
+  // Intercept dispatches to sync database cart when user is logged in
+  const customDispatch = async (action: CartAction) => {
+    if (isLoggedIn) {
+      try {
+        if (action.type === "UPDATE_QTY") {
+          const response = await cartService.updateItemQty(action.payload.id, action.payload.quantity);
+          if (response.success && response.cart) {
+            dispatch({ type: "SET_CART", payload: response.cart.items });
+          }
+        } else if (action.type === "REMOVE") {
+          const response = await cartService.removeItem(action.payload.id);
+          if (response.success && response.cart) {
+            dispatch({ type: "SET_CART", payload: response.cart.items });
+          }
+        } else if (action.type === "CLEAR") {
+          const response = await cartService.clearCart();
+          if (response.success && response.cart) {
+            dispatch({ type: "SET_CART", payload: response.cart.items });
+          }
+        } else {
+          dispatch(action);
+        }
+      } catch (error: any) {
+        const errMsg = error.response?.data?.message || "Failed to sync cart update with server.";
+        alert(errMsg);
+      }
+    } else {
+      dispatch(action);
+    }
   };
 
   return (
     <CartContext.Provider
-      value={{ state, dispatch, isDrawerOpen, openDrawer, closeDrawer, addToCart }}
+      value={{
+        state,
+        dispatch: customDispatch,
+        isDrawerOpen,
+        openDrawer,
+        closeDrawer,
+        addToCart,
+      }}
     >
       {children}
     </CartContext.Provider>
   );
 }
 
-// ─────────────────────────────────────────────────────────
-// Hook
-// ─────────────────────────────────────────────────────────
 export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used inside CartProvider");

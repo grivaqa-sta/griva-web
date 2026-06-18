@@ -168,7 +168,8 @@ export type CartAction =
   | { type: "ADD"; payload: CartItem }
   | { type: "REMOVE"; payload: { id: number } }
   | { type: "UPDATE_QTY"; payload: { id: number; quantity: number } }
-  | { type: "CLEAR" };
+  | { type: "CLEAR" }
+  | { type: "SET_CART"; payload: CartItem[] };
 
 export interface CartState {
   items: CartItem[];

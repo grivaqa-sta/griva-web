@@ -34,8 +34,15 @@ export default function AdminDashboard() {
   //   if (!localStorage.getItem("griva_admin_auth")) router.replace("/admin/login");
   // }, [router]);
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab]       = useState<TabType>("overview");
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const tabParam = searchParams?.get("tab") as TabType | null;
+
+  const validTabs: TabType[] = ["overview", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery"];
+  const activeTab = tabParam && validTabs.includes(tabParam) ? tabParam : "overview";
+
+  const handleSetActiveTab = (tab: TabType) => {
+    router.push(`/admin?tab=${tab}`);
+  };
 
   const [slidesList]                    = useState<SlideData[]>(initialSlides);
   const [offersList, setOffersList]     = useState<OfferCard[]>(initialOffers);
@@ -119,7 +126,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-white text-gray-900 flex font-sans antialiased selection:bg-orange-500 selection:text-white">
 
       {/* ── Sidebar ── */}
-      <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <AdminSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} />
 
       {/* ── Main ── */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
@@ -137,7 +144,7 @@ export default function AdminDashboard() {
               midnightSaleEnabled={midnightSaleEnabled}       setMidnightSaleEnabled={handleToggleMidnightSale}
               highlightedSchemaSection={highlightedSchemaSection}
               setHighlightedSchemaSection={setHighlightedSchemaSection}
-              setActiveTab={setActiveTab}
+              setActiveTab={handleSetActiveTab}
               slidesList={slidesList} categoriesList={categoriesList} offersList={offersList}
             />
           )}

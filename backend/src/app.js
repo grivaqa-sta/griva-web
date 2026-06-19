@@ -61,6 +61,7 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const subCategoryRoutes = require("./routes/subCategoryRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const deliveryRoutes = require("./routes/deliveryRoutes"); // FEATURE: Delivery Boy System
+const testEmailRoutes = require("./routes/testEmailRoutes");
 
 // Mount API Routers
 app.use("/api/auth", authRoutes);
@@ -77,6 +78,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/subcategories", subCategoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/delivery", deliveryRoutes); // FEATURE: Delivery Boy System
+app.use("/api/test-email", testEmailRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

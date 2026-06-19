@@ -380,10 +380,12 @@ export default function DeliveryLoginPage() {
           </svg>
         </div>
 
-        {/* Minimal skyline silhouette */}
-        <svg className="absolute bottom-0 w-full h-16 opacity-[0.08] text-white" viewBox="0 0 400 64" fill="currentColor" preserveAspectRatio="none">
-          <path d="M0,64 L0,48 L15,48 L15,32 L20,32 L20,44 L32,44 L32,24 L40,24 L40,40 L55,40 L55,16 L65,16 L65,48 L80,48 L80,36 L92,36 L92,44 L110,44 L110,8 L122,8 L122,38 L135,38 L135,28 L142,28 L142,48 L160,48 L160,32 L172,32 L172,42 L185,42 L185,12 L198,12 L198,40 L210,40 L210,24 L222,24 L222,46 L235,46 L235,16 L248,16 L248,36 L265,36 L265,30 L275,30 L275,44 L290,44 L290,20 L302,20 L302,38 L320,38 L320,8 L330,8 L330,44 L345,44 L345,28 L355,28 L355,36 L370,36 L370,14 L385,14 L385,48 L400,48 L400,64 Z" />
-        </svg>
+        {/* Brand pattern silhouette */}
+        <img 
+          src={theme === "dark" ? "/images/logo-kit/brand-pattern-dark-transparent.png" : "/images/logo-kit/brand-pattern-white-transparent.png"} 
+          alt="Brand Pattern" 
+          className="absolute bottom-0 w-full h-24 object-cover object-bottom opacity-100" 
+        />
       </div>
 
       {/* Footer Disclaimer */}

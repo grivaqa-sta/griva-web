@@ -470,10 +470,10 @@ const seedDatabase = async () => {
     const customerCount = await User.count({ where: { role: "customer" } });
     let customer1, customer2, customer3, customer4;
     if (customerCount === 0) {
-      customer1 = await User.create({ name: "Jassim Al-Thani", email: "jassim.althani@gmail.com", password: "Customer123!", role: "customer" });
-      customer2 = await User.create({ name: "Fatima Al-Mansouri", email: "fatima.almansouri@yahoo.com", password: "Customer123!", role: "customer" });
-      customer3 = await User.create({ name: "John Doe", email: "john.doe@verizon.com", password: "Customer123!", role: "customer" });
-      customer4 = await User.create({ name: "Sara Al-Khanji", email: "sara.alkhanji@hotmail.com", password: "Customer123!", role: "customer" });
+      customer1 = await User.create({ name: "Jassim Al-Thani", email: "jassim.althani@gmail.com", password: "Customer123!", role: "customer", phone: "+9747770123" });
+      customer2 = await User.create({ name: "Fatima Al-Mansouri", email: "fatima.almansouri@yahoo.com", password: "Customer123!", role: "customer", phone: "+9747771123" });
+      customer3 = await User.create({ name: "John Doe", email: "john.doe@verizon.com", password: "Customer123!", role: "customer", phone: "+9747772123" });
+      customer4 = await User.create({ name: "Sara Al-Khanji", email: "sara.alkhanji@hotmail.com", password: "Customer123!", role: "customer", phone: "+9747773123" });
       console.log("➕ [SEED]: Customer accounts generated.");
     } else {
       console.log("ℹ️ [SEED]: Customer accounts already exist. Skipping.");
@@ -724,7 +724,7 @@ const seedDatabase = async () => {
           { dayOffset: 4, customerId: 1, productIdx: 2, qty: 1, status: "shipped" },
           { dayOffset: 4, customerId: 2, productIdx: 7, qty: 1, status: "completed" },
           { dayOffset: 5, customerId: 3, productIdx: 4, qty: 1, status: "completed" },
-          { dayOffset: 6, customerId: 0, productIdx: 1, qty: 1, status: "cancelled" },
+          { dayOffset: 6, customerId: 0, productIdx: 1, qty: 1, status: "returned" },
           { dayOffset: 6, customerId: 1, productIdx: 5, qty: 2, status: "completed" },
           { dayOffset: 7, customerId: 2, productIdx: 0, qty: 1, status: "completed" },
           { dayOffset: 8, customerId: 3, productIdx: 2, qty: 1, status: "shipped" },

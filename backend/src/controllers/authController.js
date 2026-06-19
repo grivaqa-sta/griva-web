@@ -125,6 +125,13 @@ exports.login = async (req, res, next) => {
       });
     }
 
+    if (user.status === "BLOCKED") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been blocked. Please contact customer support.",
+      });
+    }
+
     // Compare password
     const isMatch = await user.comparePassword(password);
 

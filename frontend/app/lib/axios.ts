@@ -26,3 +26,24 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.message?.toLowerCase().includes("blocked")
+    ) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("griva_user_token");
+        localStorage.removeItem("griva_user");
+
+        const event = new CustomEvent("griva-user-blocked", {
+          detail: { message: error.response.data.message },
+        });
+        window.dispatchEvent(event);
+      }
+    }
+    return Promise.reject(error);
+  }
+);

@@ -386,5 +386,154 @@ export async function updateOrderStatusApi(id: number, status: string): Promise<
   return !!res;
 }
 
+// ─────────────────────────────────────────────────────────
+// Customer Management APIs
+// ─────────────────────────────────────────────────────────
+export interface CustomerInfo {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  totalOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  returnedOrders: number;
+  successRate: number;
+  totalSpent: number;
+  lastOrderDate: string | null;
+  riskLevel: string;
+  registrationDate: string;
+}
+
+export interface CustomerDetailInfo {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  registrationDate: string;
+  status: string;
+  addresses: {
+    home: any | null;
+    office: any | null;
+  };
+  stats: {
+    totalOrders: number;
+    deliveredOrders: number;
+    cancelledOrders: number;
+    returnedOrders: number;
+    totalSpent: number;
+    averageOrderValue: number;
+    lastOrderDate: string | null;
+  };
+  metrics: {
+    successRate: number;
+    riskLevel: string;
+    customerSegment: string;
+  };
+  recentOrders: {
+    id: number;
+    orderNumber: string;
+    date: string;
+    amount: string;
+    status: string;
+  }[];
+}
+
+export interface CustomerAnalyticsData {
+  totalCustomers: number;
+  activeCustomers: number;
+  blockedCustomers: number;
+  newCustomersThisMonth: number;
+  repeatCustomers: number;
+  vipCustomers: number;
+  highRiskCustomers: number;
+  averageCustomerValue: number;
+}
+
+export async function getCustomersApi(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  filter?: string;
+  sort?: string;
+}): Promise<{ customers: CustomerInfo[]; pagination: { page: number; limit: number; totalItems: number; totalPages: number } }> {
+  const query = new URLSearchParams();
+  if (params.page) query.append("page", params.page.toString());
+  if (params.limit) query.append("limit", params.limit.toString());
+  if (params.search) query.append("search", params.search);
+  if (params.filter) query.append("filter", params.filter);
+  if (params.sort) query.append("sort", params.sort);
+
+  const res = await safeFetch<{ success: boolean; customers: CustomerInfo[]; pagination: any }>(
+    `/admin/customers?${query.toString()}`,
+    { method: "GET" },
+    {
+      success: true,
+      customers: [],
+      pagination: { page: 1, limit: 10, totalItems: 0, totalPages: 0 },
+    }
+  );
+  return { customers: res.customers || [], pagination: res.pagination };
+}
+
+export async function getCustomerByIdApi(id: number): Promise<CustomerDetailInfo | null> {
+  const res = await safeFetch<{ success: boolean; customer: CustomerDetailInfo }>(
+    `/admin/customers/${id}`,
+    { method: "GET" },
+    { success: false, customer: null as any }
+  );
+  return res.customer || null;
+}
+
+export async function getCustomerOrdersApi(
+  id: number,
+  params: { page?: number; limit?: number; status?: string }
+): Promise<{ orders: any[]; pagination: { page: number; limit: number; totalItems: number; totalPages: number } }> {
+  const query = new URLSearchParams();
+  if (params.page) query.append("page", params.page.toString());
+  if (params.limit) query.append("limit", params.limit.toString());
+  if (params.status) query.append("status", params.status);
+
+  const res = await safeFetch<{ success: boolean; orders: any[]; pagination: any }>(
+    `/admin/customers/${id}/orders?${query.toString()}`,
+    { method: "GET" },
+    { success: true, orders: [], pagination: { page: 1, limit: 10, totalItems: 0, totalPages: 0 } }
+  );
+  return { orders: res.orders || [], pagination: res.pagination };
+}
+
+export async function getCustomerAnalyticsApi(): Promise<CustomerAnalyticsData> {
+  const defaultAnalytics: CustomerAnalyticsData = {
+    totalCustomers: 0,
+    activeCustomers: 0,
+    blockedCustomers: 0,
+    newCustomersThisMonth: 0,
+    repeatCustomers: 0,
+    vipCustomers: 0,
+    highRiskCustomers: 0,
+    averageCustomerValue: 0,
+  };
+
+  const res = await safeFetch<{ success: boolean; analytics: CustomerAnalyticsData }>(
+    "/admin/customers/analytics",
+    { method: "GET" },
+    { success: true, analytics: defaultAnalytics }
+  );
+  return res.analytics || defaultAnalytics;
+}
+
+export async function updateCustomerStatusApi(id: number, status: "ACTIVE" | "BLOCKED"): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/admin/customers/${id}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    },
+    { success: true }
+  );
+  return !!res;
+}
+
 //authentication
 

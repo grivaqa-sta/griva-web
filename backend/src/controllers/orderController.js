@@ -134,6 +134,13 @@ exports.createOrder = async (req, res, next) => {
         await transaction.rollback();
         return res.status(409).json({
           error: `Insufficient stock for '${product.title}'. Only ${product.stock} units available.`,
+          code: "INSUFFICIENT_STOCK",
+          details: {
+            productId: product.id,
+            title: product.title,
+            requestedQuantity: item.quantity,
+            availableStock: product.stock,
+          },
         });
       }
 

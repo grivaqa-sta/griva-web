@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   CheckCircle,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -71,6 +72,7 @@ export default function CheckoutPage() {
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState("");
+  const [stockErrors, setStockErrors] = useState<Record<number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
 
   // Form state
@@ -184,6 +186,50 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (formErrors[field]) {
       setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  // Stock error helpers
+  const activeStockErrors = Object.keys(stockErrors).filter((id) =>
+    cartState.items.some((item) => item.productId === Number(id))
+  );
+  const hasStockErrors = activeStockErrors.length > 0;
+
+  const handleUpdateStockQty = (itemId: number, productId: number, availableStock: number) => {
+    cartDispatch({
+      type: "UPDATE_QTY",
+      payload: { id: itemId, quantity: availableStock },
+    });
+    setStockErrors((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    // Clear top error message if there are no more active stock errors
+    const remaining = Object.keys(stockErrors).filter(
+      (id) => Number(id) !== productId && cartState.items.some((item) => item.productId === Number(id))
+    );
+    if (remaining.length === 0) {
+      setOrderError("");
+    }
+  };
+
+  const handleRemoveStockItem = (itemId: number, productId: number) => {
+    cartDispatch({
+      type: "REMOVE",
+      payload: { id: itemId },
+    });
+    setStockErrors((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    // Clear top error message if there are no more active stock errors
+    const remaining = Object.keys(stockErrors).filter(
+      (id) => Number(id) !== productId && cartState.items.some((item) => item.productId === Number(id))
+    );
+    if (remaining.length === 0) {
+      setOrderError("");
     }
   };
 
@@ -305,6 +351,35 @@ export default function CheckoutPage() {
         error.response?.data?.error ||
         error.response?.data?.message ||
         "Something went wrong. Please try again.";
+
+      const code = error.response?.data?.code;
+      const details = error.response?.data?.details;
+
+      if (code === "INSUFFICIENT_STOCK" && details) {
+        setStockErrors((prev) => ({
+          ...prev,
+          [details.productId]: {
+            title: details.title,
+            availableStock: details.availableStock,
+          },
+        }));
+      } else {
+        // Fallback regex matching
+        const regex = /Insufficient stock for '(.+?)'\. Only (\d+) units available\./;
+        const match = errMsg.match(regex);
+        if (match) {
+          const title = match[1];
+          const availableStock = parseInt(match[2], 10);
+          const item = cartState.items.find((i) => i.title === title);
+          if (item) {
+            setStockErrors((prev) => ({
+              ...prev,
+              [item.productId]: { title, availableStock },
+            }));
+          }
+        }
+      }
+
       setOrderError(errMsg);
       setIsPlacingOrder(false);
     }
@@ -733,40 +808,73 @@ export default function CheckoutPage() {
 
               {/* Items */}
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                {cartState.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <div className="relative h-14 w-14 shrink-0 rounded-lg border border-gray-100 bg-gray-50 p-1 overflow-hidden">
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        fill
-                        sizes="56px"
-                        className="object-contain"
-                      />
-                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
-                        {item.quantity}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {item.selectedColor && (
-                          <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                            {item.selectedColor}
-                          </span>
-                        )}
-                        {item.selectedStorage && (
-                          <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                            {item.selectedStorage}
-                          </span>
+                {cartState.items.map((item) => {
+                  const stockErr = stockErrors[item.productId];
+                  return (
+                    <div key={item.id} className="flex items-start gap-3">
+                      <div className="relative h-14 w-14 shrink-0 rounded-lg border border-gray-100 bg-gray-50 p-1 overflow-hidden mt-0.5">
+                        <Image
+                          src={item.image}
+                          alt={item.title}
+                          fill
+                          sizes="56px"
+                          className="object-contain"
+                        />
+                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                          {item.quantity}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {item.selectedColor && (
+                            <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                              {item.selectedColor}
+                            </span>
+                          )}
+                          {item.selectedStorage && (
+                            <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                              {item.selectedStorage}
+                            </span>
+                          )}
+                        </div>
+
+                        {stockErr && (
+                          <div className="mt-2 bg-red-50 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
+                            <div className="flex items-center gap-1.5 text-red-600">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              <span className="text-[11px] font-bold">
+                                {stockErr.availableStock === 0
+                                  ? "Out of Stock"
+                                  : `Only ${stockErr.availableStock} available`}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {stockErr.availableStock > 0 && (
+                                <button
+                                  onClick={() => handleUpdateStockQty(item.id, item.productId, stockErr.availableStock)}
+                                  className="text-[10px] bg-red-100 hover:bg-red-200 text-red-700 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                                >
+                                  Update to {stockErr.availableStock}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleRemoveStockItem(item.id, item.productId)}
+                                className="text-[10px] flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                Remove
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
+                      <span className="text-xs font-bold text-gray-900 shrink-0 mt-0.5">
+                        QAR {(item.priceNumber * item.quantity).toFixed(2)}
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-gray-900 shrink-0">
-                      QAR {(item.priceNumber * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Totals */}
@@ -801,18 +909,37 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Stock Warning Sidebar Notice Card */}
+              {hasStockErrors && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-2.5 animate-in fade-in-50 slide-in-from-bottom-2">
+                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-amber-800">Resolve Stock Issues</p>
+                    <p className="text-[11px] text-amber-600 mt-0.5 font-medium leading-relaxed">
+                      Some items in your cart do not have enough stock available. Please update their quantities or remove them to place your order.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
-                disabled={isPlacingOrder}
+                disabled={isPlacingOrder || hasStockErrors}
                 className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-lg ${
                   isPlacingOrder
                     ? "bg-gray-300 cursor-not-allowed shadow-none"
+                    : hasStockErrors
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none border border-gray-300/50"
                     : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20 cursor-pointer active:scale-[0.98]"
                 }`}
               >
                 {isPlacingOrder && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isPlacingOrder ? "Placing Order..." : `Place Order — QAR ${orderTotal.toFixed(2)}`}
+                {isPlacingOrder
+                  ? "Placing Order..."
+                  : hasStockErrors
+                  ? "Fix Cart Items to Place Order"
+                  : `Place Order — QAR ${orderTotal.toFixed(2)}`}
               </button>
 
               <p className="text-center text-[10px] text-gray-400">

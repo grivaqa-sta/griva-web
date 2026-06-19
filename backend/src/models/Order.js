@@ -50,7 +50,7 @@ const Order = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: "pending",
       validate: {
-        isIn: [["pending", "processing", "assigned", "out_for_delivery", "shipped", "delivered", "completed", "cancelled", "attempted", "rescheduled", "failed"]],
+        isIn: [["pending", "processing", "assigned", "out_for_delivery", "shipped", "delivered", "completed", "cancelled", "attempted", "rescheduled", "failed", "returned"]],
       },
     },
     total_price: {

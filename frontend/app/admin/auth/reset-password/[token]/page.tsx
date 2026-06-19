@@ -95,9 +95,7 @@ const handleResetPassword = async (e: React.FormEvent) => {
               <Sparkles className="h-6 w-6 text-gray-900" />
             </div>
 
-            <h1 className="text-2xl font-black tracking-wider bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">
-              GRIVA
-            </h1>
+            <img src="/images/logo-dark.png" alt="Griva Logo" className="h-8 w-auto object-contain mb-1" />
 
             <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-1">
               Reset Password

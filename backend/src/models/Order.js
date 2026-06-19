@@ -50,7 +50,7 @@ const Order = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: "pending",
       validate: {
-        isIn: [["pending", "processing", "assigned", "out_for_delivery", "shipped", "delivered", "completed", "cancelled"]],
+        isIn: [["pending", "processing", "assigned", "out_for_delivery", "shipped", "delivered", "completed", "cancelled", "attempted", "rescheduled", "failed"]],
       },
     },
     total_price: {
@@ -113,6 +113,37 @@ const Order = sequelize.define(
     assigned_at: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    // FEATURE: Delivery Attempt Management and Order Reopen System
+    delivery_attempts: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    },
+    attempt_notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    failed_reason: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reschedule_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    reopened_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    reopened_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    reopen_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
     },
   },
   {

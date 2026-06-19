@@ -92,7 +92,7 @@ export default function AnnouncementBar() {
   const { announcementBarEnabled } = useAdminSettings();
   const pathname = usePathname();
   if (!mounted) return null;
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) return null;
   if (!announcementBarEnabled) return null;
 
   const trendClass =

@@ -69,7 +69,7 @@ export default function Footer() {
   };
 
   const pathname = usePathname();
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) return null;
 
   return (
     <footer className="w-full bg-black pt-12 border-t border-zinc-800 text-white">
@@ -78,10 +78,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 mb-10">
           {/* Brand and Description (lg:col-span-4) */}
           <div className="lg:col-span-4 space-y-4">
-            <Link href="/" className="flex items-center gap-1">
-              <h2 className="text-xl font-bold tracking-tight text-white">
-                GR<span className="text-orange-500 font-extrabold">i</span>VA
-              </h2>
+            <Link href="/" className="flex items-center gap-1 shrink-0">
+              <img src="/images/logo-light.png" alt="Griva Logo" className="h-7 w-auto object-contain" />
             </Link>
             <p className="max-w-[280px] text-xs leading-relaxed text-zinc-400">
               Your go-to store for authenticated, high-quality flagship electronics, audio gear, and gadgets.

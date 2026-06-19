@@ -48,9 +48,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }: AdminSidebarPr
       {/* Logo */}
       <div>
         <div className="flex flex-col items-center px-6 h-16 -mt-6 -mx-6 mb-6 border-b border-orange-500/30 justify-center">
-          <span className="font-black text-lg tracking-wider bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">
-            GRIVA
-          </span>
+          <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain mb-0.5" />
           <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
             Admin Panel
           </span>

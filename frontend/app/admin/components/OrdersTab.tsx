@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ShoppingCart, CheckCircle, Truck, XCircle, Clock, UserCheck,
-  ChevronDown, Package, MapPin, Mail, Hash
+  ChevronDown, Package, MapPin, Mail, Hash, AlertTriangle, RefreshCw, PhoneCall
 } from 'lucide-react';
 import { AdminOrder, updateOrderStatusApi } from '../../utils/api';
 
@@ -21,6 +21,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   delivered:        { label: 'Delivered',        color: 'text-green-600',  bg: 'bg-green-50 border-green-200',    icon: <CheckCircle className="h-3 w-3" /> },
   completed:        { label: 'Completed',        color: 'text-green-600',  bg: 'bg-green-50 border-green-200',    icon: <CheckCircle className="h-3 w-3" /> },
   cancelled:        { label: 'Cancelled',        color: 'text-red-500',    bg: 'bg-red-50 border-red-200',        icon: <XCircle className="h-3 w-3" /> },
+  attempted:        { label: 'Attempted',        color: 'text-yellow-800', bg: 'bg-yellow-100 border-yellow-200',  icon: <AlertTriangle className="h-3 w-3" /> },
+  rescheduled:      { label: 'Rescheduled',      color: 'text-blue-800',   bg: 'bg-blue-100 border-blue-200',     icon: <RefreshCw className="h-3 w-3" /> },
+  failed:           { label: 'Failed',           color: 'text-red-800',    bg: 'bg-red-100 border-red-200',       icon: <XCircle className="h-3 w-3" /> },
 };
 
 const STATUS_FLOW: Record<string, string[]> = {
@@ -32,6 +35,9 @@ const STATUS_FLOW: Record<string, string[]> = {
   delivered:        [],
   completed:        [],
   cancelled:        [],
+  attempted:        ['processing', 'cancelled'],
+  rescheduled:      ['cancelled'],
+  failed:           ['processing', 'cancelled'],
 };
 
 interface DeliveryBoy {
@@ -51,6 +57,33 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [selectedDriverId, setSelectedDriverId] = useState<Record<number, number>>({});
   const [assigningId, setAssigningId] = useState<number | null>(null);
 
+  // FEATURE: Delivery Attempt Management — needs attention state
+  interface NeedsAttentionOrder {
+    id: number;
+    order_number?: string;
+    status: string;
+    total_price: string;
+    shipping_address: string;
+    customer_name?: string;
+    customer_phone?: string;
+    customer_email?: string;
+    delivery_attempts: number;
+    attempt_notes?: string;
+    failed_reason?: string;
+    reschedule_time?: string;
+    reopen_count: number;
+    updatedAt: string;
+    user?: { id: number; name: string; email: string };
+    deliveryBoy?: { id: number; name: string; email: string };
+    items?: { id: number; quantity: number; product?: { id: number; title: string } }[];
+  }
+  const [needsAttentionOrders, setNeedsAttentionOrders] = useState<NeedsAttentionOrder[]>([]);
+  const [reopenModal, setReopenModal] = useState<{ orderId: number; orderNumber: string } | null>(null);
+  const [reopenNote, setReopenNote] = useState('');
+  const [reopenLoading, setReopenLoading] = useState(false);
+  const [reopenError, setReopenError] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
+
   useEffect(() => {
     const fetchDeliveryBoys = async () => {
       try {
@@ -66,6 +99,24 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     };
     fetchDeliveryBoys();
   }, []);
+
+  // FEATURE: Delivery Attempt Management — fetch needs attention
+  const fetchNeedsAttention = async () => {
+    try {
+      const token = localStorage.getItem('griva_admin_token') || '';
+      const res = await fetch(`${API_BASE}/orders/needs-attention`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNeedsAttentionOrders(data.orders || []);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchNeedsAttention();
+  }, [ordersList]);
 
   const handleAssignDriver = async (orderId: number) => {
     const driverId = selectedDriverId[orderId];
@@ -97,6 +148,46 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     setUpdatingId(null);
   };
 
+  // FEATURE: Delivery Attempt Management — reopen order
+  const handleReopenOrder = async () => {
+    if (!reopenModal) return;
+    setReopenLoading(true);
+    setReopenError('');
+    try {
+      const token = localStorage.getItem('griva_admin_token') || '';
+      const res = await fetch(`${API_BASE}/orders/${reopenModal.orderId}/reopen`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ note: reopenNote }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setReopenModal(null);
+        setReopenNote('');
+        setOrdersList(prev => prev.map(o => o.id === reopenModal.orderId ? { ...o, status: 'processing' } : o));
+        fetchNeedsAttention();
+        setToastMsg('Order reopened. Please assign a driver.');
+        setTimeout(() => setToastMsg(''), 3500);
+      } else {
+        setReopenError(data.message || 'Something went wrong, please try again.');
+      }
+    } catch {
+      setReopenError('Something went wrong, please try again.');
+    } finally {
+      setReopenLoading(false);
+    }
+  };
+
+  const timeSince = (dateStr: string) => {
+    const secs = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (secs < 60) return 'just now';
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
   const filteredOrders = filterStatus === 'all'
     ? ordersList
     : ordersList.filter(o => o.status === filterStatus);
@@ -115,6 +206,153 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-300">
+
+      {/* FEATURE: Delivery Attempt Management — Needs Attention Alert Banner */}
+      {needsAttentionOrders.length > 0 && (
+        <a
+          href="#needs-attention-section"
+          className="block bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm font-bold cursor-pointer hover:bg-red-100 transition-colors"
+        >
+          ⚠️ {needsAttentionOrders.length} order{needsAttentionOrders.length > 1 ? 's' : ''} need your attention
+        </a>
+      )}
+
+      {/* FEATURE: Delivery Attempt Management — Needs Attention Section */}
+      {needsAttentionOrders.length > 0 && (
+        <div id="needs-attention-section" className="space-y-3">
+          <h3 className="text-sm font-black text-gray-800 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            ⚠️ Needs Attention
+          </h3>
+          {needsAttentionOrders.map((order) => {
+            const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+            const FAILED_REASON_LABELS: Record<string, string> = {
+              not_answering: 'Customer not answering',
+              customer_refused: 'Customer refused delivery',
+              wrong_address: 'Wrong address',
+              rescheduled: 'Customer asked to come later',
+            };
+            return (
+              <div key={order.id} className="bg-white border border-red-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-black text-gray-800">{order.order_number || `ORD-${String(order.id).padStart(4, '0')}`}</span>
+                    <span className={`ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border ${cfg.bg} ${cfg.color}`}>
+                      {cfg.icon}
+                      {cfg.label}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-gray-400 font-semibold">{timeSince(order.updatedAt)}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><span className="text-gray-400 font-semibold">Customer:</span> <span className="font-bold text-gray-800">{order.customer_name || order.user?.name || 'N/A'}</span></div>
+                  <div><span className="text-gray-400 font-semibold">Phone:</span> <span className="font-bold text-gray-800">{order.customer_phone || 'N/A'}</span></div>
+                  <div><span className="text-gray-400 font-semibold">Driver:</span> <span className="font-bold text-gray-800">{order.deliveryBoy?.name || 'Unassigned'}</span></div>
+                  <div><span className="text-gray-400 font-semibold">Attempts:</span> <span className="font-bold text-gray-800">{order.delivery_attempts}</span></div>
+                </div>
+
+                {order.attempt_notes && (
+                  <div className="bg-gray-50 rounded-lg p-2 text-xs text-gray-600">
+                    <span className="font-bold text-gray-400">Driver Note:</span> {order.attempt_notes}
+                  </div>
+                )}
+
+                {order.failed_reason && (
+                  <div className="text-xs font-bold text-orange-600">
+                    Reason: {FAILED_REASON_LABELS[order.failed_reason] || order.failed_reason}
+                  </div>
+                )}
+
+                {order.status === 'rescheduled' && order.reschedule_time && (
+                  <div className="text-xs font-bold text-blue-600">
+                    📅 Reschedule: {new Date(order.reschedule_time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {order.customer_phone && (
+                    <a
+                      href={`tel:${order.customer_phone}`}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold border bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 cursor-pointer"
+                    >
+                      <PhoneCall className="h-3 w-3" />
+                      📞 Call Customer
+                    </a>
+                  )}
+
+                  {(order.status === 'attempted' || order.status === 'failed' || order.status === 'cancelled') && (
+                    <button
+                      onClick={() => {
+                        setReopenModal({ orderId: order.id, orderNumber: order.order_number || `ORD-${String(order.id).padStart(4, '0')}` });
+                        setReopenNote('');
+                        setReopenError('');
+                      }}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold border bg-green-50 border-green-200 text-green-700 hover:bg-green-100 cursor-pointer"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      🔄 Reopen Order
+                    </button>
+                  )}
+
+                  {(order.status === 'rescheduled') && (
+                    <button
+                      onClick={() => {}}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold border bg-green-50 border-green-200 text-green-700 hover:bg-green-100 cursor-pointer"
+                    >
+                      <CheckCircle className="h-3 w-3" />
+                      ✅ Keep Assignment
+                    </button>
+                  )}
+
+                  {(order.status === 'rescheduled') && (
+                    <div className="relative">
+                      <select
+                        onChange={(e) => {
+                          const driverId = Number(e.target.value);
+                          if (driverId) {
+                            setSelectedDriverId(prev => ({ ...prev, [order.id]: driverId }));
+                            // Directly invoke assign driver
+                            setAssigningId(order.id);
+                            fetch(`${API_BASE}/orders/${order.id}/assign`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('griva_admin_token') || ''}` },
+                              body: JSON.stringify({ deliveryBoyId: driverId }),
+                            }).then(res => {
+                              if (res.ok) {
+                                setOrdersList(prev => prev.map(o => o.id === order.id ? { ...o, status: 'assigned', delivery_boy_id: driverId } : o));
+                                fetchNeedsAttention();
+                              }
+                              setAssigningId(null);
+                            }).catch(() => setAssigningId(null));
+                          }
+                        }}
+                        className="text-[10px] font-bold border border-gray-200 rounded-lg px-2 py-2 focus:outline-none"
+                      >
+                        <option value="">🔄 Reassign Driver...</option>
+                        {deliveryBoys.map(d => (
+                          <option key={d.id} value={d.id}>{d.name} ({d.activeOrderCount} active)</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {(order.status === 'attempted' || order.status === 'rescheduled' || order.status === 'failed') && (
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'cancelled')}
+                      disabled={updatingId === order.id}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold border bg-red-50 border-red-200 text-red-700 hover:bg-red-100 cursor-pointer disabled:opacity-50"
+                    >
+                      <XCircle className="h-3 w-3" />
+                      {updatingId === order.id ? '...' : '❌ Cancel Order'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 bg-white p-3 rounded-xl border border-orange-500/30">
@@ -357,6 +595,47 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           </table>
         </div>
       </div>
+
+      {/* FEATURE: Delivery Attempt Management — Reopen Confirmation Modal */}
+      {reopenModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setReopenModal(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-black text-gray-900">Reopen Order #{reopenModal.orderNumber}?</h3>
+            <p className="text-xs text-gray-500">This will move the order back to Processing so you can assign a driver again.</p>
+            <input
+              type="text"
+              value={reopenNote}
+              onChange={(e) => setReopenNote(e.target.value)}
+              placeholder="Customer called back and confirmed order"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs focus:outline-none focus:border-green-400"
+            />
+            {reopenError && <p className="text-red-600 text-xs font-bold bg-red-50 border border-red-200 rounded-lg p-2">{reopenError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={handleReopenOrder}
+                disabled={reopenLoading}
+                className="flex-1 bg-green-600 text-white text-xs font-bold py-2.5 rounded-lg disabled:opacity-50 cursor-pointer"
+              >
+                {reopenLoading ? 'Reopening...' : 'Confirm Reopen'}
+              </button>
+              <button
+                onClick={() => setReopenModal(null)}
+                className="flex-1 bg-gray-100 text-gray-600 text-xs font-bold py-2.5 rounded-lg cursor-pointer hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-gray-900 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg">
+          {toastMsg}
+        </div>
+      )}
     </div>
   );
 }

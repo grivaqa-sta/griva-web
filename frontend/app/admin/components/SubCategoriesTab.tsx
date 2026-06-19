@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, Edit, Check, X } from 'lucide-react';
+import { Search, Plus, Trash2, Edit, Check, X, Loader2 } from 'lucide-react';
 import { SubCategory, SubCategoryRequest, Category } from '@/app/types/types';
 import { subCategoryService } from '@/app/services/subCategory.service';
 import { categoryService } from '@/app/services/category.service';
+import { uploadService } from '@/app/services/upload.service';
 
 export default function SubCategoriesTab() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
@@ -23,6 +24,7 @@ export default function SubCategoriesTab() {
   });
   
   const [formLoading, setFormLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -64,11 +66,15 @@ export default function SubCategoriesTab() {
 
   const handleOpenEdit = (subCat: SubCategory) => {
     setEditingSubCategory(subCat);
+    const cat = categories.find(c => c.id === subCat.category_id);
+    const catSlug = cat ? cat.slug : '';
+    const subSlug = subCat.slug || '';
+    const computedHref = catSlug && subSlug ? `/category/${catSlug}?sub=${subSlug}` : subCat.href || '';
     setFormData({
       category_id: subCat.category_id,
       title: subCat.title,
       slug: subCat.slug,
-      href: subCat.href,
+      href: computedHref,
       image_url: subCat.image_url || '',
       is_active: subCat.is_active
     });
@@ -90,8 +96,8 @@ export default function SubCategoriesTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.slug || !formData.href || !formData.category_id) {
-      setError("Category, Title, Slug, and Href are required.");
+    if (!formData.title || !formData.slug || !formData.category_id) {
+      setError("Category and Title are required.");
       return;
     }
 
@@ -117,6 +123,25 @@ export default function SubCategoriesTab() {
       setError(err?.response?.data?.message || "Something went wrong.");
     }
     setFormLoading(false);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageUploading(true);
+    setError('');
+    try {
+      const data = await uploadService.uploadImage(file);
+      if (data && data.imageUrl) {
+        setFormData(prev => ({ ...prev, image_url: data.imageUrl }));
+      } else {
+        setError('Failed to upload image. No URL returned.');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to upload image');
+    }
+    setImageUploading(false);
   };
 
   const filteredSubCategories = subCategories.filter((c) =>
@@ -267,7 +292,14 @@ export default function SubCategoriesTab() {
                   <select
                     required
                     value={formData.category_id}
-                    onChange={(e) => setFormData({...formData, category_id: Number(e.target.value)})}
+                    onChange={(e) => {
+                      const newCatId = Number(e.target.value);
+                      const cat = categories.find(c => c.id === newCatId);
+                      const catSlug = cat ? cat.slug : '';
+                      const subSlug = formData.slug || '';
+                      const newHref = catSlug && subSlug ? `/category/${catSlug}?sub=${subSlug}` : formData.href;
+                      setFormData({...formData, category_id: newCatId, href: newHref});
+                    }}
                     className="w-full text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl bg-white"
                   >
                     <option value={0} disabled>Select a category</option>
@@ -286,7 +318,10 @@ export default function SubCategoriesTab() {
                     onChange={(e) => {
                       const newTitle = e.target.value;
                       const newSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-                      setFormData({...formData, title: newTitle, slug: newSlug});
+                      const cat = categories.find(c => c.id === formData.category_id);
+                      const catSlug = cat ? cat.slug : '';
+                      const newHref = catSlug ? `/category/${catSlug}?sub=${newSlug}` : `/category/${newSlug}`;
+                      setFormData({...formData, title: newTitle, slug: newSlug, href: newHref});
                     }}
                     className="w-full text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
                     placeholder="e.g. Laptops"
@@ -307,26 +342,57 @@ export default function SubCategoriesTab() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Href *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Href</label>
                   <input
                     type="text"
-                    required
+                    disabled
                     value={formData.href}
-                    onChange={(e) => setFormData({...formData, href: e.target.value})}
-                    className="w-full text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
-                    placeholder="e.g. /shop/electronics/laptops"
+                    className="w-full text-sm p-2.5 border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed outline-none rounded-xl"
+                    placeholder="Auto-generated from category & slug"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Image URL</label>
-                  <input
-                    type="text"
-                    value={formData.image_url || ''}
-                    onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                    className="w-full text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
-                    placeholder="https://..."
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={formData.image_url || ''}
+                      onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                      className="flex-1 text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
+                      placeholder="https://..."
+                    />
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageUpload} 
+                        disabled={imageUploading}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <button 
+                        type="button" 
+                        disabled={imageUploading}
+                        className="h-full px-4 bg-orange-50 text-orange-600 font-bold rounded-xl text-sm hover:bg-orange-100 transition-colors disabled:opacity-50 flex items-center justify-center pointer-events-none min-w-[80px]"
+                      >
+                        {imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Upload'}
+                      </button>
+                    </div>
+                  </div>
+                  {formData.image_url && (
+                    <div className="mt-2 flex flex-col items-start gap-1">
+                      <div className="h-20 w-20 rounded-lg overflow-hidden border border-gray-200">
+                        <img src={formData.image_url} alt="Preview" className="h-full w-full object-cover" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, image_url: ''})}
+                        className="text-[10px] text-red-400 hover:text-red-600 font-semibold"
+                      >
+                        Remove image
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">

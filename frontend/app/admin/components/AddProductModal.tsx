@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Sparkles, X, Upload, Link as LinkIcon, ImageIcon } from "lucide-react";
+import { Sparkles, X, Upload, Link as LinkIcon, ImageIcon, Loader2 } from "lucide-react";
 import { ProductRequest, Category, SubCategory } from "@/app/types/types";
 import { productService } from "@/app/services/product.service";
+import { uploadService } from "@/app/services/upload.service";
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -48,11 +49,10 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
   const [newVariantColor, setNewVariantColor] = useState("");
   const [newVariantSize, setNewVariantSize] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isUploadingMain, setIsUploadingMain] = useState(false);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const [error, setError] = useState("");
 
-  // Media upload mode: 'url' | 'file'
-  const [mainImageMode, setMainImageMode] = useState<'url' | 'file'>('url');
-  const [galleryInputMode, setGalleryInputMode] = useState<'url' | 'file'>('url');
   const mainImageFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
 
@@ -116,28 +116,45 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
     setFormData(prev => ({ ...prev, subcategory_id: subId, sku: newSku }));
   };
 
-  // Convert file to base64 data URL
-  const fileToDataUrl = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
   const handleMainImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
-    handleChange("main_image_url", dataUrl);
+    
+    setIsUploadingMain(true);
+    setError("");
+    try {
+      const data = await uploadService.uploadImage(file);
+      if (data && data.imageUrl) {
+        handleChange("main_image_url", data.imageUrl);
+      } else {
+        setError("Failed to upload main image. No URL returned.");
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to upload main image.");
+    }
+    setIsUploadingMain(false);
+    if (mainImageFileRef.current) mainImageFileRef.current.value = "";
   };
 
   const handleGalleryFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    const urls = await Promise.all(Array.from(files).map(fileToDataUrl));
-    handleChange("gallery_images", [...(formData.gallery_images || []), ...urls]);
-    // Reset file input
+    
+    setIsUploadingGallery(true);
+    setError("");
+    try {
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const data = await uploadService.uploadImage(files[i]);
+        if (data && data.imageUrl) {
+          uploadedUrls.push(data.imageUrl);
+        }
+      }
+      handleChange("gallery_images", [...(formData.gallery_images || []), ...uploadedUrls]);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to upload gallery images.");
+    }
+    setIsUploadingGallery(false);
     if (galleryFileRef.current) galleryFileRef.current.value = "";
   };
 
@@ -358,122 +375,77 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-[11px] font-bold text-gray-700">Main Image *</label>
-                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5 text-[10px] font-bold">
-                      <button
-                        type="button"
-                        onClick={() => { setMainImageMode('url'); handleChange("main_image_url", ""); }}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${mainImageMode === 'url' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-400'}`}
-                      >
-                        <LinkIcon className="w-3 h-3" /> URL
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setMainImageMode('file'); handleChange("main_image_url", ""); }}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${mainImageMode === 'file' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-400'}`}
-                      >
-                        <Upload className="w-3 h-3" /> Upload
-                      </button>
-                    </div>
                   </div>
 
-                  {mainImageMode === 'url' ? (
+                  <div>
                     <input
-                      type="url"
-                      placeholder="https://..."
-                      value={formData.main_image_url || ""}
-                      onChange={(e) => handleChange("main_image_url", e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-orange-500 outline-none"
+                      ref={mainImageFileRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleMainImageFile}
+                      className="hidden"
+                      id="main-image-file-input"
+                      disabled={isUploadingMain}
                     />
-                  ) : (
-                    <div>
-                      <input
-                        ref={mainImageFileRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleMainImageFile}
-                        className="hidden"
-                        id="main-image-file-input"
-                      />
-                      <label
-                        htmlFor="main-image-file-input"
-                        className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-orange-300 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors"
-                      >
-                        {formData.main_image_url ? (
-                          <img src={formData.main_image_url} alt="Preview" className="h-full w-full object-contain rounded-xl p-1" />
-                        ) : (
-                          <>
+                    <label
+                      htmlFor="main-image-file-input"
+                      className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-orange-300 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors ${isUploadingMain ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      {formData.main_image_url ? (
+                        <img src={formData.main_image_url} alt="Preview" className="h-full w-full object-contain rounded-xl p-1" />
+                      ) : (
+                        <>
+                          {isUploadingMain ? (
+                            <Loader2 className="w-6 h-6 text-orange-400 mb-1 animate-spin" />
+                          ) : (
                             <Upload className="w-6 h-6 text-orange-400 mb-1" />
-                            <span className="text-xs text-gray-400 font-semibold">Click to upload</span>
-                            <span className="text-[10px] text-gray-300">PNG, JPG, WEBP up to 10MB</span>
-                          </>
-                        )}
-                      </label>
-                      {formData.main_image_url && (
-                        <button
-                          type="button"
-                          onClick={() => { handleChange("main_image_url", ""); if (mainImageFileRef.current) mainImageFileRef.current.value = ""; }}
-                          className="mt-1 text-[10px] text-red-400 hover:text-red-600 font-semibold"
-                        >
-                          Remove image
-                        </button>
+                          )}
+                          <span className="text-xs text-gray-400 font-semibold">{isUploadingMain ? 'Uploading...' : 'Click to upload'}</span>
+                          <span className="text-[10px] text-gray-300">PNG, JPG, WEBP up to 10MB</span>
+                        </>
                       )}
-                    </div>
-                  )}
+                    </label>
+                    {formData.main_image_url && !isUploadingMain && (
+                      <button
+                        type="button"
+                        onClick={() => { handleChange("main_image_url", ""); if (mainImageFileRef.current) mainImageFileRef.current.value = ""; }}
+                        className="mt-1 text-[10px] text-red-400 hover:text-red-600 font-semibold"
+                      >
+                        Remove image
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Gallery Images */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-[11px] font-bold text-gray-700">Gallery Images</label>
-                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5 text-[10px] font-bold">
-                      <button
-                        type="button"
-                        onClick={() => setGalleryInputMode('url')}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${galleryInputMode === 'url' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-400'}`}
-                      >
-                        <LinkIcon className="w-3 h-3" /> URL
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGalleryInputMode('file')}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${galleryInputMode === 'file' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-400'}`}
-                      >
-                        <Upload className="w-3 h-3" /> Upload
-                      </button>
-                    </div>
                   </div>
 
-                  {galleryInputMode === 'url' ? (
-                    <div className="flex gap-2">
-                      <input
-                        type="url" placeholder="https://..."
-                        value={newGalleryImage}
-                        onChange={(e) => setNewGalleryImage(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGalleryImage(); } }}
-                        className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-orange-500 outline-none"
-                      />
-                      <button type="button" onClick={addGalleryImage} className="px-4 bg-orange-50 text-orange-600 font-bold rounded-xl text-sm hover:bg-orange-100 transition-colors">Add</button>
-                    </div>
-                  ) : (
-                    <div>
-                      <input
-                        ref={galleryFileRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleGalleryFile}
-                        className="hidden"
-                        id="gallery-file-input"
-                      />
-                      <label
-                        htmlFor="gallery-file-input"
-                        className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-orange-300 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors"
-                      >
+                  <div>
+                    <input
+                      ref={galleryFileRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleGalleryFile}
+                      className="hidden"
+                      id="gallery-file-input"
+                      disabled={isUploadingGallery}
+                    />
+                    <label
+                      htmlFor="gallery-file-input"
+                      className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-orange-300 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors ${isUploadingGallery ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      {isUploadingGallery ? (
+                        <Loader2 className="w-5 h-5 text-orange-400 mb-1 animate-spin" />
+                      ) : (
                         <Upload className="w-5 h-5 text-orange-400 mb-1" />
-                        <span className="text-xs text-gray-400 font-semibold">Click to upload multiple</span>
-                      </label>
-                    </div>
-                  )}
+                      )}
+                      <span className="text-xs text-gray-400 font-semibold">{isUploadingGallery ? 'Uploading...' : 'Click to upload multiple'}</span>
+                    </label>
+                  </div>
 
                   {formData.gallery_images && formData.gallery_images.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">

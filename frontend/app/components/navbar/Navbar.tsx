@@ -64,7 +64,7 @@ export default function Navbar() {
     }));
   };
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) return null;
 
   return (
     <div>
@@ -78,9 +78,7 @@ export default function Navbar() {
         <div className="hidden sm:flex mx-auto h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4 w-full">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <h1 className="text-2xl tracking-tight text-black font-semibold">
-              GR<span className="text-orange-500 font-extrabold">i</span>VA
-            </h1>
+            <img src="/images/logo-dark.png" alt="Griva Logo" className="h-7 w-auto object-contain" />
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -250,9 +248,7 @@ export default function Navbar() {
           <div className="flex sm:hidden flex-row items-center justify-between gap-3 px-4 py-2 w-full">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0">
-              <h1 className="text-xl tracking-tight text-black font-semibold">
-                GR<span className="text-orange-500 font-extrabold">i</span>VA
-              </h1>
+              <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain" />
             </Link>
 
             {/* Search Input Box */}

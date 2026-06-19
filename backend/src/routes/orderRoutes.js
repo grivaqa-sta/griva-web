@@ -22,6 +22,7 @@
 const express = require("express");
 const router = express.Router();
 const orderController = require("../controllers/orderController");
+const { reopenOrder, getNeedsAttention } = require("../controllers/deliveryAttemptController");
 const { authenticateJWT, authenticateOptionalJWT, isAdmin } = require("../middleware/auth");
 
 // ─────────────────────────────────────────────────────────
@@ -51,6 +52,9 @@ router.get("/", authenticateJWT, isAdmin, orderController.getAllOrders);
 // Maps to: GET /api/orders/analytics (Fetches dynamic storefront sales metrics)
 router.get("/analytics", authenticateJWT, isAdmin, orderController.getAnalytics);
 
+// FEATURE: Delivery Attempt Management — needs-attention must be before :id routes
+router.get("/needs-attention", authenticateJWT, isAdmin, getNeedsAttention);
+
 // Maps to: PATCH /api/orders/:id/status (e.g. /api/orders/12/status)
 router.patch("/:id/status", authenticateJWT, isAdmin, orderController.updateOrderStatus);
 
@@ -66,5 +70,8 @@ router.get("/admin/delivery-boys", authenticateJWT, isAdmin, orderController.get
 
 // Maps to: POST /api/orders/admin/delivery-boys (Admin creates a delivery boy account)
 router.post("/admin/delivery-boys", authenticateJWT, isAdmin, orderController.createDeliveryBoy);
+
+// FEATURE: Delivery Attempt Management — admin reopens cancelled/attempted/failed orders
+router.patch("/:id/reopen", authenticateJWT, isAdmin, reopenOrder);
 
 module.exports = router;

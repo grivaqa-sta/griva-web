@@ -38,7 +38,7 @@ export default function BannersTab(props: BannersTabProps) {
   const handleCategoryBannerUpload = async (slug: string, file: File) => {
     setUploadingSlug(slug);
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('griva_admin_token') : '';
       const formData = new FormData();
       formData.append('image', file);
       const res = await fetch(`${API_BASE_URL}/uploads`, {

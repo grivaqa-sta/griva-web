@@ -33,14 +33,15 @@ const emptyForm: AddressRequest = {
   label: "home",
   fullName: "",
   mobile: "",
-  addressLine1: "",
-  addressLine2: "",
+  area: "",
+  street: "",
+  building_number: "",
+  villa_apartment: "",
+  floor: "",
   landmark: "",
-  city: "",
-  district: "",
-  state: "",
-  country: "",
-  pincode: "",
+  zone: "",
+  city: "Doha",
+  country: "Qatar",
   isDefault: false,
 };
 
@@ -174,14 +175,15 @@ export default function AccountPage() {
       label: addr.label,
       fullName: addr.fullName,
       mobile: addr.mobile,
-      addressLine1: addr.addressLine1,
-      addressLine2: addr.addressLine2 ?? "",
+      area: addr.area,
+      street: addr.street,
+      building_number: addr.building_number,
+      villa_apartment: addr.villa_apartment ?? "",
+      floor: addr.floor ?? "",
       landmark: addr.landmark ?? "",
-      city: addr.city,
-      district: addr.district ?? "",
-      state: addr.state,
-      country: addr.country ?? "",
-      pincode: addr.pincode,
+      zone: addr.zone ?? "",
+      city: addr.city || "Doha",
+      country: addr.country || "Qatar",
       isDefault: addr.isDefault,
     });
     setEditingAddress(addr);
@@ -391,26 +393,58 @@ export default function AccountPage() {
                             className={inputClass} />
                         </div>
 
-                        {/* Address Line 1 */}
-                        <div className="sm:col-span-2">
-                          <label className={labelClass}>Address Line 1</label>
-                          <input type="text" required placeholder="House / Flat No., Building Name" value={formData.addressLine1}
-                            onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                        {/* Area */}
+                        <div>
+                          <label className={labelClass}>Area</label>
+                          <input type="text" required placeholder="e.g. Al Sadd" value={formData.area}
+                            onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                             className={inputClass} />
                         </div>
 
-                        {/* Address Line 2 */}
-                        <div className="sm:col-span-2">
-                          <label className={labelClass}>Address Line 2 <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-                          <input type="text" placeholder="Street, Area, Colony" value={formData.addressLine2 ?? ""}
-                            onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+                        {/* Street */}
+                        <div>
+                          <label className={labelClass}>Street Name / Number</label>
+                          <input type="text" required placeholder="e.g. C-Ring Road" value={formData.street}
+                            onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                            className={inputClass} />
+                        </div>
+
+                        {/* Building Number */}
+                        <div>
+                          <label className={labelClass}>Building Number</label>
+                          <input type="text" required placeholder="e.g. 42" value={formData.building_number}
+                            onChange={(e) => setFormData({ ...formData, building_number: e.target.value })}
+                            className={inputClass} />
+                        </div>
+
+                        {/* Villa / Apartment */}
+                        <div>
+                          <label className={labelClass}>Villa / Apartment <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+                          <input type="text" placeholder="e.g. Flat 302 / Villa 5" value={formData.villa_apartment ?? ""}
+                            onChange={(e) => setFormData({ ...formData, villa_apartment: e.target.value })}
+                            className={inputClass} />
+                        </div>
+
+                        {/* Floor */}
+                        <div>
+                          <label className={labelClass}>Floor <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+                          <input type="text" placeholder="e.g. 3rd Floor" value={formData.floor ?? ""}
+                            onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                            className={inputClass} />
+                        </div>
+
+                        {/* Zone */}
+                        <div>
+                          <label className={labelClass}>Zone <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+                          <input type="text" placeholder="e.g. 39" value={formData.zone ?? ""}
+                            onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
                             className={inputClass} />
                         </div>
 
                         {/* Landmark */}
                         <div className="sm:col-span-2">
                           <label className={labelClass}>Landmark <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-                          <input type="text" placeholder="Near bus stand, opposite park…" value={formData.landmark ?? ""}
+                          <input type="text" placeholder="e.g. Opposite Al Meera" value={formData.landmark ?? ""}
                             onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
                             className={inputClass} />
                         </div>
@@ -418,41 +452,13 @@ export default function AccountPage() {
                         {/* City */}
                         <div>
                           <label className={labelClass}>City</label>
-                          <input type="text" required placeholder="Mumbai" value={formData.city}
-                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className={inputClass} />
-                        </div>
-
-                        {/* District */}
-                        <div>
-                          <label className={labelClass}>District <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-                          <input type="text" placeholder="Mumbai Suburban" value={formData.district ?? ""}
-                            onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                            className={inputClass} />
-                        </div>
-
-                        {/* State */}
-                        <div>
-                          <label className={labelClass}>State</label>
-                          <input type="text" required placeholder="Maharashtra" value={formData.state}
-                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                            className={inputClass} />
+                          <input type="text" readOnly value="Doha" className={`${inputClass} bg-gray-100 cursor-not-allowed`} />
                         </div>
 
                         {/* Country */}
                         <div>
-                          <label className={labelClass}>Country <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-                          <input type="text" placeholder="India" value={formData.country ?? ""}
-                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                            className={inputClass} />
-                        </div>
-
-                        {/* Pincode */}
-                        <div>
-                          <label className={labelClass}>Pincode</label>
-                          <input type="text" required placeholder="400001" value={formData.pincode}
-                            onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                            className={inputClass} />
+                          <label className={labelClass}>Country</label>
+                          <input type="text" readOnly value="Qatar" className={`${inputClass} bg-gray-100 cursor-not-allowed`} />
                         </div>
 
                         {/* Set as Default */}
@@ -527,16 +533,16 @@ export default function AccountPage() {
                                   <p className="font-bold text-gray-900 text-sm">{addr.fullName}</p>
                                   <p className="text-gray-500 text-xs mt-0.5">{addr.mobile}</p>
                                   <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">
-                                    {addr.addressLine1}
-                                    {addr.addressLine2 && `, ${addr.addressLine2}`}
+                                    Bldg {addr.building_number}
+                                    {addr.villa_apartment && `, ${addr.villa_apartment}`}
+                                    {addr.floor && `, Floor ${addr.floor}`}
+                                    {`, ${addr.street}, ${addr.area}`}
+                                    {addr.zone && `, Zone ${addr.zone}`}
                                     {addr.landmark && ` (Near ${addr.landmark})`}
                                   </p>
                                   <p className="text-gray-500 text-sm">
-                                    {addr.city}{addr.district ? `, ${addr.district}` : ""}, {addr.state} — {addr.pincode}
+                                    {addr.city}, {addr.country}
                                   </p>
-                                  {addr.country && (
-                                    <p className="text-gray-400 text-xs mt-0.5">{addr.country}</p>
-                                  )}
 
                                   {!addr.isDefault && (
                                     <button

@@ -19,7 +19,7 @@ export default function DeliveryLoginPage() {
   // If already logged in as delivery, redirect
   useEffect(() => {
     try {
-      const token = localStorage.getItem("griva_token");
+      const token = localStorage.getItem("griva_delivery_token");
       if (token) {
         const payload = JSON.parse(atob(token.split(".")[1]));
         if (payload.role === "delivery") {
@@ -64,7 +64,7 @@ export default function DeliveryLoginPage() {
       }
 
       // Save token
-      localStorage.setItem("griva_token", data.token);
+      localStorage.setItem("griva_delivery_token", data.token);
       router.replace("/delivery/dashboard");
     } catch {
       setError("Check your internet connection.");

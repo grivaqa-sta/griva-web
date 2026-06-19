@@ -32,12 +32,28 @@ const Address = sequelize.define(
       allowNull: false,
     },
 
-    addressLine1: {
+    // Qatar-specific address fields
+    area: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
 
-    addressLine2: {
+    street: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    building_number: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    villa_apartment: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    floor: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -47,29 +63,20 @@ const Address = sequelize.define(
       allowNull: true,
     },
 
-    city: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-
-    district: {
+    zone: {
       type: DataTypes.STRING,
       allowNull: true,
     },
 
-    state: {
+    city: {
       type: DataTypes.STRING,
       allowNull: false,
+      defaultValue: "Doha",
     },
 
     country: {
       type: DataTypes.STRING,
-      defaultValue: "India",
-    },
-
-    pincode: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      defaultValue: "Qatar",
     },
 
     isDefault: {

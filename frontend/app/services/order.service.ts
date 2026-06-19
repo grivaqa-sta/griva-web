@@ -64,6 +64,29 @@ export interface MyOrdersResponse {
   orders: MyOrder[];
 }
 
+export interface TrackedOrder {
+  id: number;
+  order_number: string;
+  status: string;
+  total_price: string;
+  shipping_address: string;
+  customer_name?: string;
+  customer_phone?: string;
+  payment_method: string;
+  payment_status: string;
+  delivery_notes?: string;
+  city?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: MyOrderItem[];
+}
+
+export interface TrackOrderResponse {
+  success: boolean;
+  message?: string;
+  order?: TrackedOrder;
+}
+
 // ─────────────────────────────────────────────────────────
 // Service
 // ─────────────────────────────────────────────────────────
@@ -82,6 +105,16 @@ export const orderService = {
    */
   getMyOrders: async (): Promise<MyOrdersResponse> => {
     const response = await api.get("/orders/my-orders");
+    return response.data;
+  },
+
+  /**
+   * Track a guest order by order number + phone — GET /api/orders/track
+   */
+  trackOrder: async (orderNumber: string, phone: string): Promise<TrackOrderResponse> => {
+    const response = await api.get("/orders/track", {
+      params: { order_number: orderNumber, phone },
+    });
     return response.data;
   },
 };

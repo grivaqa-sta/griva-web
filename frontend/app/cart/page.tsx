@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus } from "lucide-react";
@@ -38,9 +39,37 @@ export default function CartPage() {
     }
   };
 
-  const shippingCost = state.totalPrice > 50 || state.totalPrice === 0 ? 0 : 9.99;
-  const estimatedTax = state.totalPrice * 0.08;
-  const orderTotal = state.totalPrice + shippingCost + estimatedTax;
+  const [shippingConfig, setShippingConfig] = useState({
+    shippingFee: 15,
+    freeShippingThreshold: 150,
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const s = data.settings;
+          if (s) {
+            setShippingConfig({
+              shippingFee: parseFloat(s.shippingFee) || 15,
+              freeShippingThreshold: parseFloat(s.freeShippingThreshold) || 150,
+            });
+          }
+        }
+      } catch {
+        // Use defaults silently
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const shippingCost =
+    state.totalPrice >= shippingConfig.freeShippingThreshold || state.totalPrice === 0
+      ? 0
+      : shippingConfig.shippingFee;
+  const orderTotal = state.totalPrice + shippingCost;
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-8">
@@ -176,11 +205,6 @@ export default function CartPage() {
                         `QAR ${shippingCost.toFixed(2)}`
                       )}
                     </span>
-                  </div>
-
-                  <div className="flex justify-between text-gray-600">
-                    <span>Estimated Tax (8%)</span>
-                    <span className="font-semibold text-gray-900">QAR {estimatedTax.toFixed(2)}</span>
                   </div>
 
                   <div className="border-t pt-4 flex justify-between text-base font-bold text-gray-900">

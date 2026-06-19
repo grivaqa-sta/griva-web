@@ -25,6 +25,13 @@ const orderController = require("../controllers/orderController");
 const { authenticateJWT, authenticateOptionalJWT, isAdmin } = require("../middleware/auth");
 
 // ─────────────────────────────────────────────────────────
+// Public Routes (No authentication required)
+// ─────────────────────────────────────────────────────────
+
+// Maps to: GET /api/orders/track?order_number=GRV-...&phone=+974... (Guest order tracking)
+router.get("/track", orderController.trackGuestOrder);
+
+// ─────────────────────────────────────────────────────────
 // Customer Authorized Routes (Requires valid JWT session)
 // ─────────────────────────────────────────────────────────
 

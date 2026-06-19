@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Order = require("../models/Order");
+const { Op } = require("sequelize");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
@@ -57,6 +59,28 @@ exports.register = async (req, res, next) => {
     });
 
     const token = generateToken(user);
+
+    // Account Linking: link guest orders by matching phone or email
+    try {
+      const userPhone = user.email; // email is always present
+      const linkedCount = await Order.update(
+        { user_id: user.id },
+        {
+          where: {
+            user_id: null,
+            [Op.or]: [
+              ...(email ? [{ customer_email: email.toLowerCase().trim() }] : []),
+            ],
+          },
+        }
+      );
+      if (linkedCount[0] > 0) {
+        console.log(`✅ Linked ${linkedCount[0]} guest order(s) to new user ${user.id}`);
+      }
+    } catch (linkError) {
+      // Non-critical — log but don't fail registration
+      console.error("⚠️ Guest order linking failed:", linkError.message);
+    }
 
     return res.status(201).json({
       success: true,

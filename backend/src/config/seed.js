@@ -453,10 +453,10 @@ const seedDatabase = async () => {
 
     // 1. Seed Admin User (using findOrCreate to avoid unique constraint error and data loss)
     const [admin, adminCreated] = await User.findOrCreate({
-      where: { email: "admin@griva.qa" },
+      where: { email: "admin@example.com" },
       defaults: {
         name: "Admin",
-        password: "AdminPassword123!", // Will be hashed automatically by user model hooks
+        password: "admin123", // Will be hashed automatically by user model hooks
         role: "admin",
       }
     });

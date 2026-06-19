@@ -8,11 +8,20 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  // Use the unified token key established in UserContext
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  if (typeof window !== "undefined") {
+    const pathname = window.location.pathname;
+    let token = null;
+    if (pathname.startsWith("/admin")) {
+      token = localStorage.getItem("griva_admin_token");
+    } else if (pathname.startsWith("/delivery")) {
+      token = localStorage.getItem("griva_delivery_token");
+    } else {
+      token = localStorage.getItem("griva_user_token");
+    }
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
 
   return config;

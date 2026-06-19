@@ -41,20 +41,21 @@ export interface ProfileData {
 }
 
 // ─────────────────────────────────────────────────────────
-//address
+//address (Qatar-specific)
 // ─────────────────────────────────────────────────────────
 export interface AddressRequest {
   label: "home" | "office" | "other";
   fullName: string;
   mobile: string;
-  addressLine1: string;
-  addressLine2?: string;
+  area: string;
+  street: string;
+  building_number: string;
+  villa_apartment?: string;
+  floor?: string;
   landmark?: string;
-  city: string;
-  district?: string;
-  state: string;
+  zone?: string;
+  city?: string;
   country?: string;
-  pincode: string;
   isDefault?: boolean;
 }
 
@@ -64,14 +65,15 @@ export interface Address {
   label: "home" | "office" | "other";
   fullName: string;
   mobile: string;
-  addressLine1: string;
-  addressLine2?: string;
+  area: string;
+  street: string;
+  building_number: string;
+  villa_apartment?: string;
+  floor?: string;
   landmark?: string;
+  zone?: string;
   city: string;
-  district?: string;
-  state: string;
   country: string;
-  pincode: string;
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;

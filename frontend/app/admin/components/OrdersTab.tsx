@@ -54,7 +54,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   useEffect(() => {
     const fetchDeliveryBoys = async () => {
       try {
-        const token = localStorage.getItem('griva_admin_token') || localStorage.getItem('griva_token') || localStorage.getItem('token') || '';
+        const token = localStorage.getItem('griva_admin_token') || '';
         const res = await fetch(`${API_BASE}/orders/admin/delivery-boys`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -72,7 +72,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     if (!driverId) return;
     setAssigningId(orderId);
     try {
-      const token = localStorage.getItem('griva_admin_token') || localStorage.getItem('griva_token') || localStorage.getItem('token') || '';
+      const token = localStorage.getItem('griva_admin_token') || '';
       const res = await fetch(`${API_BASE}/orders/${orderId}/assign`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

@@ -14,6 +14,7 @@ import {
   Layers,
   Truck,
 } from "lucide-react";
+import { useUser } from "@/app/context/UserContext";
 
 type TabType = "overview" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery";
 
@@ -35,11 +36,10 @@ const NAV = [
 
 export default function AdminSidebar({ activeTab, setActiveTab }: AdminSidebarProps) {
   const router = useRouter();
-
+  const { logout } = useUser();
+  
   const handleSignOut = () => {
-    localStorage.removeItem("griva_admin_auth");
-    localStorage.removeItem("griva_admin_token");
-    localStorage.removeItem("griva_admin_user");
+    logout();
     router.replace("/admin/auth/login");
   };
 

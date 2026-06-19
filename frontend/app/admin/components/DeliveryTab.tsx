@@ -33,7 +33,7 @@ export default function DeliveryTab() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("griva_admin_token") || localStorage.getItem("griva_token") || localStorage.getItem("token") || "";
+      const token = localStorage.getItem("griva_admin_token") || "";
       const res = await fetch(`${API_BASE}/orders/admin/delivery-boys`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -61,7 +61,7 @@ export default function DeliveryTab() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem("griva_admin_token") || localStorage.getItem("griva_token") || localStorage.getItem("token") || "";
+      const token = localStorage.getItem("griva_admin_token") || "";
       const res = await fetch(`${API_BASE}/orders/admin/delivery-boys`, {
         method: "POST",
         headers: {

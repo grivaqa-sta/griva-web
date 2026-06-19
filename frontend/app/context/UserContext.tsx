@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { CartItem } from "@/app/types/types";
 import { authService } from "../services/auth.service";
 
@@ -67,6 +68,9 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isAdminPath = pathname?.startsWith("/admin") ?? false;
+
   const [state, setState] = useState<UserState>({
     isLoggedIn: false,
     user: null,
@@ -99,8 +103,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("griva_user");
+        const token = localStorage.getItem(isAdminPath ? "griva_admin_token" : "griva_user_token");
+        const storedUser = localStorage.getItem(isAdminPath ? "griva_admin_user" : "griva_user");
         const storedAddresses = localStorage.getItem("griva_addresses");
         const storedOrders = localStorage.getItem("griva_orders");
 
@@ -140,13 +144,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
             console.error("Token valid but profile fetch failed", e);
             // If profile fails, clear token and state to prevent hanging auth states
             setState((prev) => ({ ...prev, isLoggedIn: false, token: null, user: null, role: null }));
-            localStorage.removeItem("token");
-            localStorage.removeItem("griva_user");
+            localStorage.removeItem(isAdminPath ? "griva_admin_token" : "griva_user_token");
+            localStorage.removeItem(isAdminPath ? "griva_admin_user" : "griva_user");
           }
         } else {
           setState((prev) => ({
             ...prev,
             isLoggedIn: false,
+            user: null,
+            role: null,
+            token: null,
             addresses,
             orders: storedOrders ? JSON.parse(storedOrders) : [],
           }));
@@ -159,7 +166,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     initializeAuth();
-  }, [getUserProfile]);
+  }, [getUserProfile, isAdminPath]);
 
   const login = (user: User, token: string) => {
     const role = user.role || "customer";
@@ -170,8 +177,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       role,
       token
     }));
-    localStorage.setItem("token", token);
-    localStorage.setItem("griva_user", JSON.stringify(user));
+    if (role === "admin") {
+      localStorage.setItem("griva_admin_token", token);
+      localStorage.setItem("griva_admin_user", JSON.stringify(user));
+    } else {
+      localStorage.setItem("griva_user_token", token);
+      localStorage.setItem("griva_user", JSON.stringify(user));
+    }
   };
 
   const logout = () => {
@@ -183,11 +195,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       profileData: null,
       token: null
     }));
-    localStorage.removeItem("token");
-    localStorage.removeItem("griva_user");
-    // Also remove old admin credentials for clean up
-    localStorage.removeItem("griva_admin_token");
-    localStorage.removeItem("griva_admin_user");
+    if (isAdminPath) {
+      localStorage.removeItem("griva_admin_token");
+      localStorage.removeItem("griva_admin_user");
+    } else {
+      localStorage.removeItem("griva_user_token");
+      localStorage.removeItem("griva_user");
+    }
   };
 
   const addAddress = (address: Address) => {

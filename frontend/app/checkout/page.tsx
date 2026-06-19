@@ -8,39 +8,126 @@ import { addressService } from "@/app/services/address.service";
 import { orderService } from "@/app/services/order.service";
 import { Address } from "@/app/types/types";
 import SectionHeading from "@/app/components/common/SectionHeading";
-import { Loader2, MapPin, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  MapPin,
+  AlertCircle,
+  User,
+  Phone,
+  Mail,
+  Building2,
+  MapPinned,
+  Truck,
+  CreditCard,
+  ShoppingBag,
+  CheckCircle,
+  ChevronRight,
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
+// ─────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────
+interface ShippingConfig {
+  shippingFee: number;
+  freeShippingThreshold: number;
+  whatsappNumber: string;
+}
+
+interface CheckoutForm {
+  fullName: string;
+  phone: string;
+  email: string;
+  area: string;
+  street: string;
+  buildingNumber: string;
+  villaApartment: string;
+  floor: string;
+  landmark: string;
+  deliveryNotes: string;
+}
+
+const INITIAL_FORM: CheckoutForm = {
+  fullName: "",
+  phone: "+974",
+  email: "",
+  area: "",
+  street: "",
+  buildingNumber: "",
+  villaApartment: "",
+  floor: "",
+  landmark: "",
+  deliveryNotes: "",
+};
+
+// ─────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────
 export default function CheckoutPage() {
-  const { state: userState } = useUser();
+  const { state: userState, isAuthenticated, isCustomer } = useUser();
   const { state: cartState, dispatch: cartDispatch } = useCart();
   const router = useRouter();
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState("");
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
 
-  // Addresses from backend
+  // Form state
+  const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM);
+
+  // Saved addresses (logged-in users)
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [addressesLoading, setAddressesLoading] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [useNewAddress, setUseNewAddress] = useState(false);
 
-  // Extra delivery info
-  const [deliveryNotes, setDeliveryNotes] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  // Shipping config from backend
+  const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
+    shippingFee: 15,
+    freeShippingThreshold: 150,
+    whatsappNumber: "+97455551234",
+  });
 
-  // Redirect guards
+  const isLoggedIn = isAuthenticated && isCustomer;
+
+  // Fetch site settings for shipping config
   useEffect(() => {
-    if (isPlacingOrder) return;
-    if (!userState.isLoggedIn) {
-      router.push("/auth/login");
-    } else if (cartState.items.length === 0) {
-      router.push("/cart");
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const s = data.settings;
+          if (s) {
+            setShippingConfig({
+              shippingFee: parseFloat(s.shippingFee) || 15,
+              freeShippingThreshold: parseFloat(s.freeShippingThreshold) || 150,
+              whatsappNumber: s.whatsappNumber || "+97455551234",
+            });
+          }
+        }
+      } catch {
+        // Use defaults silently
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Pre-fill form for logged-in users
+  useEffect(() => {
+    if (isLoggedIn && userState.user) {
+      setForm((prev) => ({
+        ...prev,
+        fullName: prev.fullName || userState.user?.name || "",
+        email: prev.email || userState.user?.email || "",
+      }));
     }
-  }, [userState.isLoggedIn, cartState.items.length, router, isPlacingOrder]);
+  }, [isLoggedIn, userState.user]);
 
-  // Fetch addresses from backend
+  // Fetch saved addresses for logged-in users
   useEffect(() => {
-    if (!userState.isLoggedIn) return;
+    if (!isLoggedIn) return;
     const fetchAddresses = async () => {
       setAddressesLoading(true);
       try {
@@ -53,35 +140,108 @@ export default function CheckoutPage() {
           ? data.data
           : [];
         setAddresses(result);
-        // Auto-select default address or first one
         const defaultAddr = result.find((a: Address) => a.isDefault);
         if (defaultAddr) {
           setSelectedAddressId(defaultAddr.id);
         } else if (result.length > 0) {
           setSelectedAddressId(result[0].id);
+        } else {
+          setUseNewAddress(true);
         }
       } catch {
-        console.error("Failed to load addresses");
+        setUseNewAddress(true);
       } finally {
         setAddressesLoading(false);
       }
     };
     fetchAddresses();
-  }, [userState.isLoggedIn]);
+  }, [isLoggedIn]);
 
-  if (!userState.isLoggedIn || (!isPlacingOrder && cartState.items.length === 0)) {
+  // Redirect if cart is empty (but not while placing order)
+  useEffect(() => {
+    if (isPlacingOrder) return;
+    if (cartState.items.length === 0) {
+      router.push("/cart");
+    }
+  }, [cartState.items.length, router, isPlacingOrder]);
+
+  if (!isPlacingOrder && cartState.items.length === 0) {
     return null;
   }
 
-  const shippingCost = cartState.totalPrice > 50 || cartState.totalPrice === 0 ? 0 : 9.99;
-  const estimatedTax = cartState.totalPrice * 0.08;
-  const orderTotal = cartState.totalPrice + shippingCost + estimatedTax;
+  // Calculate totals
+  const shippingCost =
+    cartState.totalPrice >= shippingConfig.freeShippingThreshold || cartState.totalPrice === 0
+      ? 0
+      : shippingConfig.shippingFee;
+  const orderTotal = cartState.totalPrice + shippingCost;
 
+  // Selected saved address
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
+  // Form field handler
+  const updateForm = (field: keyof CheckoutForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  // Validation
+  const validateForm = (): boolean => {
+    const errors: Partial<Record<keyof CheckoutForm, string>> = {};
+
+    // If logged in and using saved address, only validate contact info
+    const needsAddressValidation = !isLoggedIn || useNewAddress || !selectedAddress;
+
+    if (!form.fullName.trim()) errors.fullName = "Full name is required";
+    if (!form.phone.trim() || form.phone.trim().length < 8) errors.phone = "Valid phone number is required";
+    // Email is optional
+
+    if (needsAddressValidation) {
+      if (!form.area.trim()) errors.area = "Area is required";
+      if (!form.street.trim()) errors.street = "Street is required";
+      if (!form.buildingNumber.trim()) errors.buildingNumber = "Building number is required";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Build address string
+  const buildShippingAddress = (): string => {
+    if (isLoggedIn && !useNewAddress && selectedAddress) {
+      const parts = [
+        selectedAddress.building_number && `Bldg ${selectedAddress.building_number}`,
+        selectedAddress.villa_apartment,
+        selectedAddress.street,
+        selectedAddress.area,
+        selectedAddress.floor && `Floor ${selectedAddress.floor}`,
+        selectedAddress.landmark && `Near ${selectedAddress.landmark}`,
+        selectedAddress.zone && `Zone ${selectedAddress.zone}`,
+        selectedAddress.city,
+        selectedAddress.country,
+      ].filter(Boolean);
+      return parts.join(", ");
+    }
+
+    const parts = [
+      form.buildingNumber && `Bldg ${form.buildingNumber}`,
+      form.villaApartment,
+      form.street,
+      form.area,
+      form.floor && `Floor ${form.floor}`,
+      form.landmark && `Near ${form.landmark}`,
+      "Doha",
+      "Qatar",
+    ].filter(Boolean);
+    return parts.join(", ");
+  };
+
+  // Place order handler
   const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      setOrderError("Please select a delivery address.");
+    if (!validateForm()) {
+      setOrderError("Please fill in all required fields.");
       return;
     }
 
@@ -89,18 +249,18 @@ export default function CheckoutPage() {
     setOrderError("");
 
     try {
-      // Build shipping address string from the selected address
-      const addressParts = [
-        selectedAddress.addressLine1,
-        selectedAddress.addressLine2,
-        selectedAddress.landmark ? `Near ${selectedAddress.landmark}` : null,
-        selectedAddress.city,
-        selectedAddress.district,
-        selectedAddress.state,
-        selectedAddress.pincode,
-        selectedAddress.country,
-      ].filter(Boolean);
-      const shippingAddressStr = addressParts.join(", ");
+      const customerName =
+        isLoggedIn && !useNewAddress && selectedAddress
+          ? selectedAddress.fullName
+          : form.fullName;
+      const customerPhone =
+        isLoggedIn && !useNewAddress && selectedAddress
+          ? form.phone || selectedAddress.mobile
+          : form.phone;
+      const customerCity =
+        isLoggedIn && !useNewAddress && selectedAddress
+          ? selectedAddress.city
+          : "Doha";
 
       const response = await orderService.createOrder({
         items: cartState.items.map((item) => ({
@@ -109,20 +269,33 @@ export default function CheckoutPage() {
           selectedColor: item.selectedColor,
           selectedStorage: item.selectedStorage,
         })),
-        shipping_address: shippingAddressStr,
-        customer_name: selectedAddress.fullName || userState.user?.name || "",
-        customer_phone: phone || selectedAddress.mobile || "",
-        customer_email: email || userState.user?.email || "",
+        shipping_address: buildShippingAddress(),
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: form.email || userState.user?.email || "",
         payment_method: "COD",
-        delivery_notes: deliveryNotes || undefined,
-        city: selectedAddress.city || "",
+        delivery_notes: form.deliveryNotes || undefined,
+        city: customerCity,
       });
 
       if (response.success) {
+        // Save guest order reference for tracking
+        try {
+          const guestRef = {
+            order_number: response.order.order_number,
+            phone: customerPhone,
+            total: response.order.total_price,
+          };
+          localStorage.setItem("griva-last-order", JSON.stringify(guestRef));
+        } catch {}
+
         // Clear frontend cart state
         cartDispatch({ type: "CLEAR" });
-        // Navigate to success page with order number
-        router.push(`/order-success?order=${encodeURIComponent(response.order.order_number)}`);
+
+        // Navigate to success page
+        router.push(
+          `/order-success?order=${encodeURIComponent(response.order.order_number)}&total=${encodeURIComponent(response.order.total_price)}`
+        );
       } else {
         setOrderError(response.message || "Failed to place order. Please try again.");
         setIsPlacingOrder(false);
@@ -137,17 +310,45 @@ export default function CheckoutPage() {
     }
   };
 
+  // ─────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────
   return (
     <div className="bg-gray-50/50 min-h-screen py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading title="Checkout" subtitle="Complete your order" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
-          <div className="lg:col-span-8 space-y-6">
+        {/* Progress Steps */}
+        <div className="flex items-center justify-center gap-2 mt-6 mb-8">
+          {["Cart", "Checkout", "Confirmation"].map((step, idx) => (
+            <div key={step} className="flex items-center gap-2">
+              <div
+                className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-black transition-all ${
+                  idx <= 1
+                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                    : "bg-gray-200 text-gray-400"
+                }`}
+              >
+                {idx < 1 ? <CheckCircle className="h-3.5 w-3.5" /> : idx + 1}
+              </div>
+              <span
+                className={`text-xs font-semibold hidden sm:inline ${
+                  idx <= 1 ? "text-gray-900" : "text-gray-400"
+                }`}
+              >
+                {step}
+              </span>
+              {idx < 2 && <ChevronRight className="h-3.5 w-3.5 text-gray-300" />}
+            </div>
+          ))}
+        </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* ─── Left Column: Forms ─── */}
+          <div className="lg:col-span-7 space-y-6">
             {/* Error Banner */}
             {orderError && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3 animate-in fade-in-50 slide-in-from-top-2">
                 <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-bold text-red-800">Order Failed</p>
@@ -156,121 +357,336 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {/* Address Section */}
+            {/* ── Section 1: Contact Information ── */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h3 className="text-lg font-bold text-gray-900">Shipping Address</h3>
-                <button
-                  onClick={() => router.push("/account")}
-                  className="text-sm font-semibold text-orange-500 hover:text-orange-600"
-                >
-                  Manage Addresses
-                </button>
+              <div className="flex items-center gap-2 mb-5 border-b pb-3">
+                <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
+                  <User className="h-4 w-4 text-orange-500" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">Contact Information</h3>
               </div>
 
-              {addressesLoading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-6 w-6 text-orange-500 animate-spin" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    Full Name <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={form.fullName}
+                      onChange={(e) => updateForm("fullName", e.target.value)}
+                      className={`block w-full rounded-xl border ${
+                        formErrors.fullName ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                    />
+                  </div>
+                  {formErrors.fullName && (
+                    <p className="text-xs text-red-500 mt-1">{formErrors.fullName}</p>
+                  )}
                 </div>
-              ) : addresses.length === 0 ? (
-                <div className="text-center py-8">
-                  <MapPin className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-400 text-sm font-medium">No saved addresses found.</p>
+
+                {/* Phone Number */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    Phone Number <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="tel"
+                      placeholder="+974 XXXX XXXX"
+                      value={form.phone}
+                      onChange={(e) => updateForm("phone", e.target.value)}
+                      className={`block w-full rounded-xl border ${
+                        formErrors.phone ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                    />
+                  </div>
+                  {formErrors.phone && (
+                    <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    Email Address <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={form.email}
+                      onChange={(e) => updateForm("email", e.target.value)}
+                      className="block w-full rounded-xl border border-gray-200 pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section 2: Delivery Address ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-5 border-b pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
+                    <MapPin className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Delivery Address</h3>
+                </div>
+                {isLoggedIn && addresses.length > 0 && (
                   <button
                     onClick={() => router.push("/account")}
-                    className="mt-3 text-sm font-bold text-orange-500 hover:text-orange-600 transition"
+                    className="text-xs font-semibold text-orange-500 hover:text-orange-600 transition cursor-pointer"
                   >
-                    + Add your first address
+                    Manage Addresses
                   </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {addresses.map((addr) => (
+                )}
+              </div>
+
+              {/* Saved Address Picker (logged-in users with saved addresses) */}
+              {isLoggedIn && !addressesLoading && addresses.length > 0 && (
+                <div className="mb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Saved Addresses
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {addresses.map((addr) => (
+                      <div
+                        key={addr.id}
+                        onClick={() => {
+                          setSelectedAddressId(addr.id);
+                          setUseNewAddress(false);
+                          // Pre-fill contact from address
+                          setForm((prev) => ({
+                            ...prev,
+                            fullName: prev.fullName || addr.fullName,
+                            phone: prev.phone === "+974" ? addr.mobile : prev.phone,
+                          }));
+                        }}
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedAddressId === addr.id && !useNewAddress
+                            ? "border-orange-500 bg-orange-50/50 shadow-sm shadow-orange-500/5"
+                            : "border-gray-200 hover:border-orange-300"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            checked={selectedAddressId === addr.id && !useNewAddress}
+                            readOnly
+                            className="mt-0.5 text-orange-500 focus:ring-orange-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-gray-900 text-sm">{addr.fullName}</p>
+                              {addr.isDefault && (
+                                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-600 border border-orange-200 rounded-full">
+                                  Default
+                                </span>
+                              )}
+                              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-gray-100 text-gray-500 border border-gray-200 rounded-full capitalize">
+                                {addr.label}
+                              </span>
+                            </div>
+                            <p className="text-gray-500 text-xs mt-0.5">{addr.mobile}</p>
+                            <p className="text-gray-600 text-xs mt-1">
+                              {[
+                                addr.building_number && `Bldg ${addr.building_number}`,
+                                addr.villa_apartment,
+                                addr.street,
+                                addr.area,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </p>
+                            <p className="text-gray-500 text-xs">
+                              {addr.city}, {addr.country}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* New Address Option */}
                     <div
-                      key={addr.id}
-                      onClick={() => setSelectedAddressId(addr.id)}
-                      className={`p-4 rounded-xl border cursor-pointer transition ${
-                        selectedAddressId === addr.id
-                          ? "border-orange-500 bg-orange-50"
+                      onClick={() => setUseNewAddress(true)}
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                        useNewAddress
+                          ? "border-orange-500 bg-orange-50/50 shadow-sm shadow-orange-500/5"
                           : "border-gray-200 hover:border-orange-300"
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-center gap-3">
                         <input
                           type="radio"
-                          checked={selectedAddressId === addr.id}
+                          checked={useNewAddress}
                           readOnly
-                          className="mt-1 text-orange-500 focus:ring-orange-500"
+                          className="text-orange-500 focus:ring-orange-500"
                         />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-900">{addr.fullName}</p>
-                            {addr.isDefault && (
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-orange-100 text-orange-600 border border-orange-200 rounded-full">
-                                Default
-                              </span>
-                            )}
-                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-gray-100 text-gray-500 border border-gray-200 rounded-full capitalize">
-                              {addr.label}
-                            </span>
-                          </div>
-                          <p className="text-gray-500 text-sm mt-0.5">{addr.mobile}</p>
-                          <p className="text-gray-600 text-sm mt-1">
-                            {addr.addressLine1}
-                            {addr.addressLine2 && `, ${addr.addressLine2}`}
-                          </p>
-                          <p className="text-gray-600 text-sm">
-                            {addr.city}, {addr.state} — {addr.pincode}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <MapPinned className="h-4 w-4 text-orange-500" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            Deliver to a new address
+                          </span>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Loading saved addresses */}
+              {isLoggedIn && addressesLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 text-orange-500 animate-spin" />
+                  <span className="ml-2 text-sm text-gray-500">Loading saved addresses...</span>
+                </div>
+              )}
+
+              {/* Inline Address Form (guests, or logged-in with "new address" selected) */}
+              {(!isLoggedIn || useNewAddress || addresses.length === 0) && !addressesLoading && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Area */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Area / District <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Al Sadd, The Pearl, West Bay"
+                        value={form.area}
+                        onChange={(e) => updateForm("area", e.target.value)}
+                        className={`block w-full rounded-xl border ${
+                          formErrors.area ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      />
+                    </div>
+                    {formErrors.area && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.area}</p>
+                    )}
+                  </div>
+
+                  {/* Street */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Street <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Street name or number"
+                      value={form.street}
+                      onChange={(e) => updateForm("street", e.target.value)}
+                      className={`block w-full rounded-xl border ${
+                        formErrors.street ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                    />
+                    {formErrors.street && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.street}</p>
+                    )}
+                  </div>
+
+                  {/* Building Number */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Building Number <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Building number"
+                        value={form.buildingNumber}
+                        onChange={(e) => updateForm("buildingNumber", e.target.value)}
+                        className={`block w-full rounded-xl border ${
+                          formErrors.buildingNumber ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      />
+                    </div>
+                    {formErrors.buildingNumber && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.buildingNumber}</p>
+                    )}
+                  </div>
+
+                  {/* Villa / Apartment */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Villa / Apartment <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Villa or apartment number"
+                      value={form.villaApartment}
+                      onChange={(e) => updateForm("villaApartment", e.target.value)}
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                    />
+                  </div>
+
+                  {/* Floor */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Floor <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Floor number"
+                      value={form.floor}
+                      onChange={(e) => updateForm("floor", e.target.value)}
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                    />
+                  </div>
+
+                  {/* Landmark */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Landmark <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nearby landmark"
+                      value={form.landmark}
+                      onChange={(e) => updateForm("landmark", e.target.value)}
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                    />
+                  </div>
+
+                  {/* Delivery Notes */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Delivery Notes <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      placeholder="Any special instructions for delivery..."
+                      value={form.deliveryNotes}
+                      onChange={(e) => updateForm("deliveryNotes", e.target.value)}
+                      rows={2}
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors resize-none"
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Extra Info Section */}
+            {/* ── Section 3: Payment Method ── */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Contact & Notes</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Phone Number</label>
-                  <input
-                    type="tel"
-                    placeholder={selectedAddress?.mobile || "Enter phone number"}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
-                  />
+              <div className="flex items-center gap-2 mb-5 border-b pb-3">
+                <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
+                  <CreditCard className="h-4 w-4 text-orange-500" />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Email Address</label>
-                  <input
-                    type="email"
-                    placeholder={userState.user?.email || "Enter email address"}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Delivery Notes <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-                  <textarea
-                    placeholder="Leave at the door, call before delivery, etc."
-                    value={deliveryNotes}
-                    onChange={(e) => setDeliveryNotes(e.target.value)}
-                    rows={3}
-                    className="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors resize-none"
-                  />
-                </div>
+                <h3 className="text-lg font-bold text-gray-900">Payment Method</h3>
               </div>
-            </div>
 
-            {/* Payment Section */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Payment Method</h3>
-              <div className="flex items-center gap-3 p-4 border border-orange-500 bg-orange-50 rounded-xl">
+              <div className="flex items-center gap-3 p-4 border-2 border-orange-500 bg-orange-50/50 rounded-xl">
                 <input
                   type="radio"
                   id="cod"
@@ -279,62 +695,132 @@ export default function CheckoutPage() {
                   readOnly
                   className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
                 />
-                <label htmlFor="cod" className="font-semibold text-orange-900">
-                  Cash on Delivery (COD)
-                </label>
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-orange-600" />
+                  <label htmlFor="cod" className="font-semibold text-orange-900">
+                    Cash on Delivery (COD)
+                  </label>
+                </div>
               </div>
               <p className="text-xs text-gray-500 mt-2 ml-7">
                 Pay with cash upon delivery. No upfront payment required.
               </p>
+
+              {!isLoggedIn && (
+                <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
+                  <p className="text-xs text-blue-700">
+                    <strong>Already have an account?</strong>{" "}
+                    <Link href="/auth/login" className="font-bold text-blue-600 underline hover:text-blue-700">
+                      Log in
+                    </Link>{" "}
+                    for faster checkout with saved addresses.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="lg:col-span-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6 sticky top-24">
-              <h3 className="text-base font-bold text-gray-900 border-b pb-4">
-                Order Summary
-              </h3>
+          {/* ─── Right Column: Order Summary ─── */}
+          <div className="lg:col-span-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 sticky top-24">
+              <div className="flex items-center gap-2 border-b pb-4">
+                <ShoppingBag className="h-4 w-4 text-orange-500" />
+                <h3 className="text-base font-bold text-gray-900">Order Summary</h3>
+                <span className="ml-auto text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  {cartState.totalItems} item{cartState.totalItems !== 1 ? "s" : ""}
+                </span>
+              </div>
 
-              <div className="space-y-4 text-sm">
+              {/* Items */}
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 {cartState.items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-gray-600">
-                    <span className="truncate pr-4">{item.quantity} x {item.title}</span>
-                    <span className="font-semibold text-gray-900">QAR {(item.priceNumber * item.quantity).toFixed(2)}</span>
+                  <div key={item.id} className="flex items-center gap-3">
+                    <div className="relative h-14 w-14 shrink-0 rounded-lg border border-gray-100 bg-gray-50 p-1 overflow-hidden">
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        fill
+                        sizes="56px"
+                        className="object-contain"
+                      />
+                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                        {item.quantity}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {item.selectedColor && (
+                          <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                            {item.selectedColor}
+                          </span>
+                        )}
+                        {item.selectedStorage && (
+                          <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                            {item.selectedStorage}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-gray-900 shrink-0">
+                      QAR {(item.priceNumber * item.quantity).toFixed(2)}
+                    </span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t pt-4 space-y-4 text-sm">
+              {/* Totals */}
+              <div className="border-t pt-4 space-y-3 text-sm">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span className="font-semibold text-gray-900">QAR {cartState.totalPrice.toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">
+                    QAR {cartState.totalPrice.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Shipping</span>
-                  <span className="font-semibold text-gray-900">{shippingCost === 0 ? "Free" : `QAR ${shippingCost.toFixed(2)}`}</span>
+                  <span className="flex items-center gap-1">
+                    <Truck className="h-3.5 w-3.5" />
+                    Delivery
+                  </span>
+                  <span className="font-semibold text-gray-900">
+                    {shippingCost === 0 ? (
+                      <span className="text-green-600">Free</span>
+                    ) : (
+                      `QAR ${shippingCost.toFixed(2)}`
+                    )}
+                  </span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Estimated Tax</span>
-                  <span className="font-semibold text-gray-900">QAR {estimatedTax.toFixed(2)}</span>
-                </div>
-                <div className="border-t pt-4 flex justify-between text-base font-bold text-gray-900">
+                {shippingCost > 0 && (
+                  <p className="text-[10px] text-green-600 text-right">
+                    Free delivery on orders over QAR {shippingConfig.freeShippingThreshold.toFixed(0)}
+                  </p>
+                )}
+                <div className="border-t pt-3 flex justify-between text-base font-bold text-gray-900">
                   <span>Total</span>
-                  <span className="text-orange-500">QAR {orderTotal.toFixed(2)}</span>
+                  <span className="text-orange-500 text-lg">QAR {orderTotal.toFixed(2)}</span>
                 </div>
               </div>
 
+              {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
-                disabled={isPlacingOrder || addresses.length === 0 || !selectedAddressId}
-                className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white transition-colors shadow-lg ${
-                  isPlacingOrder || addresses.length === 0 || !selectedAddressId
+                disabled={isPlacingOrder}
+                className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-lg ${
+                  isPlacingOrder
                     ? "bg-gray-300 cursor-not-allowed shadow-none"
-                    : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/10 cursor-pointer"
+                    : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20 cursor-pointer active:scale-[0.98]"
                 }`}
               >
                 {isPlacingOrder && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isPlacingOrder ? "Placing Order..." : "Place Order"}
+                {isPlacingOrder ? "Placing Order..." : `Place Order — QAR ${orderTotal.toFixed(2)}`}
               </button>
+
+              <p className="text-center text-[10px] text-gray-400">
+                By placing your order, you agree to our{" "}
+                <Link href="/terms" className="underline hover:text-gray-600">
+                  Terms & Conditions
+                </Link>
+              </p>
             </div>
           </div>
         </div>

@@ -41,6 +41,10 @@ const SiteSetting = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 15.00,
     },
+    freeShippingThreshold: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 150.00,
+    },
   },
   {
     timestamps: true,

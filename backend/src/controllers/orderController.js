@@ -154,13 +154,23 @@ exports.createOrder = async (req, res, next) => {
       orderSummaryLines.push(`▪ ${product.title} x${item.quantity} — QAR ${unitPrice}`);
     }
 
+    // Fetch site settings for shipping fee calculation
+    const settings = await SiteSetting.findOne({ transaction });
+    const shippingFee = settings ? parseFloat(settings.shippingFee) : 15.00;
+    const freeShippingThreshold = settings ? parseFloat(settings.freeShippingThreshold) : 150.00;
+
+    let finalTotal = calculatedTotal;
+    if (calculatedTotal < freeShippingThreshold && calculatedTotal > 0) {
+      finalTotal += shippingFee;
+    }
+
     // Generate production-safe order number: GRV-YYYYMMDD-XXXX
     const orderNumber = await generateOrderNumber(transaction);
 
     const order = await Order.create({
       order_number: orderNumber,
       user_id: userId,
-      total_price: calculatedTotal,
+      total_price: finalTotal,
       shipping_address: resolvedAddress,
       status: "pending",
       customer_name: resolvedName,
@@ -203,6 +213,84 @@ exports.createOrder = async (req, res, next) => {
     });
   } catch (error) {
     await transaction.rollback();
+    next(error);
+  }
+};
+
+/**
+ * Guest Order Tracking — look up order by order_number + phone
+ * GET /api/orders/track?order_number=GRV-...&phone=+974...
+ * No authentication required.
+ */
+exports.trackGuestOrder = async (req, res, next) => {
+  try {
+    const { order_number, phone } = req.query;
+
+    if (!order_number || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Both order_number and phone are required.",
+      });
+    }
+
+    // Normalize phone: strip all non-digits, match using the last 6 digits as suffix to tolerate spaces/country codes
+    const digitsOnly = phone.replace(/\D/g, "");
+    const phoneSuffix = digitsOnly.length >= 6 ? digitsOnly.slice(-6) : digitsOnly;
+
+    if (!phoneSuffix) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid phone number.",
+      });
+    }
+
+    const order = await Order.findOne({
+      where: {
+        order_number,
+        customer_phone: {
+          [Op.like]: `%${phoneSuffix}`,
+        },
+      },
+      include: [
+        {
+          model: OrderItem,
+          as: "items",
+          include: {
+            model: Product,
+            as: "product",
+            attributes: ["id", "title", "main_image_url", "price"],
+          },
+        },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found. Please check your order number and phone number.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      order: {
+        id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+        total_price: order.total_price,
+        shipping_address: order.shipping_address,
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        payment_method: order.payment_method,
+        payment_status: order.payment_status,
+        delivery_notes: order.delivery_notes,
+        city: order.city,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        items: order.items,
+      },
+    });
+  } catch (error) {
     next(error);
   }
 };

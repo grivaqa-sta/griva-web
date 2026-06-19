@@ -51,18 +51,12 @@ export default function DeliveryOrderDetailPage() {
   const [token, setToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Auth guard
+  // Load token (centralized validation is handled by DeliveryLayout)
   useEffect(() => {
-    try {
-      const t = localStorage.getItem("griva_token");
-      if (!t) { router.replace("/delivery/login"); return; }
-      const payload = JSON.parse(atob(t.split(".")[1]));
-      if (payload.role !== "delivery") { router.replace("/delivery/login"); return; }
-      setToken(t);
-    } catch {
-      router.replace("/delivery/login");
+    if (typeof window !== "undefined") {
+      setToken(localStorage.getItem("griva_delivery_token"));
     }
-  }, [router]);
+  }, []);
 
   // Fetch order
   useEffect(() => {

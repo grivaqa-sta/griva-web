@@ -95,7 +95,7 @@ function MobileAdBanner() {
 
 // ─── Main HeroBanner Component ─────────────────────────────────────────────
 export default function HeroBanner() {
-  const { cmsHeroSlides: slide, fridaySaleEnabled, midnightSaleEnabled } = useAdminSettings();
+  const { cmsHeroSlides: slide, midnightSaleEnabled } = useAdminSettings();
   const [current, setCurrent] = useState(0);
   const busyRef = useRef(false);
 
@@ -145,12 +145,7 @@ export default function HeroBanner() {
             transition={{ duration: 0.7 }}
             className="relative overflow-hidden lg:rounded-[10px] rounded-[10px]"
           >
-            {/* Friday Sale overlay ribbon */}
-            {fridaySaleEnabled && (
-              <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-center gap-2 bg-orange-500/90 py-1 text-[9px] font-black uppercase tracking-widest text-white">
-                🔥 FRIDAY SUPER SALE — EXTRA -26% OFF ALL ITEMS TODAY ONLY
-              </div>
-            )}
+
             {/* Midnight Sale dark overlay */}
             {midnightSaleEnabled && (
               <div className="absolute inset-0 z-20 bg-black/40 pointer-events-none rounded-[10px]" />

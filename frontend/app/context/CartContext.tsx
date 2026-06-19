@@ -216,6 +216,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           openDrawer();
         }
       } catch (error: any) {
+        if (error.response?.status === 403) return; // Handled globally by auth block interceptor
         const errMsg = error.response?.data?.message || "Failed to add item to database cart.";
         alert(errMsg);
       }
@@ -260,6 +261,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           dispatch(action);
         }
       } catch (error: any) {
+        if (error.response?.status === 403) return; // Handled globally by auth block interceptor
         const errMsg = error.response?.data?.message || "Failed to sync cart update with server.";
         alert(errMsg);
       }

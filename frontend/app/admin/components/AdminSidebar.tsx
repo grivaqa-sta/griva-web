@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
 
-type TabType = "overview" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery";
+type TabType = "overview" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers";
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -25,6 +25,7 @@ interface AdminSidebarProps {
 
 const NAV = [
   { id: "overview",     label: "Overview & Analytics",  icon: <LayoutDashboard className="h-4 w-4" /> },
+  { id: "customers",    label: "Manage Customers",      icon: <Users className="h-4 w-4" /> },
   { id: "categories",   label: "Categories",             icon: <List className="h-4 w-4" /> },
   { id: "subcategories",label: "Sub Categories",         icon: <Layers className="h-4 w-4" /> },
   { id: "products",     label: "Manage Products",        icon: <Package className="h-4 w-4" /> },

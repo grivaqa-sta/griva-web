@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAdminSettings } from "@/app/context/AdminContext";
 import { CategoryItem, OfferCard, Product, SlideData } from "@/app/types/types";
 import { addSubscriberApi, AdminOrder, AnalyticsData, broadcastNewsletterApi, getAllOrdersApi, getAnalyticsApi, getSettingsApi, getSubscribersApi, SubscriberInfo, updateSettingsApi } from "@/app/utils/api";
@@ -16,15 +16,16 @@ import CategoriesTab from "./CategoriesTab";
 import SubCategoriesTab from "./SubCategoriesTab";
 import AddProductModal from "./AddProductModal";
 import DeliveryTab from "./DeliveryTab";
+import CustomersTab from "./CustomersTab";
 
-export type TabType = "overview" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery";
+export type TabType = "overview" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const {
     announcementBarEnabled, setAnnouncementBarEnabled,
-    fridaySaleEnabled,     setFridaySaleEnabled,
-    midnightSaleEnabled,   setMidnightSaleEnabled,
+    fridaySaleEnabled, setFridaySaleEnabled,
+    midnightSaleEnabled, setMidnightSaleEnabled,
     cmsMobileBanners: mobileBannersList,
     setCmsMobileBanners: setMobileBannersList,
   } = useAdminSettings();
@@ -34,34 +35,34 @@ export default function AdminDashboard() {
   //   if (!localStorage.getItem("griva_admin_auth")) router.replace("/admin/login");
   // }, [router]);
 
-  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const searchParams = useSearchParams();
   const tabParam = searchParams?.get("tab") as TabType | null;
 
-  const validTabs: TabType[] = ["overview", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery"];
+  const validTabs: TabType[] = ["overview", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers"];
   const activeTab = tabParam && validTabs.includes(tabParam) ? tabParam : "overview";
 
   const handleSetActiveTab = (tab: TabType) => {
     router.push(`/admin?tab=${tab}`);
   };
 
-  const [slidesList]                    = useState<SlideData[]>(initialSlides);
-  const [offersList, setOffersList]     = useState<OfferCard[]>(initialOffers);
-  const [categoriesList]                = useState<CategoryItem[]>(initialCategories);
+  const [slidesList] = useState<SlideData[]>(initialSlides);
+  const [offersList, setOffersList] = useState<OfferCard[]>(initialOffers);
+  const [categoriesList] = useState<CategoryItem[]>(initialCategories);
 
   const [subscribersList, setSubscribersList] = useState<SubscriberInfo[]>([]);
-  const [ordersList, setOrdersList]           = useState<AdminOrder[]>([]);
-  const [analytics, setAnalytics]             = useState<AnalyticsData | null>(null);
+  const [ordersList, setOrdersList] = useState<AdminOrder[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   const [highlightedSchemaSection, setHighlightedSchemaSection] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery]     = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const [newSubEmail, setNewSubEmail]         = useState("");
+  const [newSubEmail, setNewSubEmail] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
-  const [broadcastStatus, setBroadcastStatus]   = useState<"idle" | "sending" | "sent">("idle");
+  const [broadcastStatus, setBroadcastStatus] = useState<"idle" | "sending" | "sent">("idle");
 
 
 
@@ -140,8 +141,8 @@ export default function AdminDashboard() {
             <OverviewTab
               analytics={analytics} analyticsLoading={analyticsLoading}
               announcementBarEnabled={announcementBarEnabled} setAnnouncementBarEnabled={handleToggleAnnouncement}
-              fridaySaleEnabled={fridaySaleEnabled}           setFridaySaleEnabled={handleToggleFridaySale}
-              midnightSaleEnabled={midnightSaleEnabled}       setMidnightSaleEnabled={handleToggleMidnightSale}
+              fridaySaleEnabled={fridaySaleEnabled} setFridaySaleEnabled={handleToggleFridaySale}
+              midnightSaleEnabled={midnightSaleEnabled} setMidnightSaleEnabled={handleToggleMidnightSale}
               highlightedSchemaSection={highlightedSchemaSection}
               setHighlightedSchemaSection={setHighlightedSchemaSection}
               setActiveTab={handleSetActiveTab}
@@ -157,16 +158,16 @@ export default function AdminDashboard() {
           {activeTab === "banners" && (
             <BannersTab
               slidesList={slidesList} categoriesList={categoriesList} offersList={offersList}
-              handleToggleSlide={() => {}} handleToggleOffer={handleToggleOffer}
+              handleToggleSlide={() => { }} handleToggleOffer={handleToggleOffer}
               mobileBannersList={mobileBannersList} setMobileBannersList={setMobileBannersList}
             />
           )}
           {activeTab === "subscribers" && (
             <SubscribersTab
               subscribersList={subscribersList}
-              newSubEmail={newSubEmail}         setNewSubEmail={setNewSubEmail}
+              newSubEmail={newSubEmail} setNewSubEmail={setNewSubEmail}
               broadcastMessage={broadcastMessage} setBroadcastMessage={setBroadcastMessage}
-              broadcastStatus={broadcastStatus}   handleSendBroadcast={handleSendBroadcast}
+              broadcastStatus={broadcastStatus} handleSendBroadcast={handleSendBroadcast}
               handleAddSubscriber={handleAddSubscriber}
             />
           )}
@@ -178,6 +179,9 @@ export default function AdminDashboard() {
           )}
           {activeTab === "delivery" && (
             <DeliveryTab />
+          )}
+          {activeTab === "customers" && (
+            <CustomersTab />
           )}
         </div>
       </main>

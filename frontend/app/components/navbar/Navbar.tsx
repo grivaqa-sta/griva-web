@@ -75,7 +75,7 @@ export default function Navbar() {
         <div className="hidden sm:flex mx-auto h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4 w-full">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <img src="/images/logo-dark.png" alt="Griva Logo" className="h-7 w-auto object-contain" />
+            <img src="/images/logo-dark.png" alt="Griva Logo" className="h-9 w-auto object-contain" />
           </Link>
 
           {/* Search Bar - Desktop */}

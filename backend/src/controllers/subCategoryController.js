@@ -54,6 +54,30 @@ exports.getAllSubCategories = async (req, res) => {
 };
 
 /**
+ * Get All Active SubCategories
+ */
+exports.getAllActiveSubCategories = async (req, res) => {
+  try {
+    const subCategories = await SubCategory.findAll({
+      where: {
+        is_active: true,
+      },
+      order: [["id", "ASC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: subCategories,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
  * Get SubCategory By Id
  */
 exports.getSubCategoryById = async (req, res) => {

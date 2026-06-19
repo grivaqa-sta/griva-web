@@ -12,6 +12,11 @@ export const subCategoryService = {
     return response.data;
   },
 
+  getAllActiveSubCategories: async () => {
+    const response = await api.get("/subcategories/active");
+    return response.data;
+  },
+
   getSubCategory: async (id: number) => {
     const response = await api.get(`/subcategories/${id}`);
     return response.data;

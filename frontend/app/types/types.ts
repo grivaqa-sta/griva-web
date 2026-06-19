@@ -88,6 +88,7 @@ export interface CategoryRequest {
   slug: string;
   href: string;
   image_url?: string;
+  mobile_image_url?: string;
   is_active?: boolean;
 };
 export interface Category  {
@@ -96,6 +97,7 @@ export interface Category  {
   slug: string;
   href: string;
   image_url: string | null;
+  mobile_image_url: string | null;
   is_active: boolean;
   createdAt: string;
   updatedAt: string;

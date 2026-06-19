@@ -36,10 +36,9 @@ const Category = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    banner_image_url: {
+    mobile_image_url: {
       type: DataTypes.STRING,
       allowNull: true,
-      comment: "Full-width hero banner image for this category page",
     },
     parent_id: {
       type: DataTypes.INTEGER,

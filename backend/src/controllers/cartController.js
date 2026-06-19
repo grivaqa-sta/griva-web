@@ -342,9 +342,11 @@ exports.mergeCart = async (req, res) => {
       });
 
       if (dbItem) {
-        const mergedQty = Math.min(dbItem.quantity + qty, product.stock);
-        dbItem.quantity = mergedQty;
-        await dbItem.save();
+        const mergedQty = Math.max(dbItem.quantity, Math.min(dbItem.quantity + qty, product.stock));
+        if (mergedQty !== dbItem.quantity) {
+          dbItem.quantity = mergedQty;
+          await dbItem.save();
+        }
       } else {
         const finalQty = Math.min(qty, product.stock);
         if (finalQty > 0) {

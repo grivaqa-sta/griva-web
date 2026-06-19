@@ -270,30 +270,7 @@ export default function OverviewTab(props: OverviewTabProps) {
       {/* ── Campaign Control Switches ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {[
-          {
-            label: 'Top Banner',
-            title: 'Storefront Top Bar',
-            desc: 'Enables the sliding marquee announcement ticker at the very top of the storefront.',
-            enabled: announcementBarEnabled,
-            toggle: () => setAnnouncementBarEnabled(!announcementBarEnabled),
-            onText: 'Enabled (Showing)',
-            offText: 'Disabled (Hidden)',
-            iconEnabled: <CheckCircle className="h-4 w-4 text-green-400" />,
-            iconDisabled: <EyeOff className="h-4 w-4 text-gray-400" />,
-            toggleColor: 'text-orange-500',
-          },
-          {
-            label: 'Weekly Offer',
-            title: 'Friday Super Sale',
-            desc: 'Applies a -26% discount badge and special styling to products and hero banners.',
-            enabled: fridaySaleEnabled,
-            toggle: () => setFridaySaleEnabled(!fridaySaleEnabled),
-            onText: 'Active (26% Off Applied)',
-            offText: 'Inactive',
-            iconEnabled: <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />,
-            iconDisabled: <span className="h-2 w-2 rounded-full bg-gray-400" />,
-            toggleColor: 'text-green-500',
-          },
+
           {
             label: 'Midnight Flash',
             title: 'Midnight Flash Sale',
@@ -344,18 +321,18 @@ export default function OverviewTab(props: OverviewTabProps) {
             <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block text-center mb-3">GRIVA Storefront Homepage Layout</span>
 
             {[
-              { key: 'announcement', label: `Top Announcement Bar ${announcementBarEnabled ? '(ACTIVE)' : '(DISABLED)'}`, tab: 'overview', py: 'py-1.5', bold: false },
-              { key: 'nav', label: 'Website Navigation Header (Search, Wishlist, Cart)', tab: null, py: 'py-2', bold: false },
-              { key: 'hero', label: `Hero Promo Carousel Slides (${slidesList.length} Slides)`, tab: 'banners', py: 'py-7', bold: true },
-              { key: 'categories', label: `Category Quick Nav Banners (${categoriesList.length} Categories)`, tab: 'banners', py: 'py-3', bold: false },
-              { key: 'products', label: 'Catalog Product Grids (Filterable Category Shop views)', tab: 'products', py: 'py-5', bold: true },
-            ].map(({ key, label, tab, py, bold }) => (
+              { key: 'announcement', label: `Top Announcement Bar ${announcementBarEnabled ? '(ACTIVE)' : '(DISABLED)'}`, tab: 'overview', bold: false },
+              { key: 'nav', label: 'Website Navigation Header (Search, Wishlist, Cart)', tab: null, bold: false },
+              { key: 'hero', label: `Hero Promo Carousel Slides (${slidesList.length} Slides)`, tab: 'banners', bold: true },
+              { key: 'categories', label: `Category Quick Nav Banners (${categoriesList.length} Categories)`, tab: 'banners', bold: false },
+              { key: 'products', label: 'Catalog Product Grids (Filterable Category Shop views)', tab: 'products', bold: true },
+            ].map(({ key, label, tab, bold }) => (
               <div
                 key={key}
                 onMouseEnter={() => setHighlightedSchemaSection(key)}
                 onMouseLeave={() => setHighlightedSchemaSection(null)}
                 onClick={() => tab && setActiveTab(tab)}
-                className={`${py} px-3 rounded-lg text-[9px] font-${bold ? 'black' : 'bold'} text-center border cursor-pointer transition-all duration-200 select-none
+                className={`h-14 flex items-center justify-center px-3 rounded-lg text-[9px] font-${bold ? 'black' : 'bold'} text-center border cursor-pointer transition-all duration-200 select-none
                   ${highlightedSchemaSection === key
                     ? 'bg-orange-500/15 border-orange-500 text-orange-500 scale-[1.01] shadow-sm'
                     : key === 'announcement' && announcementBarEnabled

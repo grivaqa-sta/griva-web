@@ -41,6 +41,28 @@ exports.getAllCategories = async (req, res) => {
   }
 };
 
+//get all active category
+exports.getAllActiveCategories = async (req, res) => {
+  try {
+    const categories = await Category.findAll({
+      where: {
+        is_active: true,
+      },
+      order: [["id", "ASC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: categories,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 //Get Single Category
 exports.getCategoryById = async (req, res) => {
   try {

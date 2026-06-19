@@ -113,6 +113,8 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
           .delivery-light-theme .bg-\[\#070707\]\/90,
           .delivery-light-theme .bg-\[\#070707\]\/95,
           .delivery-light-theme .bg-\[\#0b0b0b\]\/80,
+          .delivery-light-theme .bg-\[\#0c0c0c\]\/80,
+          .delivery-light-theme .bg-\[\#0c0c0c\],
           .delivery-light-theme .bg-\[\#0a0a0a\]\/80,
           .delivery-light-theme .bg-\[\#0a0a0a\],
           .delivery-light-theme .bg-\[\#080808\],
@@ -194,7 +196,9 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
 
           /* Details panel background overrides */
           .delivery-light-theme .bg-zinc-900\/10,
-          .delivery-light-theme .bg-zinc-950\/10 {
+          .delivery-light-theme .bg-zinc-950\/10,
+          .delivery-light-theme .bg-\[\#0c0c0c\]\/80,
+          .delivery-light-theme .bg-\[\#0b0b0b\]\/80 {
             background-color: #f4f4f5 !important;
           }
 

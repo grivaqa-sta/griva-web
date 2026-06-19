@@ -12,6 +12,7 @@ export default function ProductsTab() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [activeSubCategories, setActiveSubCategories] = useState<SubCategory[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,17 +32,20 @@ export default function ProductsTab() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [prodRes, catRes, subRes] = await Promise.all([
+      const [prodRes, catRes, subRes, activeSubRes] = await Promise.all([
         productService.getProducts(),
         categoryService.getCategories(),
-        subCategoryService.getSubCategories()
+        subCategoryService.getSubCategories(),
+        subCategoryService.getAllActiveSubCategories()
       ]);
       const pData = prodRes?.data || prodRes;
       const cData = catRes?.data || catRes;
       const sData = subRes?.data || subRes;
+      const activeSData = activeSubRes?.data || activeSubRes;
       setProducts(Array.isArray(pData) ? pData : []);
       setCategories(Array.isArray(cData) ? cData : []);
       setSubCategories(Array.isArray(sData) ? sData : []);
+      setActiveSubCategories(Array.isArray(activeSData) ? activeSData : []);
     } catch (err) {
       console.error("Failed to load products data", err);
     }
@@ -368,7 +372,7 @@ export default function ProductsTab() {
           onSuccess={loadData}
           productToEdit={editingProduct}
           categories={categories}
-          subCategories={subCategories}
+          subCategories={activeSubCategories}
         />
       )}
     </div>

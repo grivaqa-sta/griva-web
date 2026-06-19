@@ -9,7 +9,12 @@ export const categoryService = {
 
   getCategories: async () => {
     const response = await api.get("/categories");
-    return response.data;
+    return response.data.data; // API returns { success, data: [...] }
+  },
+
+  getAllActiveCategories: async () => {
+    const response = await api.get("/categories/active");
+    return response.data.data;
   },
 
   getCategory: async (id: number) => {

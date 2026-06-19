@@ -8,20 +8,22 @@ export default function CategoriesTab() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  
+
   const [formData, setFormData] = useState<CategoryRequest>({
     title: '',
     slug: '',
     href: '',
     image_url: '',
+    mobile_image_url: '',
     is_active: true
   });
-  
+
   const [formLoading, setFormLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [mobileImageUploading, setMobileImageUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -43,7 +45,7 @@ export default function CategoriesTab() {
 
   const handleOpenAdd = () => {
     setEditingCategory(null);
-    setFormData({ title: '', slug: '', href: '', image_url: '', is_active: true });
+    setFormData({ title: '', slug: '', href: '', image_url: '', mobile_image_url: '', is_active: true });
     setError('');
     setSuccess('');
     setIsModalOpen(true);
@@ -54,8 +56,9 @@ export default function CategoriesTab() {
     setFormData({
       title: cat.title,
       slug: cat.slug,
-      href: `/shop/${cat.slug}`,
+      href: `/category/${cat.slug}`,
       image_url: cat.image_url || '',
+      mobile_image_url: cat.mobile_image_url || '',
       is_active: cat.is_active
     });
     setError('');
@@ -84,7 +87,7 @@ export default function CategoriesTab() {
     setFormLoading(true);
     setError('');
     setSuccess('');
-    
+
     try {
       if (editingCategory) {
         await categoryService.updateCategory(editingCategory.id, formData);
@@ -121,6 +124,25 @@ export default function CategoriesTab() {
       setError(err?.response?.data?.message || 'Failed to upload image');
     }
     setImageUploading(false);
+  };
+
+  const handleMobileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setMobileImageUploading(true);
+    setError('');
+    try {
+      const data = await uploadService.uploadImage(file);
+      if (data && data.imageUrl) {
+        setFormData(prev => ({ ...prev, mobile_image_url: data.imageUrl }));
+      } else {
+        setError('Failed to upload mobile image. No URL returned.');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to upload mobile image');
+    }
+    setMobileImageUploading(false);
   };
 
   const filteredCategories = categories.filter((c) =>
@@ -244,8 +266,8 @@ export default function CategoriesTab() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md border border-orange-500/20 shadow-xl overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div className="bg-white rounded-2xl w-full max-w-md border border-orange-500/20 shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-bold text-gray-900">
                 {editingCategory ? "Edit Category" : "Add Category"}
               </h3>
@@ -253,11 +275,11 @@ export default function CategoriesTab() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="p-6">
+
+            <div className="p-6 overflow-y-auto">
               {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{error}</div>}
               {success && <div className="mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-100">{success}</div>}
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
@@ -268,14 +290,14 @@ export default function CategoriesTab() {
                     onChange={(e) => {
                       const newTitle = e.target.value;
                       const newSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-                      const newHref = `/shop/${newSlug}`;
-                      setFormData({...formData, title: newTitle, slug: newSlug, href: newHref});
+                      const newHref = `/category/${newSlug}`;
+                      setFormData({ ...formData, title: newTitle, slug: newSlug, href: newHref });
                     }}
                     className="w-full text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
                     placeholder="e.g. Electronics"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Slug *</label>
                   <input
@@ -283,7 +305,7 @@ export default function CategoriesTab() {
                     required
                     disabled
                     value={formData.slug}
-                    onChange={(e) => setFormData({...formData, slug: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                     className="w-full text-sm p-2.5 border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed outline-none rounded-xl"
                     placeholder="e.g. electronics"
                   />
@@ -306,20 +328,20 @@ export default function CategoriesTab() {
                     <input
                       type="text"
                       value={formData.image_url || ''}
-                      onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                       className="flex-1 text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
                       placeholder="https://..."
                     />
                     <div className="relative">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleImageUpload} 
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
                         disabled={imageUploading}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         disabled={imageUploading}
                         className="h-full px-4 bg-orange-50 text-orange-600 font-bold rounded-xl text-sm hover:bg-orange-100 transition-colors disabled:opacity-50 flex items-center justify-center pointer-events-none min-w-[80px]"
                       >
@@ -334,13 +356,58 @@ export default function CategoriesTab() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setFormData({...formData, image_url: ''})}
+                        onClick={() => setFormData({ ...formData, image_url: '' })}
                         className="text-[10px] text-red-400 hover:text-red-600 font-semibold"
                       >
                         Remove image
                       </button>
                     </div>
                   )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Mobile Image URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={formData.mobile_image_url || ''}
+                        onChange={(e) => setFormData({ ...formData, mobile_image_url: e.target.value })}
+                        className="flex-1 text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
+                        placeholder="https://..."
+                      />
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleMobileImageUpload}
+                          disabled={mobileImageUploading}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        />
+                        <button
+                          type="button"
+                          disabled={mobileImageUploading}
+                          className="h-full px-4 bg-orange-50 text-orange-600 font-bold rounded-xl text-sm hover:bg-orange-100 transition-colors disabled:opacity-50 flex items-center justify-center pointer-events-none min-w-[80px]"
+                        >
+                          {mobileImageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Upload'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {formData.mobile_image_url && (
+                      <div className="mt-2 flex flex-col items-start gap-1">
+                        <div className="h-20 w-20 rounded-lg overflow-hidden border border-gray-200">
+                          <img src={formData.mobile_image_url} alt="Preview" className="h-full w-full object-cover" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, mobile_image_url: '' })}
+                          className="text-[10px] text-red-400 hover:text-red-600 font-semibold"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -348,7 +415,7 @@ export default function CategoriesTab() {
                     type="checkbox"
                     id="is_active"
                     checked={formData.is_active}
-                    onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                     className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                   />
                   <label htmlFor="is_active" className="text-sm font-semibold text-gray-700 cursor-pointer">

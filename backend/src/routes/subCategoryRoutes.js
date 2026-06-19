@@ -8,11 +8,9 @@ const { authenticateJWT, isAdmin } = require("../middleware/auth");
  * Public Routes
  */
 router.get("/", subCategoryController.getAllSubCategories);
+router.get("/active", subCategoryController.getAllActiveSubCategories);
 router.get("/:id", subCategoryController.getSubCategoryById);
-router.get(
-  "/category/:categoryId",
-  subCategoryController.getSubCategoriesByCategory
-);
+router.get("/category/:categoryId",subCategoryController.getSubCategoriesByCategory);
 
 /**
  * Admin Routes

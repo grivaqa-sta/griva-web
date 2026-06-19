@@ -1,250 +1,359 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 const categories = [
   {
-    icon: "🎮",
-    label: "Gaming",
-    discount: "35% off",
-    badge: "Hot Deal",
-    featured: false,
+    number: "01.",
+    title: "Gaming",
+    subtitle: "35% off",
+    icon: "lightning",
+    dark: false,
+    image: "/images/logo-kit/brand-pattern-custom1.png",
   },
   {
-    icon: "🎧",
-    label: "Audio",
-    discount: "40% off",
-    badge: "Best Value",
-    featured: true,
+    number: "02.",
+    title: "Audio",
+    subtitle: "40% off",
+    icon: "headphone",
+    dark: true,
+    image: "/images/logo-kit/brand-pattern-custom.jpeg",
   },
   {
-    icon: "📱",
-    label: "Accessories",
-    discount: "30% off",
-    badge: "New Drop",
-    featured: false,
+    number: "03.",
+    title: "Accessories",
+    subtitle: "30% off",
+    icon: "grid",
+    dark: false,
+    image: "/images/logo-kit/brand-pattern-custom1.png",
+  },
+  {
+    number: "04.",
+    title: "Exclusive",
+    subtitle: "Special Deals",
+    icon: "bag",
+    dark: false,
+    image: "/images/logo-kit/brand-pattern-custom1.png",
   },
 ];
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.12, delayChildren: 0.2 },
-  },
-};
-
 const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease } },
+const badgeVariant = {
+  hidden: { opacity: 0, y: -10, scale: 0.95 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease } },
 };
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 36, scale: 0.97 },
+const headlineVariant = {
+  hidden: { opacity: 0, y: 22 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.1, ease } },
+};
+
+const descVariant = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.2, ease } },
+};
+
+const ctaVariant = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.3, ease } },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: { duration: 0.5, delay: i * 0.1, ease },
+    transition: { delay: i * 0.12, duration: 0.65, ease },
   }),
 };
 
-export default function LazyFridayDeals() {
+function LightningIcon({ size = 32 }: { size?: number }) {
   return (
-    <section className="w-full py-5">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path d="M18 4L8 18H16L14 28L24 14H16L18 4Z" fill="#F97316" />
+    </svg>
+  );
+}
 
-        {/* Outer card: column on mobile, row on desktop */}
-        <div className="relative overflow-hidden flex flex-col lg:flex-row lg:items-center lg:gap-8 rounded-2xl border border-gray-100 bg-white shadow-sm">
+function HeadphoneIcon({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path
+        d="M6 20v-4a10 10 0 0120 0v4"
+        stroke="#F97316"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <rect x="4" y="18" width="5" height="8" rx="2.5" fill="#F97316" />
+      <rect x="23" y="18" width="5" height="8" rx="2.5" fill="#F97316" />
+    </svg>
+  );
+}
 
-          {/* ── HERO BLOCK ── */}
-          <motion.div
-            className="relative shrink-0 lg:max-w-sm px-6 pt-6 pb-0 lg:py-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {/* Eyebrow pill */}
-            <motion.div
-              variants={fadeUp}
-              className="mb-3 lg:mb-6 inline-flex items-center rounded-full bg-orange-100 px-4 py-1.5"
-            >
-              <span className="text-[8px] font-bold uppercase tracking-widest text-orange-500">
-                Every Friday
-              </span>
-            </motion.div>
+function GridIcon({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <rect x="4" y="4" width="10" height="10" rx="2" fill="#F97316" />
+      <rect x="18" y="4" width="10" height="10" rx="2" fill="#F97316" />
+      <rect x="4" y="18" width="10" height="10" rx="2" fill="#F97316" />
+      <rect x="18" y="18" width="10" height="10" rx="2" fill="#F97316" />
+    </svg>
+  );
+}
 
-            {/* Headline */}
-            <motion.h1
-              variants={fadeUp}
-              className="mb-2 lg:mb-4 text-[26px] lg:text-[32px] font-black leading-[1.0] tracking-tighter text-gray-950"
-            >
-              Lazy Friday Deals
-            </motion.h1>
+function BagIcon({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path d="M10 10h12l2 16H8L10 10z" fill="#F97316" />
+      <path
+        d="M12 10V8a4 4 0 018 0v2"
+        stroke="#F97316"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
 
-            {/* Subtext */}
-            <motion.p
-              variants={fadeUp}
-              className="mb-4 lg:mb-8 max-w-sm text-sm leading-relaxed text-gray-400"
-            >
-              Kick back and save big. Every Friday we drop exclusive discounts on fan&#8209;favourite gadgets.
-            </motion.p>
+function SmallLightning() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M8 1L3 8H7L6 13L11 6H7L8 1Z" fill="#F97316" />
+    </svg>
+  );
+}
 
-            {/* CTA button — hidden on mobile, visible on desktop */}
-            <motion.div variants={fadeUp} className="hidden lg:block">
-              <motion.a
-                href="#picks"
-                whileHover={{ scale: 1.03, boxShadow: "0 10px 30px rgba(249,115,22,0.4)" }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                className="inline-flex items-center gap-3 rounded-full bg-orange-500 px-7 py-3.5 text-[14px] font-bold text-white shadow-[0_4px_18px_rgba(249,115,22,0.3)] hover:bg-orange-600 transition-colors duration-200"
-              >
-                Browse Friday Picks
-                <motion.span
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-                  className="inline-flex items-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </motion.span>
-              </motion.a>
-            </motion.div>
-          </motion.div>
+function LightSweep() {
+  return (
+    <motion.div
+      className="absolute inset-0 pointer-events-none z-10"
+      initial={{ x: "-100%" }}
+      whileHover={{ x: "100%" }}
+      transition={{ duration: 0.65, ease: "easeInOut" }}
+      style={{
+        background:
+          "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)",
+        width: "100%",
+      }}
+    />
+  );
+}
 
-          {/* ── CARDS BLOCK ── */}
+function CardHoverBg({ src }: { src: string }) {
+  if (!src) return null;
+  return (
+    <div
+      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-in-out pointer-events-none"
+      style={{
+        backgroundImage: `url('${src}')`,
+        backgroundSize: "105%",
+        backgroundPosition: "right",
+        backgroundRepeat: "no-repeat",
+      }}
+    />
+  );
+}
+
+function CategoryIcon({ icon, dark, small }: { icon: string; dark: boolean; small?: boolean }) {
+  const bg = dark
+    ? "border-gray-600 bg-transparent"
+    : "border-orange-100 bg-orange-50";
+  const size = small ? 22 : 32;
+  const boxSize = small ? "w-10 h-10" : "w-14 h-14";
+
+  return (
+    <motion.div
+      className={`${boxSize} rounded-[10px] flex items-center justify-center border ${bg}`}
+      whileHover={{ scale: 1.14, rotate: -4 }}
+      transition={{ type: "spring", stiffness: 320, damping: 18 }}
+    >
+      {icon === "lightning" && <LightningIcon size={size} />}
+      {icon === "headphone" && <HeadphoneIcon size={size} />}
+      {icon === "grid" && <GridIcon size={size} />}
+      {icon === "bag" && <BagIcon size={size} />}
+    </motion.div>
+  );
+}
+
+export default function LazyFridayDeals() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(sectionRef, { once: true, margin: "-80px" });
+
+  return (
+    <section className="w-full py-4 lg:py-6">
+      <div className="lg:mx-auto lg:max-w-7xl lg:px-8 px-3">
+        <div
+          className="relative overflow-hidden rounded-[10px] py-8 px-4 lg:py-12 lg:px-14"
+          style={{
+            backgroundImage: "url('/images/logo-kit/brand-pattern-white.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            backgroundColor: "#ffffff",
+          }}
+        >
           <div
-            id="picks"
-            className="grid grid-cols-2 lg:grid-cols-3 flex-1 gap-3 px-4 pt-5 pb-3 lg:px-6 lg:py-8 lg:gap-4"
-          >
-            {categories.map((cat, i) => (
-              <motion.div
-                key={cat.label}
-                custom={i}
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{
-                  y: -6,
-                  boxShadow: "0 16px 40px rgba(249,115,22,0.16)",
-                  borderColor: "#f97316",
-                }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                className={[
-                  "relative cursor-pointer overflow-hidden rounded-2xl border pt-8 pb-5 px-4 flex flex-col items-center text-center",
-                  i === 2 ? "hidden lg:flex" : "flex",
-                  cat.featured
-                    ? "border-orange-300 bg-orange-50 shadow-[0_4px_20px_rgba(249,115,22,0.1)]"
-                    : "border-gray-150 bg-white shadow-sm",
-                ].join(" ")}
-                style={{ borderColor: cat.featured ? "#fdba74" : "#f3f4f6" }}
-              >
-                {/* Featured top glow */}
-                {cat.featured && (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -top-12 left-1/2 h-24 w-44 -translate-x-1/2"
-                    style={{
-                      background:
-                        "radial-gradient(ellipse, rgba(249,115,22,0.18) 0%, transparent 70%)",
-                    }}
-                  />
-                )}
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: "rgba(255,255,255,0.82)" }}
+          />
 
-                {/* Badge */}
-                <motion.span
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + i * 0.1, duration: 0.35, ease }}
-                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full border border-orange-200 bg-white px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-500 shadow-sm whitespace-nowrap"
-                >
-                  {cat.badge}
-                </motion.span>
+          <div className="relative" ref={sectionRef}>
 
-                {/* Icon */}
+            {/* ── Header row ── */}
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8 mb-7 lg:mb-12">
+
+              {/* Left: badge + headline */}
+              <div className="flex-1">
                 <motion.div
-                  className="mb-3 lg:mb-4 text-4xl lg:text-5xl leading-none"
-                  whileHover={{ scale: 1.2, rotate: -5 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 14 }}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 lg:px-4 lg:py-2 rounded-[8px] bg-orange-50 border border-orange-200 text-orange-500 font-bold uppercase tracking-[3px] text-[10px] lg:text-[11px]"
+                  variants={badgeVariant}
+                  initial="hidden"
+                  animate={inView ? "visible" : "hidden"}
                 >
-                  {cat.icon}
+                  <SmallLightning />
+                  Every Friday
                 </motion.div>
 
-                {/* Label */}
-                <p className="mb-1.5 lg:mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  {cat.label}
-                </p>
+                <motion.h1
+                  className="mt-3 lg:mt-5 text-[38px] leading-[0.88] sm:text-[48px] lg:text-[64px] font-black tracking-tight text-black"
+                  variants={headlineVariant}
+                  initial="hidden"
+                  animate={inView ? "visible" : "hidden"}
+                >
+                  Lazy Friday
+                  <span className="block text-orange-500">Deals.</span>
+                </motion.h1>
+              </div>
 
-                {/* Discount */}
-                <p className="mb-4 lg:mb-6 text-[22px] lg:text-[clamp(30px,4vw,38px)] font-black leading-none tracking-tighter text-orange-500">
-                  {cat.discount}
-                </p>
+              {/* Right: description + CTA */}
+              <div className="lg:w-[320px] flex flex-col gap-2 lg:pb-1">
+                <motion.p
+                  className="text-[13px] lg:text-[14px] leading-6 font-medium"
+                  style={{ color: "#6E6E6E" }}
+                  variants={descVariant}
+                  initial="hidden"
+                  animate={inView ? "visible" : "hidden"}
+                >
+                  Kick back and save big. Every Friday we drop exclusive
+                  discounts on fan‑favourite gadgets.
+                </motion.p>
 
-                {/* Shop now */}
                 <motion.button
-                  whileHover={{
-                    backgroundColor: "#f97316",
-                    color: "#ffffff",
-                    borderColor: "#f97316",
-                  }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ duration: 0.16 }}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 lg:px-5 lg:py-2.5 text-[11px] lg:text-[13px] font-semibold text-gray-600"
+                  className="self-start flex items-center gap-2 lg:gap-3 rounded-[10px] bg-orange-500 px-5 py-2 lg:px-7 font-bold text-[11px] lg:text-[13px] uppercase tracking-[2px] text-white overflow-hidden relative"
+                  variants={ctaVariant}
+                  initial="hidden"
+                  animate={inView ? "visible" : "hidden"}
+                  whileHover={{ scale: 1.05, backgroundColor: "#ea580c" }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 340, damping: 20 }}
                 >
-                  Shop now →
+                  Browse Friday Picks
+                  <motion.span
+                    className="text-base lg:text-lg"
+                    whileHover={{ x: 5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                  >
+                    →
+                  </motion.span>
                 </motion.button>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            </div>
 
-          {/* ── MOBILE-ONLY FULL WIDTH CTA BUTTON ── */}
-          <motion.div
-            className="block lg:hidden px-4 pb-5"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4, ease }}
-          >
-            <motion.a
-              href="#picks"
-              whileTap={{ scale: 0.97 }}
-              className="flex w-full items-center justify-center gap-3 rounded-[5px] bg-orange-500 px-7 py-3.5 text-[14px] font-bold text-white shadow-[0_4px_18px_rgba(249,115,22,0.3)] hover:bg-orange-600 transition-colors duration-200"
-            >
-              Browse Friday Picks
-              <motion.span
-                animate={{ x: [0, 5, 0] }}
-                transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-                className="inline-flex items-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            {/* ── Cards grid — 2 cols on mobile, 4 on xl ── */}
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-5">
+              {categories.map((item, i) => (
+                <motion.div
+                  key={i}
+                  custom={i}
+                  variants={cardVariant}
+                  initial="hidden"
+                  animate={inView ? "visible" : "hidden"}
+                  whileHover={{ y: -8, scale: 1.025 }}
+                  whileTap={{ scale: 0.975, y: -3 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                  className={`group relative overflow-hidden rounded-[10px] h-[190px] sm:h-[240px] lg:h-[340px] border cursor-pointer ${
+                    item.dark
+                      ? "bg-[#141414] border-[#1F1F1F] text-white hover:border-orange-500"
+                      : "bg-white border-gray-100 shadow-sm hover:shadow-lg hover:border-orange-200"
+                  }`}
                 >
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </motion.span>
-            </motion.a>
-          </motion.div>
+                  <CardHoverBg src={item.image} />
 
+                  <div
+                    className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
+                      item.dark
+                        ? "opacity-60 group-hover:opacity-70 bg-gradient-to-t from-black via-black/40 to-black/10"
+                        : "opacity-0 group-hover:opacity-50 bg-gradient-to-t from-black"
+                    }`}
+                  />
+
+                  <LightSweep />
+
+                  <div className="relative z-10 flex flex-col h-full p-4 lg:p-7">
+
+                    {/* Number */}
+<div
+  className={`text-[28px] sm:text-[38px] lg:text-[52px] font-black leading-none transition-colors duration-300 ${
+    item.dark ? "text-[#F97316]" : "text-[#9E9E9E] group-hover:text-[#F97316]"
+  }`}
+>
+  {item.number}
+</div>
+
+                    <div className="flex-1" />
+
+                    {/* Icon — smaller on mobile */}
+                    <div className="lg:hidden">
+                      <CategoryIcon icon={item.icon} dark={item.dark} small />
+                    </div>
+                    <div className="hidden lg:block">
+                      <CategoryIcon icon={item.icon} dark={item.dark} />
+                    </div>
+
+                    {/* Title + Subtitle */}
+                    <div className="mt-3 lg:mt-5">
+                      <div className="uppercase tracking-[3px] lg:tracking-[4px] text-[9px] lg:text-xs font-bold text-orange-500">
+                        {item.title}
+                      </div>
+                      <h3
+                        className={`mt-1 lg:mt-2 text-[18px] sm:text-[22px] lg:text-[30px] font-black leading-none whitespace-nowrap transition-colors duration-300 ${
+                          item.dark
+                            ? "text-white"
+                            : "text-black group-hover:text-white"
+                        }`}
+                      >
+                        {item.subtitle}
+                      </h3>
+                    </div>
+
+                    {/* Shop now */}
+                    <motion.button
+                      className={`mt-3 lg:mt-5 flex items-center gap-1.5 lg:gap-2 font-semibold text-[11px] lg:text-sm transition-colors duration-300 ${
+                        item.dark
+                          ? "text-gray-300 group-hover:text-white"
+                          : "text-[#6E6E6E] group-hover:text-white"
+                      }`}
+                      whileHover={{ color: "#ffffff" }}
+                    >
+                      Shop now
+                      <motion.span
+                        className="text-sm lg:text-base text-orange-500"
+                        whileHover={{ x: 5 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                      >
+                        →
+                      </motion.span>
+                    </motion.button>
+
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+          </div>
         </div>
       </div>
     </section>

@@ -86,12 +86,11 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             >
               <span>Categories</span>
               <ChevronDown
-                className={`h-4 w-4 transition-transform duration-200 ${
-                  categoriesOpen ? "rotate-180 text-orange-500" : "text-gray-400"
-                }`}
+                className={`h-4 w-4 transition-transform duration-200 ${categoriesOpen ? "rotate-180 text-orange-500" : "text-gray-400"
+                  }`}
               />
             </button>
-            
+
             {categoriesOpen && (
               <div className="pl-3 space-y-1 border-l-2 border-gray-100 ml-4 mt-1">
                 {categoriesTree.map((cat) => {
@@ -112,13 +111,12 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                         >
                           <ChevronRight
                             size={14}
-                            className={`transform transition-transform duration-200 ${
-                              isExpanded ? "rotate-90 text-orange-500" : ""
-                            }`}
+                            className={`transform transition-transform duration-200 ${isExpanded ? "rotate-90 text-orange-500" : ""
+                              }`}
                           />
                         </button>
                       </div>
-                      
+
                       {isExpanded && (
                         <div className="pl-4 space-y-1 border-l border-gray-100 ml-4 pb-1">
                           {cat.subcategories.map((sub) => (

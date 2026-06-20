@@ -72,7 +72,7 @@ const cardVariant = {
 function LightningIcon({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <path d="M18 4L8 18H16L14 28L24 14H16L18 4Z" fill="#F97316" />
+      <path d="M18 4L8 18H16L14 28L24 14H16L18 4Z" fill="#FF6A00" />
     </svg>
   );
 }
@@ -82,12 +82,12 @@ function HeadphoneIcon({ size = 32 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <path
         d="M6 20v-4a10 10 0 0120 0v4"
-        stroke="#F97316"
+        stroke="#FF6A00"
         strokeWidth="2"
         strokeLinecap="round"
       />
-      <rect x="4" y="18" width="5" height="8" rx="2.5" fill="#F97316" />
-      <rect x="23" y="18" width="5" height="8" rx="2.5" fill="#F97316" />
+      <rect x="4" y="18" width="5" height="8" rx="2.5" fill="#FF6A00" />
+      <rect x="23" y="18" width="5" height="8" rx="2.5" fill="#FF6A00" />
     </svg>
   );
 }
@@ -95,10 +95,10 @@ function HeadphoneIcon({ size = 32 }: { size?: number }) {
 function GridIcon({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <rect x="4" y="4" width="10" height="10" rx="2" fill="#F97316" />
-      <rect x="18" y="4" width="10" height="10" rx="2" fill="#F97316" />
-      <rect x="4" y="18" width="10" height="10" rx="2" fill="#F97316" />
-      <rect x="18" y="18" width="10" height="10" rx="2" fill="#F97316" />
+      <rect x="4" y="4" width="10" height="10" rx="2" fill="#FF6A00" />
+      <rect x="18" y="4" width="10" height="10" rx="2" fill="#FF6A00" />
+      <rect x="4" y="18" width="10" height="10" rx="2" fill="#FF6A00" />
+      <rect x="18" y="18" width="10" height="10" rx="2" fill="#FF6A00" />
     </svg>
   );
 }
@@ -106,10 +106,10 @@ function GridIcon({ size = 32 }: { size?: number }) {
 function BagIcon({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <path d="M10 10h12l2 16H8L10 10z" fill="#F97316" />
+      <path d="M10 10h12l2 16H8L10 10z" fill="#FF6A00" />
       <path
         d="M12 10V8a4 4 0 018 0v2"
-        stroke="#F97316"
+        stroke="#FF6A00"
         strokeWidth="2"
         strokeLinecap="round"
         fill="none"
@@ -121,7 +121,7 @@ function BagIcon({ size = 32 }: { size?: number }) {
 function SmallLightning() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M8 1L3 8H7L6 13L11 6H7L8 1Z" fill="#F97316" />
+      <path d="M8 1L3 8H7L6 13L11 6H7L8 1Z" fill="#FF6A00" />
     </svg>
   );
 }
@@ -160,7 +160,7 @@ function CardHoverBg({ src }: { src: string }) {
 function CategoryIcon({ icon, dark, small }: { icon: string; dark: boolean; small?: boolean }) {
   const bg = dark
     ? "border-gray-600 bg-transparent"
-    : "border-orange-100 bg-orange-50";
+    : "border-[#FF6A00]/20 bg-[#FF6A00]/5";
   const size = small ? 22 : 32;
   const boxSize = small ? "w-10 h-10" : "w-14 h-14";
 
@@ -208,7 +208,12 @@ export default function LazyFridayDeals() {
               {/* Left: badge + headline */}
               <div className="flex-1">
                 <motion.div
-                  className="inline-flex items-center gap-2 px-3 py-1.5 lg:px-4 lg:py-2 rounded-[8px] bg-orange-50 border border-orange-200 text-orange-500 font-bold uppercase tracking-[3px] text-[10px] lg:text-[11px]"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 lg:px-4 lg:py-2 rounded-[8px] font-bold uppercase tracking-[3px] text-[10px] lg:text-[11px]"
+                  style={{
+                    backgroundColor: "#FF6A0010",
+                    border: "1px solid #FF6A0033",
+                    color: "#FF6A00",
+                  }}
                   variants={badgeVariant}
                   initial="hidden"
                   animate={inView ? "visible" : "hidden"}
@@ -224,7 +229,7 @@ export default function LazyFridayDeals() {
                   animate={inView ? "visible" : "hidden"}
                 >
                   Lazy Friday
-                  <span className="block text-orange-500">Deals.</span>
+                  <span className="block" style={{ color: "#FF6A00" }}>Deals.</span>
                 </motion.h1>
               </div>
 
@@ -242,11 +247,12 @@ export default function LazyFridayDeals() {
                 </motion.p>
 
                 <motion.button
-                  className="self-start flex items-center gap-2 lg:gap-3 rounded-[10px] bg-orange-500 px-5 py-2 lg:px-7 font-bold text-[11px] lg:text-[13px] uppercase tracking-[2px] text-white overflow-hidden relative"
+                  className="self-start flex items-center gap-2 lg:gap-3 rounded-[10px] px-5 py-2 lg:px-7 font-bold text-[11px] lg:text-[13px] uppercase tracking-[2px] text-white overflow-hidden relative"
+                  style={{ backgroundColor: "#FF6A00" }}
                   variants={ctaVariant}
                   initial="hidden"
                   animate={inView ? "visible" : "hidden"}
-                  whileHover={{ scale: 1.05, backgroundColor: "#ea580c" }}
+                  whileHover={{ scale: 1.05, backgroundColor: "#e05a00" }}
                   whileTap={{ scale: 0.97 }}
                   transition={{ type: "spring", stiffness: 340, damping: 20 }}
                 >
@@ -274,20 +280,18 @@ export default function LazyFridayDeals() {
                   whileHover={{ y: -8, scale: 1.025 }}
                   whileTap={{ scale: 0.975, y: -3 }}
                   transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                  className={`group relative overflow-hidden rounded-[10px] h-[190px] sm:h-[240px] lg:h-[340px] border cursor-pointer ${
-                    item.dark
-                      ? "bg-[#141414] border-[#1F1F1F] text-white hover:border-orange-500"
-                      : "bg-white border-gray-100 shadow-sm hover:shadow-lg hover:border-orange-200"
-                  }`}
+                  className={`group relative overflow-hidden rounded-[10px] h-[190px] sm:h-[240px] lg:h-[340px] border cursor-pointer ${item.dark
+                      ? "bg-[#141414] border-[#1F1F1F] text-white hover:border-[#FF6A00]"
+                      : "bg-white border-gray-100 shadow-sm hover:shadow-lg hover:border-[#FF6A00]/30"
+                    }`}
                 >
                   <CardHoverBg src={item.image} />
 
                   <div
-                    className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-                      item.dark
+                    className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${item.dark
                         ? "opacity-60 group-hover:opacity-70 bg-gradient-to-t from-black via-black/40 to-black/10"
                         : "opacity-0 group-hover:opacity-50 bg-gradient-to-t from-black"
-                    }`}
+                      }`}
                   />
 
                   <LightSweep />
@@ -295,13 +299,14 @@ export default function LazyFridayDeals() {
                   <div className="relative z-10 flex flex-col h-full p-4 lg:p-7">
 
                     {/* Number */}
-<div
-  className={`text-[28px] sm:text-[38px] lg:text-[52px] font-black leading-none transition-colors duration-300 ${
-    item.dark ? "text-[#F97316]" : "text-[#9E9E9E] group-hover:text-[#F97316]"
-  }`}
->
-  {item.number}
-</div>
+                    <div
+                      className="text-[28px] sm:text-[38px] lg:text-[52px] font-black leading-none transition-colors duration-300"
+                      style={{
+                        color: item.dark ? "#FF6A00" : "#9E9E9E",
+                      }}
+                    >
+                      {item.number}
+                    </div>
 
                     <div className="flex-1" />
 
@@ -315,15 +320,17 @@ export default function LazyFridayDeals() {
 
                     {/* Title + Subtitle */}
                     <div className="mt-3 lg:mt-5">
-                      <div className="uppercase tracking-[3px] lg:tracking-[4px] text-[9px] lg:text-xs font-bold text-orange-500">
+                      <div
+                        className="uppercase tracking-[3px] lg:tracking-[4px] text-[9px] lg:text-xs font-bold"
+                        style={{ color: "#FF6A00" }}
+                      >
                         {item.title}
                       </div>
                       <h3
-                        className={`mt-1 lg:mt-2 text-[18px] sm:text-[22px] lg:text-[30px] font-black leading-none whitespace-nowrap transition-colors duration-300 ${
-                          item.dark
+                        className={`mt-1 lg:mt-2 text-[18px] sm:text-[22px] lg:text-[30px] font-black leading-none whitespace-nowrap transition-colors duration-300 ${item.dark
                             ? "text-white"
                             : "text-black group-hover:text-white"
-                        }`}
+                          }`}
                       >
                         {item.subtitle}
                       </h3>
@@ -331,16 +338,16 @@ export default function LazyFridayDeals() {
 
                     {/* Shop now */}
                     <motion.button
-                      className={`mt-3 lg:mt-5 flex items-center gap-1.5 lg:gap-2 font-semibold text-[11px] lg:text-sm transition-colors duration-300 ${
-                        item.dark
+                      className={`mt-3 lg:mt-5 flex items-center gap-1.5 lg:gap-2 font-semibold text-[11px] lg:text-sm transition-colors duration-300 ${item.dark
                           ? "text-gray-300 group-hover:text-white"
                           : "text-[#6E6E6E] group-hover:text-white"
-                      }`}
+                        }`}
                       whileHover={{ color: "#ffffff" }}
                     >
                       Shop now
                       <motion.span
-                        className="text-sm lg:text-base text-orange-500"
+                        className="text-sm lg:text-base"
+                        style={{ color: "#FF6A00" }}
                         whileHover={{ x: 5 }}
                         transition={{ type: "spring", stiffness: 400, damping: 18 }}
                       >

@@ -34,7 +34,7 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     tagline: "Learning toys, Islamic learning kits & RC vehicles",
     gradient: "from-sky-500 via-indigo-600 to-purple-700",
     bannerImage: "/banners/banner_toys.png",
-    accentColor: "#f97316",
+    accentColor: "#FF6A00",
     icon: <Smile className="h-6 w-6 text-white" />,
   },
   "baby-products": {
@@ -66,12 +66,11 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     tagline: "Storage racks, automated coffee makers & smart egg boilers",
     gradient: "from-orange-500 via-amber-600 to-red-700",
     bannerImage: "/banners/banner_kitchen-appliances-essentials.png",
-    accentColor: "#f97316",
+    accentColor: "#FF6A00",
     icon: <Utensils className="h-6 w-6 text-white" />,
   },
 };
 
-// Skeleton card
 function ProductCardSkeleton() {
   return (
     <div className="flex flex-col overflow-hidden rounded-[22px] border border-gray-100 bg-white p-3 sm:rounded-[28px] sm:p-4 animate-pulse">
@@ -91,13 +90,11 @@ export default function CategoryPage() {
   const slug = (params.slug as string)?.toLowerCase() || "";
   const subParam = searchParams.get("sub") || "";
 
-  // Filter States
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Category/subcategory lookup
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [taxonomyLoading, setTaxonomyLoading] = useState(true);
@@ -122,12 +119,9 @@ export default function CategoryPage() {
     loadTaxonomy();
   }, []);
 
-  // Fetch all products from API
   const { products: allProducts, loading: productsLoading } = useAllProducts();
-
   const loading = taxonomyLoading || productsLoading;
 
-  // Resolve subcategory IDs that belong to the current category slug
   const validSubcategoryIds = useMemo(() => {
     const matchedCategory = categories.find(
       (c) => c.slug === slug || c.href?.includes(slug)
@@ -140,19 +134,13 @@ export default function CategoryPage() {
     );
   }, [categories, subCategories, slug]);
 
-  // Filter and Sort Logic
   const filteredProducts = useMemo((): ApiProduct[] => {
-    // 1. Match by subcategory_id → category
     let result = allProducts.filter((p) =>
       validSubcategoryIds.has(p.subcategory_id)
     );
-
-    // If no category mapping resolved (e.g. backend has no data yet), show all
     if (validSubcategoryIds.size === 0 && !taxonomyLoading) {
       result = [...allProducts];
     }
-
-    // 2. Subcategory keyword filter (sub param from URL)
     if (subParam) {
       const subKeyword = subParam.replace(/-/g, " ").toLowerCase();
       const subResult = result.filter(
@@ -163,16 +151,10 @@ export default function CategoryPage() {
       );
       if (subResult.length > 0) result = subResult;
     }
-
-    // 3. Price filter
     result = result.filter((p) => Number(p.price) <= maxPrice);
-
-    // 4. Rating filter
     if (minRating > 0) {
       result = result.filter((p) => p.rating >= minRating);
     }
-
-    // 5. Sorting
     if (sortBy === "price-low-to-high") {
       result.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sortBy === "price-high-to-low") {
@@ -180,7 +162,6 @@ export default function CategoryPage() {
     } else if (sortBy === "rating") {
       result.sort((a, b) => b.rating - a.rating);
     }
-
     return result;
   }, [allProducts, validSubcategoryIds, taxonomyLoading, subParam, maxPrice, minRating, sortBy]);
 
@@ -195,19 +176,37 @@ export default function CategoryPage() {
     tagline: "Browse our premium selected catalog products",
     gradient: "from-zinc-800 via-zinc-900 to-black",
     bannerImage: "",
-    accentColor: "#f97316",
+    accentColor: "#FF6A00",
     icon: <Sparkles className="h-6 w-6 text-white" />,
   };
 
   return (
-    <div className="bg-gray-50/40 min-h-screen py-8 selection:bg-orange-500 selection:text-white">
+    <div
+      className="bg-gray-50/40 min-h-screen py-8"
+      style={{ ["--tw-selection-bg" as string]: "#FF6A00" }}
+    >
+      <style>{`::selection { background-color: #FF6A00; color: white; }`}</style>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
 
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-          <Link href="/" className="hover:text-orange-500 transition-colors">Home</Link>
+          <Link
+            href="/"
+            className="transition-colors"
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#FF6A00")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "")}
+          >
+            Home
+          </Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <Link href="/shop" className="hover:text-orange-500 transition-colors">Shop</Link>
+          <Link
+            href="/shop"
+            className="transition-colors"
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#FF6A00")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "")}
+          >
+            Shop
+          </Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-gray-900 capitalize font-bold">{meta.title}</span>
         </nav>
@@ -293,7 +292,10 @@ export default function CategoryPage() {
                 </h3>
                 <button
                   onClick={handleResetFilters}
-                  className="text-xs font-semibold text-orange-500 hover:text-orange-600 transition flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                  style={{ color: "#FF6A00" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#e05a00")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#FF6A00")}
                 >
                   <RotateCcw className="h-3 w-3" /> Reset
                 </button>
@@ -303,12 +305,13 @@ export default function CategoryPage() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
-                  <span className="text-xs font-bold text-orange-500">QAR {maxPrice}</span>
+                  <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice}</span>
                 </div>
                 <input
                   type="range" min="0" max="2000" step="50" value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  style={{ accentColor: "#FF6A00" }}
                 />
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-semibold">
                   <span>QAR 0</span><span>QAR 2,000</span>
@@ -323,10 +326,18 @@ export default function CategoryPage() {
                     <button
                       key={rating}
                       onClick={() => setMinRating(rating)}
-                      className={`flex w-full items-center gap-2 text-xs py-1 px-2 rounded-md transition cursor-pointer ${minRating === rating
-                        ? "bg-orange-500 text-white font-semibold"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`}
+                      className="flex w-full items-center gap-2 text-xs py-1 px-2 rounded-md transition cursor-pointer"
+                      style={
+                        minRating === rating
+                          ? { backgroundColor: "#FF6A00", color: "white", fontWeight: 600 }
+                          : { color: "#4b5563" }
+                      }
+                      onMouseEnter={(e) => {
+                        if (minRating !== rating) e.currentTarget.style.backgroundColor = "#f9fafb";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (minRating !== rating) e.currentTarget.style.backgroundColor = "";
+                      }}
                     >
                       {rating === 0 ? (
                         <span>Any Rating</span>
@@ -334,7 +345,14 @@ export default function CategoryPage() {
                         <div className="flex items-center gap-1.5">
                           <div className="flex items-center gap-0.5">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`h-3 w-3 ${i < rating ? (minRating === rating ? "fill-white text-white" : "fill-orange-400 text-orange-400") : "text-gray-200"}`} />
+                              <Star
+                                key={i}
+                                className="h-3 w-3"
+                                style={{
+                                  fill: i < rating ? (minRating === rating ? "white" : "#FF6A00") : "transparent",
+                                  color: i < rating ? (minRating === rating ? "white" : "#FF6A00") : "#e5e7eb",
+                                }}
+                              />
                             ))}
                           </div>
                           <span>& Up</span>
@@ -408,7 +426,13 @@ export default function CategoryPage() {
                 </p>
                 <button
                   onClick={handleResetFilters}
-                  className="mt-4 inline-flex items-center justify-center rounded-xl bg-orange-500 px-6 py-2.5 text-xs font-semibold text-white hover:bg-orange-600 transition shadow-md shadow-orange-500/10 cursor-pointer"
+                  className="mt-4 inline-flex items-center justify-center rounded-xl px-6 py-2.5 text-xs font-semibold text-white transition cursor-pointer"
+                  style={{
+                    backgroundColor: "#FF6A00",
+                    boxShadow: "0 4px 6px -1px rgba(255,106,0,0.10)",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e05a00")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF6A00")}
                 >
                   Clear All Filters
                 </button>
@@ -437,8 +461,17 @@ export default function CategoryPage() {
                   <SlidersHorizontal className="h-5 w-5" /> Filter Settings
                 </h3>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => { handleResetFilters(); setMobileFiltersOpen(false); }} className="text-xs font-semibold text-orange-500">Reset All</button>
-                  <button onClick={() => setMobileFiltersOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+                  <button
+                    onClick={() => { handleResetFilters(); setMobileFiltersOpen(false); }}
+                    className="text-xs font-semibold"
+                    style={{ color: "#FF6A00" }}
+                  >
+                    Reset All
+                  </button>
+                  <button
+                    onClick={() => setMobileFiltersOpen(false)}
+                    className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+                  >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
@@ -448,23 +481,41 @@ export default function CategoryPage() {
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
-                    <span className="text-xs font-bold text-orange-500">QAR {maxPrice}</span>
+                    <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice}</span>
                   </div>
-                  <input type="range" min="0" max="2000" step="50" value={maxPrice}
+                  <input
+                    type="range" min="0" max="2000" step="50" value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500" />
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    style={{ accentColor: "#FF6A00" }}
+                  />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Minimum Rating</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {[4, 3, 2, 0].map((rating) => (
-                      <button key={rating} onClick={() => setMinRating(rating)}
-                        className={`flex items-center justify-center gap-1.5 text-xs py-2 px-3 rounded-lg border transition cursor-pointer ${minRating === rating ? "border-orange-500 bg-orange-50 text-orange-500 font-bold" : "border-gray-200 text-gray-600 bg-white"}`}>
+                      <button
+                        key={rating}
+                        onClick={() => setMinRating(rating)}
+                        className="flex items-center justify-center gap-1.5 text-xs py-2 px-3 rounded-lg border transition cursor-pointer"
+                        style={
+                          minRating === rating
+                            ? { borderColor: "#FF6A00", backgroundColor: "#FF6A0010", color: "#FF6A00", fontWeight: 700 }
+                            : { borderColor: "#e5e7eb", color: "#4b5563", backgroundColor: "white" }
+                        }
+                      >
                         {rating === 0 ? <span>Any Rating</span> : (
                           <div className="flex items-center gap-1">
                             <div className="flex items-center gap-0.5">
                               {[...Array(5)].map((_, i) => (
-                                <Star key={i} className={`h-3 w-3 ${i < rating ? "fill-orange-400 text-orange-400" : "text-gray-200"}`} />
+                                <Star
+                                  key={i}
+                                  className="h-3 w-3"
+                                  style={{
+                                    fill: i < rating ? "#FF6A00" : "transparent",
+                                    color: i < rating ? "#FF6A00" : "#e5e7eb",
+                                  }}
+                                />
                               ))}
                             </div>
                             <span>& Up</span>
@@ -476,8 +527,16 @@ export default function CategoryPage() {
                 </div>
               </div>
 
-              <button onClick={() => setMobileFiltersOpen(false)}
-                className="mt-8 w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/10 cursor-pointer">
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                className="mt-8 w-full py-3 text-white rounded-xl font-semibold transition cursor-pointer"
+                style={{
+                  backgroundColor: "#FF6A00",
+                  boxShadow: "0 4px 6px -1px rgba(255,106,0,0.10)",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e05a00")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF6A00")}
+              >
                 Show {filteredProducts.length} Results
               </button>
             </motion.div>

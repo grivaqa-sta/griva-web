@@ -122,9 +122,8 @@ export default function Footer() {
                     <span>{group.title}</span>
                     <ChevronDown
                       size={14}
-                      className={`text-zinc-500 md:hidden transition-transform duration-200 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
+                      className={`text-zinc-500 md:hidden transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
 

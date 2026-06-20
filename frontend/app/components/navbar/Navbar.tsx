@@ -106,7 +106,7 @@ export default function Navbar() {
               <Link
                 href={`/shop?search=${encodeURIComponent(searchQuery)}`}
                 onClick={() => setSearchFocused(false)}
-                className="bg-orange-500 flex items-center justify-center px-6 text-xs font-bold text-white transition hover:bg-orange-600 uppercase shrink-0"
+                className="bg-[#FF6A00] flex items-center justify-center px-6 text-xs font-bold text-white transition hover:bg-orange-600 uppercase shrink-0"
               >
                 Search
               </Link>

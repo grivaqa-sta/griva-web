@@ -25,9 +25,9 @@ export default function SubNavbar() {
 
         const raw: CategoryWithSubcategories[] =
           Array.isArray(res) ? res :
-          Array.isArray(res?.data) ? res.data :
-          Array.isArray(res?.categories) ? res.categories :
-          [];
+            Array.isArray(res?.data) ? res.data :
+              Array.isArray(res?.categories) ? res.categories :
+                [];
 
         setNavLinks(raw.filter((cat) => cat.is_active));
       } catch (err) {
@@ -36,9 +36,9 @@ export default function SubNavbar() {
           const fallbackRes = await categoryService.getCategories();
           const raw: Category[] =
             Array.isArray(fallbackRes) ? fallbackRes :
-            Array.isArray(fallbackRes?.data) ? fallbackRes.data :
-            Array.isArray(fallbackRes?.categories) ? fallbackRes.categories :
-            [];
+              Array.isArray(fallbackRes?.data) ? fallbackRes.data :
+                Array.isArray(fallbackRes?.categories) ? fallbackRes.categories :
+                  [];
 
           setNavLinks(
             raw

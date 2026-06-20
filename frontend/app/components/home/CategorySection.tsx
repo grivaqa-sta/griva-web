@@ -42,7 +42,7 @@ export default function CategorySection() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  console.log("categories",categories)
+  console.log("categories", categories)
   // ──────────────────────────────────────────────────────────────────────────
 
   const TOTAL_CARDS = categories.length;

@@ -84,11 +84,10 @@ export default function MobileCategoryDrawer({ isOpen, onClose }: Props) {
                     <button
                       key={cat.title}
                       onClick={() => setActiveCategory(cat)}
-                      className={`w-full flex flex-col items-center gap-1.5 py-4 px-1 transition-colors border-l-[3px] ${
-                        isActive
+                      className={`w-full flex flex-col items-center gap-1.5 py-4 px-1 transition-colors border-l-[3px] ${isActive
                           ? "border-orange-500 bg-white text-orange-500"
                           : "border-transparent text-gray-600 hover:bg-white"
-                      }`}
+                        }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? "bg-orange-50" : "bg-gray-100"}`}>
                         <Image

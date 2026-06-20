@@ -79,7 +79,10 @@ export default function DealOfTheDaySection() {
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
 
         {/* ── LEFT TIMER CARD — desktop only ── */}
-        <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl border border-orange-100 bg-white px-6 py-8 text-center shadow-sm">
+        <div
+          className="hidden lg:flex flex-col items-center justify-center rounded-2xl bg-white px-6 py-8 text-center shadow-sm"
+          style={{ border: "1px solid #FF6A0020" }}
+        >
           <span className="text-[10px] font-bold uppercase tracking-[3px] text-red-500">
             Only For Today
           </span>
@@ -90,7 +93,13 @@ export default function DealOfTheDaySection() {
           <div className="mt-3 flex items-center gap-3">
             {timerBlocks.map(({ value, label }) => (
               <div key={label} className="flex flex-col items-center">
-                <div className="flex h-11 w-12 items-center justify-center rounded-xl bg-orange-500 shadow-md shadow-orange-500/10">
+                <div
+                  className="flex h-11 w-12 items-center justify-center rounded-xl shadow-md"
+                  style={{
+                    backgroundColor: "#FF6A00",
+                    boxShadow: "0 4px 6px -1px #FF6A0020",
+                  }}
+                >
                   <span className="text-lg font-bold text-white">{String(value).padStart(2, "0")}</span>
                 </div>
                 <span className="mt-1.5 text-[9px] font-medium text-gray-400">{label}</span>
@@ -108,15 +117,18 @@ export default function DealOfTheDaySection() {
           onTouchEnd={() => setIsPaused(false)}
         >
           {/* ── MOBILE ONLY: orange timer banner ── */}
-          <div className="lg:hidden bg-gradient-to-br from-orange-600 via-orange-500 to-amber-400 px-5 py-4 flex items-center justify-between gap-4">
+          <div
+            className="lg:hidden px-5 py-4 flex items-center justify-between gap-4"
+            style={{ background: "linear-gradient(135deg, #cc5500 0%, #FF6A00 50%, #ff8c00 100%)" }}
+          >
             <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-[2.5px] text-orange-100">
+              <span className="text-[8px] font-black uppercase tracking-[2.5px]" style={{ color: "#ffd0b0" }}>
                 Only For Today
               </span>
               <h2 className="text-[15px] font-black text-white leading-snug">
                 Deal of the Day
               </h2>
-              <p className="text-[8px] text-orange-200 mt-0.5 leading-tight">
+              <p className="text-[8px] mt-0.5 leading-tight" style={{ color: "#ffc49a" }}>
                 Lightning deals on electronics!
               </p>
             </div>
@@ -129,7 +141,7 @@ export default function DealOfTheDaySection() {
                         {String(value).padStart(2, "0")}
                       </span>
                     </div>
-                    <span className="mt-0.5 text-[7px] font-bold text-orange-200 uppercase">
+                    <span className="mt-0.5 text-[7px] font-bold uppercase" style={{ color: "#ffc49a" }}>
                       {label}
                     </span>
                   </div>
@@ -156,7 +168,6 @@ export default function DealOfTheDaySection() {
                 if (offset.x < -50) next();
                 else if (offset.x > 50) prev();
               }}
-              // ✅ CHANGED: mobile flex-col with full width, desktop flex-row
               className="flex w-full flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6 cursor-grab active:cursor-grabbing"
             >
               {/* ── IMAGE SECTION ── */}
@@ -167,11 +178,19 @@ export default function DealOfTheDaySection() {
                     <div
                       key={index}
                       onClick={(e) => { e.stopPropagation(); setActiveImage(image); }}
-                      className={`flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-all ${
-                        displayImage === image
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-gray-100 bg-gray-50 hover:border-orange-200"
-                      }`}
+                      className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-all"
+                      style={{
+                        borderColor: displayImage === image ? "#FF6A00" : "#f3f4f6",
+                        backgroundColor: displayImage === image ? "#FF6A0010" : "#f9fafb",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (displayImage !== image)
+                          e.currentTarget.style.borderColor = "#FF6A0040";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (displayImage !== image)
+                          e.currentTarget.style.borderColor = "#f3f4f6";
+                      }}
                     >
                       <Image src={image} alt="thumb" width={36} height={36} className="object-contain" style={{ width: "auto", height: "auto" }} />
                     </div>
@@ -191,11 +210,13 @@ export default function DealOfTheDaySection() {
               </div>
 
               {/* ── PRODUCT CONTENT ── */}
-              {/* ✅ CHANGED: w-full on mobile so content + button fill the card */}
               <div className="flex w-full min-w-0 flex-col gap-3 lg:flex-1 lg:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-orange-500 px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">
+                    <span
+                      className="rounded px-2 py-0.5 text-[9px] font-extrabold uppercase text-white"
+                      style={{ backgroundColor: "#FF6A00" }}
+                    >
                       {slide.badge}
                     </span>
                     {slide.hot && (
@@ -207,14 +228,22 @@ export default function DealOfTheDaySection() {
                   <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                     {slide.category}
                   </p>
-                  <h3 className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors hover:text-orange-500">
-                    <Link href={`/product/${slide.id}`}>{slide.title}</Link>
+                  <h3
+                    className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors"
+                    style={{ ["--hover-color" as string]: "#FF6A00" }}
+                  >
+                    <Link
+                      href={`/product/${slide.id}`}
+                      className="hover:text-[#FF6A00] transition-colors"
+                    >
+                      {slide.title}
+                    </Link>
                   </h3>
                   <div className="mt-2">
                     <Rating rating={slide.rating} />
                   </div>
                   <div className="mt-3 flex items-center gap-2">
-                    <span className="text-2xl font-bold text-orange-500">{slide.price}</span>
+                    <span className="text-2xl font-bold" style={{ color: "#FF6A00" }}>{slide.price}</span>
                     <span className="text-xs text-gray-400 line-through">{slide.oldPrice}</span>
                   </div>
                   <p className="mt-3 break-words text-xs leading-relaxed text-gray-500">
@@ -222,10 +251,12 @@ export default function DealOfTheDaySection() {
                   </p>
                 </div>
 
-                {/* ✅ CHANGED: w-full on all screens, lg:w-44 on desktop only */}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
-                  className="z-10 mt-2 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 lg:w-44"
+                  className="z-10 mt-2 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase text-white transition lg:w-44"
+                  style={{ backgroundColor: "#FF6A00", boxShadow: "0 4px 6px -1px #FF6A0030" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e05a00")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF6A00")}
                 >
                   <ShoppingCart size={14} /> Add To Cart
                 </button>
@@ -233,27 +264,52 @@ export default function DealOfTheDaySection() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Desktop nav arrows — unchanged */}
+          {/* Desktop nav arrows */}
           <div className="absolute bottom-6 right-6 hidden lg:flex items-center gap-2">
-            <button onClick={prev} className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white hover:border-orange-500 hover:text-orange-500">
+            <button
+              onClick={prev}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white transition"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#FF6A00";
+                e.currentTarget.style.color = "#FF6A00";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#e5e7eb";
+                e.currentTarget.style.color = "";
+              }}
+            >
               <ChevronLeft size={16} />
             </button>
-            <button onClick={next} className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white hover:border-orange-500 hover:text-orange-500">
+            <button
+              onClick={next}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white transition"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#FF6A00";
+                e.currentTarget.style.color = "#FF6A00";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#e5e7eb";
+                e.currentTarget.style.color = "";
+              }}
+            >
               <ChevronRight size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Pagination Dots — unchanged */}
+      {/* Pagination Dots */}
       <div className="mt-6 flex items-center justify-center gap-2">
         {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`cursor-pointer rounded-full transition-all ${
-              i === current ? "h-2.5 w-8 bg-orange-500" : "h-2.5 w-2.5 bg-gray-200"
-            }`}
+            className="cursor-pointer rounded-full transition-all"
+            style={{
+              height: "10px",
+              width: i === current ? "32px" : "10px",
+              backgroundColor: i === current ? "#FF6A00" : "#e5e7eb",
+            }}
           />
         ))}
       </div>

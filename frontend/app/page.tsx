@@ -23,7 +23,7 @@ export default function Home() {
         <PromoBannerSection />
         <OfferSection />
         <TrendingProductsSection />
-        <ProductPromoBanner/>
+        <ProductPromoBanner />
         <NewsletterSection />
       </div>
     </div>

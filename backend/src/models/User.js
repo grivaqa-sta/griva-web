@@ -113,6 +113,10 @@ User.associate = (models) => {
     foreignKey: "userId",
     as: "addresses",
   });
+  User.hasMany(models.Notification, {
+    foreignKey: "userId",
+    as: "notifications",
+  });
 };
 
 module.exports = User;

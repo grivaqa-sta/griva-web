@@ -30,10 +30,19 @@ import {
   Map,
   Compass,
   Sun,
-  Moon
+  Moon,
+  Trash2
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+
+interface DriverNotification {
+  id: number;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 interface OrderItem {
   id: number;
@@ -100,6 +109,10 @@ export default function DeliveryDashboard() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
+  // Notifications state
+  const [notifications, setNotifications] = useState<DriverNotification[]>([]);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+
   // Theme toggle state
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
@@ -147,6 +160,78 @@ export default function DeliveryDashboard() {
       }
     }
   }, []);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/delivery/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 20000); // check every 20s
+      return () => clearInterval(interval);
+    }
+  }, [token, fetchNotifications]);
+
+  const handleMarkNotificationRead = async (id: number) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/delivery/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setNotifications(prev =>
+          prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
+        );
+      }
+    } catch (err) {
+      console.error("Error marking notification read:", err);
+    }
+  };
+
+  const handleClearAllNotifications = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/delivery/notifications/clear-all`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setNotifications([]);
+        showToast("All notifications cleared");
+      }
+    } catch (err) {
+      console.error("Error clearing notifications:", err);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/delivery/notifications/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        showToast("Notification deleted");
+      }
+    } catch (err) {
+      console.error("Error deleting notification:", err);
+    }
+  };
 
   const fetchOrders = useCallback(async () => {
     if (!token) return;
@@ -405,9 +490,17 @@ export default function DeliveryDashboard() {
           >
             {theme === "dark" ? <Sun size={20} className="text-[#FF6A00]" /> : <Moon size={20} className="text-[#FF6A00]" />}
           </button>
-          <button className="relative text-zinc-400 hover:text-white transition-colors cursor-pointer" aria-label="Notifications">
+          <button 
+            onClick={() => setShowNotifModal(true)}
+            className="relative text-zinc-400 hover:text-white transition-colors cursor-pointer active:scale-95" 
+            aria-label="Notifications"
+          >
             <Bell size={20} />
-            <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-[#FF6A00]" />
+            {notifications.filter(n => !n.isRead).length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[#FF6A00] text-[8px] font-extrabold text-white flex items-center justify-center border border-[#050505] shadow-[0_0_8px_rgba(255,106,0,0.6)]">
+                {notifications.filter(n => !n.isRead).length}
+              </span>
+            )}
           </button>
           <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-[#FF6A00] to-[#E04F00] flex items-center justify-center font-bold text-xs text-white shadow-[0_0_10px_rgba(255,106,0,0.3)]">
             {driverName.slice(0, 2).toUpperCase()}
@@ -1184,6 +1277,102 @@ export default function DeliveryDashboard() {
                 </div>
               )}
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Driver Notifications Modal */}
+      <AnimatePresence>
+        {showNotifModal && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowNotifModal(false)}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative bg-[#070707] border-t border-zinc-800 rounded-t-[32px] w-full max-w-[480px] p-6 pb-10 shadow-2xl z-10 before:absolute before:top-2 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:rounded-full before:bg-zinc-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button 
+                onClick={() => setShowNotifModal(false)} 
+                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center cursor-pointer active:scale-95"
+              >
+                <X size={14} />
+              </button>
+
+              <div className="space-y-5 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-black text-white">Driver Alerts</h3>
+                    <p className="text-xs text-zinc-500">Official messages from dispatch and administration.</p>
+                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={handleClearAllNotifications}
+                      className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors border border-red-950/40 bg-red-950/10 px-2.5 py-1.5 rounded-xl cursor-pointer active:scale-95"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+
+                {/* Notifications list container */}
+                <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
+                  {notifications.length === 0 ? (
+                    <div className="text-center py-10 space-y-3 flex flex-col items-center">
+                      <div className="relative w-12 h-12 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-[#FF6A00]/5 rounded-full blur-[15px]" />
+                        <Bell size={24} className="text-zinc-700" />
+                      </div>
+                      <p className="text-xs text-zinc-500 font-semibold">No active alerts at the moment.</p>
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div 
+                        key={notif.id}
+                        onClick={() => !notif.isRead && handleMarkNotificationRead(notif.id)}
+                        className={`p-4 rounded-2xl border transition-all duration-300 flex items-start gap-3 relative overflow-hidden group cursor-pointer ${
+                          notif.isRead 
+                            ? "bg-zinc-950/20 border-zinc-900/60 text-zinc-400" 
+                            : "bg-[#FF6A00]/5 border-[#FF6A00]/25 text-white shadow-[0_2px_12px_rgba(255,106,0,0.05)]"
+                        }`}
+                      >
+                        {/* Unread indicator */}
+                        {!notif.isRead && (
+                          <span className="absolute top-4 right-12 h-2 w-2 rounded-full bg-[#FF6A00] animate-pulse" />
+                        )}
+
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-xs leading-none">{notif.title}</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
+                            {notif.message}
+                          </p>
+                          <span className="text-[9px] text-zinc-600 font-semibold block pt-1">
+                            {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(notif.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteNotification(notif.id);
+                          }}
+                          className="text-zinc-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-zinc-900 active:scale-95"
+                          aria-label="Delete Notification"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

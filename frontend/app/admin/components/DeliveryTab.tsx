@@ -5,7 +5,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { UserPlus, Mail, Shield, User, Key, Users, RefreshCw } from "lucide-react";
+import { UserPlus, Mail, Shield, User, Key, Users, RefreshCw, Send } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -28,6 +28,14 @@ export default function DeliveryTab() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Notification form state
+  const [targetDriverId, setTargetDriverId] = useState("all");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
+  const [sendingNotif, setSendingNotif] = useState(false);
+  const [notifSuccess, setNotifSuccess] = useState("");
+  const [notifError, setNotifError] = useState("");
 
   const fetchDrivers = async () => {
     setLoading(true);
@@ -89,11 +97,49 @@ export default function DeliveryTab() {
     }
   };
 
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNotifError("");
+    setNotifSuccess("");
+    setSendingNotif(true);
+
+    try {
+      const token = localStorage.getItem("griva_admin_token") || "";
+      const res = await fetch(`${API_BASE}/delivery/admin/notifications`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          driverId: targetDriverId === "all" ? "all" : Number(targetDriverId),
+          title: notifTitle,
+          message: notifMessage,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setNotifSuccess(data.message || "Alert sent successfully!");
+        setNotifTitle("");
+        setNotifMessage("");
+      } else {
+        setNotifError(data.message || "Failed to send alert.");
+      }
+    } catch {
+      setNotifError("Failed to connect to backend server.");
+    } finally {
+      setSendingNotif(false);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in-50 duration-300">
       
-      {/* Create Driver Form */}
-      <div className="lg:col-span-5">
+      {/* Forms column */}
+      <div className="lg:col-span-5 space-y-6">
+        {/* Create Driver Form */}
         <div className="bg-white border border-orange-500/30 rounded-2xl p-6 space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-orange-500/30">
             <UserPlus className="h-4.5 w-4.5 text-orange-500" />
@@ -182,6 +228,88 @@ export default function DeliveryTab() {
                 <>
                   <UserPlus className="h-4 w-4" />
                   Create Driver Account
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Send Notification Form */}
+        <div className="bg-white border border-orange-500/30 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-orange-500/30">
+            <Send className="h-4.5 w-4.5 text-orange-500" />
+            <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Send Alert to Drivers</h4>
+          </div>
+          <p className="text-[10px] text-gray-400 leading-relaxed">
+            Send an instant notification alert to a specific driver or broadcast a message to all delivery agents.
+          </p>
+
+          {notifSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-600 text-xs font-bold p-3 rounded-xl">
+              ✅ {notifSuccess}
+            </div>
+          )}
+
+          {notifError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 text-xs font-bold p-3 rounded-xl">
+              ⚠️ {notifError}
+            </div>
+          )}
+
+          <form onSubmit={handleSendNotification} className="space-y-4">
+            <div>
+              <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Select Recipient</label>
+              <select
+                value={targetDriverId}
+                onChange={(e) => setTargetDriverId(e.target.value)}
+                className="w-full bg-white border border-orange-500/30 rounded-xl px-3 py-2.5 text-xs text-gray-800 focus:outline-none"
+                required
+              >
+                <option value="all">📢 Broadcast to All Drivers</option>
+                {drivers.map(driver => (
+                  <option key={driver.id} value={driver.id}>👤 {driver.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Alert Title</label>
+              <input
+                type="text"
+                placeholder="e.g. Urgent Order Update"
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                className="w-full bg-white border border-orange-500/30 rounded-xl px-3 py-2.5 text-xs text-gray-800 focus:outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Message Content</label>
+              <textarea
+                placeholder="Type your message to the driver(s) here..."
+                value={notifMessage}
+                onChange={(e) => setNotifMessage(e.target.value)}
+                className="w-full bg-white border border-orange-500/30 rounded-xl px-3 py-2.5 text-xs text-gray-800 focus:outline-none"
+                rows={3}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={sendingNotif}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white rounded-xl transition-all cursor-pointer font-bold text-xs shadow-md"
+            >
+              {sendingNotif ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Sending Message...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send Instant Alert
                 </>
               )}
             </button>

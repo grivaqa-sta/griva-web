@@ -195,6 +195,9 @@ export interface ApiProduct {
   is_trending: boolean;
   is_new: boolean;
   is_active: boolean;
+  is_banner?: boolean;
+  banner_background_color?: string;
+  href?: string;
   meta_title?: string;
   meta_description?: string;
   views_count?: number;
@@ -203,10 +206,35 @@ export interface ApiProduct {
 }
 
 
+// ─────────────────────────────────────────────────────────
+// Banner Types
+// ─────────────────────────────────────────────────────────
+
+export interface BannerUpdatePayload {
+  is_banner: boolean;
+  href?: string;
+  tags?: string[];
+  bannerColor?: string;
+  old_price?:number;
+}
+
+export interface BannerProduct extends ProductRequest {
+    id: number;
+    href?: string;
+    banner_background_color?: string;
+}
 
 
-
-
+export interface HeroSlide {
+    title: string;
+    subtitle: string;
+    badge: string;
+    image: string;
+    price: number;
+    old_price?: number;
+    href: string;
+    bg: string;
+}
 
 
 

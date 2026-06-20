@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   Plus, Trash2, Edit, ToggleLeft, ToggleRight, Image as ImageIcon, Upload, Check, Loader
 } from 'lucide-react';
+import ProductBannersSection from './ProductBannersSection';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
@@ -395,6 +396,9 @@ export default function BannersTab(props: BannersTabProps) {
                   })}
                 </div>
               </div>
+
+              {/* Section E: Product Banners */}
+              <ProductBannersSection />
 
             </div>
   );

@@ -605,7 +605,6 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
               <div className="flex flex-wrap gap-6">
                 {[
                   { id: "is_active", label: "Is Active" },
-                  { id: "is_featured", label: "Featured" },
                   { id: "is_best_seller", label: "Best Seller" },
                   { id: "is_trending", label: "Trending" },
                   { id: "is_new", label: "New Arrival" }

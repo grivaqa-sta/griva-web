@@ -132,6 +132,21 @@ const Product = sequelize.define(
       defaultValue: true,
     },
 
+    is_banner: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    href:{
+      type:DataTypes.STRING,
+      allowNull:true
+    },
+
+    banner_background_color:{
+      type:DataTypes.STRING,
+      allowNull:true
+    },
+
     meta_title: {
       type: DataTypes.STRING,
       allowNull: true,

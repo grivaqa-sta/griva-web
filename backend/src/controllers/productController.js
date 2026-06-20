@@ -315,3 +315,65 @@ exports.deleteProduct = async (req, res) => {
     });
   }
 };
+
+//banner update api
+
+exports.updateBannerStatus = async (req, res) => {
+  try {
+    const product = await Product.findByPk(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    const { is_banner, href, tags,banner_background_color} = req.body;
+
+    await product.update({
+      is_banner,
+      href,
+      tags,
+      banner_background_color
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Banner updated successfully",
+      data: product,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+//get isbanner active product
+exports.getBannerActiveProducts = async (req, res) => {
+  try {
+    const products = await Product.findAll({
+      where: {
+        is_banner: true,
+        is_active: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

@@ -197,6 +197,7 @@ export interface ApiProduct {
   is_active: boolean;
   is_banner?: boolean;
   banner_background_color?: string;
+  mobile_ad_banner?: string;
   href?: string;
   meta_title?: string;
   meta_description?: string;
@@ -222,6 +223,7 @@ export interface BannerProduct extends ProductRequest {
     id: number;
     href?: string;
     banner_background_color?: string;
+    mobile_ad_banner:string;
 }
 
 
@@ -234,6 +236,7 @@ export interface HeroSlide {
     old_price?: number;
     href: string;
     bg: string;
+    mobile_ad_banner:string;
 }
 
 

@@ -64,8 +64,8 @@ export const productService = {
   },
 
   // Update banner status
-  updateBannerStatus: async (id: number, is_banner: boolean, href?: string,banner_background_color?: string, tags?: string[]) => {
-    const response = await api.patch(`/products/${id}/banner`, { is_banner, href,banner_background_color, tags });
+  updateBannerStatus: async (id: number, is_banner: boolean, href?: string,mobile_ad_banner?:string, banner_background_color?: string, tags?: string[]) => {
+    const response = await api.patch(`/products/${id}/banner`, { is_banner, href,banner_background_color,mobile_ad_banner, tags });
     return response.data;
   }
 

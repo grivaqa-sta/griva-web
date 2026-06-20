@@ -17,7 +17,7 @@ export default function Home() {
       <div className="px-0 sm:px-4 md:px-6 lg:px-8 pb-1 bg-[#ffff]">
         <CategorySection />
         <HeroBanner />
-        <LazyFridayDeals />
+        {/* <LazyFridayDeals /> */}
         <DealOfTheDaySection />
         <ProductSection />
         <PromoBannerSection />

@@ -51,6 +51,11 @@ const Product = sequelize.define(
       allowNull: true,
     },
 
+    mobile_ad_banner:{
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
     discount_percentage: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

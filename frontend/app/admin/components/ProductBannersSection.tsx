@@ -67,6 +67,7 @@ export default function ProductBannersSection() {
         productId,
         true,
         defaultHref,
+        undefined,                                  // mobile_ad_banner — not set here
         prod.banner_background_color || COLORS[0].id,
         prod.tags || []
       );
@@ -120,6 +121,7 @@ export default function ProductBannersSection() {
         id,
         true,
         editData.href,
+        undefined,                           // mobile_ad_banner — managed separately in Section B
         editData.banner_background_color,
         editData.tags
       );
@@ -186,7 +188,7 @@ export default function ProductBannersSection() {
   return (
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20">
-        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">E. Product Banners</h4>
+        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">A. Hero Banners</h4>
         <p className="text-[10px] text-gray-400 mt-1">Manage up to 3 active product banners. Select a product for each slot below.</p>
       </div>
 

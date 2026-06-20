@@ -4,24 +4,37 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useAdminSettings } from "@/app/context/AdminContext";
+import { productService } from "@/app/services/product.service";
+import { ApiProduct } from "@/app/types/types";
 
 // ─── Mobile Banner Component ───────────────────────────────────────────────
 function MobileAdBanner() {
-  const { cmsMobileBanners: mobilebanners } = useAdminSettings();
+  const [bannerProducts, setBannerProducts] = useState<ApiProduct[]>([]);
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
 
   useEffect(() => {
+    productService.getBannerProducts().then((res) => {
+      const data: ApiProduct[] = res?.data || res;
+      if (Array.isArray(data)) {
+        // Only include products that have at least one image to show
+        const withImages = data.filter(
+          (p) => p.mobile_ad_banner || p.main_image_url
+        );
+        setBannerProducts(withImages);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (bannerProducts.length === 0) return;
     const t = setInterval(
-      () => setCurrent((p) => (p + 1) % mobilebanners.length),
+      () => setCurrent((p) => (p + 1) % bannerProducts.length),
       4000
     );
     return () => clearInterval(t);
-  }, []);
-
-  const banner = mobilebanners[current];
+  }, [bannerProducts.length]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -39,11 +52,22 @@ function MobileAdBanner() {
     if (Math.abs(dx) > 40) {
       setCurrent(
         (p) =>
-          (p + (dx < 0 ? 1 : -1) + mobilebanners.length) %
-          mobilebanners.length
+          (p + (dx < 0 ? 1 : -1) + bannerProducts.length) %
+          bannerProducts.length
       );
     }
   };
+
+  if (bannerProducts.length === 0) return null;
+
+  const product = bannerProducts[current];
+  // Prefer the dedicated mobile image; fall back to the main product image
+  const rawSrc = product.mobile_ad_banner || product.main_image_url;
+  const imageSrc =
+    rawSrc.startsWith("http") || rawSrc.startsWith("/")
+      ? rawSrc
+      : `http://localhost:8080${rawSrc}`;
+  const href = product.href || `/product/${product.id}`;
 
   return (
     <div
@@ -52,8 +76,8 @@ function MobileAdBanner() {
       onTouchEnd={handleTouchEnd}
     >
       {/* Rectangle Image Banner */}
-      <Link href={banner.href}>
-        <div className="relative w-full h-[160px] rounded-2xl overflow-hidden">
+      <Link href={href}>
+        <div className="relative w-full h-[200px] rounded-2xl overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={current}
@@ -64,8 +88,8 @@ function MobileAdBanner() {
               className="absolute inset-0"
             >
               <Image
-                src={banner.src}
-                alt={banner.alt}
+                src={imageSrc}
+                alt={product.title}
                 fill
                 sizes="(max-width: 1024px) 100vw"
                 priority
@@ -78,7 +102,7 @@ function MobileAdBanner() {
 
       {/* Dot Slider */}
       <div className="flex justify-center items-center gap-1.5 mt-2.5">
-        {mobilebanners.map((_: any, i: number) => (
+        {bannerProducts.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}

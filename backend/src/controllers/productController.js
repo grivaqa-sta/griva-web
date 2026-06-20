@@ -329,13 +329,14 @@ exports.updateBannerStatus = async (req, res) => {
       });
     }
 
-    const { is_banner, href, tags,banner_background_color} = req.body;
+    const { is_banner, href, tags,banner_background_color,mobile_ad_banner} = req.body;
 
     await product.update({
       is_banner,
       href,
       tags,
-      banner_background_color
+      banner_background_color,
+      mobile_ad_banner
     });
 
     res.status(200).json({

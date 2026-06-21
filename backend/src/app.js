@@ -66,6 +66,7 @@ const customerRoutes = require("./routes/customerRoutes");
 const testEmailRoutes = require("./routes/testEmailRoutes");
 const deliveryAttemptRoutes = require("./routes/deliveryAttemptRoutes");
 const uploadRoutes = require("./routes/uploadRoutes"); //IMAGE UPLOAD
+const deliverySlotRoutes = require("./routes/deliverySlotRoutes");
 
 // Mount API Routers
 app.use("/api/auth", authRoutes);
@@ -85,6 +86,7 @@ app.use("/api/admin/customers", customerRoutes);
 app.use("/api/delivery", deliveryAttemptRoutes); // FEATURE: Delivery Attempt Management
 app.use("/api/test-email", testEmailRoutes);
 app.use("/api/uploads", uploadRoutes); //IMAGE UPLOAD
+app.use("/api/delivery-slots", deliverySlotRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

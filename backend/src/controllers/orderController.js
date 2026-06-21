@@ -73,7 +73,7 @@ async function generateOrderNumber(transaction) {
 }
 
 exports.createOrder = async (req, res, next) => {
-  const transaction = await sequelize.transaction();
+  let transaction;
 
   try {
     const {
@@ -105,6 +105,7 @@ exports.createOrder = async (req, res, next) => {
     const resolvedStatus    = payment_status   || paymentStatus   || "unpaid";
     const resolvedNotes     = delivery_notes   || deliveryNotes   || null;
     const resolvedCity      = city || null;
+    const resolvedSlotId    = req.body.delivery_slot_id || req.body.deliverySlotId || null;
 
     const userId = req.user ? req.user.id : null;
 
@@ -114,6 +115,28 @@ exports.createOrder = async (req, res, next) => {
 
     if (!resolvedAddress) {
       return res.status(400).json({ error: "Shipping delivery address is required." });
+    }
+
+    if (!resolvedSlotId) {
+      return res.status(400).json({ error: "Preferred delivery time slot is required." });
+    }
+
+    if (!resolvedEmail) {
+      return res.status(400).json({ error: "Email address is required." });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resolvedEmail)) {
+      return res.status(400).json({ error: "Invalid email address format." });
+    }
+
+    transaction = await sequelize.transaction();
+
+    const DeliverySlot = require("../models/DeliverySlot");
+    const activeSlot = await DeliverySlot.findByPk(resolvedSlotId, { transaction });
+    if (!activeSlot || !activeSlot.is_active) {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Selected delivery slot is invalid or inactive." });
     }
 
     let calculatedTotal = 0;
@@ -187,6 +210,7 @@ exports.createOrder = async (req, res, next) => {
       payment_status: resolvedStatus,
       delivery_notes: resolvedNotes,
       city: resolvedCity,
+      delivery_slot_id: resolvedSlotId,
     }, { transaction });
 
     const finalizedItems = itemsToCreate.map((item) => ({
@@ -216,10 +240,11 @@ exports.createOrder = async (req, res, next) => {
         total_price: order.total_price,
         payment_method: order.payment_method,
         createdAt: order.createdAt,
+        delivery_slot_id: order.delivery_slot_id,
       },
     });
   } catch (error) {
-    await transaction.rollback();
+    if (transaction) await transaction.rollback();
     next(error);
   }
 };
@@ -251,6 +276,7 @@ exports.trackGuestOrder = async (req, res, next) => {
       });
     }
 
+    const DeliverySlot = require("../models/DeliverySlot");
     const order = await Order.findOne({
       where: {
         order_number,
@@ -259,6 +285,11 @@ exports.trackGuestOrder = async (req, res, next) => {
         },
       },
       include: [
+        {
+          model: DeliverySlot,
+          as: "deliverySlot",
+          attributes: ["id", "name", "start_time", "end_time"],
+        },
         {
           model: OrderItem,
           as: "items",
@@ -295,6 +326,8 @@ exports.trackGuestOrder = async (req, res, next) => {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         items: order.items,
+        delivery_slot_id: order.delivery_slot_id,
+        deliverySlot: order.deliverySlot,
       },
     });
   } catch (error) {
@@ -310,9 +343,15 @@ exports.getMyOrders = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
+    const DeliverySlot = require("../models/DeliverySlot");
     const orders = await Order.findAll({
       where: { user_id: userId },
       include: [
+        {
+          model: DeliverySlot,
+          as: "deliverySlot",
+          attributes: ["id", "name", "start_time", "end_time"],
+        },
         {
           model: OrderItem,
           as: "items",
@@ -367,12 +406,18 @@ exports.updateOrderStatus = async (req, res, next) => {
  */
 exports.getAllOrders = async (req, res, next) => {
   try {
+    const DeliverySlot = require("../models/DeliverySlot");
     const orders = await Order.findAll({
       include: [
         {
           model: User,
           as: "user",
           attributes: ["id", "email"],
+        },
+        {
+          model: DeliverySlot,
+          as: "deliverySlot",
+          attributes: ["id", "name", "start_time", "end_time"],
         },
         {
           model: OrderItem,

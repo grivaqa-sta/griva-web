@@ -51,6 +51,8 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [deliverySlots, setDeliverySlots] = useState<any[]>([]);
+  const [filterSlot, setFilterSlot] = useState<string>('all');
 
   // FEATURE: Delivery Boy System — assign driver state
   const [deliveryBoys, setDeliveryBoys] = useState<DeliveryBoy[]>([]);
@@ -119,6 +121,19 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   useEffect(() => {
     fetchNeedsAttention();
   }, [ordersList]);
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/delivery-slots`);
+        if (res.ok) {
+          const data = await res.json();
+          setDeliverySlots(data.slots || []);
+        }
+      } catch {}
+    };
+    fetchSlots();
+  }, []);
 
   const handleAssignDriver = async (orderId: number) => {
     const driverId = selectedDriverId[orderId];
@@ -190,12 +205,12 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  const filteredOrders = filterStatus === 'all'
-    ? ordersList
-    : ordersList.filter(o => {
-        const displayStatus = o.status === 'completed' ? 'delivered' : o.status;
-        return displayStatus === filterStatus;
-      });
+  const filteredOrders = ordersList.filter(o => {
+    const displayStatus = o.status === 'completed' ? 'delivered' : o.status;
+    const matchesStatus = filterStatus === 'all' || displayStatus === filterStatus;
+    const matchesSlot = filterSlot === 'all' || String((o as any).delivery_slot_id) === filterSlot;
+    return matchesStatus && matchesSlot;
+  });
 
   const counts: Record<string, number> = {
     all: ordersList.length,
@@ -426,6 +441,17 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
             </button>
           );
         })}
+
+        <select
+          value={filterSlot}
+          onChange={(e) => setFilterSlot(e.target.value)}
+          className="text-xs font-bold text-gray-750 bg-white border border-orange-500/20 rounded-lg px-3 py-1.5 outline-none hover:border-orange-500/40 cursor-pointer md:ml-auto"
+        >
+          <option value="all">All Delivery Slots</option>
+          {deliverySlots.map(s => (
+            <option key={s.id} value={String(s.id)}>{s.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Orders Table */}
@@ -437,6 +463,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                 <th className="p-4">Order</th>
                 <th className="p-4">Customer</th>
                 <th className="p-4">Items</th>
+                <th className="p-4">Delivery Slot</th>
                 <th className="p-4">Total</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Date</th>
@@ -490,6 +517,13 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                         <td className="p-4">
                           <span className="text-xs text-gray-500 font-semibold">
                             {order.items?.length || 1} item{(order.items?.length || 1) > 1 ? 's' : ''}
+                          </span>
+                        </td>
+
+                        {/* Delivery Slot */}
+                        <td className="p-4">
+                          <span className="text-xs text-gray-650 font-semibold">
+                            {(order as any).deliverySlot?.name || "None"}
                           </span>
                         </td>
 

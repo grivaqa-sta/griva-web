@@ -77,7 +77,53 @@ export default function CartPage() {
         <SectionHeading title="Your Shopping Cart" subtitle="Manage items before completing purchase" />
 
         {state.items.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="space-y-6">
+            {/* Free Shipping Alert Card */}
+            <div className="bg-white rounded-2xl border border-orange-500/20 shadow-sm p-5 animate-in fade-in duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-9 w-9 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                    <span className="text-lg">🚚</span>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">
+                      {state.totalPrice >= shippingConfig.freeShippingThreshold ? (
+                        <span className="text-green-600 font-extrabold">You qualify for Free Delivery!</span>
+                      ) : (
+                        <span>Free Shipping Above QAR {shippingConfig.freeShippingThreshold.toFixed(0)}</span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      {state.totalPrice >= shippingConfig.freeShippingThreshold ? (
+                        "Your order will be shipped free of charge within Qatar."
+                      ) : (
+                        <>Add <span className="font-bold text-orange-500">QAR {(shippingConfig.freeShippingThreshold - state.totalPrice).toFixed(2)}</span> more to get Free Delivery</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                {state.totalPrice < shippingConfig.freeShippingThreshold && (
+                  <Link
+                    href="/shop"
+                    className="text-xs font-bold text-orange-500 hover:text-orange-600 transition shrink-0 self-start sm:self-center"
+                  >
+                    + Add More Items
+                  </Link>
+                )}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-500 ease-out rounded-full"
+                  style={{
+                    width: `${Math.min((state.totalPrice / shippingConfig.freeShippingThreshold) * 100, 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left side: Item list */}
             <div className="lg:col-span-8 space-y-4">
               <div className="flex justify-between items-center mb-2">
@@ -225,6 +271,7 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center max-w-lg mx-auto mt-8">

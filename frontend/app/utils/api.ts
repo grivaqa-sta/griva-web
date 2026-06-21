@@ -178,6 +178,8 @@ export interface GlobalSettings {
   announcementBarEnabled: boolean;
   fridaySaleEnabled: boolean;
   midnightSaleEnabled: boolean;
+  shippingFee?: number;
+  freeShippingThreshold?: number;
 }
 
 export async function getSettingsApi(): Promise<GlobalSettings> {
@@ -189,6 +191,8 @@ export async function getSettingsApi(): Promise<GlobalSettings> {
         announcementBarEnabled: true,
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
+        shippingFee: 10,
+        freeShippingThreshold: 99,
       },
     }
   );
@@ -207,11 +211,69 @@ export async function updateSettingsApi(settings: Partial<GlobalSettings>): Prom
         announcementBarEnabled: true,
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
+        shippingFee: 10,
+        freeShippingThreshold: 99,
         ...settings,
       },
     }
   );
   return res.settings;
+}
+
+// ─────────────────────────────────────────────────────────
+// Delivery Slots APIs
+// ─────────────────────────────────────────────────────────
+export interface DeliverySlot {
+  id: number;
+  name: string;
+  start_time?: string;
+  end_time?: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export async function getDeliverySlotsApi(): Promise<DeliverySlot[]> {
+  const res = await safeFetch<{ slots: DeliverySlot[] }>(
+    "/delivery-slots",
+    { method: "GET" },
+    { slots: [] }
+  );
+  return res.slots || [];
+}
+
+export async function createDeliverySlotApi(slotData: Partial<DeliverySlot>): Promise<DeliverySlot> {
+  const res = await safeFetch<{ slot: DeliverySlot }>(
+    "/delivery-slots",
+    {
+      method: "POST",
+      body: JSON.stringify(slotData),
+    },
+    { slot: { id: Date.now(), name: slotData.name || "", is_active: true, sort_order: 0 } }
+  );
+  return res.slot;
+}
+
+export async function updateDeliverySlotApi(id: number, slotData: Partial<DeliverySlot>): Promise<DeliverySlot> {
+  const res = await safeFetch<{ slot: DeliverySlot }>(
+    `/delivery-slots/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(slotData),
+    },
+    { slot: { id, name: "", is_active: true, sort_order: 0, ...slotData } }
+  );
+  return res.slot;
+}
+
+export async function deleteDeliverySlotApi(id: number): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/delivery-slots/${id}`,
+    {
+      method: "DELETE",
+    },
+    { success: true }
+  );
+  return !!res;
 }
 
 // ─────────────────────────────────────────────────────────

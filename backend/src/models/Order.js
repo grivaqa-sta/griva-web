@@ -81,7 +81,12 @@ const Order = sequelize.define(
     },
     customer_email: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
+      validate: {
+        isEmail: {
+          msg: "Must be a valid email address",
+        },
+      },
     },
     payment_method: {
       type: DataTypes.STRING,
@@ -145,6 +150,14 @@ const Order = sequelize.define(
       defaultValue: 0,
       allowNull: false,
     },
+    delivery_slot_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "delivery_slots",
+        key: "id",
+      },
+    },
   },
   {
     timestamps: true,
@@ -152,10 +165,10 @@ const Order = sequelize.define(
 );
 
 // Mappings
-Order.belongsTo(User, { foreignKey: "user_id", as: "user" });
-User.hasMany(Order, { foreignKey: "user_id", as: "orders" });
-
-// FEATURE: Delivery Boy System
-Order.belongsTo(User, { foreignKey: "delivery_boy_id", as: "deliveryBoy" });
+Order.associate = (models) => {
+  Order.belongsTo(models.User, { foreignKey: "user_id", as: "user" });
+  Order.belongsTo(models.User, { foreignKey: "delivery_boy_id", as: "deliveryBoy" });
+  Order.belongsTo(models.DeliverySlot, { foreignKey: "delivery_slot_id", as: "deliverySlot" });
+};
 
 module.exports = Order;

@@ -10,6 +10,7 @@ function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("order");
   const urlTotal = searchParams.get("total");
+  const slotName = searchParams.get("slot");
 
   const { isAuthenticated } = useUser();
   const [lastOrderInfo, setLastOrderInfo] = useState<{ phone?: string; total?: string } | null>(null);
@@ -37,12 +38,20 @@ function OrderSuccessContent() {
           Order Placed Successfully!
         </h2>
 
-        {orderNumber && (
-          <div className="mt-4 mb-6">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Order Number</p>
-            <p className="text-2xl font-black text-orange-500 tracking-wide">{orderNumber}</p>
-          </div>
-        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-6 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+          {orderNumber && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Order Number</p>
+              <p className="text-lg font-black text-orange-500 tracking-wide">{orderNumber}</p>
+            </div>
+          )}
+          {slotName && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Preferred Delivery Slot</p>
+              <p className="text-sm font-bold text-gray-800 tracking-wide">{slotName}</p>
+            </div>
+          )}
+        </div>
 
         <p className="text-gray-600 mb-6 text-sm leading-relaxed">
           Thank you for your purchase. Your order has been placed and will be processed soon.

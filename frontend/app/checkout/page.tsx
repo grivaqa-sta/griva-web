@@ -23,6 +23,7 @@ import {
   CheckCircle,
   ChevronRight,
   Trash2,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -47,6 +48,7 @@ interface CheckoutForm {
   floor: string;
   landmark: string;
   deliveryNotes: string;
+  deliverySlotId: string;
 }
 
 const INITIAL_FORM: CheckoutForm = {
@@ -60,6 +62,7 @@ const INITIAL_FORM: CheckoutForm = {
   floor: "",
   landmark: "",
   deliveryNotes: "",
+  deliverySlotId: "",
 };
 
 // ─────────────────────────────────────────────────────────
@@ -81,6 +84,8 @@ export default function CheckoutPage() {
 
   // Form state
   const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM);
+  const [deliverySlots, setDeliverySlots] = useState<any[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
 
   // Saved addresses (logged-in users)
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -97,7 +102,7 @@ export default function CheckoutPage() {
 
   const isLoggedIn = isAuthenticated && isCustomer;
 
-  // Fetch site settings for shipping config
+  // Fetch site settings and active delivery slots
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -117,7 +122,22 @@ export default function CheckoutPage() {
         // Use defaults silently
       }
     };
+
+    const fetchSlots = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/delivery-slots`);
+        if (res.ok) {
+          const data = await res.json();
+          const activeSlots = data.slots?.filter((s: any) => s.is_active) || [];
+          setDeliverySlots(activeSlots);
+        }
+      } catch {
+        // Fail silently
+      }
+    };
+
     fetchSettings();
+    fetchSlots();
   }, []);
 
   // Pre-fill form for logged-in users
@@ -246,12 +266,24 @@ export default function CheckoutPage() {
 
     if (!form.fullName.trim()) errors.fullName = "Full name is required";
     if (!form.phone.trim() || form.phone.trim().length < 8) errors.phone = "Valid phone number is required";
-    // Email is optional
+    
+    if (!form.email.trim()) {
+      errors.email = "Email address is required";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(form.email.trim())) {
+        errors.email = "Invalid email address format";
+      }
+    }
 
     if (needsAddressValidation) {
       if (!form.area.trim()) errors.area = "Area is required";
       if (!form.street.trim()) errors.street = "Street is required";
       if (!form.buildingNumber.trim()) errors.buildingNumber = "Building number is required";
+    }
+
+    if (!selectedSlotId) {
+      errors.deliverySlotId = "Preferred delivery slot is required";
     }
 
     setFormErrors(errors);
@@ -327,6 +359,7 @@ export default function CheckoutPage() {
         payment_method: "COD",
         delivery_notes: form.deliveryNotes || undefined,
         city: customerCity,
+        delivery_slot_id: selectedSlotId || undefined,
       });
 
       if (response.success) {
@@ -360,8 +393,10 @@ export default function CheckoutPage() {
         cartDispatch({ type: "CLEAR" });
 
         // Navigate to success page
+        const selectedSlot = deliverySlots.find((s) => s.id === selectedSlotId);
+        const slotParam = selectedSlot ? encodeURIComponent(selectedSlot.name) : "";
         router.push(
-          `/order-success?order=${encodeURIComponent(response.order.order_number)}&total=${encodeURIComponent(response.order.total_price)}`
+          `/order-success?order=${encodeURIComponent(response.order.order_number)}&total=${encodeURIComponent(response.order.total_price)}&slot=${slotParam}`
         );
       } else {
         setOrderError(response.message || "Failed to place order. Please try again.");
@@ -512,7 +547,7 @@ export default function CheckoutPage() {
                 {/* Email */}
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
-                    Email Address <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                    Email Address <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -521,9 +556,14 @@ export default function CheckoutPage() {
                       placeholder="your@email.com"
                       value={form.email}
                       onChange={(e) => updateForm("email", e.target.value)}
-                      className="block w-full rounded-xl border border-gray-200 pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                      className={`block w-full rounded-xl border ${
+                        formErrors.email ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
                     />
                   </div>
+                  {formErrors.email && (
+                    <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -772,6 +812,54 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* ── Section: Preferred Delivery Time ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-in fade-in duration-300">
+              <div className="flex items-center gap-2 mb-5 border-b pb-3">
+                <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-orange-500" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">Preferred Delivery Time</h3>
+              </div>
+
+              {deliverySlots.length === 0 ? (
+                <div className="text-center py-6 text-xs text-gray-400">
+                  Loading active delivery slots...
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {deliverySlots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      onClick={() => {
+                        setSelectedSlotId(slot.id);
+                        if (formErrors.deliverySlotId) {
+                          setFormErrors((prev) => ({ ...prev, deliverySlotId: undefined }));
+                        }
+                      }}
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
+                        selectedSlotId === slot.id
+                          ? "border-orange-500 bg-orange-50/50 shadow-sm shadow-orange-500/5"
+                          : "border-gray-200 hover:border-orange-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        checked={selectedSlotId === slot.id}
+                        readOnly
+                        className="text-orange-500 focus:ring-orange-500"
+                      />
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{slot.name}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {formErrors.deliverySlotId && (
+                <p className="text-xs text-red-500 mt-2">{formErrors.deliverySlotId}</p>
               )}
             </div>
 

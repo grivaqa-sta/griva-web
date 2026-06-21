@@ -18,6 +18,7 @@ export interface CreateOrderPayload {
   payment_method?: string;
   delivery_notes?: string;
   city?: string;
+  delivery_slot_id?: number;
 }
 
 export interface OrderResponse {

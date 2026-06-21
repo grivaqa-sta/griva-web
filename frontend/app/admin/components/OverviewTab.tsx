@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, DollarSign, ShoppingCart, Users, BarChart2,
   ToggleLeft, ToggleRight, CheckCircle, EyeOff,
   ChevronRight, Package, Sliders
 } from 'lucide-react';
-import { AnalyticsData } from '../../utils/api';
+import {
+  AnalyticsData,
+  DeliverySlot,
+  getDeliverySlotsApi,
+  createDeliverySlotApi,
+  updateDeliverySlotApi,
+  deleteDeliverySlotApi
+} from '../../utils/api';
 
 interface OverviewTabProps {
   analytics: AnalyticsData | null;
@@ -21,6 +28,9 @@ interface OverviewTabProps {
   slidesList: any[];
   categoriesList: any[];
   offersList: any[];
+  shippingFee: number;
+  freeShippingThreshold: number;
+  onSaveShippingConfig: (fee: number, threshold: number) => Promise<void>;
 }
 
 const CATEGORY_COLORS = [
@@ -149,10 +159,97 @@ export default function OverviewTab(props: OverviewTabProps) {
     fridaySaleEnabled, setFridaySaleEnabled,
     midnightSaleEnabled, setMidnightSaleEnabled,
     highlightedSchemaSection, setHighlightedSchemaSection,
-    setActiveTab, slidesList, categoriesList, offersList
+    setActiveTab, slidesList, categoriesList, offersList,
+    shippingFee, freeShippingThreshold, onSaveShippingConfig
   } = props;
 
   const statusCounts = analytics?.orderStatusCounts || { pending: 0, shipped: 0, delivered: 0, completed: 0, cancelled: 0 };
+
+  const [thresholdInput, setThresholdInput] = useState(freeShippingThreshold);
+  const [feeInput, setFeeInput] = useState(shippingFee);
+  const [isSavingRules, setIsSavingRules] = useState(false);
+
+  // Sync inputs with props changes
+  useEffect(() => {
+    setThresholdInput(freeShippingThreshold);
+  }, [freeShippingThreshold]);
+
+  useEffect(() => {
+    setFeeInput(shippingFee);
+  }, [shippingFee]);
+
+  const [slots, setSlots] = useState<DeliverySlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(true);
+  const [newSlotName, setNewSlotName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getDeliverySlotsApi();
+        setSlots(data);
+      } catch {}
+      setLoadingSlots(false);
+    }
+    load();
+  }, []);
+
+  const handleToggleSlot = async (slot: DeliverySlot) => {
+    const updated = await updateDeliverySlotApi(slot.id, { is_active: !slot.is_active });
+    if (updated) {
+      setSlots(prev => prev.map(s => s.id === slot.id ? { ...s, is_active: updated.is_active } : s));
+    }
+  };
+
+  const handleAddSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSlotName.trim()) return;
+    setIsSaving(true);
+    const newSlot = await createDeliverySlotApi({
+      name: newSlotName.trim(),
+      is_active: true,
+      sort_order: slots.length + 1,
+    });
+    if (newSlot) {
+      setSlots(prev => [...prev, newSlot].sort((a, b) => a.sort_order - b.sort_order));
+      setNewSlotName("");
+    }
+    setIsSaving(false);
+  };
+
+  const handleMoveSlot = async (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === slots.length - 1) return;
+
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    const currentSlot = slots[index];
+    const targetSlot = slots[swapIndex];
+
+    const currentOrder = currentSlot.sort_order;
+    const targetOrder = targetSlot.sort_order;
+
+    currentSlot.sort_order = targetOrder;
+    targetSlot.sort_order = currentOrder;
+
+    const newSlots = [...slots];
+    newSlots[index] = targetSlot;
+    newSlots[swapIndex] = currentSlot;
+
+    setSlots(newSlots.sort((a, b) => a.sort_order - b.sort_order));
+
+    await Promise.all([
+      updateDeliverySlotApi(currentSlot.id, { sort_order: targetOrder }),
+      updateDeliverySlotApi(targetSlot.id, { sort_order: currentOrder })
+    ]);
+  };
+
+  const handleDeleteSlot = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this delivery slot?")) return;
+    const deleted = await deleteDeliverySlotApi(id);
+    if (deleted) {
+      setSlots(prev => prev.filter(s => s.id !== id));
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-300">
@@ -305,6 +402,147 @@ export default function OverviewTab(props: OverviewTabProps) {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* ── Shipping & Delivery Configurations ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">
+        {/* Shipping Rules */}
+        <div className="lg:col-span-5 bg-white border border-orange-500/30 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1">Global Shipping Rules</h4>
+            <p className="text-[10px] text-gray-400 mb-5">Configure free shipping thresholds and baseline delivery fees.</p>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSavingRules(true);
+              try {
+                await onSaveShippingConfig(feeInput, thresholdInput);
+                alert("Shipping rules saved successfully.");
+              } catch {
+                alert("Failed to save shipping rules.");
+              }
+              setIsSavingRules(false);
+            }} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Free Shipping Threshold (QAR)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={thresholdInput}
+                  onChange={(e) => setThresholdInput(Number(e.target.value))}
+                  className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Shipping Charge (QAR)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={feeInput}
+                  onChange={(e) => setFeeInput(Number(e.target.value))}
+                  className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSavingRules}
+                className="w-full flex items-center justify-center py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-95 shadow-md shadow-orange-500/10 cursor-pointer disabled:opacity-50 transition-all"
+              >
+                {isSavingRules ? "Saving Configurations..." : "Save Shipping Rules"}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Delivery Time Slots */}
+        <div className="lg:col-span-7 bg-white border border-orange-500/30 rounded-2xl p-6">
+          <div className="flex items-center justify-between border-b border-orange-500/10 pb-4 mb-4">
+            <div>
+              <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Delivery Time Slots</h4>
+              <p className="text-[10px] text-gray-400 mt-0.5">Manage customer preferred checkout slots.</p>
+            </div>
+            <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2.5 py-0.5 rounded-full uppercase">
+              {slots.length} Active Slots
+            </span>
+          </div>
+
+          {loadingSlots ? (
+            <div className="flex items-center justify-center py-10">
+              <span className="h-5 w-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+              {slots.map((slot, index) => (
+                <div key={slot.id} className="flex items-center justify-between p-3 bg-gray-50/50 border border-gray-100 rounded-xl hover:bg-orange-500/3 transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-gray-400 w-4">#{index + 1}</span>
+                    <span className="text-xs font-bold text-gray-700">{slot.name}</span>
+                    {!slot.is_active && (
+                      <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-black uppercase">Disabled</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Up button */}
+                    <button
+                      onClick={() => handleMoveSlot(index, 'up')}
+                      disabled={index === 0}
+                      className="p-1 rounded bg-white border border-gray-100 hover:border-orange-500/35 text-gray-500 hover:text-orange-500 transition-colors disabled:opacity-30 cursor-pointer"
+                    >
+                      ▲
+                    </button>
+                    {/* Down button */}
+                    <button
+                      onClick={() => handleMoveSlot(index, 'down')}
+                      disabled={index === slots.length - 1}
+                      className="p-1 rounded bg-white border border-gray-100 hover:border-orange-500/35 text-gray-500 hover:text-orange-500 transition-colors disabled:opacity-30 cursor-pointer"
+                    >
+                      ▼
+                    </button>
+                    {/* Toggle button */}
+                    <button
+                      onClick={() => handleToggleSlot(slot)}
+                      className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer ${
+                        slot.is_active
+                          ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                          : "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                      }`}
+                    >
+                      {slot.is_active ? "Disable" : "Enable"}
+                    </button>
+                    {/* Delete button */}
+                    <button
+                      onClick={() => handleDeleteSlot(slot.id)}
+                      className="p-1 rounded bg-white border border-red-200 hover:bg-red-50 text-red-400 transition-colors cursor-pointer"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add New Slot form */}
+          <form onSubmit={handleAddSlot} className="mt-4 flex gap-2">
+            <input
+              type="text"
+              placeholder="e.g. 09:00 AM - 12:00 PM"
+              value={newSlotName}
+              onChange={(e) => setNewSlotName(e.target.value)}
+              className="flex-1 text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2 outline-none focus:border-orange-500 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={isSaving || !newSlotName.trim()}
+              className="px-4 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              Add Slot
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* ── Storefront Schema Mapper ── */}

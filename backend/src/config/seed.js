@@ -25,7 +25,8 @@ const {
   Banner,
   SiteSetting,
   Order,
-  OrderItem
+  OrderItem,
+  DeliverySlot
 } = db;
 
 const SEED_CATEGORIES_TREE = [
@@ -445,7 +446,21 @@ const slugify = (text) => {
 
 const seedDatabase = async () => {
   try {
-    console.log("🚀 [SEED]: Starting safe database seeding process...");
+    // Update existing null customer_email values to a fallback email so that the NOT NULL constraint can be applied
+    try {
+      await sequelize.query(`
+        UPDATE "Orders" 
+        SET "customer_email" = COALESCE(
+          (SELECT "email" FROM "Users" WHERE "Users"."id" = "Orders"."user_id"),
+          'guest@thegriva.com'
+        ) 
+        WHERE "customer_email" IS NULL
+      `);
+      console.log("➕ [SEED]: Updated existing NULL customer_emails to user or guest email.");
+    } catch (err) {
+      // Ignore if table or column doesn't exist yet
+      console.log("ℹ️ [SEED]: Skipping initial NULL email update (table might not exist yet).");
+    }
 
     // Safe Sync (Creates/alters tables without dropping any tables or existing data)
     await sequelize.sync({ alter: true });
@@ -489,16 +504,31 @@ const seedDatabase = async () => {
     if (siteSettingCount === 0) {
       await SiteSetting.create({
         announcementBarEnabled: true,
-        announcementBarText: "Free shipping across Doha for orders over $150!",
+        announcementBarText: "Free shipping across Doha for orders over QAR 99!",
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
         whatsappNumber: "+97455551234",
         supportEmail: "support@thegriva.com",
-        shippingFee: 15.00,
+        shippingFee: 10.00,
+        freeShippingThreshold: 99.00,
       });
       console.log("➕ [SEED]: Site setting configurations seed added.");
     } else {
       console.log("ℹ️ [SEED]: Site settings already exist. Skipping.");
+    }
+
+    // Seed Delivery Slots
+    const deliverySlotCount = await DeliverySlot.count();
+    if (deliverySlotCount === 0) {
+      await DeliverySlot.bulkCreate([
+        { name: "09:00 AM - 12:00 PM", start_time: "09:00 AM", end_time: "12:00 PM", is_active: true, sort_order: 1 },
+        { name: "12:00 PM - 03:00 PM", start_time: "12:00 PM", end_time: "03:00 PM", is_active: true, sort_order: 2 },
+        { name: "03:00 PM - 06:00 PM", start_time: "03:00 PM", end_time: "06:00 PM", is_active: true, sort_order: 3 },
+        { name: "06:00 PM - 09:00 PM", start_time: "06:00 PM", end_time: "09:00 PM", is_active: true, sort_order: 4 },
+      ]);
+      console.log("➕ [SEED]: Default delivery slots seeded.");
+    } else {
+      console.log("ℹ️ [SEED]: Delivery slots already exist. Skipping.");
     }
 
     // 4. Seed Categories & Subcategories

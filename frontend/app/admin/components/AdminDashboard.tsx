@@ -53,6 +53,8 @@ export default function AdminDashboard() {
   const [ordersList, setOrdersList] = useState<AdminOrder[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [shippingFee, setShippingFee] = useState<number>(10);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
 
   const [highlightedSchemaSection, setHighlightedSchemaSection] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,6 +77,8 @@ export default function AdminDashboard() {
       setAnnouncementBarEnabled(dbSettings.announcementBarEnabled);
       setFridaySaleEnabled(dbSettings.fridaySaleEnabled);
       setMidnightSaleEnabled(dbSettings.midnightSaleEnabled);
+      setShippingFee(dbSettings.shippingFee !== undefined ? Number(dbSettings.shippingFee) : 10);
+      setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 99);
       setSubscribersList(dbSubs);
       setOrdersList(dbOrders);
       setAnalytics(dbAnalytics);
@@ -95,6 +99,11 @@ export default function AdminDashboard() {
   const handleToggleMidnightSale = async () => {
     const v = !midnightSaleEnabled; setMidnightSaleEnabled(v);
     await updateSettingsApi({ midnightSaleEnabled: v });
+  };
+  const handleSaveShippingConfig = async (fee: number, threshold: number) => {
+    setShippingFee(fee);
+    setFreeShippingThreshold(threshold);
+    await updateSettingsApi({ shippingFee: fee, freeShippingThreshold: threshold });
   };
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
@@ -147,6 +156,9 @@ export default function AdminDashboard() {
               setHighlightedSchemaSection={setHighlightedSchemaSection}
               setActiveTab={handleSetActiveTab}
               slidesList={slidesList} categoriesList={categoriesList} offersList={offersList}
+              shippingFee={shippingFee}
+              freeShippingThreshold={freeShippingThreshold}
+              onSaveShippingConfig={handleSaveShippingConfig}
             />
           )}
           {activeTab === "products" && (

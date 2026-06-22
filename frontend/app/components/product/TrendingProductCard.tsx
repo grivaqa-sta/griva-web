@@ -69,18 +69,18 @@ export default function TrendingProductCard({
         {/* Square image area */}
         <div className="relative w-full bg-gray-50" style={{ paddingBottom: "100%" }}>
           {/* Badges — same row, top-left */}
-<div className="absolute left-2 top-2 z-10 flex items-center gap-1">
-  {(product.discount_percentage ?? 0) > 0 && (
-    <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
-      -{product.discount_percentage}%
-    </span>
-  )}
-  {product.is_trending && (
-    <span className="rounded bg-gray-900 px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
-      HOT
-    </span>
-  )}
-</div>
+          <div className="absolute left-2 top-2 z-10 flex items-center gap-1">
+            {(product.discount_percentage ?? 0) > 0 && (
+              <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
+                -{product.discount_percentage}%
+              </span>
+            )}
+            {product.is_trending && (
+              <span className="rounded bg-gray-900 px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
+                HOT
+              </span>
+            )}
+          </div>
 
           {/* Heart top-right */}
           <button
@@ -220,11 +220,10 @@ export default function TrendingProductCard({
               width={120}
               height={120}
               priority
-              className={`object-contain transition-all duration-500 ${
-                product.gallery_images && product.gallery_images.length > 0
+              className={`object-contain transition-all duration-500 ${product.gallery_images && product.gallery_images.length > 0
                   ? "group-hover:opacity-0 group-hover:scale-95"
                   : "group-hover:scale-105"
-              }`}
+                }`}
               style={{ width: "auto", height: "auto", maxHeight: "120px" }}
             />
             {product.gallery_images && product.gallery_images.length > 0 && (

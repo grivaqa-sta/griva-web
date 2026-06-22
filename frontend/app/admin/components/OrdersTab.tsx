@@ -31,16 +31,16 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 
 const STATUS_FLOW: Record<string, string[]> = {
   pending:          ['processing', 'cancelled'],
-  processing:       ['shipped', 'cancelled'],
-  assigned:         ['out_for_delivery', 'cancelled'],
+  processing:       ['shipped', 'delivered', 'cancelled'],
+  assigned:         ['out_for_delivery', 'delivered', 'cancelled'],
   out_for_delivery: ['delivered', 'cancelled'],
   shipped:          ['delivered', 'cancelled'],
   delivered:        [],
   completed:        [],
   cancelled:        [],
-  attempted:        ['processing', 'cancelled'],
-  rescheduled:      ['cancelled'],
-  failed:           ['processing', 'cancelled'],
+  attempted:        ['processing', 'delivered', 'cancelled'],
+  rescheduled:      ['delivered', 'cancelled'],
+  failed:           ['processing', 'delivered', 'cancelled'],
 };
 
 interface DeliveryBoy {
@@ -1206,91 +1206,100 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                   </div>
                                   {/* FEATURE: Delivery Boy System — Assign Driver */}
                                  <div className="pt-3 border-t border-orange-500/10">
-                                   <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 flex items-center gap-1">
-                                     <span>🚚</span> Assign Delivery Driver
-                                   </p>
                                    {(order as any).delivery_boy_id ? (
-                                     <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl">
-                                       <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                                       <p className="text-xs font-bold text-blue-700">
-                                         Assigned to: {deliveryBoys.find(d => d.id === (order as any).delivery_boy_id)?.name || `Driver #${(order as any).delivery_boy_id}`}
+                                     <>
+                                       <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                         <span>🚚</span> Assigned Delivery Driver
                                        </p>
-                                     </div>
+                                       <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl">
+                                         <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                         <p className="text-xs font-bold text-blue-700">
+                                           Assigned to: {deliveryBoys.find(d => d.id === (order as any).delivery_boy_id)?.name || `Driver #${(order as any).delivery_boy_id}`}
+                                         </p>
+                                       </div>
+                                     </>
                                    ) : (
-                                     <div className="flex items-center gap-2 max-w-sm relative">
-                                       {/* Custom Dropdown Trigger */}
-                                       <div className="relative flex-1">
-                                         <button
-                                           type="button"
-                                           onClick={(e) => {
-                                             e.stopPropagation();
-                                             setOpenDriverSelectId(openDriverSelectId === order.id ? null : order.id);
-                                           }}
-                                           className="w-full flex items-center justify-between text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none hover:border-orange-500/40 transition-all cursor-pointer text-left h-[38px]"
-                                         >
-                                           <span className="truncate">
-                                             {selectedDriverId[order.id]
-                                               ? deliveryBoys.find(d => d.id === selectedDriverId[order.id])?.name + ` (${deliveryBoys.find(d => d.id === selectedDriverId[order.id])?.activeOrderCount} active)`
-                                               : "Select Driver..."}
-                                           </span>
-                                           <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openDriverSelectId === order.id ? "rotate-180 text-orange-500" : ""}`} />
-                                         </button>
-
-                                         {/* Custom Dropdown List */}
-                                         {openDriverSelectId === order.id && (
-                                           <>
-                                             {/* Invisible Fullscreen Backdrop to safely catch click-outside */}
-                                             <div
-                                               className="fixed inset-0 z-40 bg-transparent cursor-default"
+                                     !['delivered', 'completed', 'cancelled'].includes(order.status) && (
+                                       <>
+                                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                           <span>🚚</span> Assign Delivery Driver
+                                         </p>
+                                         <div className="flex items-center gap-2 max-w-sm relative">
+                                           {/* Custom Dropdown Trigger */}
+                                           <div className="relative flex-1">
+                                             <button
+                                               type="button"
                                                onClick={(e) => {
                                                  e.stopPropagation();
-                                                 setOpenDriverSelectId(null);
+                                                 setOpenDriverSelectId(openDriverSelectId === order.id ? null : order.id);
                                                }}
-                                             />
-                                             <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto">
-                                               <button
-                                                 type="button"
-                                                 onClick={() => {
-                                                   setSelectedDriverId(prev => ({ ...prev, [order.id]: 0 }));
-                                                   setOpenDriverSelectId(null);
-                                                 }}
-                                                 className="w-full text-left px-3 py-2 text-xs font-semibold text-gray-400 hover:bg-orange-50 hover:text-orange-500 transition-colors"
-                                               >
-                                                 Select Driver...
-                                               </button>
-                                               {deliveryBoys.map(d => (
-                                                 <button
-                                                   key={d.id}
-                                                   type="button"
-                                                   onClick={() => {
-                                                     setSelectedDriverId(prev => ({ ...prev, [order.id]: d.id }));
+                                               className="w-full flex items-center justify-between text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none hover:border-orange-500/40 transition-all cursor-pointer text-left h-[38px]"
+                                             >
+                                               <span className="truncate">
+                                                 {selectedDriverId[order.id]
+                                                   ? deliveryBoys.find(d => d.id === selectedDriverId[order.id])?.name + ` (${deliveryBoys.find(d => d.id === selectedDriverId[order.id])?.activeOrderCount} active)`
+                                                   : "Select Driver..."}
+                                               </span>
+                                               <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openDriverSelectId === order.id ? "rotate-180 text-orange-500" : ""}`} />
+                                             </button>
+
+                                             {/* Custom Dropdown List */}
+                                             {openDriverSelectId === order.id && (
+                                               <>
+                                                 {/* Invisible Fullscreen Backdrop to safely catch click-outside */}
+                                                 <div
+                                                   className="fixed inset-0 z-40 bg-transparent cursor-default"
+                                                   onClick={(e) => {
+                                                     e.stopPropagation();
                                                      setOpenDriverSelectId(null);
                                                    }}
-                                                   className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors flex items-center justify-between ${
-                                                     selectedDriverId[order.id] === d.id
-                                                       ? "text-orange-500 bg-orange-50/50 font-bold"
-                                                       : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"
-                                                   }`}
-                                                 >
-                                                   <span>👤 {d.name}</span>
-                                                   <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${d.activeOrderCount > 0 ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-400"}`}>
-                                                     {d.activeOrderCount} active
-                                                   </span>
-                                                 </button>
-                                               ))}
-                                             </div>
-                                           </>
-                                         )}
-                                       </div>
+                                                 />
+                                                 <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto">
+                                                   <button
+                                                     type="button"
+                                                     onClick={() => {
+                                                       setSelectedDriverId(prev => ({ ...prev, [order.id]: 0 }));
+                                                       setOpenDriverSelectId(null);
+                                                     }}
+                                                     className="w-full text-left px-3 py-2 text-xs font-semibold text-gray-400 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+                                                   >
+                                                     Select Driver...
+                                                   </button>
+                                                   {deliveryBoys.map(d => (
+                                                     <button
+                                                       key={d.id}
+                                                       type="button"
+                                                       onClick={() => {
+                                                         setSelectedDriverId(prev => ({ ...prev, [order.id]: d.id }));
+                                                         setOpenDriverSelectId(null);
+                                                       }}
+                                                       className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors flex items-center justify-between ${
+                                                         selectedDriverId[order.id] === d.id
+                                                           ? "text-orange-500 bg-orange-50/50 font-bold"
+                                                           : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"
+                                                       }`}
+                                                     >
+                                                       <span>👤 {d.name}</span>
+                                                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${d.activeOrderCount > 0 ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-400"}`}>
+                                                         {d.activeOrderCount} active
+                                                       </span>
+                                                     </button>
+                                                   ))}
+                                                 </div>
+                                               </>
+                                             )}
+                                           </div>
 
-                                       <button
-                                         disabled={!selectedDriverId[order.id] || assigningId === order.id}
-                                         onClick={(e) => { e.stopPropagation(); handleAssignDriver(order.id); }}
-                                         className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90 disabled:opacity-50 px-4 py-2.5 rounded-xl cursor-pointer shadow-sm active:scale-[0.98] transition-all shrink-0 h-[38px] flex items-center justify-center"
-                                       >
-                                         {assigningId === order.id ? '...' : 'Assign'}
-                                       </button>
-                                     </div>
+                                           <button
+                                             disabled={!selectedDriverId[order.id] || assigningId === order.id}
+                                             onClick={(e) => { e.stopPropagation(); handleAssignDriver(order.id); }}
+                                             className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90 disabled:opacity-50 px-4 py-2.5 rounded-xl cursor-pointer shadow-sm active:scale-[0.98] transition-all shrink-0 h-[38px] flex items-center justify-center"
+                                           >
+                                             {assigningId === order.id ? '...' : 'Assign'}
+                                           </button>
+                                         </div>
+                                       </>
+                                     )
                                    )}
                                  </div>
                                 </div>

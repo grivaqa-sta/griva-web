@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, Edit, Check, X, Loader2, ChevronDown } from 'lucide-react';
+import { Search, Plus, Trash2, Edit, Check, X, ChevronDown } from 'lucide-react';
 import { SubCategory, SubCategoryRequest, Category } from '@/app/types/types';
 import { subCategoryService } from '@/app/services/subCategory.service';
 import { categoryService } from '@/app/services/category.service';
@@ -25,7 +25,6 @@ export default function SubCategoriesTab() {
   });
   
   const [formLoading, setFormLoading] = useState(false);
-  const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [openCategorySelect, setOpenCategorySelect] = useState(false);
@@ -130,24 +129,7 @@ export default function SubCategoriesTab() {
     setFormLoading(false);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    setImageUploading(true);
-    setError('');
-    try {
-      const data = await uploadService.uploadImage(file);
-      if (data && data.imageUrl) {
-        setFormData(prev => ({ ...prev, image_url: data.imageUrl }));
-      } else {
-        setError('Failed to upload image. No URL returned.');
-      }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to upload image');
-    }
-    setImageUploading(false);
-  };
 
   const filteredSubCategories = subCategories.filter((c) =>
     (c.title?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
@@ -191,7 +173,7 @@ export default function SubCategoriesTab() {
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="border-b border-orange-500/30 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50">
-                <th className="p-3">Details</th>
+                <th className="p-3">Title</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Slug</th>
                 <th className="p-3 text-center">Status</th>
@@ -211,14 +193,7 @@ export default function SubCategoriesTab() {
               ) : (
                 filteredSubCategories.map((subCat) => (
                   <tr key={subCat.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="p-3 flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 border border-orange-500/30 overflow-hidden">
-                        {subCat.image_url ? (
-                          <img src={subCat.image_url} alt={subCat.title} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-[10px] font-black text-orange-500">N/A</span>
-                        )}
-                      </div>
+                    <td className="p-3">
                       <div className="min-w-0">
                         <span className="text-sm font-bold text-gray-900 block truncate group-hover:text-orange-500 transition-colors">
                           {subCat.title}
@@ -390,48 +365,7 @@ export default function SubCategoriesTab() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Image URL</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={formData.image_url || ''}
-                      onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                      className="flex-1 text-sm p-2.5 border border-gray-200 focus:border-orange-500 outline-none rounded-xl"
-                      placeholder="https://..."
-                    />
-                    <div className="relative">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleImageUpload} 
-                        disabled={imageUploading}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                      />
-                      <button 
-                        type="button" 
-                        disabled={imageUploading}
-                        className="h-full px-4 bg-orange-50 text-orange-600 font-bold rounded-xl text-sm hover:bg-orange-100 transition-colors disabled:opacity-50 flex items-center justify-center pointer-events-none min-w-[80px]"
-                      >
-                        {imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Upload'}
-                      </button>
-                    </div>
-                  </div>
-                  {formData.image_url && (
-                    <div className="mt-2 flex flex-col items-start gap-1">
-                      <div className="h-20 w-20 rounded-lg overflow-hidden border border-gray-200">
-                        <img src={formData.image_url} alt="Preview" className="h-full w-full object-cover" />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, image_url: ''})}
-                        className="text-[10px] text-red-400 hover:text-red-600 font-semibold"
-                      >
-                        Remove image
-                      </button>
-                    </div>
-                  )}
-                </div>
+
 
                 <div className="flex items-center gap-2">
                   <input

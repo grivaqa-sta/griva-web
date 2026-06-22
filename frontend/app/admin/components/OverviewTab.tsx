@@ -31,6 +31,12 @@ interface OverviewTabProps {
   shippingFee: number;
   freeShippingThreshold: number;
   onSaveShippingConfig: (fee: number, threshold: number) => Promise<void>;
+  dateRangeOption: string;
+  setDateRangeOption: (val: string) => void;
+  customStartDate: string;
+  setCustomStartDate: (val: string) => void;
+  customEndDate: string;
+  setCustomEndDate: (val: string) => void;
 }
 
 const CATEGORY_COLORS = [
@@ -38,9 +44,25 @@ const CATEGORY_COLORS = [
 ];
 
 function SalesLineChart({ data }: { data: { date: string; sales: number }[] }) {
-  if (!data || data.length < 2) return null;
-  const maxSales = Math.max(...data.map(d => d.sales));
-  const minSales = Math.min(...data.map(d => d.sales));
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center text-xs font-bold text-gray-400 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        No sales revenue recorded for this period
+      </div>
+    );
+  }
+
+  let chartData = [...data];
+  if (chartData.length === 1) {
+    const singlePoint = chartData[0];
+    chartData = [
+      { date: `${singlePoint.date} (Start)`, sales: 0 },
+      singlePoint
+    ];
+  }
+
+  const maxSales = Math.max(...chartData.map(d => d.sales));
+  const minSales = Math.min(...chartData.map(d => d.sales));
   const range = maxSales - minSales || 1;
   const width = 500;
   const height = 120;
@@ -48,8 +70,8 @@ function SalesLineChart({ data }: { data: { date: string; sales: number }[] }) {
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
 
-  const points = data.map((d, i) => ({
-    x: padding.left + (i / (data.length - 1)) * chartW,
+  const points = chartData.map((d, i) => ({
+    x: padding.left + (i / (chartData.length - 1)) * chartW,
     y: padding.top + chartH - ((d.sales - minSales) / range) * chartH,
     sales: d.sales,
     date: d.date,
@@ -100,7 +122,13 @@ function SalesLineChart({ data }: { data: { date: string; sales: number }[] }) {
 }
 
 function CategoryPieChart({ data }: { data: { category: string; sales: number }[] }) {
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex h-32 items-center justify-center text-xs font-bold text-gray-400 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 w-full">
+        No category distribution recorded for this period
+      </div>
+    );
+  }
   const total = data.reduce((s, d) => s + d.sales, 0);
   let cumAngle = -Math.PI / 2;
   const cx = 70, cy = 70, r = 55, innerR = 30;
@@ -160,7 +188,10 @@ export default function OverviewTab(props: OverviewTabProps) {
     midnightSaleEnabled, setMidnightSaleEnabled,
     highlightedSchemaSection, setHighlightedSchemaSection,
     setActiveTab, slidesList, categoriesList, offersList,
-    shippingFee, freeShippingThreshold, onSaveShippingConfig
+    shippingFee, freeShippingThreshold, onSaveShippingConfig,
+    dateRangeOption, setDateRangeOption,
+    customStartDate, setCustomStartDate,
+    customEndDate, setCustomEndDate
   } = props;
 
   const statusCounts = analytics?.orderStatusCounts || { pending: 0, shipped: 0, delivered: 0, completed: 0, cancelled: 0 };
@@ -254,34 +285,110 @@ export default function OverviewTab(props: OverviewTabProps) {
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-300">
 
+      {/* ── Dashboard Date Range Filter Bar ── */}
+      <div className="bg-white border border-orange-500/20 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+        <div>
+          <h2 className="text-base font-black text-gray-900">Store Analytics & Insights</h2>
+          <p className="text-[11px] font-semibold text-orange-500/80 mt-0.5">
+            {(() => {
+              if (dateRangeOption === "all") return "All-time platform performance";
+              if (dateRangeOption === "today") return `Performance for today (${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })})`;
+              if (dateRangeOption === "yesterday") {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                return `Performance for yesterday (${yesterday.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })})`;
+              }
+              if (dateRangeOption === "7days") {
+                const start = new Date();
+                start.setDate(start.getDate() - 6);
+                return `Last 7 Days: ${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+              }
+              if (dateRangeOption === "30days") {
+                const start = new Date();
+                start.setDate(start.getDate() - 29);
+                return `Last 30 Days: ${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+              }
+              if (dateRangeOption === "month") {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                return `This Month: ${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+              }
+              if (dateRangeOption === "custom") {
+                if (customStartDate && customEndDate) {
+                  const start = new Date(customStartDate);
+                  const end = new Date(customEndDate);
+                  return `Custom Period: ${start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+                }
+                return "Select custom start and end dates below";
+              }
+              return "";
+            })()}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {dateRangeOption === "custom" && (
+            <div className="flex items-center gap-2 animate-in slide-in-from-right-5 duration-200">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2 outline-none focus:border-orange-500 transition-colors shadow-sm"
+              />
+              <span className="text-gray-400 text-xs font-bold">to</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2 outline-none focus:border-orange-500 transition-colors shadow-sm"
+              />
+            </div>
+          )}
+
+          <select
+            value={dateRangeOption}
+            onChange={(e) => setDateRangeOption(e.target.value)}
+            className="text-xs font-bold text-gray-700 bg-white border border-orange-500/30 rounded-xl px-4.5 py-2 outline-none focus:border-orange-500 transition-all shadow-sm hover:border-orange-500/60 cursor-pointer"
+          >
+            <option value="7days">Last 7 Days</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="30days">Last 30 Days</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+            <option value="custom">Custom Range</option>
+          </select>
+        </div>
+      </div>
+
       {/* ── KPI Metric Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 transition-opacity duration-200 ${analyticsLoading ? 'opacity-70' : 'opacity-100'}`}>
         {[
           {
             label: 'Total Revenue',
             value: analytics ? `QAR ${analytics.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—',
-            sub: 'All-time sales',
+            sub: dateRangeOption === 'all' ? 'All-time sales' : 'Revenue in period',
             icon: <DollarSign className="h-5 w-5 text-orange-500" />,
             color: 'from-orange-500/10 to-amber-500/5',
           },
           {
             label: 'Total Orders',
             value: analytics ? analytics.totalOrders.toString() : '—',
-            sub: `${statusCounts.pending} pending`,
+            sub: dateRangeOption === 'all' ? `${statusCounts.pending} pending` : 'Orders in period',
             icon: <ShoppingCart className="h-5 w-5 text-blue-500" />,
             color: 'from-blue-500/10 to-sky-500/5',
           },
           {
             label: 'Avg Order Value',
             value: analytics ? `QAR ${analytics.averageOrderValue.toFixed(2)}` : '—',
-            sub: 'Per transaction',
+            sub: dateRangeOption === 'all' ? 'Per transaction' : 'AOV in period',
             icon: <TrendingUp className="h-5 w-5 text-violet-500" />,
             color: 'from-violet-500/10 to-purple-500/5',
           },
           {
             label: 'Customers',
             value: analytics ? analytics.totalCustomers.toString() : '—',
-            sub: 'Registered buyers',
+            sub: dateRangeOption === 'all' ? 'Registered buyers' : 'Active buyers in period',
             icon: <Users className="h-5 w-5 text-emerald-500" />,
             color: 'from-emerald-500/10 to-teal-500/5',
           },
@@ -302,14 +409,14 @@ export default function OverviewTab(props: OverviewTabProps) {
       </div>
 
       {/* ── Charts Row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 transition-opacity duration-200 ${analyticsLoading ? 'opacity-80' : 'opacity-100'}`}>
 
         {/* Sales Over Time Chart */}
         <div className="lg:col-span-8 bg-white border border-orange-500/30 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h4 className="text-sm font-bold text-gray-900">Revenue Over Time</h4>
-              <p className="text-[10px] text-gray-400 mt-0.5">Daily sales performance — last 10 days</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Daily sales performance</p>
             </div>
             <BarChart2 className="h-4 w-4 text-orange-400" />
           </div>

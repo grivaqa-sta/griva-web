@@ -468,7 +468,23 @@ exports.getAllOrders = async (req, res, next) => {
  */
 exports.getAnalytics = async (req, res, next) => {
   try {
+    const { startDate, endDate } = req.query;
+
+    const where = {};
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt[Op.lte] = end;
+      }
+    }
+
     const orders = await Order.findAll({
+      where,
       include: [
         {
           model: OrderItem,
@@ -493,7 +509,7 @@ exports.getAnalytics = async (req, res, next) => {
     });
 
     let totalSales = 0;
-    let totalOrders = orders.length;
+    let netOrdersCount = 0;
     let uniqueUserIds = new Set();
     let orderStatusCounts = { pending: 0, shipped: 0, delivered: 0, cancelled: 0 };
     let categorySalesMap = {};
@@ -504,35 +520,43 @@ exports.getAnalytics = async (req, res, next) => {
       const rawPrice = order.getDataValue("total_price");
       const orderTotal = typeof rawPrice === "string" ? parseFloat(rawPrice.replace(/([$]|qar|[\s,])/gi, "")) : parseFloat(rawPrice) || 0;
       
-      totalSales += orderTotal;
-      uniqueUserIds.add(order.user_id);
-
       let status = order.status || "pending";
       if (status === "completed") status = "delivered";
       if (orderStatusCounts[status] !== undefined) {
         orderStatusCounts[status]++;
       }
 
-      // Format Date: e.g. "Jun 09"
-      const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-      });
-      dateSalesMap[dateKey] = (dateSalesMap[dateKey] || 0) + orderTotal;
+      // Senior Dev Accounting rule: exclude cancelled, failed, and returned orders from sales/revenue metrics
+      const isRealizedRevenue = !["cancelled", "failed", "returned"].includes(order.status);
+      if (isRealizedRevenue) {
+        totalSales += orderTotal;
+        netOrdersCount++;
+        if (order.user_id) {
+          uniqueUserIds.add(order.user_id);
+        }
 
-      if (order.items) {
-        order.items.forEach((item) => {
-          const categoryTitle = item.product?.subcategory?.category?.title || "Other";
-          const itemPrice = typeof item.price_at_purchase === "string" 
-            ? parseFloat(item.price_at_purchase.replace(/([$]|qar|[\s,])/gi, "")) 
-            : parseFloat(item.price_at_purchase) || 0;
-          const itemTotal = itemPrice * (item.quantity || 1);
-          categorySalesMap[categoryTitle] = (categorySalesMap[categoryTitle] || 0) + itemTotal;
+        // Format Date: e.g. "Jun 09"
+        const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
         });
+        dateSalesMap[dateKey] = (dateSalesMap[dateKey] || 0) + orderTotal;
+
+        if (order.items) {
+          order.items.forEach((item) => {
+            const categoryTitle = item.product?.subcategory?.category?.title || "Other";
+            const itemPrice = typeof item.price_at_purchase === "string" 
+              ? parseFloat(item.price_at_purchase.replace(/([$]|qar|[\s,])/gi, "")) 
+              : parseFloat(item.price_at_purchase) || 0;
+            const itemTotal = itemPrice * (item.quantity || 1);
+            categorySalesMap[categoryTitle] = (categorySalesMap[categoryTitle] || 0) + itemTotal;
+          });
+        }
       }
     });
 
     const totalCustomers = uniqueUserIds.size;
+    const totalOrders = netOrdersCount;
     const averageOrderValue = totalOrders > 0 ? (totalSales / totalOrders) : 0;
 
     const salesByCategory = Object.keys(categorySalesMap).map((cat) => ({

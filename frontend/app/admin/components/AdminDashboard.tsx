@@ -61,6 +61,52 @@ export default function AdminDashboard() {
   const [shippingFee, setShippingFee] = useState<number>(10);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
 
+  const [dateRangeOption, setDateRangeOption] = useState<string>("7days");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+
+  const getRangeDates = (option: string, startVal?: string, endVal?: string) => {
+    const now = new Date();
+    let start: Date | null = null;
+    let end: Date | null = now;
+
+    if (option === "today") {
+      start = new Date();
+    } else if (option === "yesterday") {
+      start = new Date();
+      start.setDate(start.getDate() - 1);
+      end = new Date();
+      end.setDate(end.getDate() - 1);
+    } else if (option === "7days") {
+      start = new Date();
+      start.setDate(start.getDate() - 6);
+    } else if (option === "30days") {
+      start = new Date();
+      start.setDate(start.getDate() - 29);
+    } else if (option === "month") {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (option === "custom") {
+      return {
+        startDate: startVal || undefined,
+        endDate: endVal || undefined,
+      };
+    } else {
+      return { startDate: undefined, endDate: undefined };
+    }
+
+    const formatLocalDate = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    return {
+      startDate: start ? formatLocalDate(start) : undefined,
+      endDate: end ? formatLocalDate(end) : undefined,
+    };
+  };
+
   const [highlightedSchemaSection, setHighlightedSchemaSection] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -71,13 +117,11 @@ export default function AdminDashboard() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState<"idle" | "sending" | "sent">("idle");
 
-
-
-  // ── Data load ──────────────────────────────────────────────────────────────
+  // ── Data load (Static Settings, Subs, Orders) ──────────────────────────────
   useEffect(() => {
     async function load() {
-      const [dbSettings, dbSubs, dbOrders, dbAnalytics] = await Promise.all([
-        getSettingsApi(), getSubscribersApi(), getAllOrdersApi(), getAnalyticsApi(),
+      const [dbSettings, dbSubs, dbOrders] = await Promise.all([
+        getSettingsApi(), getSubscribersApi(), getAllOrdersApi(),
       ]);
       setAnnouncementBarEnabled(dbSettings.announcementBarEnabled);
       setFridaySaleEnabled(dbSettings.fridaySaleEnabled);
@@ -86,11 +130,29 @@ export default function AdminDashboard() {
       setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 99);
       setSubscribersList(dbSubs);
       setOrdersList(dbOrders);
-      setAnalytics(dbAnalytics);
-      setAnalyticsLoading(false);
     }
     load();
   }, []);
+
+  // ── Dynamic Analytics load (triggers on date changes) ──────────────────────
+  useEffect(() => {
+    async function loadAnalytics() {
+      if (dateRangeOption === "custom" && (!customStartDate || !customEndDate)) {
+        return;
+      }
+      setAnalyticsLoading(true);
+      try {
+        const { startDate, endDate } = getRangeDates(dateRangeOption, customStartDate, customEndDate);
+        const dbAnalytics = await getAnalyticsApi(startDate, endDate);
+        setAnalytics(dbAnalytics);
+      } catch (err) {
+        console.error("Failed to load analytics dynamic metrics:", err);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    }
+    loadAnalytics();
+  }, [dateRangeOption, customStartDate, customEndDate]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleToggleAnnouncement = async () => {
@@ -172,6 +234,12 @@ export default function AdminDashboard() {
               shippingFee={shippingFee}
               freeShippingThreshold={freeShippingThreshold}
               onSaveShippingConfig={handleSaveShippingConfig}
+              dateRangeOption={dateRangeOption}
+              setDateRangeOption={setDateRangeOption}
+              customStartDate={customStartDate}
+              setCustomStartDate={setCustomStartDate}
+              customEndDate={customEndDate}
+              setCustomEndDate={setCustomEndDate}
             />
           )}
           {activeTab === "products" && (

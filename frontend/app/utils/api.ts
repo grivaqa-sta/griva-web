@@ -373,7 +373,7 @@ export interface AnalyticsData {
   salesOverTime: { date: string; sales: number }[];
 }
 
-export async function getAnalyticsApi(): Promise<AnalyticsData> {
+export async function getAnalyticsApi(startDate?: string, endDate?: string): Promise<AnalyticsData> {
   const mockAnalytics: AnalyticsData = {
     totalSales: 14897.50,
     totalOrders: 12,
@@ -399,8 +399,13 @@ export async function getAnalyticsApi(): Promise<AnalyticsData> {
     ],
   };
 
+  const query = new URLSearchParams();
+  if (startDate) query.append("startDate", startDate);
+  if (endDate) query.append("endDate", endDate);
+  const queryString = query.toString() ? `?${query.toString()}` : "";
+
   const res = await safeFetch<{ analytics: AnalyticsData }>(
-    "/orders/analytics",
+    `/orders/analytics${queryString}`,
     { method: "GET" },
     { analytics: mockAnalytics }
   );

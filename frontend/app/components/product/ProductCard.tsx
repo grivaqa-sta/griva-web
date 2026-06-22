@@ -82,130 +82,127 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
         e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.18)";
       }}
     >
-      <Link href={`/product/${product.id}`} className="flex flex-col">
-        {/* Wishlist */}
-        <button
-          onClick={handleWishlistToggle}
-          className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300 sm:right-4 sm:top-4 sm:h-9 sm:w-9"
-        >
-          <motion.div whileTap={{ scale: 0.85 }}>
-            <Heart
-              size={13}
-              className={`transition-colors duration-300 sm:h-4 sm:w-4 ${
-                isWishlisted ? "fill-red-500 text-red-500" : "text-[#0D0D0D]"
-              }`}
-            />
-          </motion.div>
-        </button>
-
-        {/* Image Section */}
-        <div
-          className="relative flex h-[140px] items-center justify-center overflow-hidden rounded-none p-3 sm:h-[230px] sm:rounded-[18px] sm:p-8"
-          style={{ background: "linear-gradient(150deg, #F7F6F4 0%, #FFFFFF 55%, #F4F3F1 100%)" }}
-        >
-          <div
-            className="absolute inset-0"
-            style={{ background: "radial-gradient(circle at 80% 15%, rgba(255,106,0,0.07), transparent 50%)" }}
+      {/* ── Heart — absolute top right ── */}
+      <button
+        onClick={handleWishlistToggle}
+        className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300 sm:right-4 sm:top-4 sm:h-9 sm:w-9"
+      >
+        <motion.div whileTap={{ scale: 0.85 }}>
+          <Heart
+            size={13}
+            className={`transition-colors duration-300 sm:h-4 sm:w-4 ${
+              isWishlisted ? "fill-red-500 text-red-500" : "text-[#0D0D0D]"
+            }`}
           />
+        </motion.div>
+      </button>
 
-          {product.discount_percentage && product.discount_percentage > 0 ? (
+      <Link href={`/product/${product.id}`} className="flex flex-col">
+
+        {/* ── Image ── */}
+        <div
+          className="relative flex h-[130px] items-center justify-center overflow-hidden rounded-none p-3 sm:h-[210px] sm:rounded-[18px] sm:p-6"
+        >
+
+          {product.discount_percentage && product.discount_percentage > 0 && (
             <div
-              className="absolute left-2 top-1.5 z-20 max-w-[70%] truncate rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white sm:left-4 sm:top-3 sm:px-3 sm:text-[10px]"
-              style={{ backgroundColor: ORANGE, boxShadow: "0 6px 14px rgba(255,106,0,0.28)" }}
+              className="absolute left-2 top-2 z-20 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white sm:px-2.5 sm:text-[9px]"
+              style={{ backgroundColor: ORANGE }}
             >
               -{product.discount_percentage}%
             </div>
-          ) : product.brand && product.brand.trim() !== "" ? (
-            <div
-              className="absolute left-2 top-1.5 z-20 max-w-[60%] truncate rounded-full border bg-white/90 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider sm:left-4 sm:top-3 sm:max-w-none sm:px-3 sm:text-[10px]"
-              style={{ borderColor: "#ECECEC", color: INK }}
-            >
-              {product.brand}
-            </div>
-          ) : null}
+          )}
 
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* Main Image */}
             <Image
               src={product.main_image_url}
               alt={product.title}
               width={160}
               height={160}
               priority
-              className={`relative z-10 h-auto max-h-[100px] w-auto object-contain transition-all duration-500 sm:max-h-[160px] ${
+              className={`relative z-10 h-auto max-h-[95px] w-auto object-contain transition-all duration-500 sm:max-h-[155px] ${
                 product.gallery_images && product.gallery_images.length > 0
                   ? "group-hover:opacity-0 group-hover:scale-95 group-hover:pointer-events-none"
                   : "group-hover:scale-110"
               }`}
             />
-            {/* Hover Image (Second Image) */}
             {product.gallery_images && product.gallery_images.length > 0 && (
               <Image
                 src={product.gallery_images[0]}
                 alt={`${product.title} Alternate`}
                 width={160}
                 height={160}
-                className="absolute inset-0 z-10 m-auto h-auto max-h-[100px] w-auto object-contain opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 sm:max-h-[160px] pointer-events-none"
+                className="absolute inset-0 z-10 m-auto h-auto max-h-[95px] w-auto object-contain opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 sm:max-h-[155px] pointer-events-none"
               />
             )}
           </div>
         </div>
 
-        {/* Content */}
-        <div className="mt-2 flex flex-col gap-1.5 sm:mt-5 sm:gap-3">
+        {/* ── Content ── */}
+        <div className="mt-2 flex flex-col gap-1 sm:mt-3 sm:gap-1.5">
+
+          {/* Brand — below image, above title */}
+          {product.brand && product.brand.trim() !== "" && (
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+              {product.brand}
+            </p>
+          )}
+
+          {/* Title */}
           <h3
-  className="truncate text-[11px] font-semibold leading-snug tracking-[-0.01em] sm:line-clamp-2 sm:text-[15px] sm:leading-6"
-  style={{ color: INK }}
->
-  <span className="sm:group-hover:text-[#FF6A00] transition-colors duration-300">
-    {product.title}
-  </span>
-</h3>
+            className="truncate text-[11px] font-semibold leading-snug tracking-[-0.01em] sm:line-clamp-2 sm:text-[14px] sm:leading-5 pr-5 sm:pr-0"
+            style={{ color: INK }}
+          >
+            <span className="sm:group-hover:text-[#FF6A00] transition-colors duration-300">
+              {product.title}
+            </span>
+          </h3>
+
+          {/* Rating */}
+          <div className="flex items-center gap-1">
+            <Rating rating={product.rating} />
+            <span className="text-[9px] font-medium text-gray-400 sm:text-[10px]">
+              ({product.review_count || 0})
+            </span>
+          </div>
 
           {/* Price */}
           <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span className="flex items-baseline gap-0.5 leading-none">
-              <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 sm:text-[11px]">
+              <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 sm:text-[10px]">
                 QAR
               </span>
               <span
-                className="tabular-nums text-[15px] font-extrabold tracking-tight sm:text-2xl"
-                style={{ color: INK }}
+                className="tabular-nums text-[14px] font-extrabold tracking-tight sm:text-xl"
+                style={{ color:INK }}
               >
                 {formatPrice(product.price)}
               </span>
             </span>
-
             {product.old_price && (
               <span className="text-[8px] font-semibold uppercase text-gray-400 line-through sm:text-[10px]">
                 QAR {formatPrice(product.old_price)}
               </span>
             )}
           </div>
-
-          {/* Rating */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Rating rating={product.rating} />
-            <span className="text-[9px] font-medium text-gray-400 sm:text-xs">
-              ({product.review_count || 0})
-            </span>
-          </div>
         </div>
       </Link>
 
-      {/* Desktop Buttons only */}
-      <div className="mt-5 hidden grid-cols-2 gap-2.5 sm:grid">
+      {/* ── Desktop Buttons ── */}
+      <div className="mt-3 hidden grid-cols-2 gap-2.5 sm:grid">
         <button
           onClick={handleAddToCart}
-          className="flex h-12 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-all duration-300"
-          style={{ borderColor: "white", color: INK, backgroundColor: "transparent" }}
+          className="flex h-11 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-all duration-300"
+          style={{ borderColor: "#ECECEC", color: INK, backgroundColor: "transparent" }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = ORANGE;
+            e.currentTarget.style.borderColor = ORANGE;
             e.currentTarget.style.color = "#fff";
             e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = "transparent";
+            e.currentTarget.style.borderColor = "#ECECEC";
             e.currentTarget.style.color = INK;
             e.currentTarget.style.boxShadow = "none";
           }}
@@ -213,9 +210,9 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
           Add to Cart
         </button>
 
-        <Link href={`/product/${product.id}`}>
+        <Link href={`/product/${product.id}`} className="w-full">
           <button
-            className="flex h-12 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.02]"
+            className="flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300"
             style={{ backgroundColor: INK, boxShadow: "0 10px 20px rgba(13,13,13,0.2)" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = ORANGE;

@@ -243,7 +243,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     QAR {formatPrice(product.old_price)}
                   </span>
                 )}
-                {product.discount_percentage && product.discount_percentage > 0 && (
+                {(product.discount_percentage ?? 0) > 0 && (
                   <span className="text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full">
                     -{product.discount_percentage}%
                   </span>

@@ -93,6 +93,13 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
     }
   }, [productToEdit, subCategories]);
 
+  const calculateDiscount = (sellingPrice: number, originalPrice: number) => {
+    if (!originalPrice || !sellingPrice || originalPrice <= sellingPrice) {
+      return 0;
+    }
+    return Math.round(((originalPrice - sellingPrice) / originalPrice) * 100);
+  };
+
   const handleChange = (field: keyof ProductRequest, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -351,20 +358,38 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
               <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Pricing & Inventory</h5>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Price ($) *</label>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Selling Price *</label>
                   <input
                     type="number" step="0.01" required
                     value={formData.price || ""}
-                    onChange={(e) => handleChange("price", parseFloat(e.target.value))}
+                    onChange={(e) => {
+                      const newPrice = parseFloat(e.target.value) || 0;
+                      const originalPrice = formData.old_price || 0;
+                      const discount = calculateDiscount(newPrice, originalPrice);
+                      setFormData(prev => ({
+                        ...prev,
+                        price: newPrice,
+                        discount_percentage: discount
+                      }));
+                    }}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-orange-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Old Price ($)</label>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Original Price</label>
                   <input
                     type="number" step="0.01"
                     value={formData.old_price || ""}
-                    onChange={(e) => handleChange("old_price", parseFloat(e.target.value))}
+                    onChange={(e) => {
+                      const originalPrice = parseFloat(e.target.value) || 0;
+                      const sellingPrice = formData.price || 0;
+                      const discount = calculateDiscount(sellingPrice, originalPrice);
+                      setFormData(prev => ({
+                        ...prev,
+                        old_price: originalPrice,
+                        discount_percentage: discount
+                      }));
+                    }}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-orange-500 outline-none"
                   />
                 </div>
@@ -373,7 +398,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                   <input
                     type="number"
                     value={formData.discount_percentage || ""}
-                    onChange={(e) => handleChange("discount_percentage", parseFloat(e.target.value))}
+                    onChange={(e) => handleChange("discount_percentage", parseFloat(e.target.value) || 0)}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-orange-500 outline-none"
                   />
                 </div>

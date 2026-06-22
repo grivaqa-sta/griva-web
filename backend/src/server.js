@@ -36,6 +36,14 @@ const startServer = async () => {
         console.log("ℹ️ [DATABASE]: Skipping DROP NOT NULL on OrderItems.product_id:", dropNotNullErr.message);
       }
 
+      // Safely add deal_of_day column to products table if it doesn't exist
+      try {
+        await sequelize.query("ALTER TABLE \"products\" ADD COLUMN IF NOT EXISTS deal_of_day BOOLEAN DEFAULT false;");
+        console.log("🟢 [DATABASE]: Added deal_of_day column to products table");
+      } catch (dodColErr) {
+        console.log("ℹ️ [DATABASE]: Skipping raw products column addition:", dodColErr.message);
+      }
+
       // Safely alter Reviews foreign key to cascade delete
       try {
         await sequelize.query("ALTER TABLE \"Reviews\" DROP CONSTRAINT IF EXISTS \"Reviews_product_id_fkey\";");

@@ -104,7 +104,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
           className="relative flex h-[130px] items-center justify-center overflow-hidden rounded-none p-3 sm:h-[210px] sm:rounded-[18px] sm:p-6"
         >
 
-          {product.discount_percentage && product.discount_percentage > 0 && (
+          {(product.discount_percentage ?? 0) > 0 && (
             <div
               className="absolute left-2 top-2 z-20 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white sm:px-2.5 sm:text-[9px]"
               style={{ backgroundColor: ORANGE }}

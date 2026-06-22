@@ -93,6 +93,7 @@ export default function DeliveryDashboard() {
   const [driverName, setDriverName] = useState("Griva Driver");
   const [driverEmail, setDriverEmail] = useState("driver@thegriva.com");
   const [activeTab, setActiveTab] = useState<'deliveries' | 'scan' | 'profile'>('deliveries');
+  const [deliverySubTab, setDeliverySubTab] = useState<'active' | 'history'>('active');
 
   // FEATURE: Delivery Attempt Management state
   const [activeModal, setActiveModal] = useState<{ type: 'not_answering' | 'come_later' | 'failed'; orderId: number } | null>(null);
@@ -467,6 +468,9 @@ export default function DeliveryDashboard() {
     .reduce((sum, o) => sum + parseFloat(parseTotal(o.total_price)), 0)
     .toFixed(2);
 
+  const activeOrders = orders.filter(o => o.status !== "delivered" && o.status !== "failed");
+  const historyOrders = orders.filter(o => o.status === "delivered" || o.status === "failed");
+
   const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   return (
@@ -560,6 +564,32 @@ export default function DeliveryDashboard() {
                 ))}
               </div>
 
+              {/* Segmented Sub-Tabs for Deliveries */}
+              <div className="flex bg-[#0a0a0a] border border-zinc-900 rounded-2xl p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setDeliverySubTab('active')}
+                  className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    deliverySubTab === 'active'
+                      ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800'
+                      : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                  }`}
+                >
+                  Active Tasks ({activeOrders.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeliverySubTab('history')}
+                  className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    deliverySubTab === 'history'
+                      ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800'
+                      : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                  }`}
+                >
+                  History / Completed ({historyOrders.length})
+                </button>
+              </div>
+
               {error && (
                 <div className="bg-red-950/30 border border-red-900/50 text-red-400 text-xs font-bold p-3.5 rounded-2xl text-center">
                   {error}
@@ -568,40 +598,52 @@ export default function DeliveryDashboard() {
 
               {/* Delivery list */}
               <div className="space-y-4">
-                <h3 className="text-xs font-bold tracking-widest text-zinc-400 uppercase ml-1">Assigned Tasks ({orders.length})</h3>
-                
-                {loading && orders.length === 0 && (
-                  <div className="space-y-4">
-                    {[1, 2].map((n) => (
-                      <div key={n} className="h-44 w-full bg-zinc-950/30 border border-zinc-900 rounded-3xl animate-pulse" />
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const currentList = deliverySubTab === 'active' ? activeOrders : historyOrders;
+                  return (
+                    <>
+                      <h3 className="text-xs font-bold tracking-widest text-zinc-400 uppercase ml-1">
+                        {deliverySubTab === 'active' ? `Assigned Tasks (${activeOrders.length})` : `Completed Tasks (${historyOrders.length})`}
+                      </h3>
+                      
+                      {loading && currentList.length === 0 && (
+                        <div className="space-y-4">
+                          {[1, 2].map((n) => (
+                            <div key={n} className="h-44 w-full bg-zinc-950/30 border border-zinc-900 rounded-3xl animate-pulse" />
+                          ))}
+                        </div>
+                      )}
 
-                {/* Empty State */}
-                {!loading && orders.length === 0 && !error && (
-                  <div className="text-center py-12 px-6 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4 flex flex-col items-center shadow-lg">
-                    {/* SVG 3D Package Glow Illustration */}
-                    <div className="relative w-16 h-16 flex items-center justify-center">
-                      <div className="absolute inset-0 bg-[#FF6A00]/10 rounded-full blur-[20px]" />
-                      <svg className="h-12 w-12 text-[#FF6A00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M21 7.5V16.5L12 21.5L3 16.5V7.5L12 2.5L21 7.5Z" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M12 22.08V12" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M12 12L21 7.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M12 12L3 7.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M12 2.5L21 7.5L12 12.5L3 7.5L12 2.5Z" fill="currentColor" fillOpacity="0.05" />
-                        <path d="M7.5 9.75L12 12.25L16.5 9.75" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-white">No Orders Today</h4>
-                      <p className="text-xs text-zinc-500">You're all caught up! Pull down to refresh or check again later.</p>
-                    </div>
-                  </div>
-                )}
+                      {/* Empty State */}
+                      {!loading && currentList.length === 0 && !error && (
+                        <div className="text-center py-12 px-6 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4 flex flex-col items-center shadow-lg">
+                          {/* SVG 3D Package Glow Illustration */}
+                          <div className="relative w-16 h-16 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-[#FF6A00]/10 rounded-full blur-[20px]" />
+                            <svg className="h-12 w-12 text-[#FF6A00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M21 7.5V16.5L12 21.5L3 16.5V7.5L12 2.5L21 7.5Z" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M12 22.08V12" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M12 12L21 7.5" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M12 12L3 7.5" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M12 2.5L21 7.5L12 12.5L3 7.5L12 2.5Z" fill="currentColor" fillOpacity="0.05" />
+                              <path d="M7.5 9.75L12 12.25L16.5 9.75" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-white">
+                              {deliverySubTab === 'active' ? "No Active Orders" : "No Completed Orders"}
+                            </h4>
+                            <p className="text-xs text-zinc-500">
+                              {deliverySubTab === 'active' 
+                                ? "You have no active/pending deliveries assigned. Pull down to refresh or check again later."
+                                : "Completed and failed orders will appear here for your history tracking."}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                {/* Order cards */}
-                {orders.map((order) => {
+                      {/* Order cards */}
+                      {currentList.map((order) => {
                   const statusCfg = STATUS_LABELS[order.status] || { label: order.status, color: "text-zinc-400", bg: "bg-zinc-950 border-zinc-900" };
                   const totalAmount = parseTotal(order.total_price);
                   const isCOD = order.payment_method?.toUpperCase().includes("COD");
@@ -777,7 +819,10 @@ export default function DeliveryDashboard() {
                     </div>
                   );
                 })}
-              </div>
+              </>
+            );
+          })()}
+        </div>
             </motion.div>
           )}
 

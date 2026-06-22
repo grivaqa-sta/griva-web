@@ -122,17 +122,46 @@ export default function CategoryPage() {
   const { products: allProducts, loading: productsLoading } = useAllProducts();
   const loading = taxonomyLoading || productsLoading;
 
-  const validSubcategoryIds = useMemo(() => {
-    const matchedCategory = categories.find(
+  const matchedCategory = useMemo(() => {
+    return categories.find(
       (c) => c.slug === slug || c.href?.includes(slug)
     );
+  }, [categories, slug]);
+
+  const categorySubcategories = useMemo(() => {
+    if (!matchedCategory) return [];
+    const filtered = subCategories.filter(
+      (s) => s.category_id === matchedCategory.id
+    );
+
+    // If it's the perfumes category, sort according to the user's specific order
+    if (slug === "perfumes-buhoor") {
+      const order = ["perfumes", "body-spray", "body-lotion", "buhoor", "car-fragrance"];
+      return filtered.sort((a, b) => {
+        const indexA = order.indexOf(a.slug);
+        const indexB = order.indexOf(b.slug);
+        const valA = indexA !== -1 ? indexA : 999;
+        const valB = indexB !== -1 ? indexB : 999;
+        return valA - valB;
+      });
+    }
+
+    return filtered;
+  }, [subCategories, matchedCategory, slug]);
+
+  const matchedSubcategory = useMemo(() => {
+    if (!subParam) return null;
+    return categorySubcategories.find(
+      (s) => s.slug === subParam || s.href?.endsWith(`?sub=${subParam}`)
+    );
+  }, [categorySubcategories, subParam]);
+
+  const validSubcategoryIds = useMemo(() => {
     if (!matchedCategory) return new Set<number>();
     return new Set(
-      subCategories
-        .filter((s) => s.category_id === matchedCategory.id)
-        .map((s) => s.id)
+      categorySubcategories.map((s) => s.id)
     );
-  }, [categories, subCategories, slug]);
+  }, [matchedCategory, categorySubcategories]);
 
   const filteredProducts = useMemo((): ApiProduct[] => {
     let result = allProducts.filter((p) =>
@@ -141,7 +170,9 @@ export default function CategoryPage() {
     if (validSubcategoryIds.size === 0 && !taxonomyLoading) {
       result = [...allProducts];
     }
-    if (subParam) {
+    if (matchedSubcategory) {
+      result = result.filter((p) => p.subcategory_id === matchedSubcategory.id);
+    } else if (subParam) {
       const subKeyword = subParam.replace(/-/g, " ").toLowerCase();
       const subResult = result.filter(
         (p) =>
@@ -163,7 +194,7 @@ export default function CategoryPage() {
       result.sort((a, b) => b.rating - a.rating);
     }
     return result;
-  }, [allProducts, validSubcategoryIds, taxonomyLoading, subParam, maxPrice, minRating, sortBy]);
+  }, [allProducts, validSubcategoryIds, taxonomyLoading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
 
   const handleResetFilters = () => {
     setMaxPrice(2000);
@@ -216,7 +247,9 @@ export default function CategoryPage() {
           className="relative overflow-hidden rounded-3xl text-white shadow-2xl"
           style={{
             minHeight: "220px",
-            background: meta.bannerImage
+            background: matchedCategory?.image_url
+              ? `url(${matchedCategory.image_url}) center/cover no-repeat`
+              : meta.bannerImage
               ? `url(${meta.bannerImage}) center/cover no-repeat`
               : `linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)`,
           }}
@@ -224,7 +257,7 @@ export default function CategoryPage() {
           <div
             className="absolute inset-0 rounded-3xl"
             style={{
-              background: meta.bannerImage
+              background: (matchedCategory?.image_url || meta.bannerImage)
                 ? "linear-gradient(to right, rgba(10,10,15,0.88) 0%, rgba(10,10,15,0.6) 50%, rgba(10,10,15,0.15) 100%)"
                 : "rgba(0,0,0,0.3)",
             }}
@@ -279,6 +312,38 @@ export default function CategoryPage() {
             </div>
           </div>
         </div>
+
+        {/* Subcategories Horizontal Scroll/Chips */}
+        {categorySubcategories.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+            <Link
+              href={`/category/${slug}`}
+              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                !subParam
+                  ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10"
+                  : "bg-white border-gray-200 text-gray-700 hover:border-orange-200 hover:text-orange-500"
+              }`}
+            >
+              All Products
+            </Link>
+            {categorySubcategories.map((sub) => {
+              const isSelected = subParam === sub.slug || sub.href?.endsWith(`?sub=${subParam}`);
+              return (
+                <Link
+                  key={sub.id}
+                  href={`/category/${slug}?sub=${sub.slug}`}
+                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                    isSelected
+                      ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10"
+                      : "bg-white border-gray-200 text-gray-700 hover:border-orange-200 hover:text-orange-500"
+                  }`}
+                >
+                  {sub.title}
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
         {/* Filters and Grid Wrapper */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

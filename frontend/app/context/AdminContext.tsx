@@ -109,7 +109,7 @@ const defaults: AdminSettings = {
   
   cmsNewsletter: {
     label: "Newsletter",
-    heading: "Sign Up & Get 20% Off",
+    heading: "Join for latest discount offers",
     description: "Join thousands of subscribers. No spam, ever.",
     bgColor: "#8990f1",
     buttonText: "Subscribe",
@@ -136,6 +136,9 @@ function sanitizeLoadedSettings(settings: any): AdminSettings {
       ...o,
       subtitle: typeof o.subtitle === "string" ? o.subtitle.replace(/\$\s*(\d+)/g, "QAR $1") : o.subtitle,
     }));
+  }
+  if (sanitized.cmsNewsletter && sanitized.cmsNewsletter.heading === "Sign Up & Get 20% Off") {
+    sanitized.cmsNewsletter.heading = "Join for latest discount offers";
   }
   return sanitized as AdminSettings;
 }

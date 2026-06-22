@@ -41,12 +41,22 @@ async function safeFetch<T>(
   fallbackValue: T
 ): Promise<T> {
   try {
+    const headers: Record<string, string> = {};
+    const authHeaders = getAuthHeaders();
+    if (authHeaders) {
+      Object.assign(headers, authHeaders);
+    }
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
+    if (options.body && typeof options.body === "string" && !Object.keys(headers).some(k => k.toLowerCase() === "content-type")) {
+      headers["Content-Type"] = "application/json";
+    }
+
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!res.ok) {

@@ -151,22 +151,15 @@ export default function CategorySection() {
       {/* Mobile — sticky categories */}
       <div
         id="categories-section"
-        className={`${isCollapsed ? "fixed" : "sticky"} top-[92px] z-30  backdrop-blur-md block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out`}
-        style={{
-          paddingTop: "12px",
-          paddingBottom: "12px",
-        }}
+        className={`${isCollapsed ? "fixed" : "sticky"} top-[92px] z-30   bg-white block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 py-3`}
       >
-        <div className="flex gap-4 px-2 min-w-max justify-around items-center">
+        <div className="flex gap-3 min-w-max justify-around items-center">
           {categories.map((item) => (
             <Link
               key={item.id}
               href={item.href}
               className="flex flex-col items-center  text-center shrink-0 group transition-all duration-300 ease-in-out"
-              style={{
-                paddingLeft: isCollapsed ? "10px" : "0px",
-                paddingRight: isCollapsed ? "10px" : "0px",
-              }}
+             
             >
               <div
                 className="relative overflow-hidden border-none  transition-all duration-300 ease-in-out flex-shrink-0 flex items-center justify-center"

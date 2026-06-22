@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, ShoppingCart, Loader2 } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Rating from "../rating/Rating";
 import { useCountdown } from "@/app/hooks/useCountdown";
@@ -13,6 +14,7 @@ import { Deal } from "@/app/types/types";
 
 export default function DealOfTheDaySection() {
   const { addToCart } = useCart();
+  const router = useRouter();
 
   const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +105,18 @@ export default function DealOfTheDaySection() {
     });
   };
 
+  const handleBuyNow = () => {
+    if (!slide) return;
+    addToCart({
+      id: slide.id,
+      title: slide.title,
+      image: slide.mainImage,
+      price: slide.price,
+      category: slide.category,
+    });
+    router.push("/checkout");
+  };
+
   if (loading) {
     return (
       <section className="w-full py-5">
@@ -139,7 +153,7 @@ export default function DealOfTheDaySection() {
           <div className="mt-3 flex items-center gap-3">
             {timerBlocks.map(({ value, label }) => (
               <div key={label} className="flex flex-col items-center">
-                <div className="flex h-11 w-12 items-center justify-center rounded-[5px] bg-orange-500 shadow-md shadow-orange-500/10">
+                <div className="flex h-11 w-12 items-center justify-center rounded-[5px] bg-orange-600 shadow-md shadow-orange-500/10">
                   <span className="text-lg font-bold text-white">{String(value).padStart(2, "0")}</span>
                 </div>
                 <span className="mt-1.5 text-[9px] font-medium text-gray-400">{label}</span>
@@ -157,7 +171,7 @@ export default function DealOfTheDaySection() {
           onTouchEnd={() => setIsPaused(false)}
         >
           {/* ── MOBILE ONLY: orange timer banner ── */}
-          <div className="lg:hidden bg-orange-500 px-5 py-4 flex items-center justify-between gap-4">
+          <div className="lg:hidden bg-orange-700 px-5 py-4 flex items-center justify-between gap-4">
             <div className="flex flex-col">
               <span className="text-[8px] font-black uppercase tracking-[2.5px]" style={{ color: "#ffd0b0" }}>
                 Only For Today
@@ -251,13 +265,13 @@ export default function DealOfTheDaySection() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span
-                      className="rounded px-2 py-0.5 text-[9px] font-extrabold uppercase text-white"
-                      style={{ backgroundColor: "#FF6A00" }}
+                      className="rounded px-2 py-0.5 text-[9px] font-bold uppercase text-white bg-orange-600"
+                      
                     >
                       {slide.badge}
                     </span>
                     {slide.hot && (
-                      <span className="animate-pulse rounded bg-red-600 px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">
+                      <span className="animate-pulse rounded bg-red-700 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
                         HOT
                       </span>
                     )}
@@ -265,7 +279,7 @@ export default function DealOfTheDaySection() {
                   <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                     {slide.category}
                   </p>
-                  <h3 className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors hover:text-orange-500 line-clamp-2">
+                  <h3 className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors hover:text-orange-500 line-clamp-1 lg:line-clamp-2">
                     <Link href={`/product/${slide.id}`}>{slide.title}</Link>
                   </h3>
                   <div className="mt-2">
@@ -275,17 +289,25 @@ export default function DealOfTheDaySection() {
                     <span className="text-2xl font-bold text-black "><span className="text-[10px] font-bold text-orange-500">QAR </span>{slide.price}</span>
                     <span className="text-xs text-gray-400 line-through mb-1"><span className="text-[10px]">QAR </span>{slide.oldPrice}</span>
                   </div>
-                  <p className="mt-3 break-words text-xs leading-relaxed text-gray-500 line-clamp-2 min-h-[40px]">
+                  <p className="hidden lg:block mt-3 break-words text-xs leading-relaxed text-gray-500 line-clamp-2 min-h-[40px]">
                     {slide.description}
                   </p>
                 </div>
 
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
-                  className="z-10 mt-2 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[5px] bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 lg:w-44"
-                >
-                  <ShoppingCart size={14} /> Add To Cart
-                </button>
+                <div className="z-10 mt-2 flex w-full gap-2 lg:w-[360px]">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
+                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px] hover:bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition bg-orange-600"
+                  >
+                    <ShoppingCart size={14} /> Add To Cart
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleBuyNow(); }}
+                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px]  text-xs font-bold uppercase text-white shadow-md shadow-gray-900/20 transition bg-black hover:bg-[#222]"
+                  >
+                    Buy Now
+                  </button>
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>

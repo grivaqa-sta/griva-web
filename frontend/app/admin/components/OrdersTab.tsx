@@ -638,7 +638,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                         {/* Delivery Slot */}
                         <td className="p-4">
                           <span className="text-xs text-gray-650 font-semibold">
-                            {(order as any).deliverySlot?.name || "None"}
+                            {(order as any).deliverySlot?.name || deliverySlots.find(s => Number(s.id) === Number(order.delivery_slot_id))?.name || "None"}
                           </span>
                         </td>
 
@@ -739,6 +739,15 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                     <div>
                                       <p className="text-[10px] text-gray-400 font-semibold uppercase">Shipping Address</p>
                                       <p className="text-xs font-bold text-gray-800 mt-0.5">{order.shipping_address}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2.5 pt-2 border-t border-orange-500/10">
+                                    <span className="text-xs mt-0.5 shrink-0">🕒</span>
+                                    <div>
+                                      <p className="text-[10px] text-gray-400 font-semibold uppercase">Delivery Slot</p>
+                                      <p className="text-xs font-bold text-gray-800 mt-0.5">
+                                        {(order as any).deliverySlot?.name || deliverySlots.find(s => Number(s.id) === Number(order.delivery_slot_id))?.name || "None"}
+                                      </p>
                                     </div>
                                   </div>
                                   <div className="flex items-start gap-2.5 pt-2 border-t border-orange-500/10">

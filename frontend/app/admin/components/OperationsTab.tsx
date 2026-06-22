@@ -492,7 +492,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                           {/* Delivery Slot */}
                           <td className="p-4">
                             <span className="text-xs text-gray-650 font-bold">
-                              {(order as any).deliverySlot?.name || "None"}
+                              {(order as any).deliverySlot?.name || deliverySlots.find(s => Number(s.id) === Number(order.delivery_slot_id))?.name || "None"}
                             </span>
                           </td>
 

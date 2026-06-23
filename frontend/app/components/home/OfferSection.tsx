@@ -15,16 +15,14 @@ export default function OfferSection() {
         if (response?.success && response?.data) {
           const bgColors = ["bg-rose-50", "bg-emerald-50", "bg-sky-50", "bg-amber-50"];
           const formattedOffers = response.data.map((product: any, index: number) => {
-            const imgSrc = product.main_image_url;
-            const formattedImgSrc = imgSrc?.startsWith('http') || imgSrc?.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`;
             return {
               id: product.id,
               href: `/product/${product.id}`,
               bgColor: bgColors[index % bgColors.length],
               badge: product.discount_percentage ? `${product.discount_percentage}% OFF` : "NEW",
-              title: product.title,
-              subtitle: product.short_description || "Special Offer",
-              image: formattedImgSrc,
+              title: product.brand ? product.brand.toUpperCase() : product.title?.toUpperCase(),
+              subtitle: product.subcategories?.name.toUpperCase() || "Special Offer",
+              image: product.main_image_url,
             };
           });
           setOffers(formattedOffers);

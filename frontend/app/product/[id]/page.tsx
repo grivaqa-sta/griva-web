@@ -105,11 +105,10 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const isWishlisted = isInWishlist(product.id);
 
-  // Gallery images — use gallery_images or fall back to main_image_url
-  const galleryImages =
-    product.gallery_images && product.gallery_images.length > 0
-      ? product.gallery_images
-      : [product.main_image_url];
+  // Gallery images — combine main_image_url and gallery_images, filtering duplicates
+  const galleryImages = Array.from(
+    new Set([product.main_image_url, ...(product.gallery_images || [])].filter(Boolean))
+  );
 
   // Related products — same subcategory, exclude current
   const relatedProducts = allProducts
@@ -171,15 +170,16 @@ export default function ProductPage({ params }: ProductPageProps) {
           <span className="text-gray-900 truncate max-w-[200px]">{product.title}</span>
         </div>
 
-        {/* Core Product Details Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
-          {/* Left Panel: Gallery */}
-          <div className="lg:col-span-6 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <ProductGallery images={galleryImages} title={product.title} />
-          </div>
+        {/* Unified Premium Card */}
+        <div className="bg-white rounded-[32px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-10 mb-12 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Left Column: Gallery */}
+            <div className="lg:col-span-6">
+              <ProductGallery images={galleryImages} title={product.title} />
+            </div>
 
-          {/* Right Panel: Buying Panel */}
-          <div className="lg:col-span-6 flex flex-col justify-between bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
+            {/* Right Column: Buying Panel */}
+            <div className="lg:col-span-6 flex flex-col justify-between">
             <div>
               {/* Brand badge */}
               {product.brand && (
@@ -284,6 +284,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                   </span>
                 )}
               </div>
+
+              {/* Product Short Description */}
+              {(product.short_description || product.description) && (
+                <div className="mt-6 text-sm text-gray-600 leading-relaxed border-b pb-6">
+                  <p>{product.short_description || product.description}</p>
+                </div>
+              )}
 
               {/* Color Variants */}
               {colorVariants.length > 0 && (
@@ -391,8 +398,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
                 <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
                   <RotateCcw className="h-4 w-4 text-orange-500 mb-1" />
-                  <span className="font-semibold text-gray-700">30-Day Returns</span>
-                  <span>100% money back</span>
+                  <span className="font-semibold text-gray-700">7-Day Returns</span>
+                  <span>7 days return only</span>
                 </div>
                 <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
                   <ShieldCheck className="h-4 w-4 text-orange-500 mb-1" />
@@ -403,9 +410,10 @@ export default function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
         </div>
+      </div>
 
         {/* Tabbed Product Details */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 mb-12">
+        <div className="bg-white rounded-[24px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 mb-12 max-w-5xl mx-auto">
           <div className="flex border-b border-gray-100 gap-6">
             {(["desc", "specs", "reviews"] as const).map((tab) => (
               <button
@@ -478,7 +486,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <ScrollReveal>
-            <div className="mb-12">
+            <div className="mb-12 max-w-5xl mx-auto">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Related Products</h2>
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {relatedProducts.map((p) => (

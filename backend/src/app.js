@@ -26,6 +26,8 @@ const getAllowedOrigins = () => {
     "https://griva-web-chi.vercel.app",
     "https://griva-276jdc4qt-griva.vercel.app",
     "https://griva-web-git-main-griva.vercel.app",
+
+    "https://griva-backend-kprt.onrender.com",
   ];
 
   // Add Render Backend URL if it exists and is not empty

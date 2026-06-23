@@ -8,7 +8,6 @@ if (!process.env.NODE_ENV) {
 
 const isDev = process.env.NODE_ENV === "development";
 
-console.log(`[RATE LIMIT INITIALIZATION] Environment NODE_ENV is "${process.env.NODE_ENV}". Rate limiting is ${isDev ? "DISABLED" : "ENABLED"}.`);
 
 const apiLimiter = isDev
   ? (req, res, next) => next()
@@ -26,7 +25,7 @@ const strictLimiter = isDev
   ? (req, res, next) => next()
   : rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 300, // Limit each IP to 300 requests per window (strict for order/auth)
+    max: 300,
     standardHeaders: true,
     legacyHeaders: false,
     message: {

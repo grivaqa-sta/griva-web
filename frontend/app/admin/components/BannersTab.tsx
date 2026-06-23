@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import ProductBannersSection from './ProductBannersSection';
 import DiscoverMoreSection from './DiscoverMoreSection';
+import ProductPromoBannersSection from './ProductPromoBannersSection';
 import { productService } from '@/app/services/product.service';
 import { uploadService } from '@/app/services/upload.service';
 import dealOfDayService from '@/app/services/dealOfDay.service';
@@ -659,6 +660,9 @@ export default function BannersTab(props: BannersTabProps) {
 
       {/* Section C: Deal of the Day */}
       <DealOfDaySection />
+
+      {/* Section D: Product Promo Banners */}
+      <ProductPromoBannersSection />
 
       {/* Section D: Category Hero Banners — NEW PREMIUM FEATURE */}
       <div className="space-y-4">

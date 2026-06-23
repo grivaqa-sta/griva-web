@@ -164,7 +164,7 @@ export default function DealOfTheDaySection() {
 
         {/* ── PRODUCT CARD ── */}
         <div
-          className="relative overflow-hidden rounded-[5px] border border-gray-100 bg-white shadow-sm touch-pan-y"
+          className="relative overflow-hidden rounded-[10px] border border-gray-100 bg-white shadow-sm touch-pan-y"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={() => setIsPaused(true)}

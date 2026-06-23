@@ -11,21 +11,30 @@ const app = express();
 
 // Apply Global Middlewares
 const allowedOrigins = [
-  "http://localhost:3000",       // Next.js dev server
-  "http://localhost:8080",       // Backend self (Postman/Thunder)
-  "https://griva.qa",            // Production domain
-  "https://www.griva.qa",        // Production with www
-  "https://thegriva.com",        // New Production domain
-  "https://www.thegriva.com",    // New Production domain with www
+  // Local Development
+  "http://localhost:3000",
+  "http://localhost:8080",
+  
+  // Production - GriVA Domains
+  "https://griva.qa",
+  "https://www.griva.qa",
+  "https://thegriva.com",
+  "https://www.thegriva.com",
+  
+  // Vercel Preview & Production
   "https://griva-web-chi.vercel.app",
-  "https://your-render-backend-url.onrender.com",// Vercel preview URL
+  
+  // Render Backend (Update with your actual Render URL)
+  process.env.RENDER_BACKEND_URL || "https://griva-backend.onrender.com",
 ];
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (Postman, curl, mobile apps)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`❌ [CORS BLOCKED] Origin: ${origin}`);
       callback(new Error(`CORS policy blocked origin: ${origin}`));
     }
   },
@@ -71,7 +80,7 @@ const deliveryRoutes = require("./routes/deliveryRoutes"); // FEATURE: Delivery 
 const customerRoutes = require("./routes/customerRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const deliveryAttemptRoutes = require("./routes/deliveryAttemptRoutes");
-const uploadRoutes = require("./routes/uploadRoutes"); //IMAGE UPLOAD
+const uploadRoutes = require("./routes/uploadRoutes"); // IMAGE UPLOAD
 const deliverySlotRoutes = require("./routes/deliverySlotRoutes");
 const dealOfDayRoutes = require("./routes/dealOfDayRoutes");
 // const testShippedEmailRoutes = require("./routes/testShippedEmailRoutes");
@@ -95,11 +104,10 @@ app.use("/api/admin/customers", customerRoutes);
 app.use("/api/admin/staff", staffRoutes);
 app.use("/api/delivery", deliveryAttemptRoutes); // FEATURE: Delivery Attempt Management
 // app.use("/api/test-email", testEmailRoutes);
-app.use("/api/uploads", uploadRoutes); //IMAGE UPLOAD
+app.use("/api/uploads", uploadRoutes); // IMAGE UPLOAD
 app.use("/api/delivery-slots", deliverySlotRoutes);
 app.use("/api/deal-of-day", dealOfDayRoutes);
 app.use("/api/discover-more", discoverMoreRoutes);
-
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

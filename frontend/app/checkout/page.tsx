@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { getSettingsApi, getDeliverySlotsApi } from "@/app/utils/api";
+import { useToast } from "@/app/context/ToastContext";
 
 // ─────────────────────────────────────────────────────────
 // Types
@@ -43,6 +44,7 @@ interface CheckoutForm {
   phone: string;
   email: string;
   area: string;
+  zone: string;
   street: string;
   buildingNumber: string;
   villaApartment: string;
@@ -54,9 +56,10 @@ interface CheckoutForm {
 
 const INITIAL_FORM: CheckoutForm = {
   fullName: "",
-  phone: "+974",
+  phone: "",
   email: "",
   area: "",
+  zone: "",
   street: "",
   buildingNumber: "",
   villaApartment: "",
@@ -66,6 +69,18 @@ const INITIAL_FORM: CheckoutForm = {
   deliverySlotId: "",
 };
 
+const extractQatarLocalNumber = (phoneStr: string): string => {
+  if (!phoneStr) return "";
+  const cleaned = phoneStr.replace(/\D/g, ""); // only digits
+  if (cleaned.startsWith("00974")) {
+    return cleaned.slice(5).slice(0, 8);
+  }
+  if (cleaned.startsWith("974")) {
+    return cleaned.slice(3).slice(0, 8);
+  }
+  return cleaned.slice(0, 8);
+};
+
 // ─────────────────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────────────────
@@ -73,6 +88,7 @@ export default function CheckoutPage() {
   const { state: userState, isAuthenticated, isCustomer } = useUser();
   const { state: cartState, dispatch: cartDispatch } = useCart();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState("");
@@ -93,6 +109,7 @@ export default function CheckoutPage() {
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [useNewAddress, setUseNewAddress] = useState(false);
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const [checkoutToken, setCheckoutToken] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -154,6 +171,58 @@ export default function CheckoutPage() {
     }
   }, [isLoggedIn, userState.user]);
 
+  // Sync form contact details when selected address changes
+  useEffect(() => {
+    if (isLoggedIn && !useNewAddress && selectedAddress) {
+      setForm((prev) => ({
+        ...prev,
+        fullName: selectedAddress.fullName || prev.fullName,
+        phone: extractQatarLocalNumber(selectedAddress.mobile) || prev.phone,
+      }));
+    }
+  }, [selectedAddress, isLoggedIn, useNewAddress]);
+
+  // Validate inventory in real-time
+  useEffect(() => {
+    const validateCartInventory = async () => {
+      if (cartState.items.length === 0) return;
+      
+      const newStockErrors: Record<number, { title: string; availableStock: number }> = {};
+      let hasErrors = false;
+      
+      try {
+        await Promise.all(
+          cartState.items.map(async (item) => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${item.productId}`);
+            if (res.ok) {
+              const data = await res.json();
+              const serverProd = data.data;
+              if (serverProd) {
+                if (!serverProd.is_active || serverProd.stock < item.quantity) {
+                  newStockErrors[item.productId] = {
+                    title: item.title,
+                    availableStock: serverProd.is_active ? serverProd.stock : 0,
+                  };
+                  hasErrors = true;
+                }
+              }
+            }
+          })
+        );
+        
+        setStockErrors(newStockErrors);
+        if (hasErrors) {
+          setOrderError("Some items in your cart are no longer available.");
+          toast.error("Some items in your cart are no longer available.");
+        }
+      } catch (err) {
+        console.error("Failed to pre-validate inventory:", err);
+      }
+    };
+
+    validateCartInventory();
+  }, [cartState.items, toast]);
+
   // Fetch saved addresses for logged-in users
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -204,9 +273,6 @@ export default function CheckoutPage() {
       ? 0
       : shippingConfig.shippingFee;
   const orderTotal = activeCart.totalPrice + shippingCost;
-
-  // Selected saved address
-  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
   // Form field handler
   const updateForm = (field: keyof CheckoutForm, value: string) => {
@@ -263,36 +329,134 @@ export default function CheckoutPage() {
   // Validation
   const validateForm = (): boolean => {
     const errors: Partial<Record<keyof CheckoutForm, string>> = {};
-
-    // If logged in and using saved address, only validate contact info
     const needsAddressValidation = !isLoggedIn || useNewAddress || !selectedAddress;
+    let hasRequiredMissing = false;
+    let firstErrorMsg = "";
 
-    if (!form.fullName.trim()) errors.fullName = "Full name is required";
-    
-    // HIGH-5: Strict Qatar phone validation
-    const cleanedPhone = form.phone.trim().replace(/[\s\-\(\)]/g, "");
-    const qatarPhoneRegex = /^(?:\+?974|00974)?[3567]\d{7}$/;
-    if (!qatarPhoneRegex.test(cleanedPhone)) {
-      errors.phone = "Invalid Qatar phone format. Enter an 8-digit number (optionally starting with +974) starting with 3, 5, 6, or 7.";
+    // Full Name validation: Min 3, Max 80
+    const nameVal = form.fullName.trim();
+    if (!nameVal) {
+      errors.fullName = "Full name is required";
+      if (!firstErrorMsg) firstErrorMsg = "Please enter your full name.";
+      hasRequiredMissing = true;
+    } else if (nameVal.length < 3 || nameVal.length > 80) {
+      errors.fullName = "Full name must be between 3 and 80 characters";
+      if (!firstErrorMsg) firstErrorMsg = "Full name must be between 3 and 80 characters.";
     }
-    
-    if (!form.email.trim()) {
+
+    // Phone validation: exactly 8 digits starting with 3, 5, 6, 7
+    const phoneVal = form.phone.trim();
+    if (!phoneVal) {
+      errors.phone = "Phone number is required";
+      if (!firstErrorMsg) firstErrorMsg = "Please enter a valid Qatar phone number.";
+      hasRequiredMissing = true;
+    } else {
+      const qatarLocalRegex = /^[3567]\d{7}$/;
+      if (!qatarLocalRegex.test(phoneVal)) {
+        errors.phone = "Please enter an 8-digit Qatar phone number starting with 3, 5, 6, or 7.";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter a valid Qatar phone number.";
+      }
+    }
+
+    // Email validation: Max 120
+    const emailVal = form.email.trim();
+    if (!emailVal) {
       errors.email = "Email address is required";
+      if (!firstErrorMsg) firstErrorMsg = "Please enter your email address.";
+      hasRequiredMissing = true;
+    } else if (emailVal.length > 120) {
+      errors.email = "Email must not exceed 120 characters";
+      if (!firstErrorMsg) firstErrorMsg = "Email must not exceed 120 characters.";
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(form.email.trim())) {
+      if (!emailRegex.test(emailVal)) {
         errors.email = "Invalid email address format";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter a valid email address.";
       }
     }
 
     if (needsAddressValidation) {
-      if (!form.area.trim()) errors.area = "Area is required";
-      if (!form.street.trim()) errors.street = "Street is required";
-      if (!form.buildingNumber.trim()) errors.buildingNumber = "Building number is required";
+      // Area: Max 100
+      const areaVal = form.area.trim();
+      if (!areaVal) {
+        errors.area = "Area is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your area or district.";
+        hasRequiredMissing = true;
+      } else if (areaVal.length > 100) {
+        errors.area = "Area must not exceed 100 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Area / District must not exceed 100 characters.";
+      }
+
+      // Zone Number: Required, numeric only, max 3 digits
+      const zoneVal = form.zone.trim();
+      if (!zoneVal) {
+        errors.zone = "Zone number is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your zone number.";
+        hasRequiredMissing = true;
+      } else if (!/^\d{1,3}$/.test(zoneVal)) {
+        errors.zone = "Zone number must be numeric (max 3 digits)";
+        if (!firstErrorMsg) firstErrorMsg = "Zone number must be numeric (max 3 digits).";
+      }
+
+      // Street: Max 120
+      const streetVal = form.street.trim();
+      if (!streetVal) {
+        errors.street = "Street is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your street name.";
+        hasRequiredMissing = true;
+      } else if (streetVal.length > 120) {
+        errors.street = "Street must not exceed 120 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Street must not exceed 120 characters.";
+      }
+
+      // Building Number: Max 30
+      const bldgVal = form.buildingNumber.trim();
+      if (!bldgVal) {
+        errors.buildingNumber = "Building number is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your building number.";
+        hasRequiredMissing = true;
+      } else if (bldgVal.length > 30) {
+        errors.buildingNumber = "Building number must not exceed 30 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Building number must not exceed 30 characters.";
+      }
+
+      // Villa / Apartment: Max 50
+      if (form.villaApartment.trim().length > 50) {
+        errors.villaApartment = "Villa / Apartment must not exceed 50 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Villa / Apartment must not exceed 50 characters.";
+      }
+
+      // Floor: Max 20
+      if (form.floor.trim().length > 20) {
+        errors.floor = "Floor must not exceed 20 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Floor must not exceed 20 characters.";
+      }
+
+      // Landmark: Max 150
+      if (form.landmark.trim().length > 150) {
+        errors.landmark = "Landmark must not exceed 150 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Landmark must not exceed 150 characters.";
+      }
     }
 
+    // Delivery Notes: Max 300
+    if (form.deliveryNotes.trim().length > 300) {
+      errors.deliveryNotes = "Delivery notes must not exceed 300 characters";
+      if (!firstErrorMsg) firstErrorMsg = "Delivery notes must not exceed 300 characters.";
+    }
+
+    // Delivery slot
     if (!selectedSlotId) {
       errors.deliverySlotId = "Preferred delivery slot is required";
+      if (!firstErrorMsg) firstErrorMsg = "Please select a preferred delivery time.";
+      hasRequiredMissing = true;
+    }
+
+    // Show only the first error message toast
+    if (firstErrorMsg) {
+      toast.error(firstErrorMsg);
+    } else if (hasRequiredMissing) {
+      toast.error("Please complete all required fields.");
     }
 
     setFormErrors(errors);
@@ -321,6 +485,7 @@ export default function CheckoutPage() {
       form.villaApartment,
       form.street,
       form.area,
+      form.zone && `Zone ${form.zone}`,
       form.floor && `Floor ${form.floor}`,
       form.landmark && `Near ${form.landmark}`,
       "Doha",
@@ -345,10 +510,16 @@ export default function CheckoutPage() {
         isLoggedIn && !useNewAddress && selectedAddress
           ? selectedAddress.fullName
           : form.fullName;
-      const customerPhone =
+      const rawPhone =
         isLoggedIn && !useNewAddress && selectedAddress
           ? form.phone || selectedAddress.mobile
           : form.phone;
+      
+      const normalizedPhone = rawPhone.startsWith("+974") || rawPhone.startsWith("00974")
+        ? rawPhone
+        : `+974${rawPhone}`;
+
+      const customerPhone = normalizedPhone;
       const customerCity =
         isLoggedIn && !useNewAddress && selectedAddress
           ? selectedAddress.city
@@ -520,6 +691,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Enter your full name"
+                      maxLength={80}
                       value={form.fullName}
                       onChange={(e) => updateForm("fullName", e.target.value)}
                       className={`block w-full rounded-xl border ${
@@ -537,16 +709,23 @@ export default function CheckoutPage() {
                   <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
                     Phone Number <span className="text-red-400">*</span>
                   </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className={`flex rounded-xl border ${
+                    formErrors.phone ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                  } focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500 overflow-hidden transition-colors`}>
+                    <span className="bg-gray-50 border-r border-gray-200 px-3 py-2.5 text-sm text-gray-550 select-none flex items-center gap-1.5 font-bold shrink-0">
+                      <Phone className="h-4 w-4 text-gray-450" />
+                      <span>+974</span>
+                    </span>
                     <input
                       type="tel"
-                      placeholder="+974 XXXX XXXX"
+                      placeholder="e.g. 51234567"
+                      maxLength={8}
                       value={form.phone}
-                      onChange={(e) => updateForm("phone", e.target.value)}
-                      className={`block w-full rounded-xl border ${
-                        formErrors.phone ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 8);
+                        updateForm("phone", val);
+                      }}
+                      className="block w-full px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent"
                     />
                   </div>
                   {formErrors.phone && (
@@ -564,11 +743,12 @@ export default function CheckoutPage() {
                     <input
                       type="email"
                       placeholder="your@email.com"
+                      maxLength={120}
                       value={form.email}
                       onChange={(e) => updateForm("email", e.target.value)}
                       className={`block w-full rounded-xl border ${
                         formErrors.email ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-450 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
                     />
                   </div>
                   {formErrors.email && (
@@ -617,7 +797,7 @@ export default function CheckoutPage() {
                           setForm((prev) => ({
                             ...prev,
                             fullName: prev.fullName || addr.fullName,
-                            phone: prev.phone === "+974" ? addr.mobile : prev.phone,
+                            phone: prev.phone === "" ? extractQatarLocalNumber(addr.mobile) : prev.phone,
                           }));
                         }}
                         className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -713,6 +893,7 @@ export default function CheckoutPage() {
                       <input
                         type="text"
                         placeholder="e.g. Al Sadd, The Pearl, West Bay"
+                        maxLength={100}
                         value={form.area}
                         onChange={(e) => updateForm("area", e.target.value)}
                         className={`block w-full rounded-xl border ${
@@ -725,6 +906,29 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
+                  {/* Zone Number */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Zone Number <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 66"
+                      maxLength={3}
+                      value={form.zone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 3);
+                        updateForm("zone", val);
+                      }}
+                      className={`block w-full rounded-xl border ${
+                        formErrors.zone ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                    />
+                    {formErrors.zone && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.zone}</p>
+                    )}
+                  </div>
+
                   {/* Street */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
@@ -733,6 +937,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Street name or number"
+                      maxLength={120}
                       value={form.street}
                       onChange={(e) => updateForm("street", e.target.value)}
                       className={`block w-full rounded-xl border ${
@@ -754,6 +959,7 @@ export default function CheckoutPage() {
                       <input
                         type="text"
                         placeholder="Building number"
+                        maxLength={30}
                         value={form.buildingNumber}
                         onChange={(e) => updateForm("buildingNumber", e.target.value)}
                         className={`block w-full rounded-xl border ${
@@ -774,6 +980,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Villa or apartment number"
+                      maxLength={50}
                       value={form.villaApartment}
                       onChange={(e) => updateForm("villaApartment", e.target.value)}
                       className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
@@ -788,6 +995,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Floor number"
+                      maxLength={20}
                       value={form.floor}
                       onChange={(e) => updateForm("floor", e.target.value)}
                       className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
@@ -802,6 +1010,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Nearby landmark"
+                      maxLength={150}
                       value={form.landmark}
                       onChange={(e) => updateForm("landmark", e.target.value)}
                       className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
@@ -815,6 +1024,7 @@ export default function CheckoutPage() {
                     </label>
                     <textarea
                       placeholder="Any special instructions for delivery..."
+                      maxLength={300}
                       value={form.deliveryNotes}
                       onChange={(e) => updateForm("deliveryNotes", e.target.value)}
                       rows={2}
@@ -826,10 +1036,12 @@ export default function CheckoutPage() {
             </div>
 
             {/* ── Section: Preferred Delivery Time ── */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-in fade-in duration-300">
+            <div className={`bg-white rounded-2xl border shadow-sm p-6 transition-all duration-200 ${
+              formErrors.deliverySlotId ? "border-red-300 bg-red-50/10" : "border-gray-100"
+            }`}>
               <div className="flex items-center gap-2 mb-5 border-b pb-3">
                 <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-orange-500" />
+                  <Clock className={`h-4 w-4 ${formErrors.deliverySlotId ? "text-red-500" : "text-orange-500"}`} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900">Preferred Delivery Time</h3>
               </div>
@@ -839,7 +1051,9 @@ export default function CheckoutPage() {
                   Loading active delivery slots...
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-1 rounded-xl ${
+                  formErrors.deliverySlotId ? "ring-2 ring-red-300/30" : ""
+                }`}>
                   {deliverySlots.map((slot) => (
                     <div
                       key={slot.id}
@@ -869,7 +1083,7 @@ export default function CheckoutPage() {
                 </div>
               )}
               {formErrors.deliverySlotId && (
-                <p className="text-xs text-red-500 mt-2">{formErrors.deliverySlotId}</p>
+                <p className="text-xs text-red-500 mt-2 font-semibold">Please select a preferred delivery time.</p>
               )}
             </div>
 
@@ -915,10 +1129,8 @@ export default function CheckoutPage() {
               )}
             </div>
           </div>
-
-          {/* ─── Right Column: Order Summary ─── */}
           <div className="lg:col-span-5">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 sticky top-24">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 sticky top-[130px]">
               <div className="flex items-center gap-2 border-b pb-4">
                 <ShoppingBag className="h-4 w-4 text-orange-500" />
                 <h3 className="text-base font-bold text-gray-900">Order Summary</h3>
@@ -932,18 +1144,15 @@ export default function CheckoutPage() {
                 {activeCart.items.map((item) => {
                   const stockErr = stockErrors[item.productId];
                   return (
-                    <div key={item.id} className="flex items-start gap-3">
-                      <div className="relative h-14 w-14 shrink-0 rounded-lg border border-gray-100 bg-gray-50 p-1 overflow-hidden mt-0.5">
+                    <div key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                      <div className="relative h-16 w-16 shrink-0 rounded-xl border border-gray-150 bg-gray-50 p-1 overflow-hidden">
                         <Image
                           src={item.image}
                           alt={item.title}
                           fill
-                          sizes="56px"
+                          sizes="64px"
                           className="object-contain"
                         />
-                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
-                          {item.quantity}
-                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
@@ -960,32 +1169,33 @@ export default function CheckoutPage() {
                           )}
                         </div>
 
+                        <p className="text-xs text-gray-550 mt-1 font-medium">Qty &times; {item.quantity}</p>
+
                         {stockErr && (
-                          <div className="mt-2 bg-red-50 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
-                            <div className="flex items-center gap-1.5 text-red-600">
-                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                              <span className="text-[11px] font-bold">
+                          <div className="mt-2 bg-red-55/65 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
+                            <div className="flex items-center gap-1.5 text-red-600 font-bold text-[11px]">
+                              <span>❌</span>
+                              <span>
                                 {stockErr.availableStock === 0
-                                  ? "Out of Stock"
+                                  ? "Out Of Stock"
                                   : `Only ${stockErr.availableStock} available`}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => handleRemoveStockItem(item.id, item.productId)}
+                                className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                              >
+                                Remove Item
+                              </button>
                               {stockErr.availableStock > 0 && (
                                 <button
                                   onClick={() => handleUpdateStockQty(item.id, item.productId, stockErr.availableStock)}
-                                  className="text-[10px] bg-red-100 hover:bg-red-200 text-red-700 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                                  className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-705 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
                                 >
                                   Update to {stockErr.availableStock}
                                 </button>
                               )}
-                              <button
-                                onClick={() => handleRemoveStockItem(item.id, item.productId)}
-                                className="text-[10px] flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                                Remove
-                              </button>
                             </div>
                           </div>
                         )}
@@ -1026,7 +1236,7 @@ export default function CheckoutPage() {
                 )}
                 <div className="border-t pt-3 flex justify-between text-base font-bold text-gray-900">
                   <span>Total</span>
-                  <span className="text-orange-500 text-lg">QAR {orderTotal.toFixed(2)}</span>
+                  <span className="text-gray-900 text-lg font-black">QAR {orderTotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1100,7 +1310,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="border-t pt-2.5 flex justify-between font-bold text-base">
                   <span className="text-gray-900">Total Amount</span>
-                  <span className="text-orange-500">QAR {orderTotal.toFixed(2)}</span>
+                  <span className="text-gray-900">QAR {orderTotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1118,7 +1328,7 @@ export default function CheckoutPage() {
                 <button
                   onClick={() => setShowConfirmModal(false)}
                   disabled={isPlacingOrder}
-                  className="flex-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 text-sm font-bold transition-all cursor-pointer"
+                  className="flex-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-707 py-3 text-sm font-bold transition-all cursor-pointer"
                 >
                   Cancel
                 </button>

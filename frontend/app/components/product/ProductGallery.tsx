@@ -27,7 +27,7 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
     <div className="flex flex-col gap-4">
       {/* Main Image View */}
       <div
-        className="relative aspect-square w-full overflow-hidden rounded-xl border border-gray-100 bg-white p-4 cursor-zoom-in"
+        className="relative aspect-square w-full max-w-[360px] mx-auto overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 cursor-zoom-in"
         onMouseEnter={() => setZoom(true)}
         onMouseLeave={() => setZoom(false)}
         onMouseMove={handleMouseMove}

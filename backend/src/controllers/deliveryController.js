@@ -45,7 +45,7 @@ exports.getMyOrders = async (req, res, next) => {
           include: {
             model: Product,
             as: "product",
-            attributes: ["id", "title", "main_image_url", "price"],
+            attributes: ["id", "title", "main_image_url", "price", "gallery_images"],
           },
         },
       ],
@@ -187,7 +187,7 @@ exports.getMyDeliveryHistory = async (req, res, next) => {
           include: {
             model: Product,
             as: "product",
-            attributes: ["id", "title", "price"],
+            attributes: ["id", "title", "main_image_url", "price", "gallery_images"],
           },
         },
       ],

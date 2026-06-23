@@ -10,55 +10,21 @@ require("./models");
 const app = express();
 
 // Apply Global Middlewares
-const getAllowedOrigins = () => {
-  const origins = [
-    // Local Development
-    "http://localhost:3000",
-    "http://localhost:8080",
-    
-    // Production - GriVA Domains
-    "https://griva.qa",
-    "https://www.griva.qa",
-    "https://thegriva.com",
-    "https://www.thegriva.com",
-    
-    // Vercel Preview & Production
-    "https://griva-web-chi.vercel.app",
-    "https://griva-276jdc4qt-griva.vercel.app",
-    "https://griva-web-git-main-griva.vercel.app",
-
-    "https://griva-backend-kprt.onrender.com",
-  ];
-
-  // Add Render Backend URL if it exists and is not empty
-  if (process.env.RENDER_BACKEND_URL && process.env.RENDER_BACKEND_URL.trim()) {
-    origins.push(process.env.RENDER_BACKEND_URL.trim());
-  }
-
-  console.log("✅ [CORS] Allowed Origins:", origins);
-  return origins;
-};
-
-const allowedOrigins = getAllowedOrigins();
-
+const allowedOrigins = [
+  "http://localhost:3000",       // Next.js dev server
+  "http://localhost:8080",       // Backend self (Postman/Thunder)
+  "https://griva.qa",            // Production domain
+  "https://www.griva.qa",        // Production with www
+  "https://thegriva.com",        // New Production domain
+  "https://www.thegriva.com",    // New Production domain with www
+  "https://griva-web.vercel.app", // Vercel preview URL
+];
 app.use(cors({
   origin: (origin, callback) => {
-    console.log(`🔍 [CORS DEBUG] Incoming origin: "${origin}"`);
-    
     // Allow requests with no origin (Postman, curl, mobile apps)
-    if (!origin) {
-      console.log("✅ [CORS] No origin header - allowing (Postman/curl/mobile)");
-      callback(null, true);
-      return;
-    }
-
-    // Check if origin is in allowedOrigins
-    if (allowedOrigins.includes(origin)) {
-      console.log(`✅ [CORS] Origin allowed: ${origin}`);
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.error(`❌ [CORS BLOCKED] Origin: ${origin}`);
-      console.error(`❌ [CORS] Allowed origins: ${allowedOrigins.join(", ")}`);
       callback(new Error(`CORS policy blocked origin: ${origin}`));
     }
   },
@@ -84,7 +50,6 @@ app.get("/health", (req, res) => {
     status: "healthy",
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || "development",
-    allowedOrigins: allowedOrigins,
   });
 });
 
@@ -105,7 +70,7 @@ const deliveryRoutes = require("./routes/deliveryRoutes"); // FEATURE: Delivery 
 const customerRoutes = require("./routes/customerRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const deliveryAttemptRoutes = require("./routes/deliveryAttemptRoutes");
-const uploadRoutes = require("./routes/uploadRoutes"); // IMAGE UPLOAD
+const uploadRoutes = require("./routes/uploadRoutes"); //IMAGE UPLOAD
 const deliverySlotRoutes = require("./routes/deliverySlotRoutes");
 const dealOfDayRoutes = require("./routes/dealOfDayRoutes");
 // const testShippedEmailRoutes = require("./routes/testShippedEmailRoutes");
@@ -129,10 +94,11 @@ app.use("/api/admin/customers", customerRoutes);
 app.use("/api/admin/staff", staffRoutes);
 app.use("/api/delivery", deliveryAttemptRoutes); // FEATURE: Delivery Attempt Management
 // app.use("/api/test-email", testEmailRoutes);
-app.use("/api/uploads", uploadRoutes); // IMAGE UPLOAD
+app.use("/api/uploads", uploadRoutes); //IMAGE UPLOAD
 app.use("/api/delivery-slots", deliverySlotRoutes);
 app.use("/api/deal-of-day", dealOfDayRoutes);
 app.use("/api/discover-more", discoverMoreRoutes);
+
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

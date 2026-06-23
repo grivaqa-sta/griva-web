@@ -386,6 +386,7 @@ export interface WishlistItem {
   oldPrice?: string;
   rating: number;
   category: string;
+  stock?: number;
 }
 
 // ─────────────────────────────────────────────────────────

@@ -215,6 +215,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
         if (response.success && response.cart) {
           dispatch({ type: "SET_CART", payload: response.cart.items });
+          toast.success("Product added to cart");
           openDrawer();
         }
       } catch (error: any) {
@@ -272,6 +273,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         selectedStorage: product.selectedStorage,
       };
       dispatch({ type: "ADD", payload: cartItem });
+      toast.success("Product added to cart");
       openDrawer();
     }
   };

@@ -242,17 +242,26 @@ exports.getBestSellerProducts = async (req, res) => {
  * New Arrival Products
  */
 exports.getNewProducts = async (req, res) => {
-  const products = await Product.findAll({
-    where: {
-      is_new: true,
-      is_active: true,
-    },
-  });
+  try {
+    const products = await Product.findAll({
+      where: {
+        is_new: true,
+        is_active: true,
+      },
+      order: [["createdAt", "DESC"]], // latest first
+      limit: 4, // only 4 products
+    });
 
-  res.status(200).json({
-    success: true,
-    data: products,
-  });
+    res.status(200).json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 /**

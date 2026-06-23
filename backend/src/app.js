@@ -10,33 +10,53 @@ require("./models");
 const app = express();
 
 // Apply Global Middlewares
-const allowedOrigins = [
-  // Local Development
-  "http://localhost:3000",
-  "http://localhost:8080",
-  
-  // Production - GriVA Domains
-  "https://griva.qa",
-  "https://www.griva.qa",
-  "https://thegriva.com",
-  "https://www.thegriva.com",
-  
-  // Vercel Preview & Production
-  "https://griva-web-chi.vercel.app",
-  "griva-276jdc4qt-griva.vercel.app",
-  "griva-web-git-main-griva.vercel.app",
-  
-  // Render Backend (Update with your actual Render URL)
-  process.env.RENDER_BACKEND_URL || "https://griva-backend.onrender.com",
-];
+const getAllowedOrigins = () => {
+  const origins = [
+    // Local Development
+    "http://localhost:3000",
+    "http://localhost:8080",
+    
+    // Production - GriVA Domains
+    "https://griva.qa",
+    "https://www.griva.qa",
+    "https://thegriva.com",
+    "https://www.thegriva.com",
+    
+    // Vercel Preview & Production
+    "https://griva-web-chi.vercel.app",
+    "https://griva-276jdc4qt-griva.vercel.app",
+    "https://griva-web-git-main-griva.vercel.app",
+  ];
+
+  // Add Render Backend URL if it exists and is not empty
+  if (process.env.RENDER_BACKEND_URL && process.env.RENDER_BACKEND_URL.trim()) {
+    origins.push(process.env.RENDER_BACKEND_URL.trim());
+  }
+
+  console.log("✅ [CORS] Allowed Origins:", origins);
+  return origins;
+};
+
+const allowedOrigins = getAllowedOrigins();
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log(`🔍 [CORS DEBUG] Incoming origin: "${origin}"`);
+    
     // Allow requests with no origin (Postman, curl, mobile apps)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      console.log("✅ [CORS] No origin header - allowing (Postman/curl/mobile)");
+      callback(null, true);
+      return;
+    }
+
+    // Check if origin is in allowedOrigins
+    if (allowedOrigins.includes(origin)) {
+      console.log(`✅ [CORS] Origin allowed: ${origin}`);
       callback(null, true);
     } else {
       console.error(`❌ [CORS BLOCKED] Origin: ${origin}`);
+      console.error(`❌ [CORS] Allowed origins: ${allowedOrigins.join(", ")}`);
       callback(new Error(`CORS policy blocked origin: ${origin}`));
     }
   },
@@ -62,6 +82,7 @@ app.get("/health", (req, res) => {
     status: "healthy",
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || "development",
+    allowedOrigins: allowedOrigins,
   });
 });
 

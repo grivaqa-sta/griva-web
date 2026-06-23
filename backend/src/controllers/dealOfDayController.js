@@ -1,7 +1,6 @@
 const { Op } = require("sequelize");
 
-const DealOfDay = require("../models/DealOfDay");
-const Product = require("../models/Product");
+const { DealOfDay, Product } = require("../models");
 
 /**
  * Create Deal Of Day

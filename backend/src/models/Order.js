@@ -176,6 +176,15 @@ const Order = sequelize.define(
       allowNull: true,
       unique: true,
     },
+    delivery_payment_method: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    cash_reconciliation_status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "not_applicable",
+    },
   },
   {
     timestamps: true,

@@ -455,6 +455,8 @@ export interface AdminOrder {
   delivery_slot_id?: number;
   is_printed?: boolean;
   printed_at?: string;
+  delivery_payment_method?: string;
+  cash_reconciliation_status?: string;
 }
 
 const MOCK_ORDERS: AdminOrder[] = [
@@ -479,6 +481,17 @@ export async function updateOrderStatusApi(id: number, status: string): Promise<
     {
       method: "PATCH",
       body: JSON.stringify({ status }),
+    },
+    { success: true }
+  );
+  return !!res;
+}
+
+export async function reconcileCashPaymentApi(id: number): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/orders/${id}/reconcile-cash`,
+    {
+      method: "PATCH",
     },
     { success: true }
   );

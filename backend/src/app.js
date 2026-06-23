@@ -23,6 +23,8 @@ const allowedOrigins = [
   
   // Vercel Preview & Production
   "https://griva-web-chi.vercel.app",
+  "griva-276jdc4qt-griva.vercel.app",
+  "griva-web-git-main-griva.vercel.app",
   
   // Render Backend (Update with your actual Render URL)
   process.env.RENDER_BACKEND_URL || "https://griva-backend.onrender.com",

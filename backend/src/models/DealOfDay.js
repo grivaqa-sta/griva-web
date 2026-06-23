@@ -46,4 +46,11 @@ const DealOfDay = sequelize.define(
   }
 );
 
+DealOfDay.associate = (models) => {
+  DealOfDay.belongsTo(models.Product, {
+    foreignKey: "productId",
+    as: "product",
+  });
+};
+
 module.exports = DealOfDay;

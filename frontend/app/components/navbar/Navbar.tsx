@@ -360,21 +360,24 @@ export default function Navbar() {
               <span className="text-[10px] mt-1 font-medium tracking-tight">Categories</span>
             </button>
 
-            {/* Cart */}
-            <button
-              onClick={openDrawer}
-              className="relative flex flex-col items-center justify-center w-14 h-full text-gray-600 hover:text-orange-500 transition-colors cursor-pointer"
-            >
-              <div className="relative">
-                <ShoppingCart size={20} />
-                {cartState.totalItems > 0 && (
-                  <span className="absolute -top-1 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white leading-none">
-                    {cartState.totalItems}
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] mt-1 font-medium tracking-tight">Cart</span>
-            </button>
+            {/* Floating Circular Cart Button */}
+            <div className="flex items-center justify-center w-14 h-full relative">
+              <button
+                onClick={openDrawer}
+                className="absolute -top-4 flex items-center justify-center h-12 w-12 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 active:scale-95 transition-transform cursor-pointer border-2 border-white"
+                aria-label="Open Cart"
+              >
+                <div className="relative">
+                  <ShoppingCart size={18} className="stroke-[2.5]" />
+                  {cartState.totalItems > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] font-bold text-white leading-none border border-orange-500">
+                      {cartState.totalItems}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <span className="text-[10px] absolute bottom-1 font-medium tracking-tight text-gray-500">Cart</span>
+            </div>
 
             {/* Account / User */}
             <Link

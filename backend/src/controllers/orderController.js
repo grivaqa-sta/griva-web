@@ -1124,3 +1124,35 @@ exports.cancelMyOrder = async (req, res, next) => {
   }
 };
 
+/**
+ * Admin Action: Reconcile cash payment collected at delivery
+ */
+exports.reconcileCashPayment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findByPk(id);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    if (!["delivered", "completed"].includes(order.status)) {
+      return res.status(400).json({ error: "Only delivered or completed orders can have cash reconciled." });
+    }
+
+    if (order.delivery_payment_method !== "Cash") {
+      return res.status(400).json({ error: "Cash reconciliation only applies to cash payment collected at delivery." });
+    }
+
+    order.cash_reconciliation_status = "reconciled";
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Cash payment reconciled successfully.",
+      order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

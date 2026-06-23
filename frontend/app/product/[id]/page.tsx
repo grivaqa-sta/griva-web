@@ -285,6 +285,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                 )}
               </div>
 
+              {/* Product Short Description */}
+              {(product.short_description || product.description) && (
+                <div className="mt-6 text-sm text-gray-600 leading-relaxed border-b pb-6">
+                  <p>{product.short_description || product.description}</p>
+                </div>
+              )}
+
               {/* Color Variants */}
               {colorVariants.length > 0 && (
                 <div className="mt-6">
@@ -391,8 +398,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
                 <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
                   <RotateCcw className="h-4 w-4 text-orange-500 mb-1" />
-                  <span className="font-semibold text-gray-700">30-Day Returns</span>
-                  <span>100% money back</span>
+                  <span className="font-semibold text-gray-700">7-Day Returns</span>
+                  <span>7 days return only</span>
                 </div>
                 <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
                   <ShieldCheck className="h-4 w-4 text-orange-500 mb-1" />

@@ -38,6 +38,7 @@ interface OrderItem {
     title: string;
     main_image_url?: string;
     price?: string;
+    gallery_images?: string[];
   };
 }
 

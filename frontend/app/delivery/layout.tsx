@@ -214,6 +214,21 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
         <>
           <div className="absolute top-[-10%] left-[-20%] w-[80%] h-[40%] rounded-full bg-[#FF6A00]/5 blur-[120px] pointer-events-none" />
           <div className="absolute bottom-[-10%] right-[-20%] w-[80%] h-[40%] rounded-full bg-[#FF6A00]/5 blur-[120px] pointer-events-none" />
+          
+          {/* Hide scrollbar in dark theme for better UX */}
+          <style jsx global>{`
+            /* Hide scrollbar for Chrome, Safari and Opera */
+            ::-webkit-scrollbar {
+              display: none !important;
+              width: 0 !important;
+              height: 0 !important;
+            }
+            /* Hide scrollbar for IE, Edge and Firefox */
+            html, body {
+              -ms-overflow-style: none !important;
+              scrollbar-width: none !important;
+            }
+          `}</style>
         </>
       )}
 

@@ -22,7 +22,8 @@ import {
   ExternalLink,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  X
 } from "lucide-react";
 import { useToast } from "@/app/context/ToastContext";
 
@@ -70,6 +71,7 @@ export default function DeliveryOrderDetailPage() {
   const [token, setToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -347,21 +349,70 @@ export default function DeliveryOrderDetailPage() {
           
           <div className="divide-y divide-zinc-900/60">
             {(order.items || []).map((item) => (
-              <div key={item.id} className="flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0">
-                <div className="h-12 w-12 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 flex items-center justify-center shrink-0">
-                  {item.product?.main_image_url ? (
-                    <img src={item.product.main_image_url} alt={item.product.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <Package size={20} className="text-zinc-600" />
-                  )}
+              <div key={item.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 border-b last:border-0 border-zinc-900/60">
+                <div className="flex items-center gap-3.5">
+                  <div 
+                    className="h-12 w-12 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+                    onClick={() => {
+                      if (item.product?.main_image_url) {
+                        setSelectedImagePreview(item.product.main_image_url);
+                      }
+                    }}
+                  >
+                    {item.product?.main_image_url ? (
+                      <img src={item.product.main_image_url} alt={item.product.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <Package size={20} className="text-zinc-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{item.product?.title || `Product #${item.id}`}</p>
+                    <p className="text-[10px] text-zinc-500">Quantity check: {item.quantity}</p>
+                  </div>
+                  <span className="text-xs font-bold text-zinc-300 shrink-0">
+                    QAR {(parseFloat(String(item.price_at_purchase).replace(/[$,]/g, "")) * item.quantity).toFixed(2)}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white truncate">{item.product?.title || `Product #${item.id}`}</p>
-                  <p className="text-[10px] text-zinc-500">Quantity check: {item.quantity}</p>
-                </div>
-                <span className="text-xs font-bold text-zinc-300 shrink-0">
-                  QAR {(parseFloat(String(item.price_at_purchase).replace(/[$,]/g, "")) * item.quantity).toFixed(2)}
-                </span>
+
+                {/* Sub Images Slider */}
+                {(() => {
+                  const imgs: string[] = [];
+                  if (item.product?.main_image_url) {
+                    imgs.push(item.product.main_image_url);
+                  }
+                  if (item.product?.gallery_images && Array.isArray(item.product.gallery_images)) {
+                    item.product.gallery_images.forEach((img: any) => {
+                      if (img && typeof img === "string" && !imgs.includes(img)) {
+                        imgs.push(img);
+                      }
+                    });
+                  }
+                  if (imgs.length <= 1) return null;
+                  return (
+                    <div className="flex flex-col gap-1.5 pl-1">
+                      <span className="text-[8px] font-black text-zinc-600 tracking-wider uppercase">Product Gallery (Slide to view)</span>
+                      <div 
+                        className="flex gap-2 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory"
+                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                      >
+                        <style>{`
+                          .no-scrollbar::-webkit-scrollbar {
+                            display: none;
+                          }
+                        `}</style>
+                        {imgs.map((img, index) => (
+                          <div
+                            key={index}
+                            className="h-14 w-14 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-900 shrink-0 snap-start active:scale-95 transition-all cursor-pointer shadow-md hover:border-zinc-800"
+                            onClick={() => setSelectedImagePreview(img)}
+                          >
+                            <img src={img} alt={`Sub image ${index}`} className="h-full w-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -411,6 +462,34 @@ export default function DeliveryOrderDetailPage() {
         )}
       </div>
 
+      {/* Lightbox Image Preview Modal */}
+      <AnimatePresence>
+        {selectedImagePreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedImagePreview(null)}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="relative max-w-full max-h-[80vh] aspect-square rounded-3xl overflow-hidden bg-zinc-950 border border-zinc-900 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src={selectedImagePreview} alt="Preview" className="w-full h-full object-contain p-4" />
+              <button
+                onClick={() => setSelectedImagePreview(null)}
+                className="absolute top-3 right-3 h-8 w-8 rounded-full bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-90"
+              >
+                <X size={16} />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

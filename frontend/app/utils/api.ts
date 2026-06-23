@@ -82,19 +82,21 @@ async function safeFetch<T>(
 // Products APIs
 // ─────────────────────────────────────────────────────────
 export async function getProductsApi(): Promise<Product[]> {
-  const data = await safeFetch<{ products: any[] }>(
+  const result = await safeFetch<{ success: boolean; data: any[] }>(
     "/products",
     { method: "GET" },
-    { products: [] }
+    { success: false, data: [] }
   );
 
-  if (data.products.length === 0) {
+  const productList = result?.data || [];
+
+  if (productList.length === 0) {
     // If backend is empty or offline, return mock data
     return mockProducts;
   }
 
   // Format backend fields back to frontend structure
-  return data.products.map((p: any) => ({
+  return productList.map((p: any) => ({
     id: p.id,
     category: p.category?.title || "Gadgets",
     title: p.title,

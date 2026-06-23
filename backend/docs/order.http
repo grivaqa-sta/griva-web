@@ -1,0 +1,84 @@
+@baseUrl = http://localhost:8080/api
+
+### 1. Customer Authenticate / Login to get Token
+# @name customerLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@gmail.com",
+  "password": "123456"
+}
+
+### Save JWT Token variable from response
+@customerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzgxNzc2NTY5LCJleHAiOjE3ODIzODEzNjl9.t94GmD6vwfZ-G-Lt9yq068QDaFn4JAAXaRbBag6kxfY
+
+
+### 2. Admin Authenticate / Login to get Token
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+### Save Admin JWT Token variable from response
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzgxNzc3MTU3LCJleHAiOjE3ODIzODE5NTd9.UrpE9jPuJA0TxpqLge127lhWKETzvpOotgHJUR0qS04
+
+
+### 3. Place Order (COD checkout)
+# @name createOrder
+POST {{baseUrl}}/orders
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 2,
+      "selected_color": "Gold",
+      "selected_storage": "100ml"
+    }
+  ],
+  "shipping_address": "Pearl Qatar Tower 4",
+  "city": "Doha",
+  "customer_name": "Jassim Al Thani",
+  "customer_phone": "+97455667788",
+  "customer_email": "customer@griva.qa",
+  "payment_method": "COD",
+  "delivery_notes": "Call before arrival."
+}
+
+### Save newly created order ID from response
+@orderId = {{createOrder.response.body.order.id}}
+
+
+### 4. Fetch Customer's Orders List
+GET {{baseUrl}}/orders/my-orders
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+
+### 5. Admin: Fetch All Orders List
+GET {{baseUrl}}/orders
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+
+### 6. Admin: Update Order Status (to Shipped)
+PATCH {{baseUrl}}/orders/{{orderId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "shipped"
+}
+
+
+### 7. Admin: Get Sales and Analytics Dashboard Data
+GET {{baseUrl}}/orders/analytics
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json

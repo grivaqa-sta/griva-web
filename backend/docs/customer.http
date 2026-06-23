@@ -1,0 +1,81 @@
+@baseUrl = http://localhost:8080/api
+
+### 1. Authenticate / Login as Admin to get Admin JWT
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+### Save Admin JWT Token variable from response
+@adminToken = {{login.response.body.token}}
+
+
+### 2. Fetch Customer List (Default Page 1, Limit 10)
+GET {{baseUrl}}/admin/customers
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+
+### 3. Fetch Customer List Filtered by VIPs
+GET {{baseUrl}}/admin/customers?filter=VIP
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+
+### 4. Fetch Customer List Sorted by Order Volume
+GET {{baseUrl}}/admin/customers?sort=most_orders
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+
+### 5. Fetch Customer Directory Analytics Summary
+GET {{baseUrl}}/admin/customers/analytics
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+
+### 6. Fetch Specific Customer Detail Profile (Jassim Al-Thani, ID 2)
+GET {{baseUrl}}/admin/customers/2
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+
+### 7. Fetch Customer Orders History (Filter by completed)
+GET {{baseUrl}}/admin/customers/2/orders?page=1&limit=5&status=completed
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+
+### 8. Block Customer Account (ID 2)
+# @name blockCustomer
+PATCH {{baseUrl}}/admin/customers/2/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "BLOCKED"
+}
+
+
+### 9. Verify Login Block Enforcement (Should return 403 Forbidden)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jassim.althani@gmail.com",
+  "password": "Customer123!"
+}
+
+
+### 10. Restore Customer Account to ACTIVE (ID 2)
+PATCH {{baseUrl}}/admin/customers/2/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "ACTIVE"
+}

@@ -110,6 +110,7 @@ const deliverySlotRoutes = require("./routes/deliverySlotRoutes");
 const dealOfDayRoutes = require("./routes/dealOfDayRoutes");
 // const testShippedEmailRoutes = require("./routes/testShippedEmailRoutes");
 const discoverMoreRoutes = require("./routes/discoverMoreRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 const productPromoBannerRoutes = require("./routes/productPromoBannerRoutes");
 
 // Mount API Routers
@@ -134,6 +135,8 @@ app.use("/api/uploads", uploadRoutes); // IMAGE UPLOAD
 app.use("/api/delivery-slots", deliverySlotRoutes);
 app.use("/api/deal-of-day", dealOfDayRoutes);
 app.use("/api/discover-more", discoverMoreRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+
 app.use("/api/product-promo-banners", productPromoBannerRoutes);
 
 // Global Error Handler Middleware

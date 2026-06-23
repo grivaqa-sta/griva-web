@@ -42,6 +42,7 @@ export default function WishlistPage() {
                     old_price: item.oldPrice ? item.oldPrice.replace(/[^\d.]/g, "") : undefined,
                     rating: item.rating,
                     brand: item.category,
+                    stock: item.stock ?? 0,
                   } as unknown as ApiProduct;
 
                   return (

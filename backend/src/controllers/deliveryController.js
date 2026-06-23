@@ -45,7 +45,7 @@ exports.getMyOrders = async (req, res, next) => {
           include: {
             model: Product,
             as: "product",
-            attributes: ["id", "title", "main_image_url", "price"],
+            attributes: ["id", "title", "main_image_url", "price", "gallery_images"],
           },
         },
       ],
@@ -121,35 +121,49 @@ exports.updateMyOrderStatus = async (req, res, next) => {
     //   order,
     // });
     order.status = status;
-await order.save();
+    if (status === "delivered") {
+      const { delivery_payment_method } = req.body;
+      if (delivery_payment_method) {
+        order.delivery_payment_method = delivery_payment_method;
+        if (delivery_payment_method === "Cash") {
+          order.cash_reconciliation_status = "pending";
+        } else {
+          order.cash_reconciliation_status = "not_applicable";
+        }
+      } else {
+        order.cash_reconciliation_status = "not_applicable";
+      }
+      order.payment_status = "paid";
+    }
+    await order.save();
 
-if (status === "out_for_delivery") {
-  try {
-    await sendOutForDeliveryEmail(order);
-  } catch (error) {
-    console.error(
-      "Out for delivery email failed:",
-      error.message
-    );
-  }
-}
+    if (status === "out_for_delivery") {
+      try {
+        await sendOutForDeliveryEmail(order);
+      } catch (error) {
+        console.error(
+          "Out for delivery email failed:",
+          error.message
+        );
+      }
+    }
 
-if (status === "delivered") {
-  try {
-    await sendOrderDeliveredEmail(order);
-  } catch (error) {
-    console.error(
-      "Delivered email failed:",
-      error.message
-    );
-  }
-}
+    if (status === "delivered") {
+      try {
+        await sendOrderDeliveredEmail(order);
+      } catch (error) {
+        console.error(
+          "Delivered email failed:",
+          error.message
+        );
+      }
+    }
 
-res.status(200).json({
-  success: true,
-  message: `Order status updated to '${status}'.`,
-  order,
-});
+    res.status(200).json({
+      success: true,
+      message: `Order status updated to '${status}'.`,
+      order,
+    });
   } catch (error) {
     next(error);
   }
@@ -187,7 +201,7 @@ exports.getMyDeliveryHistory = async (req, res, next) => {
           include: {
             model: Product,
             as: "product",
-            attributes: ["id", "title", "price"],
+            attributes: ["id", "title", "main_image_url", "price", "gallery_images"],
           },
         },
       ],

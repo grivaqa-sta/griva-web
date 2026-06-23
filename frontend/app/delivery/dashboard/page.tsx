@@ -73,6 +73,8 @@ interface DeliveryOrder {
   assigned_at?: string;
   items?: OrderItem[];
   user?: { id: number; name: string; email: string };
+  delivery_payment_method?: string;
+  cash_reconciliation_status?: string;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -94,7 +96,7 @@ export default function DeliveryDashboard() {
   const [token, setToken] = useState<string | null>(null);
   const [driverName, setDriverName] = useState("Griva Driver");
   const [driverEmail, setDriverEmail] = useState("driver@thegriva.com");
-  const [activeTab, setActiveTab] = useState<'deliveries' | 'scan' | 'profile'>('deliveries');
+  const [activeTab, setActiveTab] = useState<'deliveries' | 'profile'>('deliveries');
   const [deliverySubTab, setDeliverySubTab] = useState<'active' | 'history'>('active');
 
   // FEATURE: Delivery Attempt Management state
@@ -105,6 +107,11 @@ export default function DeliveryDashboard() {
   const [callCount, setCallCount] = useState<number | null>(null);
   const [rescheduleOption, setRescheduleOption] = useState<string | null>(null);
   const [failedReason, setFailedReason] = useState<string | null>(null);
+
+  // Doorstep payment selection state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentModalOrderId, setPaymentModalOrderId] = useState<number | null>(null);
+  const [deliveryPaymentMethod, setDeliveryPaymentMethod] = useState("");
 
   // Payment terminal state
   const [selectedPaymentOrderId, setSelectedPaymentOrderId] = useState<number | null>(null);
@@ -265,7 +272,7 @@ export default function DeliveryDashboard() {
     if (token) fetchOrders(); 
   }, [token, fetchOrders]);
 
-  const handleStatusUpdate = async (orderId: number, newStatus: string) => {
+  const handleStatusUpdate = async (orderId: number, newStatus: string, deliveryPaymentMethod?: string) => {
     if (!token) return;
     setUpdatingId(orderId);
     try {
@@ -275,7 +282,10 @@ export default function DeliveryDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ 
+          status: newStatus,
+          delivery_payment_method: deliveryPaymentMethod
+        }),
       });
       if (res.status === 401 || res.status === 403) {
         router.replace("/delivery/login"); 
@@ -283,7 +293,11 @@ export default function DeliveryDashboard() {
       }
       if (res.ok) {
         setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+          prev.map((o) => (o.id === orderId ? { 
+            ...o, 
+            status: newStatus,
+            delivery_payment_method: deliveryPaymentMethod || o.delivery_payment_method
+          } : o))
         );
         showToast(`Status updated to ${newStatus.replace(/_/g, ' ')}`);
       } else {
@@ -504,9 +518,13 @@ export default function DeliveryDashboard() {
               </span>
             )}
           </button>
-          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-[#FF6A00] to-[#E04F00] flex items-center justify-center font-bold text-xs text-white shadow-[0_0_10px_rgba(255,106,0,0.3)]">
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className="h-8 w-8 rounded-full bg-gradient-to-tr from-[#FF6A00] to-[#E04F00] flex items-center justify-center font-bold text-xs text-white shadow-[0_0_10px_rgba(255,106,0,0.3)] cursor-pointer active:scale-95 transition-all hover:brightness-110"
+            aria-label="View Profile"
+          >
             {driverName.slice(0, 2).toUpperCase()}
-          </div>
+          </button>
         </div>
       </header>
 
@@ -708,6 +726,15 @@ export default function DeliveryDashboard() {
                               📝 Notes: {order.delivery_notes}
                             </p>
                           )}
+
+                          {order.status === "delivered" && order.delivery_payment_method && (
+                            <div className="bg-green-950/25 border border-green-900/35 rounded-xl p-3 space-y-1 mt-2">
+                              <p className="text-[8px] font-bold tracking-widest text-green-400 uppercase">Doorstep Payment Collected</p>
+                              <p className="text-xs font-black text-white flex items-center gap-1.5 mt-0.5">
+                                💳 {order.delivery_payment_method}
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* Items Preview */}
@@ -742,7 +769,11 @@ export default function DeliveryDashboard() {
                           {order.status === "out_for_delivery" && (
                             <div className="space-y-2">
                               <button
-                                onClick={() => handleStatusUpdate(order.id, "delivered")}
+                                onClick={() => {
+                                  setDeliveryPaymentMethod("");
+                                  setPaymentModalOrderId(order.id);
+                                  setShowPaymentModal(true);
+                                }}
                                 disabled={isUpdating}
                                 className="w-full bg-gradient-to-r from-[#FF6A00] to-[#E04F00] hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-xs font-bold py-3.5 rounded-2xl transition-all cursor-pointer shadow-[0_4px_16px_rgba(255,106,0,0.2)] flex items-center justify-center gap-2"
                                 style={{ minHeight: "44px" }}
@@ -824,207 +855,7 @@ export default function DeliveryDashboard() {
             </motion.div>
           )}
 
-          {/* TAB 2: GRIVA PAY TERMINAL */}
-          {activeTab === 'scan' && (
-            <motion.div
-              key="scan"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6 flex flex-col items-center justify-center min-h-[60vh]"
-            >
-              <div className="text-center space-y-2">
-                <span className="text-[10px] font-bold text-[#FF6A00] tracking-widest uppercase">Griva Pay Terminal</span>
-                <h2 className="text-2xl font-black text-white">Collect Payment</h2>
-                <p className="text-xs text-zinc-500 max-w-xs mx-auto">Present this screen to the customer to scan the payment QR code and complete transaction checkout.</p>
-              </div>
 
-              {outForDeliveryOrders.length === 0 ? (
-                <div className="w-full max-w-sm bg-zinc-950/40 border border-zinc-900 rounded-3xl p-8 text-center space-y-4 shadow-xl">
-                  <div className="relative w-16 h-16 flex items-center justify-center mx-auto">
-                    <div className="absolute inset-0 bg-[#FF6A00]/5 rounded-full blur-[15px]" />
-                    <QrCode size={36} className="text-zinc-700" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-zinc-300">No Active Deliveries</p>
-                    <p className="text-xs text-zinc-500">Pick up an assigned order and change its status to 'Out for Delivery' to collect payment here.</p>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('deliveries')}
-                    className="px-5 py-2.5 bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white rounded-xl active:scale-95 transition-all"
-                  >
-                    Go to Deliveries
-                  </button>
-                </div>
-              ) : (() => {
-                const currentOrder = outForDeliveryOrders.find(o => o.id === selectedPaymentOrderId) || outForDeliveryOrders[0];
-                const totalAmount = parseTotal(currentOrder.total_price);
-                const isCOD = currentOrder.payment_method?.toUpperCase().includes("COD");
-                const customerName = currentOrder.customer_name || currentOrder.user?.name || "Customer";
-
-                return (
-                  <div className="w-full max-w-sm space-y-5">
-                    {/* Order Selector (if more than 1 order out for delivery) */}
-                    {outForDeliveryOrders.length > 1 && (
-                      <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-3 flex items-center justify-between">
-                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Select Order:</label>
-                        <select
-                          value={selectedPaymentOrderId || ""}
-                          onChange={(e) => setSelectedPaymentOrderId(Number(e.target.value))}
-                          className="bg-zinc-900 border border-zinc-800 text-xs text-white px-3 py-1.5 rounded-xl outline-none focus:border-[#FF6A00]"
-                        >
-                          {outForDeliveryOrders.map(o => (
-                            <option key={o.id} value={o.id}>
-                              {o.order_number || `ORD-${o.id}`} ({o.customer_name || "Customer"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Main Transaction Card */}
-                    <div className="bg-zinc-950/60 backdrop-blur-xl border border-zinc-900 rounded-3xl p-6 space-y-5 shadow-2xl relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.01] before:to-transparent before:pointer-events-none">
-                      <div className="text-center space-y-1">
-                        <span className="text-[9px] font-bold tracking-wider text-zinc-500 uppercase">
-                          {currentOrder.order_number || `ORD-${String(currentOrder.id).padStart(4, "0")}`}
-                        </span>
-                        <p className="text-xs text-zinc-400 font-semibold">Customer: {customerName}</p>
-                        
-                        <div className="pt-2">
-                          {isCOD ? (
-                            <div className="inline-flex flex-col items-center">
-                              <span className="text-[9px] font-bold tracking-wider text-red-400 bg-red-950/30 border border-red-900/40 px-2 py-0.5 rounded-lg uppercase">
-                                Payment Due COD
-                              </span>
-                              <span className="text-3xl font-black text-white tracking-tight mt-1.5">
-                                QAR {totalAmount}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="inline-flex flex-col items-center">
-                              <span className="text-[9px] font-bold tracking-wider text-green-400 bg-green-950/30 border border-green-900/40 px-2 py-0.5 rounded-lg uppercase">
-                                Prepaid Order
-                              </span>
-                              <span className="text-sm font-bold text-zinc-400 mt-2">
-                                Handover Package Directly
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* QR Display Area */}
-                      {isCOD && (
-                        <div className="bg-[#020202] border border-zinc-900 rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden shadow-inner group">
-                          {/* Ambient glow behind QR */}
-                          <div className="absolute w-36 h-36 rounded-full bg-[#FF6A00]/5 blur-[25px] pointer-events-none group-hover:bg-[#FF6A00]/10 transition-all duration-500" />
-                          
-                          {/* Elegant QR Code SVG with central Griva logo */}
-                          <svg width="170" height="170" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white relative z-10 transition-all duration-300">
-                            {/* Corner markers */}
-                            <rect x="1" y="1" width="7" height="7" fill="currentColor" />
-                            <rect x="2" y="2" width="5" height="5" fill="black" />
-                            <rect x="3" y="3" width="3" height="3" fill="#FF6A00" />
-                            
-                            <rect x="21" y="1" width="7" height="7" fill="currentColor" />
-                            <rect x="22" y="2" width="5" height="5" fill="black" />
-                            <rect x="23" y="3" width="3" height="3" fill="#FF6A00" />
-                            
-                            <rect x="1" y="21" width="7" height="7" fill="currentColor" />
-                            <rect x="2" y="22" width="5" height="5" fill="black" />
-                            <rect x="3" y="23" width="3" height="3" fill="#FF6A00" />
-                            
-                            {/* Random QR code dot patterns */}
-                            <rect x="9" y="1" width="1" height="2" fill="currentColor" />
-                            <rect x="11" y="2" width="2" height="1" fill="currentColor" />
-                            <rect x="14" y="0" width="1" height="4" fill="currentColor" />
-                            <rect x="16" y="2" width="3" height="2" fill="currentColor" />
-                            <rect x="11" y="5" width="2" height="2" fill="currentColor" />
-                            <rect x="16" y="5" width="1" height="1" fill="currentColor" />
-                            <rect x="9" y="8" width="4" height="1" fill="currentColor" />
-                            <rect x="15" y="8" width="2" height="2" fill="currentColor" />
-                            <rect x="18" y="8" width="1" height="1" fill="currentColor" />
-                            
-                            {/* Griva 'i' logo representation in center */}
-                            <rect x="12" y="12" width="5" height="5" fill="#020202" />
-                            <circle cx="14.5" cy="13.2" r="1.1" fill="#FF6A00" />
-                            <rect x="14" y="14.8" width="1" height="2" fill="white" />
-                            
-                            {/* Bottom right area dots */}
-                            <rect x="9" y="15" width="2" height="1" fill="currentColor" />
-                            <rect x="1" y="11" width="3" height="1" fill="currentColor" />
-                            <rect x="5" y="13" width="1" height="3" fill="currentColor" />
-                            <rect x="21" y="9" width="3" height="2" fill="currentColor" />
-                            <rect x="26" y="10" width="2" height="1" fill="currentColor" />
-                            <rect x="23" y="13" width="2" height="2" fill="currentColor" />
-                            <rect x="20" y="16" width="3" height="1" fill="currentColor" />
-                            <rect x="18" y="20" width="2" height="3" fill="currentColor" />
-                            <rect x="22" y="21" width="1" height="2" fill="currentColor" />
-                            <rect x="25" y="23" width="3" height="1" fill="currentColor" />
-                            <rect x="27" y="21" width="1" height="3" fill="currentColor" />
-                            <rect x="10" y="22" width="2" height="1" fill="currentColor" />
-                            <rect x="13" y="25" width="1" height="3" fill="currentColor" />
-                            <rect x="9" y="27" width="3" height="1" fill="currentColor" />
-                          </svg>
-
-                          <span className="text-[9px] font-bold text-zinc-500 tracking-widest uppercase mt-4 flex items-center gap-1.5">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#FF6A00] animate-ping" />
-                            Awaiting customer scan...
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Payment logo icons row */}
-                      {isCOD && (
-                        <div className="flex items-center justify-center gap-3 text-[10px] text-zinc-600 font-bold border-t border-zinc-900 pt-4">
-                          <span>Apple Pay</span>
-                          <span className="h-1 w-1 bg-zinc-800 rounded-full" />
-                          <span>QPay</span>
-                          <span className="h-1 w-1 bg-zinc-800 rounded-full" />
-                          <span>Griva Pay</span>
-                          <span className="h-1 w-1 bg-zinc-800 rounded-full" />
-                          <span>Card</span>
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="space-y-2 pt-2">
-                        {isCOD ? (
-                          <button
-                            onClick={() => handleSimulatePayment(currentOrder.id)}
-                            disabled={isProcessingPayment}
-                            className="w-full bg-gradient-to-r from-[#FF6A00] to-[#E04F00] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 text-white text-xs font-bold py-4 rounded-2xl transition-all cursor-pointer shadow-[0_4px_16px_rgba(255,106,0,0.2)] flex items-center justify-center gap-2"
-                            style={{ minHeight: "44px" }}
-                          >
-                            {isProcessingPayment ? (
-                              <>
-                                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                <span>Verifying Transaction...</span>
-                              </>
-                            ) : (
-                              <span>Simulate Customer Payment</span>
-                            )}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStatusUpdate(currentOrder.id, "delivered").then(() => {
-                              showToast("Handover Confirmed");
-                              setActiveTab('deliveries');
-                            })}
-                            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:brightness-110 active:scale-[0.99] text-white text-xs font-bold py-4 rounded-2xl transition-all cursor-pointer shadow-[0_4px_16px_rgba(34,197,94,0.15)]"
-                            style={{ minHeight: "44px" }}
-                          >
-                            Confirm Handover & Deliver
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </motion.div>
-          )}
 
           {/* TAB 3: DRIVER PROFILE & ACCOUNT PAGE */}
           {activeTab === 'profile' && (
@@ -1056,35 +887,48 @@ export default function DeliveryDashboard() {
                 </div>
               </div>
 
-              {/* Vehicle info block */}
+              {/* Fulfillment Details info block */}
               <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-5 space-y-4">
-                <h4 className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase">Assigned Transport</h4>
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
-                    <Car size={20} />
+                <h4 className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase">Fulfillment Details</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
+                      <MapPin size={18} className="text-[#FF6A00]" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-white">Active Duty Zone</p>
+                      <p className="text-[10px] text-zinc-500">Doha & Surrounding Municipalities, Qatar</p>
+                    </div>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-white">Porsche Taycan Delivery Fleet</p>
-                    <p className="text-[10px] text-zinc-500">Plate: QA-551-DELIV (Standard EV)</p>
+                  
+                  <div className="flex items-center gap-4 border-t border-zinc-900/60 pt-3">
+                    <div className="h-10 w-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
+                      <Package size={18} className="text-[#FF6A00]" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-white">Current Active Load</p>
+                      <p className="text-[10px] text-zinc-500">{activeOrders.length} Pending Deliveries Assigned</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Settings list */}
-              <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl divide-y divide-zinc-900">
-                <div className="p-4 flex items-center justify-between text-xs text-zinc-300 font-semibold">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-zinc-500" />
-                    <span>Shift Schedule</span>
+              {/* Support & Operations Help */}
+              <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-5 space-y-3">
+                <h4 className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase">Operations Desk</h4>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-white">Need Delivery Support?</p>
+                    <p className="text-[10px] text-zinc-500">Contact admin for route or order updates.</p>
                   </div>
-                  <span className="text-[10px] font-bold text-[#FF6A00] bg-[#FF6A00]/10 border border-[#FF6A00]/25 px-2 py-0.5 rounded-lg">8 AM - 6 PM</span>
-                </div>
-                <div className="p-4 flex items-center justify-between text-xs text-zinc-300 font-semibold">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp size={14} className="text-zinc-500" />
-                    <span>Weekly Drop Rating</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-white bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg">4.9 / 5.0 ★</span>
+                  <a
+                    href="https://wa.me/97455551234"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-xs font-bold text-[#FF6A00] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  >
+                    <span>WhatsApp Help</span>
+                  </a>
                 </div>
               </div>
 
@@ -1110,7 +954,7 @@ export default function DeliveryDashboard() {
           {/* Deliveries Tab button */}
           <button
             onClick={() => setActiveTab('deliveries')}
-            className={`flex flex-col items-center justify-center w-16 h-full transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center w-24 h-full transition-all cursor-pointer ${
               activeTab === 'deliveries' ? "text-[#FF6A00] scale-105" : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
@@ -1118,21 +962,10 @@ export default function DeliveryDashboard() {
             <span className="text-[9px] mt-1 font-bold tracking-wider">Deliveries</span>
           </button>
 
-          {/* Central Glowing QR Scan button */}
-          <div className="relative -top-5 flex flex-col items-center">
-            <button
-              onClick={() => setActiveTab('scan')}
-              className={`h-14 w-14 rounded-full bg-gradient-to-br from-[#FF6A00] to-[#E04F00] text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-[0_0_24px_rgba(255,106,0,0.5)] border-4 border-[#050505]`}
-              aria-label="Scan QR Code"
-            >
-              <QrCode size={22} />
-            </button>
-          </div>
-
           {/* Profile Tab button */}
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center justify-center w-16 h-full transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center w-24 h-full transition-all cursor-pointer ${
               activeTab === 'profile' ? "text-[#FF6A00] scale-105" : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
@@ -1421,7 +1254,87 @@ export default function DeliveryDashboard() {
         )}
       </AnimatePresence>
 
-      
+      {/* Doorstep Payment Selection Modal */}
+      <AnimatePresence>
+        {showPaymentModal && paymentModalOrderId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)} />
+            <motion.div
+              initial={{ scale: 0.95, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 20, opacity: 0 }}
+              className="relative bg-[#0b0b0b] border border-zinc-900 w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl z-10"
+            >
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="text-center space-y-1.5 pt-2">
+                <h3 className="text-lg font-black text-white">Payment Received</h3>
+                <p className="text-xs text-zinc-400">
+                  Select how payment was received in Qatar before completing delivery.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { id: "Cash", label: "Cash (QAR)", desc: "Physical cash collected at doorstep" },
+                  { id: "Card", label: "Card on Delivery (POS)", desc: "Card reader machine swipe/tap" },
+                  { id: "Bank Transfer", label: "Bank Transfer / QPay", desc: "Digital transfer or QPay online" },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setDeliveryPaymentMethod(option.id)}
+                    className={`w-full text-left p-4 rounded-2xl border transition-all flex flex-col gap-1 cursor-pointer ${
+                      deliveryPaymentMethod === option.id
+                        ? "bg-[#FF6A00]/10 border-[#FF6A00]"
+                        : "bg-zinc-950/40 border-zinc-900 hover:border-zinc-800"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">{option.label}</span>
+                      <div
+                        className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center transition-all ${
+                          deliveryPaymentMethod === option.id
+                            ? "border-[#FF6A00] bg-[#FF6A00]"
+                            : "border-zinc-800"
+                        }`}
+                      >
+                        {deliveryPaymentMethod === option.id && (
+                          <div className="h-2 w-2 rounded-full bg-white" />
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-medium">{option.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 py-3.5 bg-zinc-900 border border-zinc-800 text-xs font-bold rounded-2xl hover:bg-zinc-850 active:scale-95 transition-all text-zinc-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    handleStatusUpdate(paymentModalOrderId, "delivered", deliveryPaymentMethod);
+                    setShowPaymentModal(false);
+                  }}
+                  disabled={!deliveryPaymentMethod}
+                  className="flex-1 py-3.5 bg-[#FF6A00] hover:brightness-110 active:scale-95 disabled:opacity-50 text-white text-xs font-bold rounded-2xl transition-all shadow-[0_2px_10px_rgba(255,106,0,0.25)] cursor-pointer"
+                >
+                  Confirm Delivery
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

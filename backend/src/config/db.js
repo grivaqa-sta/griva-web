@@ -26,6 +26,11 @@
  */
 
 const { Sequelize } = require("sequelize");
+const path = require("path");
+
+if (!process.env.DATABASE_URL) {
+  require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
+}
 
 // Guard statement (like Java's IllegalArgumentException)
 if (!process.env.DATABASE_URL) {

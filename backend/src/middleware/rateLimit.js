@@ -1,6 +1,14 @@
 const rateLimit = require("express-rate-limit");
+const path = require("path");
+
+// Ensure environment variables are loaded if this file is required directly or before server.js loads them
+if (!process.env.NODE_ENV) {
+  require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
+}
 
 const isDev = process.env.NODE_ENV === "development";
+
+console.log(`[RATE LIMIT INITIALIZATION] Environment NODE_ENV is "${process.env.NODE_ENV}". Rate limiting is ${isDev ? "DISABLED" : "ENABLED"}.`);
 
 const apiLimiter = isDev
   ? (req, res, next) => next()

@@ -69,7 +69,6 @@ const cartRoutes = require("./routes/cartRoutes");
 const deliveryRoutes = require("./routes/deliveryRoutes"); // FEATURE: Delivery Boy System
 const customerRoutes = require("./routes/customerRoutes");
 const staffRoutes = require("./routes/staffRoutes");
-const testEmailRoutes = require("./routes/testEmailRoutes");
 const deliveryAttemptRoutes = require("./routes/deliveryAttemptRoutes");
 const uploadRoutes = require("./routes/uploadRoutes"); //IMAGE UPLOAD
 const deliverySlotRoutes = require("./routes/deliverySlotRoutes");

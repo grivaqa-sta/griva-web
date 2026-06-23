@@ -6,7 +6,7 @@ import {
   Printer, Download
 } from 'lucide-react';
 import { useToast } from '@/app/context/ToastContext';
-import { AdminOrder, updateOrderStatusApi, downloadOrdersExportApi, bulkPrintOrdersApi } from '../../utils/api';
+import { AdminOrder, updateOrderStatusApi, downloadOrdersExportApi, bulkPrintOrdersApi, reconcileCashPaymentApi } from '../../utils/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -187,6 +187,27 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     );
     await updateOrderStatusApi(orderId, newStatus);
     setUpdatingId(null);
+  };
+
+  const [reconcilingId, setReconcilingId] = useState<number | null>(null);
+
+  const handleReconcileCash = async (orderId: number) => {
+    setReconcilingId(orderId);
+    try {
+      const success = await reconcileCashPaymentApi(orderId);
+      if (success) {
+        setOrdersList(prev =>
+          prev.map(o => o.id === orderId ? { ...o, cash_reconciliation_status: 'reconciled' } : o)
+        );
+        toast.success("Cash payment reconciled and confirmed successfully.");
+      } else {
+        toast.error("Failed to reconcile cash payment.");
+      }
+    } catch {
+      toast.error("An error occurred during cash reconciliation.");
+    } finally {
+      setReconcilingId(null);
+    }
   };
 
   // FEATURE: Delivery Attempt Management — reopen order
@@ -1257,6 +1278,45 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                       </p>
                                     </div>
                                   </div>
+                                  {(order as any).delivery_payment_method && (
+                                    <div className="flex flex-col gap-3 pt-2 border-t border-orange-500/10">
+                                      <div className="flex items-start gap-2.5">
+                                        <span className="text-xs mt-0.5 shrink-0">💳</span>
+                                        <div>
+                                          <p className="text-[10px] text-gray-400 font-semibold uppercase">Payment Collected At Delivery</p>
+                                          <p className="text-xs font-black text-green-700 mt-0.5">
+                                            {(order as any).delivery_payment_method}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {(order as any).delivery_payment_method === "Cash" && (
+                                        <div className="bg-zinc-50 border border-zinc-150 rounded-xl p-3 space-y-2 mt-1">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase">Cash Reconciliation</span>
+                                            {(order as any).cash_reconciliation_status === "reconciled" ? (
+                                              <span className="text-[9px] font-black text-green-700 bg-green-50 border border-green-250 px-2.5 py-0.5 rounded-lg">
+                                                Reconciled
+                                              </span>
+                                            ) : (
+                                              <span className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-250 px-2.5 py-0.5 rounded-lg animate-pulse">
+                                                Awaiting Submission
+                                              </span>
+                                            )}
+                                          </div>
+                                          {(order as any).cash_reconciliation_status !== "reconciled" && (
+                                            <button
+                                              onClick={() => handleReconcileCash(order.id)}
+                                              disabled={reconcilingId === order.id}
+                                              className="w-full text-center text-[10px] font-extrabold py-2 px-3 bg-gradient-to-r from-green-600 to-green-700 hover:brightness-110 active:scale-[0.99] disabled:opacity-50 text-white rounded-lg transition-all cursor-pointer shadow-sm"
+                                            >
+                                              {reconcilingId === order.id ? "Reconciling..." : "💵 Confirm Cash Received"}
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                   {/* Print Slip Section */}
                                   <div className="pt-3 border-t border-orange-500/10 flex flex-wrap items-center justify-between gap-2">
                                     <div>

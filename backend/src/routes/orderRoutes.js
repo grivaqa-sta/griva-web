@@ -71,6 +71,9 @@ router.patch("/:id/status", authenticateJWT, isAdminOrStaff, orderController.upd
 // Maps to: PATCH /api/orders/:id/review (Mark an order as reviewed/viewed)
 router.patch("/:id/review", authenticateJWT, isAdminOrStaff, orderController.reviewOrder);
 
+// Maps to: PATCH /api/orders/:id/reconcile-cash
+router.patch("/:id/reconcile-cash", authenticateJWT, isAdminOrStaff, orderController.reconcileCashPayment);
+
 // ─────────────────────────────────────────────────────────
 // FEATURE: Delivery Boy System (Admin / Staff routes)
 // ─────────────────────────────────────────────────────────

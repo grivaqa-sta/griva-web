@@ -91,7 +91,7 @@ export interface CategoryRequest {
   mobile_image_url?: string;
   is_active?: boolean;
 };
-export interface Category  {
+export interface Category {
   id: number;
   title: string;
   slug: string;
@@ -107,7 +107,7 @@ export interface Category  {
 // subcategory
 // ─────────────────────────────────────────────────────────
 
-export interface SubCategoryRequest  {
+export interface SubCategoryRequest {
   category_id: number;
   title: string;
   slug: string;
@@ -116,7 +116,7 @@ export interface SubCategoryRequest  {
   is_active?: boolean;
 };
 
-export interface SubCategory  {
+export interface SubCategory {
   id: number;
   category_id: number;
   title: string;
@@ -131,17 +131,17 @@ export interface SubCategory  {
 // ─────────────────────────────────────────────────────────
 // Product Types
 // ─────────────────────────────────────────────────────────
-export interface ApiProductVariant  {
+export interface ApiProductVariant {
   color: string;
   size: string;
 };
 
-export interface ProductSpecification  {
+export interface ProductSpecification {
   name: string;
   value: string;
 };
 
-export interface ProductRequest  {
+export interface ProductRequest {
   subcategory_id: number;
   title: string;
   slug: string;
@@ -216,27 +216,27 @@ export interface BannerUpdatePayload {
   href?: string;
   tags?: string[];
   bannerColor?: string;
-  old_price?:number;
+  old_price?: number;
 }
 
 export interface BannerProduct extends ProductRequest {
-    id: number;
-    href?: string;
-    banner_background_color?: string;
-    mobile_ad_banner:string;
+  id: number;
+  href?: string;
+  banner_background_color?: string;
+  mobile_ad_banner: string;
 }
 
 
 export interface HeroSlide {
-    title: string;
-    subtitle: string;
-    badge: string;
-    image: string;
-    price: number;
-    old_price?: number;
-    href: string;
-    bg: string;
-    mobile_ad_banner:string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  image: string;
+  price: number;
+  old_price?: number;
+  href: string;
+  bg: string;
+  mobile_ad_banner: string;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -317,6 +317,32 @@ export interface Deal {
   isActive: boolean;
   productId: number;
   product?: DealProduct;
+}
+
+
+// ─────────────────────────────────────────────────────────
+// Discover More Types
+// ─────────────────────────────────────────────────────────
+
+export interface DiscoverMore {
+  id: number;
+  categoryId: number;
+  subtitle: string;
+  title: string;
+  image_url: string;
+  href: string;
+  is_active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DiscoverMorePayload {
+  categoryId: number;
+  subtitle: string;
+  title: string;
+  image_url: string;
+  href: string;
+  is_active?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────

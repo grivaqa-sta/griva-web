@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
 const DealOfDay = require("./DealOfDay");
+const DiscoverMore = require("./DiscoverMore");
 
 const Product = sequelize.define(
   "Product",
@@ -194,6 +195,11 @@ Product.hasOne(DealOfDay, {
 DealOfDay.belongsTo(Product, {
   foreignKey: "productId",
   as: "product",
+});
+
+Product.hasMany(DiscoverMore, {
+  foreignKey: "productId",
+  as: "discoverMoreBanners",
 });
 
 module.exports = Product;

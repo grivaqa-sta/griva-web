@@ -3,6 +3,7 @@ import {
   Plus, Trash2, Edit, ToggleLeft, ToggleRight, Image as ImageIcon, Upload, Check, Loader, Loader2, RefreshCw, ChevronDown
 } from 'lucide-react';
 import ProductBannersSection from './ProductBannersSection';
+import DiscoverMoreSection from './DiscoverMoreSection';
 import { productService } from '@/app/services/product.service';
 import { uploadService } from '@/app/services/upload.service';
 import dealOfDayService from '@/app/services/dealOfDay.service';
@@ -217,13 +218,13 @@ function toDatetimeLocal(date: Date): string {
 
 function getDefaultDates() {
   const now = new Date();
-  
+
   const start = new Date(now);
   start.setHours(0, 0, 0, 0); // 12:00 AM today
-  
+
   const end = new Date(now);
   end.setDate(end.getDate() + 7);
-  
+
   return { defaultStart: toDatetimeLocal(start), defaultEnd: toDatetimeLocal(end) };
 }
 
@@ -236,7 +237,7 @@ function DealOfDaySection() {
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  
+
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -313,7 +314,7 @@ function DealOfDaySection() {
       showError("This product is already added as a Deal of the Day.");
       return;
     }
-    
+
     setIsSaving(true);
     try {
       const selectedP = products.find(p => p.id === Number(selectedProductId));
@@ -324,15 +325,15 @@ function DealOfDaySection() {
         endDate: new Date(endDate).toISOString(),
         isActive: true
       };
-      
+
       await dealOfDayService.createDeal(payload);
-      
+
       // Reset form
       setSelectedProductId('');
       const { defaultStart: newStart, defaultEnd: newEnd } = getDefaultDates();
       setStartDate(newStart);
       setEndDate(newEnd);
-      
+
       await loadData(false);
       showSuccess("Deal created successfully!");
     } catch (err) {
@@ -410,20 +411,20 @@ function DealOfDaySection() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {deals.map(deal => (
                 <div key={deal.id} className="bg-white border border-orange-500/30 p-4 rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden">
-                  
+
                   {/* Delete Confirmation Overlay */}
                   {confirmDeleteId === deal.id && (
                     <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95 duration-200">
                       <p className="text-xs font-bold text-gray-800 mb-3">Delete this deal?</p>
                       <div className="flex gap-2 w-full">
-                        <button 
+                        <button
                           onClick={() => setConfirmDeleteId(null)}
                           disabled={deletingId === deal.id}
                           className="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                         >
                           Cancel
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDeleteDeal(deal.id)}
                           disabled={deletingId === deal.id}
                           className="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-1"
@@ -433,17 +434,17 @@ function DealOfDaySection() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div>
                     <div className="flex gap-3 mb-3">
                       {(() => {
                         const product = deal.product || products.find(p => p.id === deal.productId);
                         const imgSrc = product?.main_image_url;
                         return imgSrc ? (
-                          <img 
-                            src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`} 
-                            alt="Product" 
-                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0" 
+                          <img
+                            src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
+                            alt="Product"
+                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0"
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
@@ -474,7 +475,7 @@ function DealOfDaySection() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-orange-500/10">
                     <button
                       onClick={() => handleToggleStatus(deal.id)}
@@ -482,7 +483,7 @@ function DealOfDaySection() {
                       className={`flex items-center gap-1.5 text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50 ${deal.isActive ? 'text-gray-500 hover:text-gray-700' : 'text-orange-500 hover:text-orange-600'}`}
                     >
                       {togglingId === deal.id ? (
-                         <Loader className="h-3 w-3 animate-spin" /> 
+                        <Loader className="h-3 w-3 animate-spin" />
                       ) : deal.isActive ? (
                         <><ToggleRight className="h-4 w-4 text-orange-500" /> Disable</>
                       ) : (
@@ -511,21 +512,21 @@ function DealOfDaySection() {
                 <div>
                   <label className="block text-[10px] font-bold text-gray-700 mb-1">Product</label>
                   <div className="relative" ref={dropdownRef}>
-                    <div 
+                    <div
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className="w-full flex items-center justify-between text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white cursor-pointer"
                     >
                       <span className="truncate pr-2">
-                        {selectedProductId 
+                        {selectedProductId
                           ? products.find(p => p.id === Number(selectedProductId))?.title || 'Select a product...'
                           : 'Select a product...'}
                       </span>
                       <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                     </div>
-                    
+
                     {isDropdownOpen && (
                       <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                        <div 
+                        <div
                           onClick={() => { setSelectedProductId(''); setIsDropdownOpen(false); }}
                           className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-xs text-gray-500 border-b border-gray-100"
                         >
@@ -535,7 +536,7 @@ function DealOfDaySection() {
                           const imgSrc = p.main_image_url;
                           const formattedImgSrc = imgSrc?.startsWith('http') || imgSrc?.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`;
                           return (
-                            <div 
+                            <div
                               key={p.id}
                               onClick={() => { setSelectedProductId(p.id); setIsDropdownOpen(false); }}
                               className={`px-3 py-2 hover:bg-orange-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 ${selectedProductId === p.id ? 'bg-orange-50' : ''}`}
@@ -561,10 +562,10 @@ function DealOfDaySection() {
                     if (!imgSrc) return null;
                     return (
                       <div className="mt-2 flex items-center gap-2 p-2 bg-white border border-gray-100 rounded-lg">
-                        <img 
-                          src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`} 
-                          alt="Selected Product" 
-                          className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0" 
+                        <img
+                          src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
+                          alt="Selected Product"
+                          className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0"
                         />
                         <span className="text-[10px] font-medium text-gray-600 truncate">{selectedP?.title}</span>
                       </div>
@@ -599,7 +600,7 @@ function DealOfDaySection() {
                   disabled={isSaving}
                   className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-sm"
                 >
-                  {isSaving ? <Loader className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} 
+                  {isSaving ? <Loader className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   {isSaving ? 'Creating...' : 'Create Deal'}
                 </button>
               </div>
@@ -649,116 +650,118 @@ export default function BannersTab(props: BannersTabProps) {
   return (
     <div className="space-y-10 animate-in fade-in-50 duration-300">
 
-              {/* Section A: Product Banners */}
-              <ProductBannersSection />
+      {/* Section A: Product Banners */}
+      <ProductBannersSection />
 
-              {/* Section B: Mobile View Homepage Banners */}
-              <MobileBannersSection />
+      {/* Section B: Mobile View Homepage Banners */}
+      <MobileBannersSection />
 
-              {/* Section C: Deal of the Day */}
-              <DealOfDaySection />
+      {/* Section C: Deal of the Day */}
+      <DealOfDaySection />
 
-              {/* Section D: Category Hero Banners — NEW PREMIUM FEATURE */}
-              <div className="space-y-4">
-                <div className="pb-3 border-b border-orange-500/20">
-                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">E. Category Hero Banner Images</h4>
-                  <p className="text-[10px] text-gray-400 mt-1">Upload or change the full-width hero banner image shown at the top of each category page. Supports JPEG, PNG, WebP.</p>
+      {/* Section D: Category Hero Banners — NEW PREMIUM FEATURE */}
+      <div className="space-y-4">
+        <div className="pb-3 border-b border-orange-500/20">
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">E. Category Hero Banner Images</h4>
+          <p className="text-[10px] text-gray-400 mt-1">Upload or change the full-width hero banner image shown at the top of each category page. Supports JPEG, PNG, WebP.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {CATEGORY_SLUGS.map((cat) => {
+            const currentBanner = categoryBanners[cat.slug];
+            const isUploading = uploadingSlug === cat.slug;
+            const isSuccess = uploadSuccess === cat.slug;
+
+            return (
+              <div key={cat.slug} className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
+                {/* Banner preview */}
+                <div className="relative h-32 bg-gray-100 overflow-hidden">
+                  {currentBanner ? (
+                    <img
+                      src={currentBanner.startsWith('/') ? currentBanner : `http://localhost:8080${currentBanner}`}
+                      alt={cat.label}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                      <ImageIcon className="h-10 w-10" />
+                    </div>
+                  )}
+                  {/* Dark overlay with category label */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-3">
+                    <span className="text-xs font-bold text-white">{cat.label}</span>
+                  </div>
+                  {/* Success flash */}
+                  {isSuccess && (
+                    <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                      <div className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
+                        <Check className="h-3.5 w-3.5" /> Updated!
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {CATEGORY_SLUGS.map((cat) => {
-                    const currentBanner = categoryBanners[cat.slug];
-                    const isUploading = uploadingSlug === cat.slug;
-                    const isSuccess = uploadSuccess === cat.slug;
+                {/* Upload controls */}
+                <div className="p-4 space-y-3">
+                  {/* File upload button */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={(el) => { fileInputRefs.current[cat.slug] = el; }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleCategoryBannerUpload(cat.slug, file);
+                    }}
+                  />
+                  <button
+                    onClick={() => fileInputRefs.current[cat.slug]?.click()}
+                    disabled={isUploading}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    {isUploading ? (
+                      <><Loader className="h-3.5 w-3.5 animate-spin" /> Uploading...</>
+                    ) : (
+                      <><Upload className="h-3.5 w-3.5" /> Upload New Banner Image</>
+                    )}
+                  </button>
 
-                    return (
-                      <div key={cat.slug} className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
-                        {/* Banner preview */}
-                        <div className="relative h-32 bg-gray-100 overflow-hidden">
-                          {currentBanner ? (
-                            <img
-                              src={currentBanner.startsWith('/') ? currentBanner : `http://localhost:8080${currentBanner}`}
-                              alt={cat.label}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-300">
-                              <ImageIcon className="h-10 w-10" />
-                            </div>
-                          )}
-                          {/* Dark overlay with category label */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-3">
-                            <span className="text-xs font-bold text-white">{cat.label}</span>
-                          </div>
-                          {/* Success flash */}
-                          {isSuccess && (
-                            <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                              <div className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
-                                <Check className="h-3.5 w-3.5" /> Updated!
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                  {/* Or paste URL */}
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="Or paste image URL..."
+                      className="flex-1 text-[10px] border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-400"
+                      onBlur={(e) => {
+                        if (e.target.value.startsWith('http')) {
+                          handleCategoryBannerURLSave(cat.slug, e.target.value);
+                        }
+                      }}
+                    />
+                    <button
+                      className="px-3 bg-gray-50 border border-gray-200 text-[10px] font-bold text-gray-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                      onClick={() => {
+                        const input = fileInputRefs.current[cat.slug]?.previousElementSibling as HTMLInputElement;
+                        // handled via onBlur
+                      }}
+                    >
+                      Set URL
+                    </button>
+                  </div>
 
-                        {/* Upload controls */}
-                        <div className="p-4 space-y-3">
-                          {/* File upload button */}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            ref={(el) => { fileInputRefs.current[cat.slug] = el; }}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleCategoryBannerUpload(cat.slug, file);
-                            }}
-                          />
-                          <button
-                            onClick={() => fileInputRefs.current[cat.slug]?.click()}
-                            disabled={isUploading}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                          >
-                            {isUploading ? (
-                              <><Loader className="h-3.5 w-3.5 animate-spin" /> Uploading...</>
-                            ) : (
-                              <><Upload className="h-3.5 w-3.5" /> Upload New Banner Image</>
-                            )}
-                          </button>
-
-                          {/* Or paste URL */}
-                          <div className="flex gap-2">
-                            <input
-                              type="url"
-                              placeholder="Or paste image URL..."
-                              className="flex-1 text-[10px] border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-400"
-                              onBlur={(e) => {
-                                if (e.target.value.startsWith('http')) {
-                                  handleCategoryBannerURLSave(cat.slug, e.target.value);
-                                }
-                              }}
-                            />
-                            <button
-                              className="px-3 bg-gray-50 border border-gray-200 text-[10px] font-bold text-gray-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
-                              onClick={() => {
-                                const input = fileInputRefs.current[cat.slug]?.previousElementSibling as HTMLInputElement;
-                                // handled via onBlur
-                              }}
-                            >
-                              Set URL
-                            </button>
-                          </div>
-
-                          <p className="text-[9px] text-gray-400 text-center">
-                            Recommended: 1400×420px, JPEG/WebP. Max 5MB.
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <p className="text-[9px] text-gray-400 text-center">
+                    Recommended: 1400×420px, JPEG/WebP. Max 5MB.
+                  </p>
                 </div>
               </div>
+            );
+          })}
+        </div>
+      </div>
 
+      {/* Section F: Discover More Banners */}
+      <DiscoverMoreSection />
 
-            </div>
+    </div>
   );
 }

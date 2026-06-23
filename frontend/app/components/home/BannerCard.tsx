@@ -7,7 +7,6 @@ import { BannerItem } from "@/app/types/types";
 function BannerCard({ banner }: { banner: BannerItem }) {
   return (
     <div className="group relative h-[340px] overflow-hidden rounded-[10px]">
-
       {/* Background Image */}
       <Image
         src={banner.image}
@@ -31,7 +30,6 @@ function BannerCard({ banner }: { banner: BannerItem }) {
 
       {/* Content */}
       <div className="absolute left-12 top-1/2 z-10 -translate-y-1/2 flex flex-col gap-2">
-
         {/* Category */}
         <p
           className="text-[11px] font-semibold tracking-[0.25em] uppercase transition-colors duration-300"
@@ -60,7 +58,7 @@ function BannerCard({ banner }: { banner: BannerItem }) {
           href={banner.href}
           className="mt-4 inline-flex h-10 w-32 items-center justify-center
                      border border-white text-[11px] font-semibold tracking-[0.2em] uppercase
-                     text-white transition-all duration-300 hover:tracking-[0.3em]"
+                     text-white "
           style={{ ["--hover-bg" as string]: "#FF6A00" }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = "#FF6A00";

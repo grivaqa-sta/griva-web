@@ -5,6 +5,7 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { CheckCircle, Package, ShoppingBag } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
+import { trackPurchase } from "@/app/components/common/PixelScripts";
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
@@ -53,6 +54,16 @@ function OrderSuccessContent() {
 
     verifyOrder();
   }, [orderNumber]);
+
+  // Fire Purchase pixel event when order is confirmed
+  useEffect(() => {
+    if (orderData && orderExists) {
+      const totalStr = String(orderData.total_price || "0").replace(/([$]|qar|[\s,])/gi, "");
+      const totalValue = parseFloat(totalStr) || 0;
+      const numItems = orderData.items?.length || 1;
+      trackPurchase(orderNumber, totalValue, numItems);
+    }
+  }, [orderData, orderExists]);
 
   if (loading) {
     return (

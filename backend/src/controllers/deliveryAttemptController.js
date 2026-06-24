@@ -3,6 +3,7 @@
 // Do not modify without reading feature documentation
 
 const { Op } = require("sequelize");
+const { emitToRoles, emitToUser, emitToAll } = require("../socket/socket");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
@@ -31,6 +32,18 @@ const markAttempted = async (req, res) => {
     order.failed_reason = "not_answering";
     order.status = "attempted";
     await order.save();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     res.json({ success: true, data: order });
   } catch (error) {
@@ -68,6 +81,18 @@ const markRescheduled = async (req, res) => {
     order.status = "rescheduled";
     await order.save();
 
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
+
     res.json({ success: true, data: order });
   } catch (error) {
     console.error("markRescheduled error:", error);
@@ -103,6 +128,18 @@ const markFailed = async (req, res) => {
     order.attempt_notes = note || null;
     order.status = "failed";
     await order.save();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     res.json({ success: true, data: order });
   } catch (error) {
@@ -141,6 +178,18 @@ const reopenOrder = async (req, res) => {
     order.assigned_at = null;
     order.attempt_notes = "Reopened by admin: " + (note || "");
     await order.save();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     res.json({ success: true, data: order, message: "Order reopened successfully. Please assign a delivery driver." });
   } catch (error) {

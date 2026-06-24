@@ -100,11 +100,13 @@ const startServer = async () => {
   // ✅ Run after sync
   await createDefaultAdmin();
 
+  const { initSocket } = require("./socket/socket");
   const server = app.listen(PORT, () => {
     console.log(
       `🚀 [GriVA Backend] Server is running on port ${PORT}`
     );
   });
+  initSocket(server);
 };
 
 const createDefaultAdmin = async () => {

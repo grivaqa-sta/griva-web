@@ -58,12 +58,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
   const getStockStatus = () => {
     const stock = product.stock ?? 0;
     if (stock > 5) {
-      return (
-        <span className="text-green-600 flex items-center gap-1 sm:gap-1.5">
-          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-600 inline-block"></span>
-          In Stock ({stock})
-        </span>
-      );
+      return null;
     } else if (stock >= 1 && stock <= 5) {
       return (
         <span className="text-amber-500 flex items-center gap-1 sm:gap-1.5">

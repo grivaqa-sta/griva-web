@@ -5,7 +5,7 @@ import { useAdminSettings } from "@/app/context/AdminContext";
 export default function NewsletterSection() {
   const { cmsNewsletter } = useAdminSettings();
   return (
-    <section className="w-full md:py-10 px-4 sm:px-6 lg:px-0">
+    <section className="hidden sm:block w-full md:py-10 px-4 sm:px-6 lg:px-0">
       <div className="mx-auto max-w-7xl relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0c0c0c] via-[#121212] to-[#0c0c0c] p-8 sm:p-10 lg:p-12 group shadow-xl">
         {/* dark brand pattern watermark */}
         <div className="absolute inset-0 bg-[url('/images/logo-kit/brand-pattern-dark-transparent.png')] bg-cover opacity-[0.06] group-hover:opacity-[0.09] transition-opacity duration-500 pointer-events-none z-0" />

@@ -939,6 +939,49 @@ exports.createDeliveryBoy = async (req, res, next) => {
 };
 
 /**
+ * PATCH /api/orders/admin/delivery-boys/:id/reset-password
+ * Admin resets a delivery boy's password
+ */
+exports.resetDeliveryBoyPassword = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required and must be at least 6 characters long.",
+      });
+    }
+
+    const driver = await User.findOne({
+      where: {
+        id,
+        role: "delivery",
+      },
+    });
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery driver not found.",
+      });
+    }
+
+    driver.password = password; // Will be hashed automatically by user model hooks
+    await driver.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Driver password reset successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+/**
  * Bulk print orders: Mark orders as printed
  * PATCH /api/orders/bulk-print
  */

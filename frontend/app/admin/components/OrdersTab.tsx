@@ -691,6 +691,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                   <div><span className="text-gray-400 font-semibold">Phone:</span> <span className="font-bold text-gray-800">{order.customer_phone || 'N/A'}</span></div>
                   <div><span className="text-gray-400 font-semibold">Driver:</span> <span className="font-bold text-gray-800">{order.deliveryBoy?.name || 'Unassigned'}</span></div>
                   <div><span className="text-gray-400 font-semibold">Attempts:</span> <span className="font-bold text-gray-800">{order.delivery_attempts}</span></div>
+                  <div><span className="text-gray-400 font-semibold">Amount:</span> <span className="font-bold text-gray-800">QAR {parseFloat(String(order.total_price).replace(/([$]|qar|[\s,])/gi, "") || "0").toFixed(2)}</span></div>
                 </div>
 
                 {order.attempt_notes && (

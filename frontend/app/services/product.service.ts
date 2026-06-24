@@ -12,7 +12,7 @@ export const productService = {
     return response.data;
   },
 
-  getProduct: async (id: number) => {
+  getProduct: async (id: number | string) => {
     const response = await api.get(`/products/${id}`);
     return response.data;
   },

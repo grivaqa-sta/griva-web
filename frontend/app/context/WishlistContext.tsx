@@ -23,6 +23,7 @@ interface WishlistContextValue {
     rating: number;
     category: string;
     stock?: number;
+    slug?: string;
   }) => void;
   isInWishlist: (productId: number) => boolean;
   removeFromWishlist: (productId: number) => void;
@@ -56,6 +57,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
               rating: Number(item.product.rating || 0),
               category: item.product.brand || "Product",
               stock: item.product.stock,
+              slug: item.product.slug,
             }));
             setItems(mapped);
           }
@@ -83,6 +85,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     rating: number;
     category: string;
     stock?: number;
+    slug?: string;
   }) => {
     if (!isLoggedIn) {
       toast.warning("Sign in to save items to your wishlist.");
@@ -111,6 +114,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         rating: product.rating,
         category: product.category,
         stock: product.stock,
+        slug: product.slug,
       };
       setItems((prev) => [...prev, newItem]);
       toast.success("Added to Wishlist ❤️");

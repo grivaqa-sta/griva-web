@@ -19,7 +19,7 @@ export default function OfferSection() {
             const formattedImgSrc = imgSrc?.startsWith('http') || imgSrc?.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`;
             return {
               id: product.id,
-              href: `/product/${product.id}`,
+              href: `/product/${product.slug}`,
               bgColor: bgColors[index % bgColors.length],
               badge: product.discount_percentage ? `${product.discount_percentage}% OFF` : "NEW",
               title: product.title,

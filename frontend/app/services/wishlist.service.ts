@@ -3,6 +3,7 @@ import { api } from "../lib/axios";
 export interface ApiWishlistProduct {
   id: number;
   title: string;
+  slug?: string;
   price: string;
   old_price?: string;
   main_image_url: string;

@@ -11,7 +11,7 @@ function TrendingProductCardSkeleton() {
   return (
     <>
       {/* Mobile skeleton */}
-      <div className="sm:hidden flex flex-col bg-white p-3 border border-[#E5E7EB] rounded-lg animate-pulse h-full">
+      <div className="sm:hidden flex flex-col bg-white p-2 animate-pulse h-full">
         <div className="relative w-full h-[140px] bg-gray-100 rounded-md" />
         <div className="mt-3 flex flex-col flex-grow gap-2">
           <div className="h-3 w-12 rounded bg-gray-100" />
@@ -74,8 +74,8 @@ export default function TrendingProductsSection() {
         <ScrollReveal>
           <div className="
             mt-6
-            grid grid-cols-2 gap-3
-            sm:mt-8 sm:grid-cols-1 sm:gap-6
+            grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200
+            sm:mt-8 sm:grid-cols-1 sm:gap-6 sm:border-0 sm:divide-none
             md:grid-cols-2 xl:grid-cols-3
           ">
             {loading ? (

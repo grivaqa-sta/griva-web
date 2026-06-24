@@ -338,7 +338,7 @@ export default function Navbar() {
       </header>
 
       {/* Fixed Bottom Navigation Bar (Mobile Only, rendered client-side only to prevent hydration errors) */}
-      {mounted && (
+      {mounted && !pathname.startsWith("/product/") && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:hidden pb-safe">
           <div className="flex h-16 items-center justify-around px-2">
             {/* Home */}

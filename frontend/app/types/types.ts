@@ -297,6 +297,7 @@ export interface Product {
 export interface DealProduct {
   id: number;
   title: string;
+  slug?: string;
   main_image_url?: string;
   gallery_images?: string[];
   price?: string | number;
@@ -359,6 +360,7 @@ export interface CartItem {
   selectedColor?: string;
   selectedStorage?: string;
   category: string;
+  slug?: string;
 }
 
 export type CartAction =
@@ -387,6 +389,7 @@ export interface WishlistItem {
   rating: number;
   category: string;
   stock?: number;
+  slug?: string;
 }
 
 // ─────────────────────────────────────────────────────────

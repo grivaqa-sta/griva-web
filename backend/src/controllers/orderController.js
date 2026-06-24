@@ -31,6 +31,7 @@
 
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/db");
+const { emitToRoles, emitToUser, emitToAll } = require("../socket/socket");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
@@ -341,6 +342,13 @@ exports.createOrder = async (req, res, next) => {
     }
 
     await transaction.commit();
+
+    try {
+      emitToRoles(["admin", "staff"], "new-order");
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
     // await sendAdminOrderNotification(order);
     try {
       await sendAdminOrderNotification(order);
@@ -578,6 +586,18 @@ exports.updateOrderStatus = async (req, res, next) => {
     }
 
     await transaction.commit();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     if (status === "out_for_delivery") {
       try {
@@ -833,6 +853,17 @@ exports.assignDeliveryBoy = async (req, res, next) => {
     order.status = "assigned";
     await order.save();
 
+    try {
+      emitToUser(deliveryBoyId, "driver-assigned", { orderId: order.id });
+      emitToUser(deliveryBoyId, "order-status-updated", { orderId: order.id, status: "assigned" });
+      emitToUser(deliveryBoyId, "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: "assigned" });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: `Order ${order.order_number || order.id} assigned to ${deliveryBoy.name}.`,
@@ -1007,6 +1038,12 @@ exports.bulkPrintOrders = async (req, res, next) => {
       }
     );
 
+    try {
+      emitToRoles(["admin", "staff"], "print-status-updated", { orderIds });
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: "Orders marked as printed successfully.",
@@ -1156,6 +1193,18 @@ exports.cancelMyOrder = async (req, res, next) => {
 
     await transaction.commit();
 
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: "cancelled" });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: "cancelled" });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: "Order cancelled successfully.",
@@ -1188,6 +1237,13 @@ exports.reconcileCashPayment = async (req, res, next) => {
 
     order.cash_reconciliation_status = "reconciled";
     await order.save();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     res.status(200).json({
       success: true,

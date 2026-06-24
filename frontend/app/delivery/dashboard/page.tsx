@@ -34,6 +34,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useToast } from "@/app/context/ToastContext";
+import { useSocket } from "@/app/context/SocketContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
@@ -89,6 +90,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
 export default function DeliveryDashboard() {
   const router = useRouter();
   const { toast } = useToast();
+  const { socket } = useSocket();
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -271,6 +273,38 @@ export default function DeliveryDashboard() {
   useEffect(() => { 
     if (token) fetchOrders(); 
   }, [token, fetchOrders]);
+
+  // ── Socket.IO Real-time Events Listener ────────────────────────────────────
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDriverAssigned = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Driver]: driver-assigned received.", data);
+      showToast("🔔 New delivery order assigned to you!", "success");
+      fetchOrders();
+      fetchNotifications();
+    };
+
+    const handleOrderStatusUpdated = (data: { orderId: number, status: string } | null) => {
+      console.log("🔌 [Socket.IO Driver]: order-status-updated received.", data);
+      fetchOrders();
+    };
+
+    const handleOrderUpdated = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Driver]: order-updated received.", data);
+      fetchOrders();
+    };
+
+    socket.on("driver-assigned", handleDriverAssigned);
+    socket.on("order-status-updated", handleOrderStatusUpdated);
+    socket.on("order-updated", handleOrderUpdated);
+
+    return () => {
+      socket.off("driver-assigned", handleDriverAssigned);
+      socket.off("order-status-updated", handleOrderStatusUpdated);
+      socket.off("order-updated", handleOrderUpdated);
+    };
+  }, [socket, fetchOrders, fetchNotifications]);
 
   const handleStatusUpdate = async (orderId: number, newStatus: string, deliveryPaymentMethod?: string) => {
     if (!token) return;

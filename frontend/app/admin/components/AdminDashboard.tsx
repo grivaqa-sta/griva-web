@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdminSettings } from "@/app/context/AdminContext";
 import { useUser } from "@/app/context/UserContext";
+import { useSocket } from "@/app/context/SocketContext";
+import { useToast } from "@/app/context/ToastContext";
 import { CategoryItem, OfferCard, Product, SlideData } from "@/app/types/types";
 import { addSubscriberApi, AdminOrder, AnalyticsData, broadcastNewsletterApi, getAllOrdersApi, getAnalyticsApi, getSettingsApi, getSubscribersApi, SubscriberInfo, updateSettingsApi } from "@/app/utils/api";
 import { products as initialProducts, slide as initialSlides, offers as initialOffers, categories as initialCategories } from "@/app/data/data";
@@ -41,6 +43,8 @@ export default function AdminDashboard() {
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get("tab") as TabType | null;
   const { role } = useUser();
+  const { socket } = useSocket();
+  const { toast } = useToast();
 
   const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff"];
   const defaultTab = role === "staff" ? "operations" : "overview";
@@ -117,9 +121,9 @@ export default function AdminDashboard() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState<"idle" | "sending" | "sent">("idle");
 
-  // ── Data load (Static Settings, Subs, Orders) ──────────────────────────────
-  useEffect(() => {
-    async function load() {
+  // ── Centralized Data fetch/reload helpers ──────────────────────────────
+  const loadInitialData = useCallback(async () => {
+    try {
       const [dbSettings, dbSubs, dbOrders] = await Promise.all([
         getSettingsApi(), getSubscribersApi(), getAllOrdersApi(),
       ]);
@@ -130,29 +134,104 @@ export default function AdminDashboard() {
       setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 99);
       setSubscribersList(dbSubs);
       setOrdersList(dbOrders);
+    } catch (err) {
+      console.error("Failed to load initial dashboard data:", err);
     }
-    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadAnalytics = useCallback(async () => {
+    if (dateRangeOption === "custom" && (!customStartDate || !customEndDate)) {
+      return;
+    }
+    setAnalyticsLoading(true);
+    try {
+      const { startDate, endDate } = getRangeDates(dateRangeOption, customStartDate, customEndDate);
+      const dbAnalytics = await getAnalyticsApi(startDate, endDate);
+      setAnalytics(dbAnalytics);
+    } catch (err) {
+      console.error("Failed to load analytics dynamic metrics:", err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [dateRangeOption, customStartDate, customEndDate]);
+
+  // ── Data load (Static Settings, Subs, Orders) ──────────────────────────────
+  useEffect(() => {
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Dynamic Analytics load (triggers on date changes) ──────────────────────
   useEffect(() => {
-    async function loadAnalytics() {
-      if (dateRangeOption === "custom" && (!customStartDate || !customEndDate)) {
-        return;
-      }
-      setAnalyticsLoading(true);
-      try {
-        const { startDate, endDate } = getRangeDates(dateRangeOption, customStartDate, customEndDate);
-        const dbAnalytics = await getAnalyticsApi(startDate, endDate);
-        setAnalytics(dbAnalytics);
-      } catch (err) {
-        console.error("Failed to load analytics dynamic metrics:", err);
-      } finally {
-        setAnalyticsLoading(false);
-      }
-    }
     loadAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRangeOption, customStartDate, customEndDate]);
+
+  // ── Socket.IO Real-time Events Listener ────────────────────────────────────
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewOrder = () => {
+      console.log("🔌 [Socket.IO Event]: new-order received. Refetching...");
+      toast.success("🔔 New order placed! Refreshing dashboard...");
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handleOrderStatusUpdated = (data: { orderId: number, status: string } | null) => {
+      console.log("🔌 [Socket.IO Event]: order-status-updated received. Refetching...", data);
+      if (data) {
+        toast.info(`📦 Order #${data.orderId} status updated to: ${data.status.replace(/_/g, ' ').toUpperCase()}`);
+      } else {
+        toast.info("📦 Order status updated!");
+      }
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handleOrderUpdated = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Event]: order-updated received. Refetching...", data);
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handleDriverAssigned = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Event]: driver-assigned received. Refetching...", data);
+      if (data) {
+        toast.success(`🚚 Driver assigned to order #${data.orderId}`);
+      }
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handlePrintStatusUpdated = (data: { orderIds: number[] } | null) => {
+      console.log("🔌 [Socket.IO Event]: print-status-updated received. Refetching...", data);
+      toast.success("🖨️ Order print status updated!");
+      loadInitialData();
+    };
+
+    const handleDashboardMetricsUpdated = () => {
+      console.log("🔌 [Socket.IO Event]: dashboard-metrics-updated received. Refetching...");
+      loadAnalytics();
+    };
+
+    socket.on("new-order", handleNewOrder);
+    socket.on("order-status-updated", handleOrderStatusUpdated);
+    socket.on("order-updated", handleOrderUpdated);
+    socket.on("driver-assigned", handleDriverAssigned);
+    socket.on("print-status-updated", handlePrintStatusUpdated);
+    socket.on("dashboard-metrics-updated", handleDashboardMetricsUpdated);
+
+    return () => {
+      socket.off("new-order", handleNewOrder);
+      socket.off("order-status-updated", handleOrderStatusUpdated);
+      socket.off("order-updated", handleOrderUpdated);
+      socket.off("driver-assigned", handleDriverAssigned);
+      socket.off("print-status-updated", handlePrintStatusUpdated);
+      socket.off("dashboard-metrics-updated", handleDashboardMetricsUpdated);
+    };
+  }, [socket, loadInitialData, loadAnalytics, toast]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleToggleAnnouncement = async () => {

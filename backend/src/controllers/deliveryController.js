@@ -3,6 +3,7 @@
 // Do not modify without checking delivery feature docs
 
 const { Op } = require("sequelize");
+const { emitToRoles, emitToUser, emitToAll } = require("../socket/socket");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
@@ -136,6 +137,18 @@ exports.updateMyOrderStatus = async (req, res, next) => {
       order.payment_status = "paid";
     }
     await order.save();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     if (status === "out_for_delivery") {
       try {

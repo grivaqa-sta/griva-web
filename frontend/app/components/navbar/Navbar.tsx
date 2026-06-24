@@ -45,7 +45,8 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
     function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (target instanceof Element && !target.closest(".search-container")) {
         setSearchFocused(false);
       }
     }
@@ -79,7 +80,7 @@ export default function Navbar() {
           </Link>
 
           {/* Search Bar - Desktop */}
-          <div ref={searchRef} className="hidden lg:relative lg:flex flex-1 max-w-2xl items-center justify-center">
+          <div ref={searchRef} className="hidden lg:relative lg:flex flex-1 max-w-2xl items-center justify-center search-container">
             <div className="flex h-10 w-full overflow-hidden rounded-md border border-orange-500 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
               {/* Input */}
               <div className="flex flex-1 items-center px-3 gap-2">
@@ -264,7 +265,7 @@ export default function Navbar() {
             </Link>
 
             {/* Search Input Box */}
-            <div className="flex-1 min-w-0 pb-0.5">
+            <div className="flex-1 min-w-0 pb-0.5 search-container relative">
               <div className="flex overflow-hidden rounded-[5px] border border-gray-200 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
                 <div className="flex flex-1 items-center px-3 gap-1.5 h-8">
                   <Search size={14} className="text-gray-400 shrink-0" />
@@ -273,6 +274,7 @@ export default function Navbar() {
                     placeholder="Search for products, brands and more..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
                     className="w-full border-none bg-transparent text-[11px] text-black outline-none placeholder:text-gray-400"
                   />
                   {searchQuery && (
@@ -291,6 +293,11 @@ export default function Navbar() {
                   <Search size={12} />
                 </Link>
               </div>
+              <AnimatePresence>
+                {searchFocused && (
+                  <SearchDropdown onClose={() => setSearchFocused(false)} />
+                )}
+              </AnimatePresence>
             </div>
           </div>
         )}
@@ -303,24 +310,35 @@ export default function Navbar() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="border-t border-gray-100 px-4 py-2 lg:hidden overflow-hidden"
+              className="border-t border-gray-100 px-4 py-2 lg:hidden overflow-hidden search-container"
             >
-              <div className="flex overflow-hidden rounded-md border border-orange-500 shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
-                <input
-                  type="text"
-                  placeholder="Search for products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 text-sm outline-none bg-white text-black"
-                  autoFocus
-                />
-                <Link
-                  href={`/shop?search=${encodeURIComponent(searchQuery)}`}
-                  onClick={() => setMobileSearchOpen(false)}
-                  className="bg-orange-500 flex items-center justify-center px-4 text-white hover:bg-orange-600 transition-colors"
-                >
-                  <Search size={18} />
-                </Link>
+              <div className="relative">
+                <div className="flex overflow-hidden rounded-md border border-orange-500 shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
+                  <input
+                    type="text"
+                    placeholder="Search for products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    className="w-full px-4 py-2 text-sm outline-none bg-white text-black"
+                    autoFocus
+                  />
+                  <Link
+                    href={`/shop?search=${encodeURIComponent(searchQuery)}`}
+                    onClick={() => {
+                      setMobileSearchOpen(false);
+                      setSearchFocused(false);
+                    }}
+                    className="bg-orange-500 flex items-center justify-center px-4 text-white hover:bg-orange-600 transition-colors"
+                  >
+                    <Search size={18} />
+                  </Link>
+                </div>
+                <AnimatePresence>
+                  {searchFocused && (
+                    <SearchDropdown onClose={() => setSearchFocused(false)} />
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}

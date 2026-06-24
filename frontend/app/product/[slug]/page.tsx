@@ -17,6 +17,9 @@ import {
 import { useProduct, useAllProducts } from "@/app/hooks/useProducts";
 import { useCart } from "@/app/context/CartContext";
 import { useWishlist } from "@/app/context/WishlistContext";
+import { useUser } from "@/app/context/UserContext";
+import { useToast } from "@/app/context/ToastContext";
+import { api } from "@/app/lib/axios";
 import ProductGallery from "@/app/components/product/ProductGallery";
 import ProductCard from "@/app/components/product/ProductCard";
 import ScrollReveal from "@/app/components/common/ScrollReveal";
@@ -54,6 +57,8 @@ export default function ProductPage({ params }: ProductPageProps) {
   const { products: allProducts } = useAllProducts();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { isAuthenticated } = useUser();
+  const { toast } = useToast();
 
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -62,6 +67,48 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(150);
   const [reviewsList, setReviewsList] = useState<any[]>([]);
+
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [newRating, setNewRating] = useState<number>(5);
+  const [newTitle, setNewTitle] = useState<string>("");
+  const [newBody, setNewBody] = useState<string>("");
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBody.trim()) {
+      toast.error("Please enter review details.");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      const res = await api.post("/reviews", {
+        product_id: product?.id,
+        rating: newRating,
+        title: newTitle || "Product Review",
+        body: newBody,
+      });
+      toast.success("Review posted successfully!");
+      setNewRating(5);
+      setNewTitle("");
+      setNewBody("");
+      
+      // Refresh reviews list
+      if (product?.id) {
+        const reviewsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/product/${product.id}`);
+        if (reviewsRes.ok) {
+          const data = await reviewsRes.json();
+          if (data.reviews) {
+            setReviewsList(data.reviews);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.response?.data?.error || "Failed to post review. Please try again.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -454,46 +501,153 @@ export default function ProductPage({ params }: ProductPageProps) {
             )}
 
             {activeTab === "specs" && (
-              <div className="max-w-xl">
+              <div className="max-w-2xl overflow-hidden rounded-2xl border border-gray-100 shadow-sm bg-white">
                 {product.specifications && product.specifications.length > 0 ? (
-                  <dl className="divide-y divide-gray-100">
-                    {product.specifications.map((spec) => (
-                      <div key={spec.name} className="py-3.5 grid grid-cols-3 gap-4 text-sm">
-                        <dt className="font-semibold text-gray-500">{spec.name}</dt>
-                        <dd className="font-medium text-gray-900 col-span-2">{spec.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-100 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">
+                            Specification
+                          </th>
+                          <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-2/3">
+                            Detail
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-150 bg-white">
+                        {product.specifications.map((spec, index) => (
+                          <tr key={spec.name} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                            <td className="px-6 py-4 font-semibold text-gray-700 whitespace-nowrap">
+                              {spec.name}
+                            </td>
+                            <td className="px-6 py-4 font-medium text-gray-900 whitespace-pre-wrap">
+                              {spec.value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <p className="text-sm text-gray-500">No specifications listed for this product.</p>
+                  <div className="p-6 text-center text-sm text-gray-500">
+                    No specifications listed for this product.
+                  </div>
                 )}
               </div>
             )}
 
             {activeTab === "reviews" && (
-              <div className="space-y-4 max-w-2xl py-2 text-sm text-gray-600">
-                {reviewsList.length === 0 ? (
-                  <div className="text-center py-8 text-sm text-gray-500">
-                    No reviews yet. Be the first to review this product!
-                  </div>
-                ) : (
-                  reviewsList.map((review) => (
-                    <div key={review.id} className="bg-gray-50/50 rounded-2xl border p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-bold text-gray-900">{review.title || "User Review"}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">By {review.user?.email || "Customer"}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-5xl">
+                {/* Left side: Review List */}
+                <div className="lg:col-span-7 space-y-4">
+                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-4">
+                    Customer Reviews ({reviewsList.length})
+                  </h3>
+                  {reviewsList.length === 0 ? (
+                    <div className="text-center py-12 border rounded-2xl bg-gray-50/20 text-xs text-gray-500">
+                      No reviews yet. Be the first to review this product!
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                      {reviewsList.map((review) => (
+                        <div key={review.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="font-bold text-gray-900">{review.title || "User Review"}</p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">By {review.user?.email || "Customer"}</p>
+                            </div>
+                            <div className="flex gap-0.5 text-black font-black">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <span key={i} className="text-sm">{i < review.rating ? "★" : "☆"}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-gray-600 mt-1 leading-relaxed text-xs">{review.body}</p>
                         </div>
-                        <div className="flex gap-0.5 text-orange-500 font-black">
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right side: Add Review Form */}
+                <div className="lg:col-span-5 border border-gray-200/80 rounded-2xl p-6 bg-white shadow-sm h-fit">
+                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-4">
+                    Write a Review
+                  </h3>
+                  {isAuthenticated ? (
+                    <form onSubmit={handleSubmitReview} className="space-y-4">
+                      {/* Star rating picker */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Rating</label>
+                        <div className="flex items-center gap-1">
                           {Array.from({ length: 5 }).map((_, i) => (
-                            <span key={i}>{i < review.rating ? "★" : "☆"}</span>
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setNewRating(i + 1)}
+                              className="focus:outline-none"
+                            >
+                              <Star
+                                className={`h-5 w-5 cursor-pointer transition-colors ${
+                                  i < newRating
+                                    ? "fill-black text-black"
+                                    : "text-gray-200 hover:text-gray-300"
+                                }`}
+                              />
+                            </button>
                           ))}
                         </div>
                       </div>
-                      <p className="text-gray-600 mt-1 leading-relaxed">{review.body}</p>
+
+                      {/* Title input */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Title (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Great product, excellent quality"
+                          value={newTitle}
+                          onChange={(e) => setNewTitle(e.target.value)}
+                          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-xs text-black bg-white outline-none focus:ring-1 focus:ring-black focus:border-black placeholder:text-gray-400 transition-all"
+                        />
+                      </div>
+
+                      {/* Body textarea */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Review Details</label>
+                        <textarea
+                          rows={4}
+                          placeholder="Write your comments here..."
+                          value={newBody}
+                          onChange={(e) => setNewBody(e.target.value)}
+                          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-xs text-black bg-white outline-none focus:ring-1 focus:ring-black focus:border-black placeholder:text-gray-400 transition-all"
+                          required
+                        />
+                      </div>
+
+                      {/* Submit Button */}
+                      <button
+                        type="submit"
+                        disabled={submittingReview}
+                        className="w-full bg-black hover:bg-neutral-900 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-black/10 active:scale-[0.98] transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {submittingReview ? "Posting Review..." : "Submit Review"}
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                        You need to be logged in to write a review.
+                      </p>
+                      <Link
+                        href={`/auth/login?redirect=/product/${product.slug}`}
+                        className="inline-block w-full text-center bg-black hover:bg-neutral-900 text-white font-semibold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-black/10 transition-all cursor-pointer"
+                      >
+                        Login to Review
+                      </Link>
                     </div>
-                  ))
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>

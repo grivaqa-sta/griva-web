@@ -371,7 +371,7 @@ function TrackOrderContent() {
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-bold text-orange-500">
-                          QAR {(parseFloat(item.price_at_purchase as string) * item.quantity).toFixed(2)}
+                          QAR {(parseFloat(String(item.price_at_purchase || "0").replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>

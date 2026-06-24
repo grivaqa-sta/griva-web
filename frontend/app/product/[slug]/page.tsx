@@ -24,6 +24,7 @@ import { api } from "@/app/lib/axios";
 import ProductGallery from "@/app/components/product/ProductGallery";
 import ProductCard from "@/app/components/product/ProductCard";
 import ScrollReveal from "@/app/components/common/ScrollReveal";
+import { trackViewContent, trackAddToCart } from "@/app/components/common/PixelScripts";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -196,6 +197,14 @@ export default function ProductPage({ params }: ProductPageProps) {
     return [...sameSubcat, ...sameCategory, ...generalFallback].slice(0, 6);
   }, [product, allProducts, subCategories]);
 
+  // Fire ViewContent pixel event when product loads
+  useEffect(() => {
+    if (product) {
+      const price = parseFloat(String(product.price || "0").replace(/[^0-9.]/g, ""));
+      trackViewContent(product.id, product.title, price);
+    }
+  }, [product?.id]);
+
   // Loading state — full page skeleton
   if (loading) return <ProductSkeleton />;
 
@@ -239,6 +248,9 @@ export default function ProductPage({ params }: ProductPageProps) {
       quantity,
       slug: product.slug,
     });
+    // Fire AddToCart pixel event
+    const price = parseFloat(String(product.price || "0").replace(/[^0-9.]/g, ""));
+    trackAddToCart(product.id, product.title, price * quantity);
   };
 
   const handleBuyNow = () => {

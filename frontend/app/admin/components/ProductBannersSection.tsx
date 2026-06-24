@@ -42,7 +42,7 @@ export default function ProductBannersSection() {
               is_banner: p.is_banner,
               banner_background_color: p.banner_background_color || COLORS[0].id,
               tags: p.tags || [],
-              href: p.href || `/product/${p.id}`,
+              href: p.href || `/product/${p.slug}`,
             };
           }
         });
@@ -60,7 +60,7 @@ export default function ProductBannersSection() {
 
     setSavingId(productId);
     try {
-      const defaultHref = `/product/${productId}`;
+      const defaultHref = `/product/${prod.slug}`;
       
       // Immediately save it as a banner with default config
       await productService.updateBannerStatus(

@@ -133,7 +133,7 @@ export default function MobileCategoryDrawer({ isOpen, onClose }: Props) {
                     {filteredProducts.slice(0, 6).map((product) => (
                       <Link
                         key={product.id}
-                        href={`/product/${product.id}`}
+                        href={`/product/${product.slug}`}
                         onClick={onClose}
                         className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/30 transition-colors"
                       >

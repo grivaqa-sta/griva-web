@@ -17,7 +17,7 @@ export default function OfferSection() {
           const formattedOffers = response.data.map((product: any, index: number) => {
             return {
               id: product.id,
-              href: `/product/${product.id}`,
+              href: `/product/${product.slug}`,
               bgColor: bgColors[index % bgColors.length],
               badge: product.discount_percentage ? `${product.discount_percentage}% OFF` : "NEW",
               title: product.brand ? product.brand.toUpperCase() : product.title?.toUpperCase(),

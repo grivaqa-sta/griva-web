@@ -129,7 +129,13 @@ exports.getProducts = async (req, res) => {
  */
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
+    const isId = /^\d+$/.test(req.params.id);
+    let product;
+    if (isId) {
+      product = await Product.findByPk(req.params.id);
+    } else {
+      product = await Product.findOne({ where: { slug: req.params.id } });
+    }
 
     // CRIT-4: Add is_active check for public views on product details
     const isAdminOrStaffUser = req.user && (req.user.role === "admin" || req.user.role === "staff");

@@ -86,7 +86,7 @@ export default function TrendingProductCard({
     }
   };
 
-  const productLink = `/product/${product.id}`;
+  const productLink = `/product/${product.slug}`;
 
   return (
     <>

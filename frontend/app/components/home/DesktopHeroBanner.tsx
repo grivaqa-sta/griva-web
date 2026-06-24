@@ -16,7 +16,7 @@ function mapProductToSlide(p: BannerProduct): HeroSlide {
         image: p.main_image_url,
         price: p.price,
         old_price: p.old_price,
-        href: p.href ?? `/product/${p.id}`,
+        href: p.href ?? `/product/${p.slug}`,
         bg: p.banner_background_color ?? "#1a1a2e",
         mobile_ad_banner:p.mobile_ad_banner,
     };

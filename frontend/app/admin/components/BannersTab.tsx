@@ -62,7 +62,7 @@ function MobileBannersSection() {
       await productService.updateBannerStatus(
         product.id,
         true,
-        product.href || `/product/${product.id}`,
+        product.href || `/product/${product.slug}`,
         newUrl,
         product.banner_background_color,
         product.tags || []
@@ -86,7 +86,7 @@ function MobileBannersSection() {
       await productService.updateBannerStatus(
         product.id,
         true,
-        product.href || `/product/${product.id}`,
+        product.href || `/product/${product.slug}`,
         '',
         product.banner_background_color,
         product.tags || []
@@ -186,7 +186,7 @@ function MobileBannersSection() {
                       {mobileSrc ? mobileSrc.split('/').pop() : 'No mobile image uploaded'}
                     </div>
                     <div className="text-[10px] text-gray-500 bg-gray-50 px-2 py-1.5 rounded border border-gray-100 truncate">
-                      {product.href || `/product/${product.id}`}
+                      {product.href || `/product/${product.slug}`}
                     </div>
                   </div>
 

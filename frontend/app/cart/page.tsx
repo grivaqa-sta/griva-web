@@ -211,7 +211,7 @@ export default function CartPage() {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <Link href={`/product/${item.productId}`} className="truncate text-sm font-semibold text-gray-900 hover:text-orange-500 block transition">
+                        <Link href={`/product/${item.slug || item.productId}`} className="truncate text-sm font-semibold text-gray-900 hover:text-orange-500 block transition">
                           {item.title}
                         </Link>
                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">

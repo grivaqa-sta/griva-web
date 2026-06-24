@@ -73,7 +73,7 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
 
 function ProductCardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-[22px] border border-gray-100 bg-white p-3 sm:rounded-[28px] sm:p-4 animate-pulse">
+    <div className="flex flex-col overflow-hidden rounded-none bg-white p-2 animate-pulse sm:rounded-[28px] sm:border sm:border-gray-100 sm:p-4">
       <div className="h-[170px] sm:h-[240px] rounded-[18px] sm:rounded-[24px] bg-gray-100" />
       <div className="mt-4 space-y-2">
         <div className="h-4 rounded bg-gray-100 w-3/4" />
@@ -466,11 +466,11 @@ export default function CategoryPage() {
 
             {/* Product card loop */}
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
                 {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
               </div>
             ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
                 {filteredProducts.map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             ) : (

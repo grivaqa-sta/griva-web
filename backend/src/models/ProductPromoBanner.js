@@ -1,13 +1,12 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
-
-const DealOfDay = sequelize.define(
-  "DealOfDay",
+const ProductPromoBanner = sequelize.define(
+  "ProductPromoBanner",
   {
     id: {
       type: DataTypes.INTEGER,
-      autoIncrement: true,
       primaryKey: true,
+      autoIncrement: true,
     },
 
     productId: {
@@ -24,14 +23,9 @@ const DealOfDay = sequelize.define(
       allowNull: false,
     },
 
-    startDate: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-
-    endDate: {
-      type: DataTypes.DATE,
-      allowNull: false,
+    subtitle: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
 
     isActive: {
@@ -40,17 +34,18 @@ const DealOfDay = sequelize.define(
     },
   },
   {
-    tableName: "deal_of_day",
+    tableName: "product_promo_banners",
     timestamps: true,
-    underscored: true,
   }
 );
 
-DealOfDay.associate = (models) => {
-  DealOfDay.belongsTo(models.Product, {
+ProductPromoBanner.associate = (models) => {
+  ProductPromoBanner.belongsTo(models.Product, {
     foreignKey: "productId",
     as: "product",
   });
 };
 
-module.exports = DealOfDay;
+
+
+module.exports = ProductPromoBanner;

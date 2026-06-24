@@ -67,7 +67,7 @@ function MobileAdBanner() {
     rawSrc.startsWith("http") || rawSrc.startsWith("/")
       ? rawSrc
       : `http://localhost:8080${rawSrc}`;
-  const href = product.href || `/product/${product.id}`;
+  const href = product.href || `/product/${product.slug}`;
 
   return (
     <div

@@ -92,6 +92,7 @@ interface CartContextValue {
     selectedColor?: string;
     selectedStorage?: string;
     quantity?: number;
+    slug?: string;
   }) => void;
 }
 
@@ -202,6 +203,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     selectedColor?: string;
     selectedStorage?: string;
     quantity?: number;
+    slug?: string;
   }) => {
     const qty = product.quantity ?? 1;
 
@@ -215,7 +217,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
         if (response.success && response.cart) {
           dispatch({ type: "SET_CART", payload: response.cart.items });
-          openDrawer();
+          toast.success("Product added to cart");
         }
       } catch (error: any) {
         if (error.response?.status === 403) return; // Handled globally by auth block interceptor
@@ -270,9 +272,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         category: product.category,
         selectedColor: product.selectedColor,
         selectedStorage: product.selectedStorage,
+        slug: product.slug,
       };
       dispatch({ type: "ADD", payload: cartItem });
-      openDrawer();
+      toast.success("Product added to cart");
     }
   };
 

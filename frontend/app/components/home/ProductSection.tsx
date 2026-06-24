@@ -31,17 +31,25 @@ export default function ProductSection() {
 
   return (
     <section className="w-full py-8">
-      <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         {/* Mobile heading */}
-        <div className="mb-6 sm:hidden px-4">
-          <h2 className="text-[22px] font-bold tracking-tight text-[#0D0D0D]">
-            Best Selling <span className="text-orange-500">Products</span>
-          </h2>
-          <p className="mt-1 text-sm text-gray-400">
-            Top rated gear loved by our customers
-          </p>
-          <div className="mt-2 h-[3px] w-10 rounded-full bg-orange-500" />
+        <div className="flex items-start justify-between mb-6 sm:hidden">
+          <div>
+            <h2 className="text-[22px] font-bold tracking-tight text-[#0D0D0D]">
+              Best Selling <span className="text-orange-500">Products</span>
+            </h2>
+            <p className="mt-1 text-xs text-gray-400">
+              Top rated gear loved by our customers
+            </p>
+            <div className="mt-2 h-[3px] w-10 rounded-full bg-orange-500" />
+          </div>
+          <Link
+            href="/shop"
+            className="flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors mt-2 shrink-0"
+          >
+            View All <ArrowRight size={14} />
+          </Link>
         </div>
 
         {/* Desktop heading */}
@@ -64,7 +72,7 @@ export default function ProductSection() {
         </div>
 
         <ScrollReveal>
-          <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200  sm:gap-4 sm:border-0 sm:divide-none lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-4 sm:border-0 sm:divide-none lg:grid-cols-4 lg:gap-6">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />

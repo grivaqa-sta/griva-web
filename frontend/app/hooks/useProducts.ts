@@ -196,7 +196,7 @@ export function useNewArrivalProducts(): UseProductsResult {
 // ─────────────────────────────────────────────────────────
 // GET /api/products/:id — single product
 // ─────────────────────────────────────────────────────────
-export function useProduct(id: number | null): UseProductResult {
+export function useProduct(id: number | string | null): UseProductResult {
   const [product, setProduct] = useState<ApiProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

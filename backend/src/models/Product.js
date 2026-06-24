@@ -2,6 +2,7 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
 const DealOfDay = require("./DealOfDay");
 const DiscoverMore = require("./DiscoverMore");
+const ProductPromoBanner = require("./ProductPromoBanner");
 
 const Product = sequelize.define(
   "Product",
@@ -185,21 +186,21 @@ Product.associate = (models) => {
     foreignKey: "subcategory_id",
     as: "subcategory",
   });
+
+  Product.hasOne(models.DealOfDay, {
+    foreignKey: "productId",
+    as: "dealOfDay",
+  });
+
+  Product.hasMany(models.DiscoverMore, {
+    foreignKey: "productId",
+    as: "discoverMoreBanners",
+  });
+
+  Product.hasOne(models.ProductPromoBanner, {
+    foreignKey: "productId",
+    as: "promoBanner",
+  });
 };
-
-Product.hasOne(DealOfDay, {
-  foreignKey: "productId",
-  as: "dealOfDay",
-});
-
-DealOfDay.belongsTo(Product, {
-  foreignKey: "productId",
-  as: "product",
-});
-
-Product.hasMany(DiscoverMore, {
-  foreignKey: "productId",
-  as: "discoverMoreBanners",
-});
 
 module.exports = Product;

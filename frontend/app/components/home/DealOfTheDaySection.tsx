@@ -50,6 +50,7 @@ export default function DealOfTheDaySection() {
     return {
       id: p?.id || deal.id,
       dealId: deal.id,
+      slug: p?.slug || "",
       title: deal.title || p?.title || "Deal of the Day",
       mainImage: mainImg ? (mainImg.startsWith('http') || mainImg.startsWith('/') ? mainImg : `http://localhost:8080${mainImg}`) : "/placeholder.png",
       thumbs: Array.isArray(p?.gallery_images) ? p.gallery_images.map((img: string) => img.startsWith('http') || img.startsWith('/') ? img : `http://localhost:8080${img}`) : [],
@@ -102,6 +103,7 @@ export default function DealOfTheDaySection() {
       image: slide.mainImage,
       price: slide.price,
       category: slide.category,
+      slug: slide.slug,
     });
   };
 
@@ -113,6 +115,7 @@ export default function DealOfTheDaySection() {
       image: slide.mainImage,
       price: slide.price,
       category: slide.category,
+      slug: slide.slug,
     });
     router.push("/checkout");
   };
@@ -164,7 +167,7 @@ export default function DealOfTheDaySection() {
 
         {/* ── PRODUCT CARD ── */}
         <div
-          className="relative overflow-hidden rounded-[5px] border border-gray-100 bg-white shadow-sm touch-pan-y"
+          className="relative overflow-hidden rounded-[10px] border border-gray-100 bg-white shadow-sm touch-pan-y"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={() => setIsPaused(true)}
@@ -280,7 +283,7 @@ export default function DealOfTheDaySection() {
                     {slide.category}
                   </p>
                   <h3 className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors hover:text-orange-500 line-clamp-1 lg:line-clamp-2">
-                    <Link href={`/product/${slide.id}`}>{slide.title}</Link>
+                    <Link href={`/product/${slide.slug}`}>{slide.title}</Link>
                   </h3>
                   <div className="mt-2">
                     <Rating rating={slide.rating} />

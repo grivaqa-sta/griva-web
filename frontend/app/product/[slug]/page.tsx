@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import {
   Heart,
   ShoppingCart,
@@ -22,7 +22,7 @@ import ProductCard from "@/app/components/product/ProductCard";
 import ScrollReveal from "@/app/components/common/ScrollReveal";
 
 interface ProductPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 // Full-page skeleton while product loads
@@ -47,10 +47,10 @@ function ProductSkeleton() {
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const { id: paramId } = React.use(params);
-  const productId = parseInt(paramId);
+  const { slug } = React.use(params);
+  const router = useRouter();
 
-  const { product, loading } = useProduct(productId);
+  const { product, loading } = useProduct(slug);
   const { products: allProducts } = useAllProducts();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -80,8 +80,9 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   useEffect(() => {
     const fetchReviews = async () => {
+      if (!product?.id) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/product/${productId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/product/${product.id}`);
         if (res.ok) {
           const data = await res.json();
           if (data.reviews) {
@@ -90,10 +91,8 @@ export default function ProductPage({ params }: ProductPageProps) {
         }
       } catch {}
     };
-    if (productId) {
-      fetchReviews();
-    }
-  }, [productId]);
+    fetchReviews();
+  }, [product?.id]);
 
   // Loading state — full page skeleton
   if (loading) return <ProductSkeleton />;
@@ -139,11 +138,27 @@ export default function ProductPage({ params }: ProductPageProps) {
       title: product.title,
       image: product.main_image_url,
       price: `QAR ${formatPrice(product.price)}`,
-      category: "Product",
+      category: product.brand || "Product",
       selectedColor: selectedColor || undefined,
       selectedStorage: selectedSize || undefined,
       quantity,
+      slug: product.slug,
     });
+  };
+
+  const handleBuyNow = async () => {
+    await addToCart({
+      id: product.id,
+      title: product.title,
+      image: product.main_image_url,
+      price: `QAR ${formatPrice(product.price)}`,
+      category: product.brand || "Product",
+      selectedColor: selectedColor || undefined,
+      selectedStorage: selectedSize || undefined,
+      quantity,
+      slug: product.slug,
+    });
+    router.push("/checkout");
   };
 
   const handleWishlistToggle = () => {
@@ -154,7 +169,8 @@ export default function ProductPage({ params }: ProductPageProps) {
       price: `QAR ${formatPrice(product.price)}`,
       oldPrice: product.old_price ? `QAR ${formatPrice(product.old_price)}` : undefined,
       rating: product.rating,
-      category: "Product",
+      category: product.brand || "Product",
+      slug: product.slug,
     });
   };
 
@@ -408,9 +424,9 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Tabbed Product Details */}
         <div className="bg-white rounded-[24px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 mb-12 max-w-5xl mx-auto">
@@ -488,7 +504,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           <ScrollReveal>
             <div className="mb-12 max-w-5xl mx-auto">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Related Products</h2>
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
                 {relatedProducts.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
@@ -496,6 +512,28 @@ export default function ProductPage({ params }: ProductPageProps) {
             </div>
           </ScrollReveal>
         )}
+
+        {/* Spacing for mobile sticky action bar */}
+        <div className="h-20 sm:hidden" aria-hidden="true" />
+      </div>
+
+      {/* Mobile Sticky Bottom Action Bar (Only visible on mobile) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:hidden flex items-center gap-3 pb-safe">
+        <button
+          onClick={handleAddToCart}
+          disabled={product.stock === 0}
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-orange-500 py-3 text-sm font-semibold text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <ShoppingCart size={16} />
+          Add to Cart
+        </button>
+        <button
+          onClick={handleBuyNow}
+          disabled={product.stock === 0}
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 text-sm font-semibold text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md shadow-orange-500/20"
+        >
+          Buy Now
+        </button>
       </div>
     </div>
   );

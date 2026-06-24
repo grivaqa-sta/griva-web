@@ -95,7 +95,7 @@ export default function SearchDropdown({ onClose }: SearchDropdownProps) {
               {results.map((product) => (
                 <Link
                   key={product.id}
-                  href={`/product/${product.id}`}
+                  href={`/product/${product.slug}`}
                   onClick={() => {
                     addRecentSearch(searchQuery);
                     onClose();

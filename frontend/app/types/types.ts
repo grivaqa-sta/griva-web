@@ -239,6 +239,44 @@ export interface HeroSlide {
   mobile_ad_banner: string;
 }
 
+
+// ─────────────────────────────────────────────────────────
+// Product Banner Types
+// ─────────────────────────────────────────────────────────
+export interface ProductBannerProduct {
+  id: number;
+  title: string;
+  slug: string;
+  main_image_url: string;
+  price: number;
+}
+
+export interface ProductBanner {
+  id: number;
+  productId: number;
+  title: string;
+  subtitle?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  product?: ProductBannerProduct;
+}
+
+export interface ProductBannerRequest {
+  productId: number;
+  title: string;
+  subtitle?: string;
+  isActive?: boolean;
+}
+
+export interface ProductBannerUpdateRequest {
+  productId?: number;
+  title?: string;
+  subtitle?: string;
+  isActive?: boolean;
+}
+
+
 // ─────────────────────────────────────────────────────────
 // Core Product Types
 // ─────────────────────────────────────────────────────────
@@ -297,6 +335,7 @@ export interface Product {
 export interface DealProduct {
   id: number;
   title: string;
+  slug?: string;
   main_image_url?: string;
   gallery_images?: string[];
   price?: string | number;
@@ -359,6 +398,7 @@ export interface CartItem {
   selectedColor?: string;
   selectedStorage?: string;
   category: string;
+  slug?: string;
 }
 
 export type CartAction =
@@ -386,6 +426,8 @@ export interface WishlistItem {
   oldPrice?: string;
   rating: number;
   category: string;
+  stock?: number;
+  slug?: string;
 }
 
 // ─────────────────────────────────────────────────────────

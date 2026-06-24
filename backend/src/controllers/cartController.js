@@ -52,6 +52,7 @@ const getFormattedCart = async (userId) => {
       selectedColor: item.selected_color,
       selectedStorage: item.selected_storage,
       category: p && p.subcategory && p.subcategory.category ? p.subcategory.category.title : "Gadgets",
+      slug: p ? p.slug : "",
     };
   });
 

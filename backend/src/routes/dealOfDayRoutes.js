@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const dealController = require("../controllers/dealOfDay.controller");
+const dealController = require("../controllers/dealOfDayController");
 
 const { authenticateJWT, isAdmin } = require("../middleware/auth");
 

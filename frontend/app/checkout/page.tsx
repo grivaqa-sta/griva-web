@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
 import { useCart } from "@/app/context/CartContext";
 import { addressService } from "@/app/services/address.service";
 import { orderService } from "@/app/services/order.service";
+import { cartService } from "@/app/services/cart.service";
 import { Address, CartState } from "@/app/types/types";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import {
@@ -90,14 +91,106 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const [mounted, setMounted] = useState(false);
+  const [isBuyNow, setIsBuyNow] = useState(false);
+  const [buyNowItem, setBuyNowItem] = useState<any | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
+
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [stockErrors, setStockErrors] = useState<Record<number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
 
+  useEffect(() => {
+    setMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    const buyNowParam = params.get("buyNow") === "true";
+    if (buyNowParam) {
+      setIsBuyNow(true);
+      const stored = sessionStorage.getItem("griva-buynow-item");
+      if (stored) {
+        try {
+          const item = JSON.parse(stored);
+          const fullItem = {
+            id: Date.now(),
+            productId: item.productId,
+            title: item.title,
+            image: item.image,
+            price: item.price,
+            priceNumber: item.priceNumber,
+            quantity: item.quantity,
+            category: item.category,
+            selectedColor: item.selectedColor,
+            selectedStorage: item.selectedStorage,
+            slug: item.slug,
+          };
+          setBuyNowItem(fullItem);
+          setSelectedItemIds(new Set([fullItem.id]));
+        } catch (err) {
+          console.error("Failed to parse buyNowItem:", err);
+        }
+      }
+    }
+  }, []);
+
+  // Initialize selectedItemIds with all cart items (only if not Buy Now mode)
+  useEffect(() => {
+    if (!isBuyNow && cartState.items.length > 0) {
+      setSelectedItemIds((prev) => {
+        const next = new Set(prev);
+        cartState.items.forEach((item) => {
+          next.add(item.id);
+        });
+        return next;
+      });
+    }
+  }, [cartState.items, isBuyNow]);
+
+  const toggleItemSelection = (id: number) => {
+    if (isBuyNow) return;
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectedItems = useMemo(() => {
+    return isBuyNow && buyNowItem
+      ? [buyNowItem]
+      : cartState.items.filter((item) => selectedItemIds.has(item.id));
+  }, [isBuyNow, buyNowItem, cartState.items, selectedItemIds]);
+
+  const selectedTotalPrice = useMemo(() => {
+    return selectedItems.reduce(
+      (sum, item) => sum + item.priceNumber * item.quantity,
+      0
+    );
+  }, [selectedItems]);
+
+  const selectedTotalItems = useMemo(() => {
+    return selectedItems.reduce((sum, item) => sum + item.quantity, 0);
+  }, [selectedItems]);
+
+  const effectiveCartState = useMemo(() => {
+    return {
+      items: selectedItems,
+      totalItems: selectedTotalItems,
+      totalPrice: selectedTotalPrice,
+    };
+  }, [selectedItems, selectedTotalItems, selectedTotalPrice]);
+
   // Frozen cart state to prevent UI reset during order placement transitions
   const [frozenCart, setFrozenCart] = useState<CartState | null>(null);
-  const activeCart = frozenCart || cartState;
+  const activeCart: CartState = frozenCart || {
+    items: isBuyNow && buyNowItem ? [buyNowItem] : cartState.items,
+    totalItems: selectedTotalItems,
+    totalPrice: selectedTotalPrice,
+  };
 
   // Form state
   const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM);
@@ -119,7 +212,7 @@ export default function CheckoutPage() {
       ? window.crypto.randomUUID() 
       : Math.random().toString(36).substring(2) + Date.now().toString(36);
     setCheckoutToken(token);
-  }, [cartState.items]);
+  }, [effectiveCartState.items]);
   // Shipping config from backend
   const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
     shippingFee: 10,
@@ -185,14 +278,14 @@ export default function CheckoutPage() {
   // Validate inventory in real-time
   useEffect(() => {
     const validateCartInventory = async () => {
-      if (cartState.items.length === 0) return;
+      if (effectiveCartState.items.length === 0) return;
       
       const newStockErrors: Record<number, { title: string; availableStock: number }> = {};
       let hasErrors = false;
       
       try {
         await Promise.all(
-          cartState.items.map(async (item) => {
+          effectiveCartState.items.map(async (item) => {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${item.productId}`);
             if (res.ok) {
               const data = await res.json();
@@ -221,7 +314,7 @@ export default function CheckoutPage() {
     };
 
     validateCartInventory();
-  }, [cartState.items, toast]);
+  }, [effectiveCartState.items, toast]);
 
   // Fetch saved addresses for logged-in users
   useEffect(() => {
@@ -257,14 +350,27 @@ export default function CheckoutPage() {
 
   // Redirect if cart is empty (but not while placing order)
   useEffect(() => {
-    if (isPlacingOrder) return;
-    if (cartState.items.length === 0) {
+    if (!mounted || isPlacingOrder) return;
+    if (isBuyNow) {
+      const stored = sessionStorage.getItem("griva-buynow-item");
+      if (!stored) {
+        router.push("/cart");
+      }
+    } else if (cartState.items.length === 0) {
       router.push("/cart");
     }
-  }, [cartState.items.length, router, isPlacingOrder]);
+  }, [mounted, cartState.items.length, isBuyNow, router, isPlacingOrder]);
 
-  if (!isPlacingOrder && cartState.items.length === 0) {
+  if (!mounted) {
     return null;
+  }
+
+  if (!isPlacingOrder) {
+    if (isBuyNow) {
+      if (!buyNowItem) return null;
+    } else if (cartState.items.length === 0) {
+      return null;
+    }
   }
 
   // Calculate totals
@@ -501,7 +607,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    setFrozenCart(cartState);
+    setFrozenCart(effectiveCartState);
     setIsPlacingOrder(true);
     setOrderError("");
 
@@ -526,7 +632,7 @@ export default function CheckoutPage() {
           : "Doha";
 
       const response = await orderService.createOrder({
-        items: cartState.items.map((item) => ({
+        items: effectiveCartState.items.map((item) => ({
           product_id: item.productId,
           quantity: item.quantity,
           selectedColor: item.selectedColor,
@@ -570,8 +676,32 @@ export default function CheckoutPage() {
           }
         } catch {}
 
-        // Clear frontend cart state
-        cartDispatch({ type: "CLEAR" });
+        // Clear ordered items from the cart (sequentially to avoid race conditions/lockups)
+        if (isBuyNow) {
+          sessionStorage.removeItem("griva-buynow-item");
+        } else {
+          for (const item of effectiveCartState.items) {
+            if (isLoggedIn) {
+              await cartService.removeItem(item.id).catch((err) => {
+                console.error(`Failed to remove item ${item.id} from DB cart:`, err);
+              });
+            } else {
+              cartDispatch({ type: "REMOVE", payload: { id: item.id } });
+            }
+          }
+
+          // For logged-in users, sync the context cart state once at the end
+          if (isLoggedIn) {
+            try {
+              const res = await cartService.getCart();
+              if (res.success && res.cart) {
+                cartDispatch({ type: "SET_CART", payload: res.cart.items });
+              }
+            } catch (err) {
+              console.error("Failed to sync cart after removal:", err);
+            }
+          }
+        }
 
         // Navigate to success page (exposing order number & slot only, omitting total price URL param)
         const selectedSlot = deliverySlots.find((s) => s.id === selectedSlotId);
@@ -608,7 +738,7 @@ export default function CheckoutPage() {
         if (match) {
           const title = match[1];
           const availableStock = parseInt(match[2], 10);
-          const item = cartState.items.find((i) => i.title === title);
+          const item = effectiveCartState.items.find((i) => i.title === title);
           if (item) {
             setStockErrors((prev) => ({
               ...prev,
@@ -1142,65 +1272,82 @@ export default function CheckoutPage() {
               {/* Items */}
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 {activeCart.items.map((item) => {
+                  const isSelected = selectedItemIds.has(item.id);
                   const stockErr = stockErrors[item.productId];
                   return (
                     <div key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                      <div className="relative h-16 w-16 shrink-0 rounded-xl border border-gray-150 bg-gray-50 p-1 overflow-hidden">
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          sizes="64px"
-                          className="object-contain"
+                      {/* Checkbox (Left Side) */}
+                      {!isBuyNow ? (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={isPlacingOrder}
+                          onChange={() => toggleItemSelection(item.id)}
+                          className="h-4 w-4 rounded border-gray-200 text-orange-500 focus:ring-orange-500 cursor-pointer disabled:opacity-55 disabled:cursor-not-allowed shrink-0"
                         />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {item.selectedColor && (
-                            <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                              {item.selectedColor}
-                            </span>
-                          )}
-                          {item.selectedStorage && (
-                            <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                              {item.selectedStorage}
-                            </span>
+                      ) : (
+                        <div className="h-4 w-4 shrink-0 flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-orange-500" />
+                        </div>
+                      )}
+                      <div className={`flex-1 flex items-center gap-3 min-w-0 ${!isSelected ? "opacity-55 select-none" : ""}`}>
+                        <div className="relative h-16 w-16 shrink-0 rounded-xl border border-gray-150 bg-gray-50 p-1 overflow-hidden">
+                          <Image
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            sizes="64px"
+                            className="object-contain"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {item.selectedColor && (
+                              <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                {item.selectedColor}
+                              </span>
+                            )}
+                            {item.selectedStorage && (
+                              <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                {item.selectedStorage}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-gray-550 mt-1 font-medium">Qty &times; {item.quantity}</p>
+
+                          {stockErr && isSelected && (
+                            <div className="mt-2 bg-red-55/65 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
+                              <div className="flex items-center gap-1.5 text-red-600 font-bold text-[11px]">
+                                <span>❌</span>
+                                <span>
+                                  {stockErr.availableStock === 0
+                                    ? "Out Of Stock"
+                                    : `Only ${stockErr.availableStock} available`}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  onClick={() => handleRemoveStockItem(item.id, item.productId)}
+                                  className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                                >
+                                  Remove Item
+                                </button>
+                                {stockErr.availableStock > 0 && (
+                                  <button
+                                    onClick={() => handleUpdateStockQty(item.id, item.productId, stockErr.availableStock)}
+                                    className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-705 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                                  >
+                                    Update to {stockErr.availableStock}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
-
-                        <p className="text-xs text-gray-550 mt-1 font-medium">Qty &times; {item.quantity}</p>
-
-                        {stockErr && (
-                          <div className="mt-2 bg-red-55/65 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
-                            <div className="flex items-center gap-1.5 text-red-600 font-bold text-[11px]">
-                              <span>❌</span>
-                              <span>
-                                {stockErr.availableStock === 0
-                                  ? "Out Of Stock"
-                                  : `Only ${stockErr.availableStock} available`}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <button
-                                onClick={() => handleRemoveStockItem(item.id, item.productId)}
-                                className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
-                              >
-                                Remove Item
-                              </button>
-                              {stockErr.availableStock > 0 && (
-                                <button
-                                  onClick={() => handleUpdateStockQty(item.id, item.productId, stockErr.availableStock)}
-                                  className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-705 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
-                                >
-                                  Update to {stockErr.availableStock}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </div>
-                      <span className="text-xs font-bold text-gray-900 shrink-0 mt-0.5">
+                      <span className={`text-xs font-bold text-gray-900 shrink-0 mt-0.5 ${!isSelected ? "opacity-55 line-through decoration-gray-400" : ""}`}>
                         QAR {(item.priceNumber * item.quantity).toFixed(2)}
                       </span>
                     </div>
@@ -1262,11 +1409,11 @@ export default function CheckoutPage() {
                     setOrderError("Please fill in all required fields.");
                   }
                 }}
-                disabled={isPlacingOrder || hasStockErrors}
+                disabled={isPlacingOrder || hasStockErrors || activeCart.totalItems === 0}
                 className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-lg ${
                   isPlacingOrder
                     ? "bg-gray-300 cursor-not-allowed shadow-none"
-                    : hasStockErrors
+                    : (hasStockErrors || activeCart.totalItems === 0)
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none border border-gray-300/50"
                     : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20 cursor-pointer active:scale-[0.98]"
                 }`}
@@ -1274,9 +1421,11 @@ export default function CheckoutPage() {
                 {isPlacingOrder && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isPlacingOrder
                   ? "Placing Order..."
+                  : activeCart.totalItems === 0
+                  ? "Select Items to Place Order"
                   : hasStockErrors
-                  ? "Fix Cart Items to Place Order"
-                  : `Place Order — QAR ${orderTotal.toFixed(2)}`}
+                  ? "Fix Selected Items to Place Order"
+                  : `Place Order for ${activeCart.totalItems} item${activeCart.totalItems !== 1 ? "s" : ""} — QAR ${orderTotal.toFixed(2)}`}
               </button>
 
               <p className="text-center text-[10px] text-gray-400">

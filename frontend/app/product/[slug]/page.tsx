@@ -17,6 +17,7 @@ import {
 import { useProduct, useAllProducts } from "@/app/hooks/useProducts";
 import { useCart } from "@/app/context/CartContext";
 import { useWishlist } from "@/app/context/WishlistContext";
+import { subCategoryService } from "@/app/services/subCategory.service";
 import ProductGallery from "@/app/components/product/ProductGallery";
 import ProductCard from "@/app/components/product/ProductCard";
 import ScrollReveal from "@/app/components/common/ScrollReveal";
@@ -57,6 +58,20 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [subCategories, setSubCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadSubCategories() {
+      try {
+        const subRes = await subCategoryService.getSubCategories();
+        const sData = subRes?.data || subRes;
+        setSubCategories(Array.isArray(sData) ? sData : []);
+      } catch (err) {
+        console.error("Failed to load subcategories in product page:", err);
+      }
+    }
+    loadSubCategories();
+  }, []);
   const [quantity, setQuantity] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<"desc" | "specs" | "reviews">("desc");
 
@@ -94,6 +109,46 @@ export default function ProductPage({ params }: ProductPageProps) {
     fetchReviews();
   }, [product?.id]);
 
+  // Related products — prioritizing:
+  // 1. Same subcategory
+  // 2. Same main category (via parent category_id of subcategory)
+  // 3. General fallback (other products in catalog)
+  const relatedProducts = React.useMemo(() => {
+    if (!product) return [];
+
+    // Find current subcategory details
+    const currentSubcat = subCategories.find((s) => s.id === product.subcategory_id);
+    const categoryId = currentSubcat?.category_id;
+
+    // Find all subcategories belonging to the same category
+    const siblingSubcategoryIds = categoryId
+      ? subCategories.filter((s) => s.category_id === categoryId).map((s) => s.id)
+      : [];
+
+    // 1. Same subcategory (excluding current product)
+    const sameSubcat = allProducts.filter(
+      (p) => p.subcategory_id === product.subcategory_id && p.id !== product.id
+    );
+
+    // 2. Sibling subcategories in the same main category (excluding current and sameSubcat)
+    const sameCategory = allProducts.filter(
+      (p) =>
+        siblingSubcategoryIds.includes(p.subcategory_id) &&
+        p.id !== product.id &&
+        !sameSubcat.some((x) => x.id === p.id)
+    );
+
+    // 3. Fallback to any other products (excluding current, sameSubcat, and sameCategory)
+    const generalFallback = allProducts.filter(
+      (p) =>
+        p.id !== product.id &&
+        !sameSubcat.some((x) => x.id === p.id) &&
+        !sameCategory.some((x) => x.id === p.id)
+    );
+
+    return [...sameSubcat, ...sameCategory, ...generalFallback].slice(0, 6);
+  }, [product, allProducts, subCategories]);
+
   // Loading state — full page skeleton
   if (loading) return <ProductSkeleton />;
 
@@ -108,13 +163,6 @@ export default function ProductPage({ params }: ProductPageProps) {
   const galleryImages = Array.from(
     new Set([product.main_image_url, ...(product.gallery_images || [])].filter(Boolean))
   );
-
-  // Related products — same subcategory, exclude current
-  const relatedProducts = allProducts
-    .filter(
-      (p) => p.subcategory_id === product.subcategory_id && p.id !== product.id
-    )
-    .slice(0, 4);
 
   // Color variants — filter variants where color is defined
   const colorVariants = (product.variants || []).filter((v) => v.color);
@@ -146,19 +194,23 @@ export default function ProductPage({ params }: ProductPageProps) {
     });
   };
 
-  const handleBuyNow = async () => {
-    await addToCart({
-      id: product.id,
-      title: product.title,
-      image: product.main_image_url,
-      price: `QAR ${formatPrice(product.price)}`,
-      category: product.brand || "Product",
-      selectedColor: selectedColor || undefined,
-      selectedStorage: selectedSize || undefined,
-      quantity,
-      slug: product.slug,
-    });
-    router.push("/checkout");
+  const handleBuyNow = () => {
+    if (typeof window !== "undefined") {
+      const buyNowItem = {
+        productId: product.id,
+        title: product.title,
+        image: product.main_image_url,
+        price: `QAR ${formatPrice(product.price)}`,
+        priceNumber: product.price,
+        quantity,
+        category: product.brand || "Product",
+        selectedColor: selectedColor || undefined,
+        selectedStorage: selectedSize || undefined,
+        slug: product.slug,
+      };
+      sessionStorage.setItem("griva-buynow-item", JSON.stringify(buyNowItem));
+    }
+    router.push("/checkout?buyNow=true");
   };
 
   const handleWishlistToggle = () => {
@@ -175,7 +227,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   };
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-8">
+    <div className="bg-white min-h-screen pt-8 pb-0 sm:pb-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Breadcrumbs */}
         <div className="text-xs text-gray-500 mb-6 flex items-center gap-1.5">
@@ -278,25 +330,36 @@ export default function ProductPage({ params }: ProductPageProps) {
                     );
                   }
                 })()}
-                <span className="text-gray-300">|</span>
-                <span className="text-xs font-semibold text-green-600">
-                  {product.stock > 0 ? `In Stock (${product.stock} left)` : "Out of Stock"}
-                </span>
+                {product.stock === 0 ? (
+                  <>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-xs font-semibold text-red-500">
+                      Out of Stock
+                    </span>
+                  </>
+                ) : product.stock <= 5 ? (
+                  <>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-xs font-semibold text-amber-500">
+                      Low Stock (only {product.stock} left)
+                    </span>
+                  </>
+                ) : null}
               </div>
 
               {/* Price Panel */}
-              <div className="mt-6 flex items-baseline gap-3 border-b pb-6">
-                <span className="text-3xl font-extrabold text-orange-500">
+              <div className="mt-6 flex items-baseline gap-3 border-b pb-6 flex-wrap">
+                <span className="text-2xl sm:text-3xl font-extrabold text-black whitespace-nowrap">
                   QAR {formatPrice(product.price)}
                 </span>
                 {product.old_price && (
-                  <span className="text-base text-gray-400 line-through font-medium">
+                  <span className="text-sm sm:text-base text-gray-400 line-through font-medium whitespace-nowrap">
                     QAR {formatPrice(product.old_price)}
                   </span>
                 )}
                 {(product.discount_percentage ?? 0) > 0 && (
-                  <span className="text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full">
-                    -{product.discount_percentage}%
+                  <span className="text-[10px] sm:text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap">
+                    {product.discount_percentage}% OFF
                   </span>
                 )}
               </div>
@@ -502,11 +565,13 @@ export default function ProductPage({ params }: ProductPageProps) {
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <ScrollReveal>
-            <div className="mb-12 max-w-5xl mx-auto">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Related Products</h2>
+            <div className="mb-0 sm:mb-12 max-w-5xl mx-auto">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">You May Also Like</h2>
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
-                {relatedProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} />
+                {relatedProducts.map((p, idx) => (
+                  <div key={p.id} className={idx >= 4 ? "lg:hidden" : ""}>
+                    <ProductCard product={p} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -514,7 +579,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         )}
 
         {/* Spacing for mobile sticky action bar */}
-        <div className="h-20 sm:hidden" aria-hidden="true" />
+        <div className="h-14 sm:hidden" aria-hidden="true" />
       </div>
 
       {/* Mobile Sticky Bottom Action Bar (Only visible on mobile) */}

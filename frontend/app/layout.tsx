@@ -6,8 +6,9 @@ import AnnouncementBar from "@/app/components/navbar/AnnouncementBar";
 import Footer from "@/app/components/footer/Footer";
 import { Providers } from "@/app/context/Providers";
 import CartDrawer from "@/app/components/cart/CartDrawer";
-import NotificationBubble from "./components/common/NotificationBubble";
 import BackToTop from "@/app/components/common/BackToTop";
+import WhatsAppFloat from "@/app/components/common/WhatsAppFloat";
+import PixelScripts from "@/app/components/common/PixelScripts";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,8 +21,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GriVA — Premium Electronics Store",
-  description: "Explore premium laptops, smartwatches, drones, audiophile headphones, and gaming gear at GriVA.",
+  metadataBase: new URL("https://thegriva.com"),
+  title: "GriVA — Premium Electronics Store in Qatar",
+  description: "Shop premium electronics, gadgets, toys, and lifestyle products in Qatar. Fast delivery across Doha. Cash on Delivery available.",
+  openGraph: {
+    title: "GriVA — Premium Electronics Store in Qatar",
+    description: "Shop premium electronics, gadgets, toys, and lifestyle products in Qatar. Fast delivery across Doha.",
+    url: "https://thegriva.com",
+    siteName: "GriVA Qatar",
+    images: [
+      {
+        url: "/images/logo-dark.png",
+        width: 1200,
+        height: 630,
+        alt: "GriVA Qatar Online Store",
+      },
+    ],
+    locale: "en_QA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GriVA — Premium Electronics Store in Qatar",
+    description: "Shop premium electronics, gadgets, toys, and lifestyle products in Qatar.",
+    images: ["/images/logo-dark.png"],
+  },
 };
 
 export default function RootLayout({
@@ -44,8 +68,9 @@ export default function RootLayout({
           </main>
           <Footer />
           <CartDrawer />
-          {/* <NotificationBubble /> */}
+          <WhatsAppFloat />
           <BackToTop />
+          <PixelScripts />
         </Providers>
       </body>
     </html>

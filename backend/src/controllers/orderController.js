@@ -31,6 +31,7 @@
 
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/db");
+const { emitToRoles, emitToUser, emitToAll } = require("../socket/socket");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
@@ -341,6 +342,13 @@ exports.createOrder = async (req, res, next) => {
     }
 
     await transaction.commit();
+
+    try {
+      emitToRoles(["admin", "staff"], "new-order");
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
     // await sendAdminOrderNotification(order);
     try {
       await sendAdminOrderNotification(order);
@@ -578,6 +586,18 @@ exports.updateOrderStatus = async (req, res, next) => {
     }
 
     await transaction.commit();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     if (status === "out_for_delivery") {
       try {
@@ -833,6 +853,17 @@ exports.assignDeliveryBoy = async (req, res, next) => {
     order.status = "assigned";
     await order.save();
 
+    try {
+      emitToUser(deliveryBoyId, "driver-assigned", { orderId: order.id });
+      emitToUser(deliveryBoyId, "order-status-updated", { orderId: order.id, status: "assigned" });
+      emitToUser(deliveryBoyId, "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: "assigned" });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: `Order ${order.order_number || order.id} assigned to ${deliveryBoy.name}.`,
@@ -939,6 +970,49 @@ exports.createDeliveryBoy = async (req, res, next) => {
 };
 
 /**
+ * PATCH /api/orders/admin/delivery-boys/:id/reset-password
+ * Admin resets a delivery boy's password
+ */
+exports.resetDeliveryBoyPassword = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required and must be at least 6 characters long.",
+      });
+    }
+
+    const driver = await User.findOne({
+      where: {
+        id,
+        role: "delivery",
+      },
+    });
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery driver not found.",
+      });
+    }
+
+    driver.password = password; // Will be hashed automatically by user model hooks
+    await driver.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Driver password reset successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+/**
  * Bulk print orders: Mark orders as printed
  * PATCH /api/orders/bulk-print
  */
@@ -963,6 +1037,12 @@ exports.bulkPrintOrders = async (req, res, next) => {
         },
       }
     );
+
+    try {
+      emitToRoles(["admin", "staff"], "print-status-updated", { orderIds });
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     res.status(200).json({
       success: true,
@@ -1113,6 +1193,18 @@ exports.cancelMyOrder = async (req, res, next) => {
 
     await transaction.commit();
 
+    try {
+      emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: "cancelled" });
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (order.delivery_boy_id) {
+        emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: "cancelled" });
+        emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: "Order cancelled successfully.",
@@ -1145,6 +1237,13 @@ exports.reconcileCashPayment = async (req, res, next) => {
 
     order.cash_reconciliation_status = "reconciled";
     await order.save();
+
+    try {
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
 
     res.status(200).json({
       success: true,

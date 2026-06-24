@@ -34,6 +34,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useToast } from "@/app/context/ToastContext";
+import { useSocket } from "@/app/context/SocketContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
@@ -89,6 +90,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
 export default function DeliveryDashboard() {
   const router = useRouter();
   const { toast } = useToast();
+  const { socket } = useSocket();
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -272,6 +274,38 @@ export default function DeliveryDashboard() {
     if (token) fetchOrders(); 
   }, [token, fetchOrders]);
 
+  // ── Socket.IO Real-time Events Listener ────────────────────────────────────
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDriverAssigned = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Driver]: driver-assigned received.", data);
+      showToast("🔔 New delivery order assigned to you!", "success");
+      fetchOrders();
+      fetchNotifications();
+    };
+
+    const handleOrderStatusUpdated = (data: { orderId: number, status: string } | null) => {
+      console.log("🔌 [Socket.IO Driver]: order-status-updated received.", data);
+      fetchOrders();
+    };
+
+    const handleOrderUpdated = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Driver]: order-updated received.", data);
+      fetchOrders();
+    };
+
+    socket.on("driver-assigned", handleDriverAssigned);
+    socket.on("order-status-updated", handleOrderStatusUpdated);
+    socket.on("order-updated", handleOrderUpdated);
+
+    return () => {
+      socket.off("driver-assigned", handleDriverAssigned);
+      socket.off("order-status-updated", handleOrderStatusUpdated);
+      socket.off("order-updated", handleOrderUpdated);
+    };
+  }, [socket, fetchOrders, fetchNotifications]);
+
   const handleStatusUpdate = async (orderId: number, newStatus: string, deliveryPaymentMethod?: string) => {
     if (!token) return;
     setUpdatingId(orderId);
@@ -434,8 +468,10 @@ export default function DeliveryDashboard() {
     }
   };
 
-  const parseTotal = (tp: string) => {
-    const num = parseFloat(String(tp).replace(/[$,]/g, ""));
+  const parseTotal = (tp: any) => {
+    if (!tp) return "0.00";
+    const cleaned = String(tp).replace(/([$]|qar|[\s,])/gi, "");
+    const num = parseFloat(cleaned);
     return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
@@ -688,7 +724,7 @@ export default function DeliveryDashboard() {
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold text-green-400 bg-green-950/30 border border-green-900/35 px-2.5 py-1 rounded-xl">
-                            Prepaid
+                            Prepaid (QAR {totalAmount})
                           </span>
                         )}
                       </div>
@@ -741,12 +777,14 @@ export default function DeliveryDashboard() {
                         <div className="border-t border-zinc-900/80 pt-3 space-y-1.5">
                           <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                             <span>Order Items ({order.items?.length || 0})</span>
-                            <span>QTY</span>
+                            <span>QTY & Price</span>
                           </div>
                           {(order.items || []).map((item) => (
                             <div key={item.id} className="flex items-center justify-between text-xs font-medium text-zinc-400">
-                              <span className="truncate max-w-[80%]">{item.product?.title || `Product #${item.id}`}</span>
-                              <span className="text-[10px] font-bold text-zinc-500">×{item.quantity}</span>
+                              <span className="truncate max-w-[65%]">{item.product?.title || `Product #${item.id}`}</span>
+                              <span className="text-[10px] font-bold text-zinc-500 shrink-0">
+                                {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
+                              </span>
                             </div>
                           ))}
                         </div>

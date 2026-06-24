@@ -7,19 +7,22 @@ import { SearchProvider } from "./SearchContext";
 import { UserProvider } from "./UserContext";
 import { AdminProvider } from "./AdminContext";
 import { ToastProvider } from "./ToastContext";
+import { SocketProvider } from "./SocketContext";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <AdminProvider>
         <UserProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <SearchProvider>
-                {children}
-              </SearchProvider>
-            </WishlistProvider>
-          </CartProvider>
+          <SocketProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <SearchProvider>
+                  {children}
+                </SearchProvider>
+              </WishlistProvider>
+            </CartProvider>
+          </SocketProvider>
         </UserProvider>
       </AdminProvider>
     </ToastProvider>

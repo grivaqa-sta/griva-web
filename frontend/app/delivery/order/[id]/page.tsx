@@ -175,8 +175,10 @@ export default function DeliveryOrderDetailPage() {
       setTimeout(() => setCopied(false), 2000);
     });
   };
-  const parseTotal = (tp: string) => {
-    const num = parseFloat(String(tp).replace(/[$,]/g, ""));
+  const parseTotal = (tp: any) => {
+    if (!tp) return "0.00";
+    const cleaned = String(tp).replace(/([$]|qar|[\s,])/gi, "");
+    const num = parseFloat(cleaned);
     return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
@@ -387,10 +389,12 @@ export default function DeliveryOrderDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-white truncate">{item.product?.title || `Product #${item.id}`}</p>
-                    <p className="text-[10px] text-zinc-500">Quantity check: {item.quantity}</p>
+                    <p className="text-[10px] text-zinc-500">
+                      Quantity: {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
+                    </p>
                   </div>
                   <span className="text-xs font-bold text-zinc-300 shrink-0">
-                    QAR {(parseFloat(String(item.price_at_purchase).replace(/[$,]/g, "")) * item.quantity).toFixed(2)}
+                    QAR {(parseFloat(parseTotal(item.price_at_purchase || item.product?.price || "0")) * item.quantity).toFixed(2)}
                   </span>
                 </div>
 

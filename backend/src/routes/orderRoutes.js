@@ -87,6 +87,9 @@ router.get("/admin/delivery-boys", authenticateJWT, isAdminOrStaff, orderControl
 // Maps to: POST /api/orders/admin/delivery-boys (Admin creates a delivery boy account)
 router.post("/admin/delivery-boys", authenticateJWT, isAdmin, orderController.createDeliveryBoy);
 
+// Maps to: PATCH /api/orders/admin/delivery-boys/:id/reset-password (Admin resets driver password)
+router.patch("/admin/delivery-boys/:id/reset-password", authenticateJWT, isAdmin, orderController.resetDeliveryBoyPassword);
+
 // FEATURE: Delivery Attempt Management — admin reopens cancelled/attempted/failed orders
 router.patch("/:id/reopen", authenticateJWT, isAdminOrStaff, reopenOrder);
 

@@ -434,8 +434,10 @@ export default function DeliveryDashboard() {
     }
   };
 
-  const parseTotal = (tp: string) => {
-    const num = parseFloat(String(tp).replace(/[$,]/g, ""));
+  const parseTotal = (tp: any) => {
+    if (!tp) return "0.00";
+    const cleaned = String(tp).replace(/([$]|qar|[\s,])/gi, "");
+    const num = parseFloat(cleaned);
     return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
@@ -688,7 +690,7 @@ export default function DeliveryDashboard() {
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold text-green-400 bg-green-950/30 border border-green-900/35 px-2.5 py-1 rounded-xl">
-                            Prepaid
+                            Prepaid (QAR {totalAmount})
                           </span>
                         )}
                       </div>
@@ -741,12 +743,14 @@ export default function DeliveryDashboard() {
                         <div className="border-t border-zinc-900/80 pt-3 space-y-1.5">
                           <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                             <span>Order Items ({order.items?.length || 0})</span>
-                            <span>QTY</span>
+                            <span>QTY & Price</span>
                           </div>
                           {(order.items || []).map((item) => (
                             <div key={item.id} className="flex items-center justify-between text-xs font-medium text-zinc-400">
-                              <span className="truncate max-w-[80%]">{item.product?.title || `Product #${item.id}`}</span>
-                              <span className="text-[10px] font-bold text-zinc-500">×{item.quantity}</span>
+                              <span className="truncate max-w-[65%]">{item.product?.title || `Product #${item.id}`}</span>
+                              <span className="text-[10px] font-bold text-zinc-500 shrink-0">
+                                {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
+                              </span>
                             </div>
                           ))}
                         </div>

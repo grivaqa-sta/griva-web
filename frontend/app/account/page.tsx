@@ -314,7 +314,7 @@ export default function AccountPage() {
     "mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 shadow-sm";
 
   const labelClass =
-    "block text-xs font-black uppercase tracking-widest text-slate-400";
+    "block text-xs font-bold uppercase tracking-wider text-slate-400";
 
   return (
     <div className="bg-slate-50/50 min-h-[90vh] py-10">
@@ -326,15 +326,15 @@ export default function AccountPage() {
           <div className="md:col-span-3 space-y-5">
             
             {/* User Greeting Box */}
-            <div className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-tr from-orange-500 via-orange-600 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-md border-2 border-white ring-4 ring-orange-500/10">
-                {(profile?.name || "C").charAt(0).toUpperCase()}
+              <div className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="h-14 w-14 rounded-full bg-gradient-to-tr from-orange-500 via-orange-600 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-md border-2 border-white ring-4 ring-orange-500/10">
+                  {(profile?.name || "C").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Welcome back,</p>
+                  <h4 className="text-sm font-bold text-slate-800 truncate mt-0.5">{profileName || profile?.name || "Customer"}</h4>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Welcome back,</p>
-                <h4 className="text-sm font-black text-slate-800 truncate mt-0.5">{profileName || profile?.name || "Customer"}</h4>
-              </div>
-            </div>
 
             {/* Structured Navigation Directory */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
@@ -345,25 +345,25 @@ export default function AccountPage() {
                   setActiveTab("orders");
                   closeForm();
                 }}
-                className={`w-full flex items-center justify-between px-6 py-4.5 text-left font-black text-xs tracking-wider transition-all cursor-pointer relative group ${
+                className={`w-full flex items-center justify-between px-6 py-4.5 text-left font-semibold text-sm transition-all cursor-pointer relative group ${
                   activeTab === "orders" ? "text-orange-500 bg-orange-50/20" : "text-slate-700 hover:text-orange-500"
                 }`}
               >
                 {activeTab === "orders" && <span className="absolute left-0 top-0 bottom-0 w-[4px] bg-orange-500 rounded-r-md" />}
                 <div className="flex items-center gap-3">
                   <Package className={`h-4.5 w-4.5 transition-colors duration-250 ${activeTab === "orders" ? "text-orange-500" : "text-slate-400 group-hover:text-orange-500"}`} />
-                  <span>MY ORDERS</span>
+                  <span>My Orders</span>
                 </div>
                 <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform duration-250 ${activeTab === "orders" ? "text-orange-500 translate-x-0.5" : "group-hover:translate-x-0.5"}`} />
               </button>
 
               {/* Account Settings */}
               <div className="px-6 py-4.5 space-y-3">
-                <div className="flex items-center gap-3 text-xs font-black text-slate-400 tracking-wider">
+                <div className="flex items-center gap-3 text-xs font-bold text-slate-400 tracking-wider">
                   <UserIcon className="h-4.5 w-4.5" />
-                  <span>ACCOUNT SETTINGS</span>
+                  <span>Account Settings</span>
                 </div>
-                <div className="pl-7.5 space-y-3 flex flex-col text-xs font-black tracking-wider">
+                <div className="pl-7.5 space-y-3 flex flex-col text-[13px] font-semibold">
                   <button
                     onClick={() => {
                       setActiveTab("profile");
@@ -374,7 +374,7 @@ export default function AccountPage() {
                     }`}
                   >
                     {activeTab === "profile" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
-                    PROFILE INFORMATION
+                    Profile Information
                   </button>
                   <button
                     onClick={() => {
@@ -386,21 +386,21 @@ export default function AccountPage() {
                     }`}
                   >
                     {activeTab === "addresses" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
-                    MANAGE ADDRESSES
+                    Manage Addresses
                   </button>
                 </div>
               </div>
 
               {/* My Stuff */}
               <div className="px-6 py-4.5 space-y-3">
-                <div className="flex items-center gap-3 text-xs font-black text-slate-400 tracking-wider">
+                <div className="flex items-center gap-3 text-xs font-bold text-slate-400 tracking-wider">
                   <Heart className="h-4.5 w-4.5" />
-                  <span>MY STUFF</span>
+                  <span>My Stuff</span>
                 </div>
-                <div className="pl-7.5 space-y-3 flex flex-col text-xs font-black tracking-wider">
+                <div className="pl-7.5 space-y-3 flex flex-col text-[13px] font-semibold">
                   <Link href="/wishlist" className="text-left text-slate-500 hover:text-orange-500 transition-colors flex items-center justify-between">
-                    <span>MY WISHLIST</span>
-                    <span className="px-2 py-0.5 bg-orange-50 text-orange-500 rounded-full text-[9px] font-black">{wishlistItems.length}</span>
+                    <span>My Wishlist</span>
+                    <span className="px-2 py-0.5 bg-orange-50 text-orange-500 rounded-full text-[9px] font-bold">{wishlistItems.length}</span>
                   </Link>
                   <button
                     onClick={() => {
@@ -412,7 +412,7 @@ export default function AccountPage() {
                     }`}
                   >
                     {activeTab === "notifications" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
-                    <span>NOTIFICATIONS</span>
+                    <span>Notifications</span>
                   </button>
                   <button
                     onClick={() => {
@@ -424,7 +424,7 @@ export default function AccountPage() {
                     }`}
                   >
                     {activeTab === "support" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
-                    SUPPORT CENTER
+                    Support Center
                   </button>
                 </div>
               </div>
@@ -432,10 +432,10 @@ export default function AccountPage() {
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-6 py-4.5 text-left font-black text-xs tracking-wider text-red-500 hover:bg-red-50/20 transition-colors cursor-pointer"
+                className="w-full flex items-center gap-3 px-6 py-4.5 text-left font-semibold text-sm text-red-500 hover:bg-red-50/20 transition-colors cursor-pointer"
               >
                 <LogOut className="h-4.5 w-4.5 shrink-0 text-red-400" />
-                <span>LOGOUT</span>
+                <span>Logout</span>
               </button>
 
             </div>
@@ -453,13 +453,13 @@ export default function AccountPage() {
                   {/* Tab Header */}
                   <div className="border-b border-slate-100 pb-5 flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-black text-slate-800">Profile Details</h3>
+                      <h3 className="text-xl font-bold text-slate-800">Profile Details</h3>
                       <p className="text-xs text-slate-400 mt-0.5">Manage your personal settings and contact cards</p>
                     </div>
                     {!isEditingProfile && (
                       <button
                         onClick={() => setIsEditingProfile(true)}
-                        className="flex items-center gap-1.5 px-4.5 py-2 text-xs font-black uppercase tracking-wider text-orange-500 hover:bg-orange-50 border border-orange-200 rounded-xl transition cursor-pointer shadow-sm shadow-orange-500/5"
+                        className="flex items-center gap-1.5 px-4.5 py-2 text-xs font-semibold text-orange-500 hover:bg-orange-50 border border-orange-200 rounded-xl transition cursor-pointer shadow-sm shadow-orange-500/5"
                       >
                         <Edit className="h-3.5 w-3.5" /> Edit Profile
                       </button>
@@ -485,13 +485,13 @@ export default function AccountPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                         
                         {/* Orders count */}
-                        <div className="p-5 bg-gradient-to-br from-orange-50/20 to-orange-500/5 border border-orange-100 rounded-2xl flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition duration-300">
+                        <div className="p-5 bg-gradient-to-br from-orange-5/20 to-orange-500/5 border border-orange-100 rounded-2xl flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition duration-300">
                           <div className="h-11 w-11 rounded-xl bg-orange-100 flex items-center justify-center text-orange-650 shadow-sm shadow-orange-500/10">
                             <Package className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-2xl font-black text-slate-800">{orders.length}</p>
-                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Total Orders</p>
+                            <p className="text-2xl font-bold text-slate-800">{orders.length}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Total Orders</p>
                           </div>
                         </div>
 
@@ -501,8 +501,8 @@ export default function AccountPage() {
                             <MapPin className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-2xl font-black text-slate-800">{addresses.length}</p>
-                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Saved Addresses</p>
+                            <p className="text-2xl font-bold text-slate-800">{addresses.length}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Saved Addresses</p>
                           </div>
                         </div>
 
@@ -512,8 +512,8 @@ export default function AccountPage() {
                             <Heart className="h-5 w-5 animate-pulse" />
                           </div>
                           <div>
-                            <p className="text-2xl font-black text-slate-800">{wishlistItems.length}</p>
-                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Wishlist Items</p>
+                            <p className="text-2xl font-bold text-slate-800">{wishlistItems.length}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Wishlist Items</p>
                           </div>
                         </div>
 
@@ -554,26 +554,26 @@ export default function AccountPage() {
                             />
                           </div>
 
-                          <div className="pt-2 flex gap-3">
-                            <button
-                              type="submit"
-                              disabled={profileSaving}
-                              className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-orange-500/15 transition disabled:opacity-60 flex items-center gap-1.5 cursor-pointer"
-                            >
-                              {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                              Save Changes
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setProfileName(profile.name);
-                                setIsEditingProfile(false);
-                              }}
-                              className="px-6 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-black text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </div>
+                            <div className="pt-2 flex gap-3">
+                              <button
+                                type="submit"
+                                disabled={profileSaving}
+                                className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-orange-500/15 transition disabled:opacity-60 flex items-center gap-1.5 cursor-pointer"
+                              >
+                                {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                Save Changes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProfileName(profile.name);
+                                  setIsEditingProfile(false);
+                                }}
+                                className="px-6 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                         </form>
                       ) : (
                         <div className="max-w-2xl divide-y divide-slate-100 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
@@ -582,15 +582,15 @@ export default function AccountPage() {
                             <div className="flex items-start gap-3">
                               <UserIcon className="h-5 w-5 text-slate-400 mt-0.5" />
                               <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Full Name</p>
-                                <p className="text-sm font-bold text-slate-800 mt-1">{profileName || profile.name}</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Full Name</p>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{profileName || profile.name}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
                               <Mail className="h-5 w-5 text-slate-400 mt-0.5" />
                               <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address</p>
-                                <p className="text-sm font-bold text-slate-800 mt-1">{profile.email}</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Email Address</p>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{profile.email}</p>
                               </div>
                             </div>
                           </div>
@@ -599,15 +599,15 @@ export default function AccountPage() {
                             <div className="flex items-start gap-3">
                               <Phone className="h-5 w-5 text-slate-400 mt-0.5" />
                               <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mobile Number</p>
-                                <p className="text-sm font-bold text-slate-800 mt-1">{profileMobile}</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mobile Number</p>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{profileMobile}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
                               <ShieldCheck className="h-5 w-5 text-slate-400 mt-0.5" />
                               <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Account Safety</p>
-                                <p className="text-xs font-black text-green-600 bg-green-50 border border-green-100 rounded-full px-3 py-1 mt-1.5 inline-block uppercase tracking-wider">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Account Safety</p>
+                                <p className="text-xs font-semibold text-green-600 bg-green-50 border border-green-100 rounded-full px-3 py-1 mt-1.5 inline-block tracking-wider">
                                   Verified Member
                                 </p>
                               </div>
@@ -630,13 +630,13 @@ export default function AccountPage() {
                   {/* Tab Header */}
                   <div className="border-b border-slate-100 pb-5 flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-black text-slate-800">Delivery Addresses</h3>
+                      <h3 className="text-xl font-bold text-slate-800">Delivery Addresses</h3>
                       <p className="text-xs text-slate-400 mt-0.5">Manage and organize your shipping locations</p>
                     </div>
                     {!isAddingAddress && (
                       <button
                         onClick={openAddAddress}
-                        className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-white bg-orange-500 hover:bg-orange-600 px-4.5 py-2.5 rounded-xl transition cursor-pointer shadow-md shadow-orange-500/15"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 px-4.5 py-2.5 rounded-xl transition cursor-pointer shadow-md shadow-orange-500/15"
                       >
                         <Plus className="h-4 w-4" /> Add New Address
                       </button>
@@ -651,7 +651,7 @@ export default function AccountPage() {
 
                   {isAddingAddress ? (
                     <form onSubmit={handleAddressSubmit} className="space-y-5 max-w-2xl bg-slate-50/20 p-6 rounded-2xl border border-slate-200/60 shadow-sm animate-fadeIn">
-                      <h4 className="font-black text-sm text-slate-700 uppercase tracking-wider pb-2 border-b border-slate-100">
+                      <h4 className="font-bold text-sm text-slate-700 uppercase tracking-wider pb-2 border-b border-slate-100">
                         {editingAddress !== null ? "Modify Address details" : "Create New Address Location"}
                       </h4>
 
@@ -672,7 +672,7 @@ export default function AccountPage() {
                                 key={l}
                                 type="button"
                                 onClick={() => setFormData({ ...formData, label: l })}
-                                className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider transition duration-200 cursor-pointer ${
+                                className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl border text-xs font-semibold uppercase tracking-wider transition duration-200 cursor-pointer ${
                                   formData.label === l
                                     ? "bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/10"
                                     : "bg-white text-slate-500 border-slate-200 hover:border-orange-300 hover:text-orange-500"
@@ -782,8 +782,8 @@ export default function AccountPage() {
                             onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
                             className="h-4.5 w-4.5 rounded border-slate-350 text-orange-500 focus:ring-orange-500 cursor-pointer transition"
                           />
-                          <label htmlFor="isDefault" className="text-xs font-bold text-slate-650 cursor-pointer select-none">
-                            SET AS DEFAULT SHIPPING ADDRESS
+                          <label htmlFor="isDefault" className="text-xs font-semibold text-slate-650 cursor-pointer select-none">
+                            Set as default shipping address
                           </label>
                         </div>
 
@@ -791,12 +791,12 @@ export default function AccountPage() {
 
                       <div className="pt-3 flex gap-3 border-t border-slate-100">
                         <button type="submit" disabled={formLoading}
-                          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer shadow-md shadow-orange-500/10 disabled:opacity-60 disabled:cursor-not-allowed">
+                          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition cursor-pointer shadow-md shadow-orange-500/10 disabled:opacity-60 disabled:cursor-not-allowed">
                           {formLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                           Save Address
                         </button>
                         <button type="button" onClick={closeForm} disabled={formLoading}
-                          className="bg-white border border-slate-250 text-slate-600 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+                          className="bg-white border border-slate-250 text-slate-600 px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider hover:bg-slate-50 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                           Cancel
                         </button>
                       </div>
@@ -812,9 +812,9 @@ export default function AccountPage() {
                           {addresses.length === 0 ? (
                             <div className="col-span-2 text-center py-16 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/20">
                               <MapPin className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-                              <p className="text-slate-400 text-xs font-black tracking-wider uppercase">No Saved Locations Yet</p>
+                              <p className="text-slate-400 text-xs font-semibold tracking-wider uppercase">No Saved Locations Yet</p>
                               <button onClick={openAddAddress}
-                                className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-orange-600 transition cursor-pointer shadow-sm">
+                                className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-semibold uppercase tracking-wider hover:bg-orange-600 transition cursor-pointer shadow-sm">
                                 + Add address location
                               </button>
                             </div>
@@ -831,27 +831,27 @@ export default function AccountPage() {
 
                                   {/* Badges row */}
                                   <div className="flex items-center gap-2 mb-4">
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 border text-[9px] font-black uppercase tracking-widest rounded-full capitalize ${labelColors[addr.label] || labelColors.other}`}>
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 border text-[9px] font-bold uppercase tracking-wider rounded-full capitalize ${labelColors[addr.label] || labelColors.other}`}>
                                       <LabelIcon className="h-3 w-3" />
                                       {addr.label}
                                     </span>
                                     {addr.isDefault && (
-                                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-600 border border-orange-200 text-[9px] font-black uppercase tracking-widest rounded-full">
+                                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-600 border border-orange-200 text-[9px] font-bold uppercase tracking-wider rounded-full">
                                         Default Shipping
                                       </span>
                                     )}
                                   </div>
 
-                                  <h5 className="font-extrabold text-slate-800 text-sm">{addr.fullName}</h5>
+                                  <h5 className="font-bold text-slate-800 text-sm">{addr.fullName}</h5>
                                   
                                   {/* Address Details structured as tabular description */}
                                   <div className="mt-3.5 space-y-1.5 text-xs text-slate-500 font-medium">
                                     <div className="flex gap-2">
-                                      <span className="text-[10px] font-black uppercase text-slate-400 w-16 shrink-0 mt-0.5">Mobile:</span>
-                                      <span className="text-slate-700 font-bold">{addr.mobile}</span>
+                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Mobile:</span>
+                                      <span className="text-slate-700 font-semibold">{addr.mobile}</span>
                                     </div>
                                     <div className="flex gap-2">
-                                      <span className="text-[10px] font-black uppercase text-slate-400 w-16 shrink-0 mt-0.5">Address:</span>
+                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Address:</span>
                                       <span className="text-slate-600 leading-relaxed">
                                         Building {addr.building_number}
                                         {addr.villa_apartment && `, ${addr.villa_apartment}`}
@@ -862,13 +862,13 @@ export default function AccountPage() {
                                     </div>
                                     {addr.landmark && (
                                       <div className="flex gap-2">
-                                        <span className="text-[10px] font-black uppercase text-slate-400 w-16 shrink-0 mt-0.5">Landmark:</span>
+                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Landmark:</span>
                                         <span className="text-slate-500 italic">Near {addr.landmark}</span>
                                       </div>
                                     )}
                                     <div className="flex gap-2">
-                                      <span className="text-[10px] font-black uppercase text-slate-400 w-16 shrink-0 mt-0.5">Location:</span>
-                                      <span className="text-slate-700 font-bold">{addr.city}, {addr.country}</span>
+                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Location:</span>
+                                      <span className="text-slate-700 font-semibold">{addr.city}, {addr.country}</span>
                                     </div>
                                   </div>
 
@@ -876,7 +876,7 @@ export default function AccountPage() {
                                     <div className="mt-4 pt-3.5 border-t border-slate-100">
                                       <button
                                         onClick={() => setDefaultAddress(addr.id)}
-                                        className="text-xs font-black uppercase tracking-wider text-orange-500 hover:text-orange-650 transition cursor-pointer">
+                                        className="text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 transition cursor-pointer">
                                         Set as default
                                       </button>
                                     </div>
@@ -910,7 +910,7 @@ export default function AccountPage() {
                   {/* Tab Header */}
                   <div className="border-b border-slate-100 pb-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
-                      <h3 className="text-xl font-black text-slate-800">Order History</h3>
+                      <h3 className="text-xl font-bold text-slate-800">Order History</h3>
                       <p className="text-xs text-slate-400 mt-0.5">Track shipping details and review past purchases</p>
                     </div>
 
@@ -920,7 +920,7 @@ export default function AccountPage() {
                         <button
                           key={st}
                           onClick={() => setOrderStatusFilter(st)}
-                          className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition border cursor-pointer ${
+                          className={`px-3.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition border cursor-pointer ${
                             orderStatusFilter === st
                               ? "bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/10"
                               : "bg-white text-slate-500 border-slate-200 hover:border-orange-200 hover:text-orange-500"
@@ -957,7 +957,7 @@ export default function AccountPage() {
                   ) : filteredOrders.length === 0 ? (
                     <div className="text-center py-20 border-2 border-dashed border-slate-150 rounded-3xl bg-slate-50/10">
                       <Package className="h-12 w-12 text-slate-300 mx-auto mb-2" />
-                      <p className="text-slate-400 text-xs font-black tracking-wider uppercase">No matching orders found</p>
+                      <p className="text-slate-400 text-xs font-semibold tracking-wider uppercase">No matching orders found</p>
                     </div>
                   ) : (
                     <div className="space-y-5">
@@ -979,10 +979,10 @@ export default function AccountPage() {
                                   <Package className="h-5 w-5 text-orange-550" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-black text-slate-800">{order.order_number || `ORD-${String(order.id).padStart(4, "0")}`}</p>
+                                  <p className="text-sm font-bold text-slate-800">{order.order_number || `ORD-${String(order.id).padStart(4, "0")}`}</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <Calendar className="h-3 w-3 text-slate-400" />
-                                    <span className="text-[10px] text-slate-400 font-bold">
+                                    <span className="text-[10px] text-slate-400 font-semibold">
                                       {new Date(order.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                                     </span>
                                   </div>
@@ -990,11 +990,11 @@ export default function AccountPage() {
                               </div>
                               
                               <div className="flex items-center gap-4.5">
-                                <span className={`inline-flex items-center gap-1.5 text-[9px] font-black px-3 py-1 rounded-full border uppercase tracking-wider ${cfg.bg} ${cfg.color} shadow-sm shadow-black/[0.01]`}>
+                                <span className={`inline-flex items-center gap-1.5 text-[9px] font-bold px-3 py-1 rounded-full border uppercase tracking-wider ${cfg.bg} ${cfg.color} shadow-sm shadow-black/[0.01]`}>
                                   {cfg.icon}
                                   {cfg.label}
                                 </span>
-                                <span className="text-sm font-black text-slate-800">
+                                <span className="text-sm font-semibold text-slate-800">
                                   {order.total_price ? `QAR ${parseFloat(String(order.total_price).replace(/([$]|qar|[\s,])/gi, "") || "0").toFixed(2)}` : "—"}
                                 </span>
                                 <ChevronDown className={`h-4.5 w-4.5 text-slate-400 transition-transform duration-250 ${isExpanded ? "rotate-180 text-orange-500" : ""}`} />
@@ -1003,7 +1003,7 @@ export default function AccountPage() {
 
                             {/* Stepper Progress Bar */}
                             <div className="px-6 pb-6 border-b border-slate-100 bg-slate-50/10">
-                              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400 max-w-xl mx-auto relative pt-4.5">
+                              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 max-w-xl mx-auto relative pt-4.5">
                                 <div className="absolute top-7 left-0 right-0 h-1 bg-slate-150 -z-10 rounded-full" />
                                 <div
                                   className="absolute top-7 left-0 h-1 bg-gradient-to-r from-orange-500 to-green-500 -z-10 rounded-full transition-all duration-500"
@@ -1011,39 +1011,39 @@ export default function AccountPage() {
                                 />
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-bold text-[9px] transition-all duration-300 ${
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
                                     orderStep >= 1 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
                                   }`}>
                                     {orderStep >= 1 ? <Check className="h-3.5 w-3.5" /> : "1"}
                                   </div>
-                                  <span className={orderStep >= 1 ? "text-orange-500 font-black" : ""}>Placed</span>
+                                  <span className={orderStep >= 1 ? "text-orange-500 font-semibold" : ""}>Placed</span>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-bold text-[9px] transition-all duration-300 ${
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
                                     orderStep >= 2 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
                                   }`}>
                                     {orderStep >= 2 ? <Check className="h-3.5 w-3.5" /> : "2"}
                                   </div>
-                                  <span className={orderStep >= 2 ? "text-orange-500 font-black" : ""}>Processing</span>
+                                  <span className={orderStep >= 2 ? "text-orange-500 font-semibold" : ""}>Processing</span>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-bold text-[9px] transition-all duration-300 ${
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
                                     orderStep >= 3 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
                                   }`}>
                                     {orderStep >= 3 ? <Check className="h-3.5 w-3.5" /> : "3"}
                                   </div>
-                                  <span className={orderStep >= 3 ? "text-orange-500 font-black" : ""}>Shipped</span>
+                                  <span className={orderStep >= 3 ? "text-orange-500 font-semibold" : ""}>Shipped</span>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-bold text-[9px] transition-all duration-300 ${
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
                                     orderStep >= 4 ? "bg-green-500 border-green-500 text-white shadow-md shadow-green-500/10" : "bg-white border-slate-300 text-slate-400"
                                   }`}>
                                     {orderStep >= 4 ? <Check className="h-3.5 w-3.5" /> : "4"}
                                   </div>
-                                  <span className={orderStep >= 4 ? "text-green-600 font-black" : ""}>Delivered</span>
+                                  <span className={orderStep >= 4 ? "text-green-600 font-semibold" : ""}>Delivered</span>
                                 </div>
                               </div>
                             </div>
@@ -1051,7 +1051,7 @@ export default function AccountPage() {
                             {/* Expanded Details Panel */}
                             {isExpanded && (
                               <div className="bg-slate-50/30 p-6 space-y-5 border-t border-slate-100 animate-fadeIn">
-                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Items Ordered</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Items Ordered</p>
                                 <div className="space-y-3.5">
                                   {(order.items || []).map((item) => (
                                     <div key={item.id} className="flex items-center gap-4 bg-white border border-slate-150 rounded-2xl p-4.5 shadow-sm hover:shadow transition duration-250">
@@ -1066,8 +1066,8 @@ export default function AccountPage() {
                                       </div>
                                       
                                       <div className="min-w-0 flex-1">
-                                        <h5 className="text-xs font-black text-slate-800 truncate">{item.product?.title || `Product #${item.product_id}`}</h5>
-                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1.5 text-[9px] text-slate-400 font-black tracking-wider uppercase">
+                                        <h5 className="text-xs font-bold text-slate-800 truncate">{item.product?.title || `Product #${item.product_id}`}</h5>
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1.5 text-[9px] text-slate-400 font-semibold tracking-wider uppercase">
                                           <span>Qty: {item.quantity}</span>
                                           {item.selected_color && <span>• Color: {item.selected_color}</span>}
                                           {item.selected_storage && <span>• Spec: {item.selected_storage}</span>}
@@ -1075,7 +1075,7 @@ export default function AccountPage() {
                                       </div>
                                       
                                       <div className="text-right shrink-0">
-                                        <span className="text-xs font-black text-slate-900 block">
+                                        <span className="text-xs font-semibold text-slate-900 block">
                                           QAR {(Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}
                                         </span>
                                       </div>
@@ -1084,8 +1084,8 @@ export default function AccountPage() {
                                 </div>
                                 <div className="pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                                   <div className="flex flex-wrap items-center gap-3">
-                                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                                      Payment Method: <span className="text-slate-700 font-black">{order.payment_method || "COD"}</span>
+                                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                                      Payment Method: <span className="text-slate-700 font-bold">{order.payment_method || "COD"}</span>
                                     </span>
                                     {order.status === "pending" && (
                                       <button
@@ -1097,7 +1097,7 @@ export default function AccountPage() {
                                     )}
                                   </div>
                                   <div className="text-right">
-                                    <span className="text-sm font-black text-slate-900">
+                                    <span className="text-sm font-bold text-slate-900">
                                       Grand Total: QAR {order.total_price ? parseFloat(String(order.total_price).replace(/([$]|qar|[\s,])/gi, "") || "0").toFixed(2) : "—"}
                                     </span>
                                   </div>
@@ -1118,10 +1118,10 @@ export default function AccountPage() {
                 <div className="space-y-6 animate-fadeIn">
                   <div className="border-b border-slate-100 pb-5 flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-black text-slate-800">Notifications</h3>
+                      <h3 className="text-xl font-bold text-slate-800">Notifications</h3>
                       <p className="text-xs text-slate-400 mt-0.5">Stay updated with shipping tracking alerts</p>
                     </div>
-                    <button className="text-xs font-black uppercase tracking-wider text-orange-500 hover:text-orange-650 transition cursor-pointer">
+                    <button className="text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 transition cursor-pointer">
                       Mark all as read
                     </button>
                   </div>
@@ -1137,7 +1137,7 @@ export default function AccountPage() {
                           <span className="h-1.5 w-1.5 bg-orange-500 rounded-full animate-ping" />
                         </h4>
                         <p className="text-xs text-slate-500 mt-1 leading-relaxed">Your order #GRV-2045 has been delivered to your saved address.</p>
-                        <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-2 inline-block">2 hours ago</span>
+                        <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2 inline-block">2 Hours Ago</span>
                       </div>
                     </div>
 
@@ -1148,7 +1148,7 @@ export default function AccountPage() {
                       <div>
                         <h4 className="text-sm font-bold text-slate-800">Order Dispatched</h4>
                         <p className="text-xs text-slate-500 mt-1 leading-relaxed">Your order #GRV-2041 is out for delivery with our rider.</p>
-                        <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-2 inline-block">1 day ago</span>
+                        <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2 inline-block">1 Day Ago</span>
                       </div>
                     </div>
                   </div>
@@ -1159,7 +1159,7 @@ export default function AccountPage() {
               {activeTab === "support" && (
                 <div className="space-y-8 animate-fadeIn">
                   <div className="border-b border-slate-100 pb-5">
-                    <h3 className="text-xl font-black text-slate-800">Support Center</h3>
+                    <h3 className="text-xl font-bold text-slate-800">Support Center</h3>
                     <p className="text-xs text-slate-400 mt-0.5">Need help with order status, payments or returns?</p>
                   </div>
 
@@ -1169,9 +1169,9 @@ export default function AccountPage() {
                         <MessageSquare className="h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-extrabold text-slate-800">Live Help Chat</h4>
+                        <h4 className="text-sm font-semibold text-slate-800">Live Help Chat</h4>
                         <p className="text-xs text-slate-450 leading-relaxed mt-1">Talk with support desk agents live.</p>
-                        <button className="mt-4 text-xs font-black uppercase tracking-wider text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer">
+                        <button className="mt-4 text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 flex items-center gap-1 cursor-pointer">
                           Start Chat <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -1187,9 +1187,9 @@ export default function AccountPage() {
                         <MessageCircle className="h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-extrabold text-slate-800">WhatsApp Helpdesk</h4>
+                        <h4 className="text-sm font-semibold text-slate-800">WhatsApp Helpdesk</h4>
                         <p className="text-xs text-slate-455 leading-relaxed mt-1">Instant support assistance via WhatsApp messaging.</p>
-                        <span className="mt-4 text-xs font-black uppercase tracking-wider text-green-600 flex items-center gap-1">
+                        <span className="mt-4 text-xs font-semibold uppercase tracking-wider text-green-600 flex items-center gap-1">
                           Message Now <ChevronRight className="h-3.5 w-3.5" />
                         </span>
                       </div>
@@ -1200,9 +1200,9 @@ export default function AccountPage() {
                         <HelpCircle className="h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-extrabold text-slate-800">Help Center FAQs</h4>
+                        <h4 className="text-sm font-semibold text-slate-800">Help Center FAQs</h4>
                         <p className="text-xs text-slate-450 leading-relaxed mt-1">Instant support answers on returns, delivery, and payments.</p>
-                        <button onClick={() => router.push("/faq")} className="mt-4 text-xs font-black uppercase tracking-wider text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer">
+                        <button onClick={() => router.push("/faq")} className="mt-4 text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 flex items-center gap-1 cursor-pointer">
                           Browse FAQs <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -1213,9 +1213,9 @@ export default function AccountPage() {
                         <Undo className="h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-extrabold text-slate-800">Easy Returns</h4>
+                        <h4 className="text-sm font-semibold text-slate-800">Easy Returns</h4>
                         <p className="text-xs text-slate-455 leading-relaxed mt-1">Initiate and monitor product returns queries.</p>
-                        <button onClick={() => router.push("/returns")} className="mt-4 text-xs font-black uppercase tracking-wider text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer">
+                        <button onClick={() => router.push("/returns")} className="mt-4 text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 flex items-center gap-1 cursor-pointer">
                           Manage Returns <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       </div>

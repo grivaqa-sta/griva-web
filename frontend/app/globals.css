@@ -3,6 +3,7 @@
 @theme {
   --color-brand-orange: #f97316;
   --color-brand-orange-dark: #ea580c;
+  --font-sans: var(--font-geist-sans), sans-serif;
   --font-body: var(--font-geist-sans), sans-serif;
 
   @keyframes marquee {

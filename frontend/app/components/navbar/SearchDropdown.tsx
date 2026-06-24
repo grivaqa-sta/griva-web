@@ -23,8 +23,48 @@ export default function SearchDropdown({ onClose }: SearchDropdownProps) {
   } = useSearch();
 
   const [results, setResults] = useState<ApiProduct[]>([]);
+  const [popularSearches, setPopularSearches] = useState<string[]>([]);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch best selling products for popular searches
+  useEffect(() => {
+    async function loadPopularSearches() {
+      try {
+        const res = await productService.getBestSellerProducts();
+        const productsList = res?.data || res;
+        if (Array.isArray(productsList) && productsList.length > 0) {
+          // Take top 7 products, extract their titles
+          const keywords = productsList.slice(0, 7).map((p: any) => p.title);
+          setPopularSearches(keywords);
+        } else {
+          // Fallback keywords if API returns empty
+          setPopularSearches([
+            "DJI Mini 4 Pro Drone",
+            "Apple Watch Ultra 2",
+            "Sony WH-1000XM5",
+            "MacBook Air 15-inch M3",
+            "Meta Quest 3 VR Headset",
+            "Oud Royale Perfume Oil",
+            "Smart Espresso Maker Machine"
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to load popular searches:", err);
+        // Fallback keywords if API fails
+        setPopularSearches([
+          "DJI Mini 4 Pro Drone",
+          "Apple Watch Ultra 2",
+          "Sony WH-1000XM5",
+          "MacBook Air 15-inch M3",
+          "Meta Quest 3 VR Headset",
+          "Oud Royale Perfume Oil",
+          "Smart Espresso Maker Machine"
+        ]);
+      }
+    }
+    loadPopularSearches();
+  }, []);
 
   // Debounced API search — 300ms after user stops typing
   useEffect(() => {
@@ -126,44 +166,85 @@ export default function SearchDropdown({ onClose }: SearchDropdownProps) {
               ))}
             </div>
           ) : (
-            <p className="py-2 text-center text-xs text-gray-500">
-              No products found for &ldquo;{searchQuery}&rdquo;
-            </p>
+            <div className="py-2 text-center">
+              <p className="text-xs text-gray-500 mb-3">
+                No products found for &ldquo;{searchQuery}&rdquo;
+              </p>
+              {popularSearches.length > 0 && (
+                <div className="text-left border-t pt-3 mt-2">
+                  <div className="mb-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      Try Popular Searches
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {popularSearches.map((keyword) => (
+                      <button
+                        key={keyword}
+                        onClick={() => handleSearchItemClick(keyword)}
+                        className="rounded-full border border-gray-100 bg-gray-50 px-3 py-1 text-xs text-gray-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition-all duration-200"
+                      >
+                        {keyword}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
 
-      {/* Recent Searches */}
-      {recentSearches.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              <History className="h-3 w-3" /> Recent Searches
-            </span>
-            <button
-              onClick={clearRecentSearches}
-              className="flex items-center gap-1 text-[10px] font-semibold text-red-500 hover:text-red-600 transition-colors"
-            >
-              <Trash2 className="h-3 w-3" /> Clear All
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {recentSearches.map((query) => (
-              <button
-                key={query}
-                onClick={() => handleSearchItemClick(query)}
-                className="flex items-center gap-1 rounded-full bg-gray-50 border border-gray-100 px-3 py-1 text-xs text-gray-600 hover:bg-orange-50 hover:border-orange-200 transition-all"
-              >
-                <span>{query}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Recent & Popular Searches when query is empty */}
+      {!searchQuery && (
+        <div className="flex flex-col gap-4">
+          {recentSearches.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  <History className="h-3 w-3 text-gray-400" /> Recent Searches
+                </span>
+                <button
+                  onClick={clearRecentSearches}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-red-500 hover:text-red-600 transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" /> Clear All
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {recentSearches.map((query) => (
+                  <button
+                    key={query}
+                    onClick={() => handleSearchItemClick(query)}
+                    className="flex items-center gap-1 rounded-full bg-gray-50 border border-gray-100 px-3 py-1 text-xs text-gray-600 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition-all duration-200"
+                  >
+                    <span>{query}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {!searchQuery && recentSearches.length === 0 && (
-        <div className="py-4 text-center text-xs text-gray-400">
-          Start typing to see product suggestions...
+          {popularSearches.length > 0 && (
+            <div>
+              <div className="mb-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Popular Searches
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {popularSearches.map((keyword) => (
+                  <button
+                    key={keyword}
+                    onClick={() => handleSearchItemClick(keyword)}
+                    className="rounded-full border border-gray-100 bg-gray-50 px-3 py-1 text-xs text-gray-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition-all duration-200"
+                  >
+                    {keyword}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </motion.div>

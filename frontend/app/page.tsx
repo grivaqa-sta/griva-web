@@ -9,6 +9,7 @@ import NewsletterSection from "./components/home/NewsletterSection";
 import DealOfTheDaySection from "./components/home/DealOfTheDaySection";
 import ProductPromoBanner from "./components/home/ProductPromoBanner";
 import LazyFridayDeals from "./components/home/LazyFridayDeals";
+import MoreToExploreSection from "./components/home/MoreToExploreSection";
 
 export default function Home() {
   return (
@@ -25,6 +26,7 @@ export default function Home() {
         <TrendingProductsSection />
         <ProductPromoBanner />
         <NewsletterSection />
+        <MoreToExploreSection />
       </div>
     </div>
   );

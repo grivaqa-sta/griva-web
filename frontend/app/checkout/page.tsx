@@ -277,6 +277,7 @@ export default function CheckoutPage() {
 
   // Validate inventory in real-time
   useEffect(() => {
+    let active = true;
     const validateCartInventory = async () => {
       if (effectiveCartState.items.length === 0) return;
       
@@ -287,10 +288,10 @@ export default function CheckoutPage() {
         await Promise.all(
           effectiveCartState.items.map(async (item) => {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${item.productId}`);
-            if (res.ok) {
+            if (res.ok && active) {
               const data = await res.json();
               const serverProd = data.data;
-              if (serverProd) {
+              if (serverProd && active) {
                 if (!serverProd.is_active || serverProd.stock < item.quantity) {
                   newStockErrors[item.productId] = {
                     title: item.title,
@@ -303,17 +304,23 @@ export default function CheckoutPage() {
           })
         );
         
+        if (!active) return;
         setStockErrors(newStockErrors);
         if (hasErrors) {
           setOrderError("Some items in your cart are no longer available.");
           toast.error("Some items in your cart are no longer available.");
         }
       } catch (err) {
-        console.error("Failed to pre-validate inventory:", err);
+        if (active) {
+          console.error("Failed to pre-validate inventory:", err);
+        }
       }
     };
 
     validateCartInventory();
+    return () => {
+      active = false;
+    };
   }, [effectiveCartState.items, toast]);
 
   // Fetch saved addresses for logged-in users
@@ -602,6 +609,7 @@ export default function CheckoutPage() {
 
   // Place order handler
   const handlePlaceOrder = async () => {
+    if (isPlacingOrder) return;
     if (!validateForm()) {
       setOrderError("Please fill in all required fields.");
       return;

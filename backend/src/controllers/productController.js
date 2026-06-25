@@ -1,6 +1,7 @@
 const Product = require("../models/Product");
 const SubCategory = require("../models/SubCategory");
 const { Op } = require("sequelize");
+const cache = require("../utils/cache");
 
 /**
  * Helper to extract Cloudinary public ID from its URL
@@ -44,6 +45,7 @@ exports.createProduct = async (req, res) => {
     }
 
     const product = await Product.create(req.body);
+    cache.clear(); // Clear cache on catalog mutation
 
     res.status(201).json({
       success: true,
@@ -66,11 +68,22 @@ exports.createProduct = async (req, res) => {
 exports.getProducts = async (req, res) => {
   try {
     const { search, minPrice, maxPrice } = req.query;
+    const isAdminOrStaffUser = req.user && (req.user.role === "admin" || req.user.role === "staff");
+
+    // Construct cache key based on query filters and user permissions
+    const cacheKey = `products_${search || ""}_${minPrice || ""}_${maxPrice || ""}_${isAdminOrStaffUser}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        count: cached.length,
+        data: cached,
+      });
+    }
 
     const where = {};
 
     // CRIT-4: Enforce is_active check for public views (allow admin/staff to see deactivated ones)
-    const isAdminOrStaffUser = req.user && (req.user.role === "admin" || req.user.role === "staff");
     if (!isAdminOrStaffUser) {
       where.is_active = true;
     }
@@ -108,6 +121,8 @@ exports.getProducts = async (req, res) => {
       where,
       order: [["id", "DESC"]],
     });
+
+    cache.set(cacheKey, products, 300000); // Cache for 5 mins
 
     res.status(200).json({
       success: true,
@@ -197,51 +212,105 @@ exports.getProductsBySubCategory = async (req, res) => {
  * Featured Products
  */
 exports.getFeaturedProducts = async (req, res) => {
-  const products = await Product.findAll({
-    where: {
-      is_featured: true,
-      is_active: true,
-    },
-  });
+  try {
+    const cacheKey = "products_featured";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        data: cached,
+      });
+    }
 
-  res.status(200).json({
-    success: true,
-    data: products,
-  });
+    const products = await Product.findAll({
+      where: {
+        is_featured: true,
+        is_active: true,
+      },
+    });
+
+    cache.set(cacheKey, products, 300000); // 5 min cache
+
+    res.status(200).json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 /**
  * Trending Products
  */
 exports.getTrendingProducts = async (req, res) => {
-  const products = await Product.findAll({
-    where: {
-      is_trending: true,
-      is_active: true,
-    },
-  });
+  try {
+    const cacheKey = "products_trending";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        data: cached,
+      });
+    }
 
-  res.status(200).json({
-    success: true,
-    data: products,
-  });
+    const products = await Product.findAll({
+      where: {
+        is_trending: true,
+        is_active: true,
+      },
+    });
+
+    cache.set(cacheKey, products, 300000); // 5 min cache
+
+    res.status(200).json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 /**
  * Best Seller Products
  */
 exports.getBestSellerProducts = async (req, res) => {
-  const products = await Product.findAll({
-    where: {
-      is_best_seller: true,
-      is_active: true,
-    },
-  });
+  try {
+    const cacheKey = "products_bestseller";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        data: cached,
+      });
+    }
 
-  res.status(200).json({
-    success: true,
-    data: products,
-  });
+    const products = await Product.findAll({
+      where: {
+        is_best_seller: true,
+        is_active: true,
+      },
+    });
+
+    cache.set(cacheKey, products, 300000); // 5 min cache
+
+    res.status(200).json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 /**
@@ -249,6 +318,15 @@ exports.getBestSellerProducts = async (req, res) => {
  */
 exports.getNewProducts = async (req, res) => {
   try {
+    const cacheKey = "products_newarrivals";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        data: cached,
+      });
+    }
+
     const products = await Product.findAll({
       where: {
         is_new: true,
@@ -257,6 +335,8 @@ exports.getNewProducts = async (req, res) => {
       order: [["createdAt", "DESC"]], // latest first
       limit: 4, // only 4 products
     });
+
+    cache.set(cacheKey, products, 300000); // 5 min cache
 
     res.status(200).json({
       success: true,
@@ -296,6 +376,7 @@ exports.updateProduct = async (req, res) => {
     }
 
     await product.update(req.body);
+    cache.clear(); // Clear cache on update
 
     res.status(200).json({
       success: true,
@@ -331,6 +412,7 @@ exports.updateProductStock = async (req, res) => {
     product.stock = stock;
 
     await product.save();
+    cache.clear(); // Clear cache on stock update
 
     res.status(200).json({
       success: true,
@@ -373,6 +455,7 @@ exports.deleteProduct = async (req, res) => {
     }
 
     await product.destroy();
+    cache.clear(); // Clear cache on delete
 
     res.status(200).json({
       success: true,
@@ -410,6 +493,7 @@ exports.updateBannerStatus = async (req, res) => {
       banner_background_color,
       mobile_ad_banner
     });
+    cache.clear(); // Clear cache on update
 
     res.status(200).json({
       success: true,
@@ -429,12 +513,24 @@ exports.updateBannerStatus = async (req, res) => {
 //get isbanner active product
 exports.getBannerActiveProducts = async (req, res) => {
   try {
+    const cacheKey = "products_banner_active";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        count: cached.length,
+        data: cached,
+      });
+    }
+
     const products = await Product.findAll({
       where: {
         is_banner: true,
         is_active: true,
       },
     });
+
+    cache.set(cacheKey, products, 300000); // 5 min cache
 
     res.status(200).json({
       success: true,
@@ -468,6 +564,7 @@ exports.updateDealOfDay = async (req, res) => {
     await product.update({
       deal_of_day
     });
+    cache.clear(); // Clear cache on update
 
     res.status(200).json({
       success: true,
@@ -487,12 +584,24 @@ exports.updateDealOfDay = async (req, res) => {
 //get deal of the day products
 exports.getDealOfDayProducts = async (req, res) => {
   try {
+    const cacheKey = "products_deal_of_day";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        count: cached.length,
+        data: cached,
+      });
+    }
+
     const products = await Product.findAll({
       where: {
         deal_of_day: true,
         is_active: true,
       },
     });
+
+    cache.set(cacheKey, products, 300000); // 5 min cache
 
     res.status(200).json({
       success: true,

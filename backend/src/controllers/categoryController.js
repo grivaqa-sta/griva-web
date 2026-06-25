@@ -1,10 +1,12 @@
 const Category = require("../models/Category");
 const SubCategory = require("../models/SubCategory");
+const cache = require("../utils/cache");
 
 //Create Category
 exports.createCategory = async (req, res) => {
   try {
     const category = await Category.create(req.body);
+    cache.clear(); // Clear cache on change
     res.status(201).json({
       success: true,
       message: "Category created successfully",
@@ -44,12 +46,23 @@ exports.getAllCategories = async (req, res) => {
 //get all active category
 exports.getAllActiveCategories = async (req, res) => {
   try {
+    const cacheKey = "active_categories";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        data: cached,
+      });
+    }
+
     const categories = await Category.findAll({
       where: {
         is_active: true,
       },
       order: [["id", "ASC"]],
     });
+
+    cache.set(cacheKey, categories, 300000); // Cache for 5 mins
 
     res.status(200).json({
       success: true,
@@ -104,6 +117,7 @@ exports.updateCategory = async (req, res) => {
     }
 
     await category.update(req.body);
+    cache.clear(); // Clear cache on update
 
     res.status(200).json({
       success: true,
@@ -135,6 +149,7 @@ exports.deleteCategory = async (req, res) => {
     }
 
     await category.destroy();
+    cache.clear(); // Clear cache on delete
 
     res.status(200).json({
       success: true,
@@ -155,6 +170,15 @@ exports.deleteCategory = async (req, res) => {
 // Get All Categories with subcategories
 exports.getAllCategoriesWithSubcategories = async (req, res) => {
   try {
+    const cacheKey = "categories_with_subcategories";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        data: cached,
+      });
+    }
+
     const categories = await Category.findAll({
       include: [
         {
@@ -165,6 +189,8 @@ exports.getAllCategoriesWithSubcategories = async (req, res) => {
       ],
       order: [["id", "ASC"]],
     });
+
+    cache.set(cacheKey, categories, 300000); // Cache for 5 mins
 
     res.status(200).json({
       success: true,

@@ -38,7 +38,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       } else if (currentPath.startsWith("/delivery")) {
         return localStorage.getItem("griva_delivery_token");
       }
-      return localStorage.getItem("griva_user_token");
+      // Customer frontend does not use sockets, only admin and delivery do.
+      return null;
     };
 
     const token = getActiveToken();

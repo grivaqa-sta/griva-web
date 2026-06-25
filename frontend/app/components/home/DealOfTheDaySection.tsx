@@ -89,7 +89,7 @@ export default function DealOfTheDaySection() {
 
   useEffect(() => {
     if (isPaused || slides.length <= 1) return;
-    const timer = setInterval(() => { next(); }, 5000);
+    const timer = setInterval(() => { next(); }, 3000);
     return () => clearInterval(timer);
   }, [isPaused, current, slides.length]);
 

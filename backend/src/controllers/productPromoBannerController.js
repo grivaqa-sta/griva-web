@@ -1,4 +1,5 @@
 const { ProductPromoBanner, Product } = require("../models");
+const cache = require("../utils/cache");
 
 /**
  * Create Banner
@@ -33,6 +34,7 @@ exports.createBanner = async (req, res) => {
       subtitle,
       isActive,
     });
+    cache.clear(); // Clear cache on change
 
     return res.status(201).json({
       success: true,
@@ -84,6 +86,16 @@ exports.getAllBanners = async (req, res) => {
  */
 exports.getActiveBanners = async (req, res) => {
   try {
+    const cacheKey = "promo_banners_active";
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        count: cached.length,
+        data: cached,
+      });
+    }
+
     const banners = await ProductPromoBanner.findAll({
       where: {
         isActive: true,
@@ -96,6 +108,8 @@ exports.getActiveBanners = async (req, res) => {
       ],
       order: [["createdAt", "DESC"]],
     });
+
+    cache.set(cacheKey, banners, 300000); // 5 min cache
 
     return res.status(200).json({
       success: true,
@@ -162,6 +176,7 @@ exports.updateBanner = async (req, res) => {
     }
 
     await banner.update(req.body);
+    cache.clear(); // Clear cache on update
 
     return res.status(200).json({
       success: true,
@@ -195,6 +210,7 @@ exports.updateBannerStatus = async (req, res) => {
     await banner.update({
       isActive: req.body.isActive,
     });
+    cache.clear(); // Clear cache on update
 
     return res.status(200).json({
       success: true,
@@ -226,6 +242,7 @@ exports.deleteBanner = async (req, res) => {
     }
 
     await banner.destroy();
+    cache.clear(); // Clear cache on delete
 
     return res.status(200).json({
       success: true,

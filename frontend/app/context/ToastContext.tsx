@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useRef,
+  useEffect,
   ReactNode,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -214,6 +215,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     resolve: (value: boolean) => void;
   } | null>(null);
 
+  const toastsRef = useRef<Toast[]>([]);
+  useEffect(() => {
+    toastsRef.current = toasts;
+  }, [toasts]);
+
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
     const timer = timersRef.current.get(id);
@@ -225,6 +231,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback(
     (message: string, type: ToastType, duration: number = 4000) => {
+      // Prevent displaying the same toast message multiple times concurrently
+      if (toastsRef.current.some((t) => t.message === message && t.type === type)) {
+        return;
+      }
       const id = `toast-${++idCounter}-${Date.now()}`;
       const toast: Toast = { id, message, type, duration };
       setToasts((prev) => [...prev.slice(-4), toast]); // max 5 visible toasts

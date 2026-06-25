@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
 import { useCart } from "@/app/context/CartContext";
@@ -100,6 +100,7 @@ export default function CheckoutPage() {
   const [orderError, setOrderError] = useState("");
   const [stockErrors, setStockErrors] = useState<Record<number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
+  const hasShownStockToastRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -308,7 +309,12 @@ export default function CheckoutPage() {
         setStockErrors(newStockErrors);
         if (hasErrors) {
           setOrderError("Some items in your cart are no longer available.");
-          toast.error("Some items in your cart are no longer available.");
+          if (!hasShownStockToastRef.current) {
+            toast.error("Some items in your cart are no longer available.");
+            hasShownStockToastRef.current = true;
+          }
+        } else {
+          hasShownStockToastRef.current = false;
         }
       } catch (err) {
         if (active) {

@@ -97,6 +97,7 @@ export default function CheckoutPage() {
   const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const isSubmitRef = useRef(false);
   const [orderError, setOrderError] = useState("");
   const [stockErrors, setStockErrors] = useState<Record<number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
@@ -615,7 +616,7 @@ export default function CheckoutPage() {
 
   // Place order handler
   const handlePlaceOrder = async () => {
-    if (isPlacingOrder) return;
+    if (isPlacingOrder || isSubmitRef.current) return;
     if (!validateForm()) {
       setOrderError("Please fill in all required fields.");
       return;
@@ -623,6 +624,7 @@ export default function CheckoutPage() {
 
     setFrozenCart(effectiveCartState);
     setIsPlacingOrder(true);
+    isSubmitRef.current = true;
     setOrderError("");
 
     try {
@@ -726,6 +728,7 @@ export default function CheckoutPage() {
       } else {
         setOrderError(response.message || "Failed to place order. Please try again.");
         setIsPlacingOrder(false);
+        isSubmitRef.current = false;
         setFrozenCart(null);
       }
     } catch (error: any) {
@@ -764,6 +767,7 @@ export default function CheckoutPage() {
 
       setOrderError(errMsg);
       setIsPlacingOrder(false);
+      isSubmitRef.current = false;
       setFrozenCart(null);
     }
   };

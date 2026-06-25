@@ -93,7 +93,7 @@ interface CartContextValue {
     selectedStorage?: string;
     quantity?: number;
     slug?: string;
-  }) => void;
+  }) => Promise<void>;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -110,6 +110,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+
+  const activeRequestsRef = useRef<Record<string, boolean>>({});
 
   const { state: userState } = useUser();
   const isLoggedIn = userState.isLoggedIn && userState.role !== "admin";
@@ -206,9 +208,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     slug?: string;
   }) => {
     const qty = product.quantity ?? 1;
+    const key = `add-${product.id}-${product.selectedColor || ""}-${product.selectedStorage || ""}`;
 
-    if (isLoggedIn) {
-      try {
+    if (activeRequestsRef.current[key]) return;
+    activeRequestsRef.current[key] = true;
+
+    try {
+      if (isLoggedIn) {
         const response = await cartService.addItem(
           product.id,
           product.selectedColor,
@@ -217,30 +223,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
         if (response.success && response.cart) {
           dispatch({ type: "SET_CART", payload: response.cart.items });
-          toast.success("Product added to cart");
+          toast.cart("Product added to cart");
         }
-      } catch (error: any) {
-        if (error.response?.status === 403) return; // Handled globally by auth block interceptor
-        const errMsg = error.response?.data?.message || "Failed to add item to database cart.";
-        toast.error(errMsg);
-      }
-    } else {
-      // CRIT-6: Guest Cart Stock & Activity Validation
-      const existing = state.items.find(
-        (item) =>
-          item.productId === product.id &&
-          item.selectedColor === product.selectedColor &&
-          item.selectedStorage === product.selectedStorage
-      );
-      const currentQty = existing ? existing.quantity : 0;
-      const targetQty = currentQty + qty;
+      } else {
+        // CRIT-6: Guest Cart Stock & Activity Validation
+        const existing = state.items.find(
+          (item) =>
+            item.productId === product.id &&
+            item.selectedColor === product.selectedColor &&
+            item.selectedStorage === product.selectedStorage
+        );
+        const currentQty = existing ? existing.quantity : 0;
+        const targetQty = currentQty + qty;
 
-      if (targetQty > 10) {
-        toast.warning("Cannot add more items. A maximum of 10 units per product variant is allowed.");
-        return;
-      }
+        if (targetQty > 10) {
+          toast.warning("Cannot add more items. A maximum of 10 units per product variant is allowed.");
+          return;
+        }
 
-      try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${product.id}`);
         if (!res.ok) {
           toast.error("Product details could not be verified.");
@@ -256,33 +256,50 @@ export function CartProvider({ children }: { children: ReactNode }) {
           toast.warning(`Cannot add more items. Only ${serverProd.stock} left in stock.`);
           return;
         }
-      } catch (err) {
-        toast.error("Failed to validate product availability. Please check your connection.");
-        return;
-      }
 
-      const cartItem: CartItem = {
-        id: Date.now() + Math.random(),
-        productId: product.id,
-        title: product.title,
-        image: product.image,
-        price: product.price,
-        priceNumber: parsePriceNumber(product.price),
-        quantity: qty,
-        category: product.category,
-        selectedColor: product.selectedColor,
-        selectedStorage: product.selectedStorage,
-        slug: product.slug,
-      };
-      dispatch({ type: "ADD", payload: cartItem });
-      toast.success("Product added to cart");
+        const cartItem: CartItem = {
+          id: Date.now() + Math.random(),
+          productId: product.id,
+          title: product.title,
+          image: product.image,
+          price: product.price,
+          priceNumber: parsePriceNumber(product.price),
+          quantity: qty,
+          category: product.category,
+          selectedColor: product.selectedColor,
+          selectedStorage: product.selectedStorage,
+          slug: product.slug,
+        };
+        dispatch({ type: "ADD", payload: cartItem });
+        toast.cart("Product added to cart");
+      }
+    } catch (error: any) {
+      if (error.response?.status === 403) return; // Handled globally by auth block interceptor
+      const errMsg = error.response?.data?.message || "Failed to add item to database cart.";
+      toast.error(errMsg);
+    } finally {
+      activeRequestsRef.current[key] = false;
     }
   };
 
   // Intercept dispatches to sync database cart when user is logged in
   const customDispatch = async (action: CartAction) => {
-    if (isLoggedIn) {
-      try {
+    let key = "";
+    if (action.type === "UPDATE_QTY") {
+      key = `update-${action.payload.id}`;
+    } else if (action.type === "REMOVE") {
+      key = `remove-${action.payload.id}`;
+    } else if (action.type === "CLEAR") {
+      key = "clear";
+    }
+
+    if (key) {
+      if (activeRequestsRef.current[key]) return;
+      activeRequestsRef.current[key] = true;
+    }
+
+    try {
+      if (isLoggedIn) {
         if (action.type === "UPDATE_QTY") {
           const response = await cartService.updateItemQty(action.payload.id, action.payload.quantity);
           if (response.success && response.cart) {
@@ -292,6 +309,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const response = await cartService.removeItem(action.payload.id);
           if (response.success && response.cart) {
             dispatch({ type: "SET_CART", payload: response.cart.items });
+            toast.cart("Product removed from cart");
           }
         } else if (action.type === "CLEAR") {
           const response = await cartService.clearCart();
@@ -301,24 +319,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         } else {
           dispatch(action);
         }
-      } catch (error: any) {
-        if (error.response?.status === 403) return; // Handled globally by auth block interceptor
-        const errMsg = error.response?.data?.message || "Failed to sync cart update with server.";
-        toast.error(errMsg);
-      }
-    } else {
-      // CRIT-6: Guest Cart Quantity Update Stock Validation
-      if (action.type === "UPDATE_QTY") {
-        const item = state.items.find((i) => i.id === action.payload.id);
-        const qty = action.payload.quantity;
+      } else {
+        // CRIT-6: Guest Cart Quantity Update Stock Validation
+        if (action.type === "UPDATE_QTY") {
+          const item = state.items.find((i) => i.id === action.payload.id);
+          const qty = action.payload.quantity;
 
-        if (qty > 10) {
-          toast.warning("A maximum of 10 units per product variant is allowed.");
-          return;
-        }
+          if (qty > 10) {
+            toast.warning("A maximum of 10 units per product variant is allowed.");
+            return;
+          }
 
-        if (item) {
-          try {
+          if (item) {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${item.productId}`);
             if (res.ok) {
               const data = await res.json();
@@ -335,10 +347,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 }
               }
             }
-          } catch { }
+          }
+        }
+        dispatch(action);
+        if (action.type === "REMOVE") {
+          toast.cart("Product removed from cart");
         }
       }
-      dispatch(action);
+    } catch (error: any) {
+      if (error.response?.status === 403) return; // Handled globally by auth block interceptor
+      const errMsg = error.response?.data?.message || "Failed to sync cart update with server.";
+      toast.error(errMsg);
+    } finally {
+      if (key) {
+        activeRequestsRef.current[key] = false;
+      }
     }
   };
 

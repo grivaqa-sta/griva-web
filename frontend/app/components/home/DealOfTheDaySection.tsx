@@ -71,7 +71,7 @@ export default function DealOfTheDaySection() {
   const [direction, setDirection] = useState<"next" | "prev">("next");
 
   const slide = slides[current];
-  const { hours, mins, secs } = useCountdown(slide?.endDate || new Date().toISOString());
+  const { hours, mins, secs } = useCountdown(slide?.endDate);
 
   const prev = (): void => {
     setDirection("prev");

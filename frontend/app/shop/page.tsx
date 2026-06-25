@@ -60,11 +60,12 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
   }, [resolvedParams]);
 
+  const isRatingSearch = /(\d)\s*stars?/i.test(searchVal);
   // Fetch all products from API (search/price passed to backend)
   const { products, loading } = useAllProducts(
-    searchVal || maxPrice < 2000
+    (searchVal && !isRatingSearch) || maxPrice < 2000
       ? {
-          search: searchVal || undefined,
+          search: (searchVal && !isRatingSearch) ? searchVal : undefined,
           maxPrice: maxPrice < 2000 ? maxPrice : undefined,
         }
       : undefined
@@ -81,6 +82,17 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   // Client-side filter for category, rating, and sort
   const processedProducts = useMemo((): ApiProduct[] => {
     let result = [...products];
+
+    // Intercept rating searches like "1 star review", "5 star", etc.
+    const starSearchMatch = searchVal.match(/(\d)\s*stars?/i);
+    let ratingFromSearch: number | null = null;
+    if (starSearchMatch) {
+      ratingFromSearch = parseInt(starSearchMatch[1]);
+    }
+
+    if (ratingFromSearch !== null) {
+      result = result.filter((p) => Math.round(Number(p.rating || 0)) === ratingFromSearch);
+    }
 
     // Category filter (client-side — match against brand/title since no category slug on ApiProduct)
     // The category filtering by subcategory is done on category page; shop page shows all
@@ -118,7 +130,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
 
     return result;
-  }, [products, selectedCategory, minRating, sortBy]);
+  }, [products, selectedCategory, minRating, sortBy, searchVal]);
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-16">
@@ -212,7 +224,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                   Min Rating
                 </h4>
                 <div className="space-y-2">
-                  {[4, 3, 2, 0].map((rating) => (
+                  {[5, 4, 3, 2, 1, 0].map((rating) => (
                     <button
                       key={rating}
                       onClick={() => setMinRating(rating)}
@@ -416,7 +428,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                     Minimum Rating
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
-                    {[4, 3, 2, 0].map((rating) => (
+                    {[5, 4, 3, 2, 1, 0].map((rating) => (
                       <button
                         key={rating}
                         onClick={() => setMinRating(rating)}

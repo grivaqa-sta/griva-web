@@ -733,7 +733,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           <ScrollReveal>
             <div className="mb-0 sm:mb-12 max-w-5xl mx-auto">
               <h2 className="text-xl font-bold text-gray-900 mb-6">You May Also Like</h2>
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
                 {relatedProducts.map((p, idx) => (
                   <div key={p.id} className={idx >= 4 ? "lg:hidden" : ""}>
                     <ProductCard product={p} />

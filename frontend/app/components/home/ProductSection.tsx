@@ -72,7 +72,7 @@ export default function ProductSection() {
         </div>
 
         <ScrollReveal>
-          <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-4 sm:border-0 sm:divide-none lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-4 sm:border-0 sm:divide-none lg:grid-cols-4 lg:gap-6">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />

@@ -63,12 +63,7 @@ export default function TrendingProductCard({
   const getStockStatus = () => {
     const stock = product.stock ?? 0;
     if (stock > 5) {
-      return (
-        <span className="text-green-600 flex items-center gap-1 text-[10px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-600 inline-block"></span>
-          In Stock ({stock})
-        </span>
-      );
+      return null;
     } else if (stock >= 1 && stock <= 5) {
       return (
         <span className="text-amber-500 flex items-center gap-1 text-[10px]">
@@ -89,7 +84,7 @@ export default function TrendingProductCard({
   const productLink = `/product/${product.slug}`;
 
   return (
-    <>
+    <div className="w-full h-full">
       {/* ── MOBILE CARD: flush, portrait layout ── */}
       <div className="sm:hidden group relative flex flex-col bg-white border border-[#E5E7EB] rounded-lg overflow-hidden w-full p-2.5">
         <Link href={productLink} className="flex flex-col w-full">
@@ -299,6 +294,6 @@ export default function TrendingProductCard({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

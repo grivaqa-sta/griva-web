@@ -77,7 +77,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
   };
 
   return (
-    <>
+    <div className="w-full h-full">
       {/* ── MOBILE PRODUCT CARD (Old Design with aligned content & stock) ── */}
       <div
         className="group relative flex sm:hidden flex-col overflow-hidden bg-white p-2 transition-all duration-300 rounded-none shadow-none"
@@ -333,6 +333,6 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
         </button>
       </div>
       </div>
-    </>
+    </div>
   );
 }

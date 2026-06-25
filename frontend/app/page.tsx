@@ -25,8 +25,8 @@ export default function Home() {
         <OfferSection />
         <TrendingProductsSection />
         <ProductPromoBanner />
-        <NewsletterSection />
         <MoreToExploreSection />
+        <NewsletterSection />
       </div>
     </div>
   );

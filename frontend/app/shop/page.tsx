@@ -281,13 +281,13 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
             {/* Product Cards Grid */}
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />
                 ))}
               </div>
             ) : processedProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border-t border-b border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
                 {processedProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

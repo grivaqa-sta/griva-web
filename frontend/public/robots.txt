@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /delivery/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /order-success/
+
+Sitemap: https://thegriva.com/sitemap.xml

@@ -88,7 +88,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     slug?: string;
   }) => {
     if (!isLoggedIn) {
-      toast.warning("Sign in to save items to your wishlist.");
+      toast.warning("Please sign in to save items to your wishlist.");
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+      }
       return;
     }
 
@@ -129,7 +133,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const removeFromWishlist = async (productId: number) => {
     if (!isLoggedIn) {
-      toast.warning("Sign in to save items to your wishlist.");
+      toast.warning("Please sign in to save items to your wishlist.");
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+      }
       return;
     }
 

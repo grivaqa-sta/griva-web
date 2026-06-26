@@ -8,6 +8,7 @@ import { ApiProduct } from "@/app/types/types";
 import ProductCard from "@/app/components/product/ProductCard";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import { motion, AnimatePresence } from "framer-motion";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 interface ShopPageProps {
   searchParams: Promise<{
@@ -134,6 +135,13 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-16">
+      <title>Online Shop Qatar — Electronics, Gadgets & Tech Accessories | GriVA</title>
+      <meta name="description" content="Browse our complete collection of verified premium electronics in Qatar. Filter by category, price, and customer ratings. Direct same day delivery across Doha." />
+      <link rel="canonical" href="https://thegriva.com/shop" />
+      <BreadcrumbSchema items={[
+        { name: "Home", path: "/" },
+        { name: "Shop", path: "/shop" }
+      ]} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading title="Shop Products" subtitle="Browse, filter, and find your perfect gear" />
 

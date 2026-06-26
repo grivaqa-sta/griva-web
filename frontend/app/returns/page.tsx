@@ -143,7 +143,7 @@ export default function ReturnsPage() {
               </div>
               <h3 className="text-lg font-black text-gray-900 tracking-tight">Damaged on Arrival</h3>
               <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                If your product arrives damaged or defective, you are eligible for an immediate exchange. We will collect the damaged unit and deliver a brand-new replacement of the same product completely free of charge.
+                If your product arrives damaged or defective, you are eligible for an exchange. We will collect the damaged unit and deliver a brand-new replacement. If the item is out of stock, you will receive a full refund to your GRIVA wallet.
               </p>
             </div>
             <div className="mt-6 flex items-center gap-2 text-xs font-bold text-gray-400">

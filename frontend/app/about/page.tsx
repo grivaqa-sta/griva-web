@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 import {
   ShieldCheck,
   Truck,
@@ -145,6 +146,13 @@ function TimelineStep({
 export default function AboutPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white">
+      <title>About Us — GriVA Qatar | Premium Tech, Electronics & Lifestyle Brand</title>
+      <meta name="description" content="Learn about GriVA, Qatar's leading online tech boutique. Discover our dedication to 100% authentic devices, express delivery across Doha, and COD options." />
+      <link rel="canonical" href="https://thegriva.com/about" />
+      <BreadcrumbSchema items={[
+        { name: "Home", path: "/" },
+        { name: "About Us", path: "/about" }
+      ]} />
       {/* ──────── hero section ──────── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#0c0c0c] via-[#121212] to-[#0c0c0c] py-20 sm:py-28">
         {/* brand pattern watermark */}

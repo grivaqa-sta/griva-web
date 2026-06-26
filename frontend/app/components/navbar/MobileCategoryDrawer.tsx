@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { X, Sparkles, Smile, Baby, Smartphone, Gamepad2, Utensils } from "lucide-react";
+import { X, Droplet, Smile, Baby, Smartphone, Gamepad2, Utensils, Tag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { categories } from "@/app/data/data";
 import { useAllProducts } from "@/app/hooks/useProducts";
@@ -13,7 +13,7 @@ function getCategoryIcon(title: string) {
   switch (title.toLowerCase()) {
     case "perfumes & buhoor":
     case "perfumes":
-      return <Sparkles className={cls} />;
+      return <Droplet className={cls} />;
     case "toys":
       return <Smile className={cls} />;
     case "baby products":
@@ -25,7 +25,7 @@ function getCategoryIcon(title: string) {
     case "kitchen appliances & essentials":
       return <Utensils className={cls} />;
     default:
-      return <Sparkles className={cls} />;
+      return <Tag className={cls} />;
   }
 }
 

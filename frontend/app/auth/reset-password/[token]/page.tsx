@@ -2,14 +2,23 @@
 
 import React, { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import {
-  Sparkles,
+  Mail,
   Lock,
   Eye,
   EyeOff,
-  ShieldAlert,
+  ArrowRight,
+  ShieldCheck,
+  Users,
+  MessageSquare,
+  Phone,
+  Headphones,
+  Truck,
+  BadgeCheck,
   CheckCircle2,
-  ArrowLeft,
+  ShieldAlert
 } from "lucide-react";
 import { authService } from "@/app/services/auth.service";
 
@@ -28,213 +37,295 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-const handleResetPassword = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  setError("");
-  setSuccess("");
+    setError("");
+    setSuccess("");
 
-  if (!token) {
-    setError("Invalid reset link.");
-    return;
-  }
-
-  if (password.length < 6) {
-    setError(
-      "Password must be at least 6 characters."
-    );
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    setError("Passwords do not match.");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const response =
-      await authService.resetPassword(
-        token,
-        password
-      );
-
-    if (response.success) {
-      setSuccess(response.message);
-
-      setPassword("");
-      setConfirmPassword("");
-
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 2000);
+    if (!token) {
+      setError("Invalid reset link.");
+      return;
     }
-  } catch (error: any) {
-    setError(
-      error?.response?.data?.message ||
-        "Unable to reset password."
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await authService.resetPassword(token, password);
+
+      if (response.success) {
+        setSuccess(response.message || "Your password has been reset successfully.");
+        setPassword("");
+        setConfirmPassword("");
+
+        setTimeout(() => {
+          router.push("/auth/login");
+        }, 2000);
+      }
+    } catch (error: any) {
+      setError(
+        error?.response?.data?.message || "Unable to reset password."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 font-sans antialiased selection:bg-orange-500 selection:text-white">
-      {/* Background Glow */}
-      <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+    <div className="bg-[#f5f5f7] min-h-[85vh]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
-      <div className="relative w-full max-w-md">
-        <div className="bg-white border border-orange-500/30 rounded-2xl p-8 shadow-2xl shadow-orange-500/5">
-
-          {/* Header */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="h-12 w-12 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/40 mb-4">
-              <Sparkles className="h-6 w-6 text-gray-900" />
+          {/* ── LEFT COLUMN: Brand + Image ── */}
+          <div className="hidden lg:flex flex-col relative min-h-[560px] overflow-visible">
+            {/* Text Content */}
+            <div className="relative z-20">
+              <h1 className="text-4xl xl:text-5xl font-black text-gray-900 tracking-tight leading-tight">
+                Reset Your
+              </h1>
+              <h2 className="text-4xl xl:text-5xl font-black text-[#F54900] tracking-tight mt-0.5">
+                Password
+              </h2>
+              <p className="text-gray-500 mt-4 max-w-sm text-sm leading-relaxed font-medium">
+                Enter your new password below. Make sure it is secure and easy for you to remember.
+              </p>
             </div>
 
-            <h1 className="text-2xl font-black tracking-wider bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">
-              GRIVA
-            </h1>
+            {/* Features Checklist */}
+            <div className="mt-8 space-y-5 max-w-[260px] relative z-20">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 border border-orange-100">
+                  <BadgeCheck size={18} className="text-[#F54900]" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                    100% Authentic Products
+                  </h4>
+                  <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+                    Official warranty & genuine quality
+                  </p>
+                </div>
+              </div>
 
-            <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-1">
-              Reset Password
-            </p>
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 border border-orange-100">
+                  <Truck size={18} className="text-[#F54900]" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                    Fast Delivery Across Qatar
+                  </h4>
+                  <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+                    Express delivery in 24–48 hours
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 border border-orange-100">
+                  <Headphones size={18} className="text-[#F54900]" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                    Premium Customer Support
+                  </h4>
+                  <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+                    24/7 support. We are here for you
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Soft Decorative Orange Glow behind the image */}
+            <div className="absolute top-[120px] right-[-90px] xl:right-[-110px] w-[460px] xl:w-[520px] h-[460px] xl:h-[520px] rounded-full bg-[radial-gradient(circle,rgba(245,73,0,0.18)_0%,rgba(245,73,0,0.03)_50%,transparent_70%)] blur-xl z-0 pointer-events-none" />
+
+            {/* Product Cutout Image — absolute, centered in column, pushed right */}
+            <Image
+              src="/images/login-page-pic-cutout.png"
+              alt="Griva Premium Products"
+              width={520}
+              height={400}
+              priority
+              className="absolute top-[150px] right-[-40px] xl:right-[-60px] w-[420px] xl:w-[480px] h-auto object-contain drop-shadow-2xl select-none pointer-events-none z-10"
+            />
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-500 font-semibold">
-              <ShieldAlert className="h-4 w-4 shrink-0" />
-              {error}
-            </div>
-          )}
-
-          {/* Success */}
-          {success && (
-            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-xs text-green-600 font-semibold">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              {success}
-            </div>
-          )}
-
-          <form
-            onSubmit={handleResetPassword}
-            className="space-y-5"
-          >
-            {/* New Password */}
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1.5">
-                New Password
-              </label>
-
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-
-                <input
-                  type={
-                    showPassword ? "text" : "password"
-                  }
-                  required
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  placeholder="Enter new password"
-                  className="w-full bg-white border border-orange-500/30 rounded-xl pl-10 pr-11 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
-                />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowPassword(!showPassword)
-                  }
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+          {/* ── RIGHT COLUMN: Reset Form Card ── */}
+          <div className="flex flex-col items-center lg:items-start justify-start w-full">
+            <div className="bg-white rounded-[28px] border border-gray-200/60 shadow-sm p-6 lg:p-8 max-w-[460px] w-full">
+              {/* Logo and Auth Security Badge */}
+              <div className="flex items-center justify-between w-full pb-4 border-b border-gray-100/80">
+                <Link href="/">
+                  <Image
+                    src="/images/logo-dark.png"
+                    alt="Griva Logo"
+                    width={90}
+                    height={28}
+                    priority
+                    className="h-7 w-auto object-contain"
+                  />
+                </Link>
+                <div className="flex items-center gap-1 bg-orange-50 border border-orange-100/50 text-orange-700 text-[10px] font-bold px-3 py-1 rounded-full">
+                  <Lock size={10} className="text-orange-600" />
+                  <span>Secure Reset</span>
+                </div>
               </div>
-            </div>
 
-            {/* Confirm Password */}
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1.5">
-                Confirm Password
-              </label>
-
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-
-                <input
-                  type={
-                    showConfirmPassword
-                      ? "text"
-                      : "password"
-                  }
-                  required
-                  value={confirmPassword}
-                  onChange={(e) =>
-                    setConfirmPassword(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Confirm password"
-                  className="w-full bg-white border border-orange-500/30 rounded-xl pl-10 pr-11 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
-                />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowConfirmPassword(
-                      !showConfirmPassword
-                    )
-                  }
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+              {/* Header Text */}
+              <div className="mt-5">
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">Reset Password</h3>
+                <p className="text-xs text-gray-400 font-medium mt-1">
+                  Create a new secure password for your account.
+                </p>
               </div>
-            </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-60 text-sm font-bold text-white rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/20 cursor-pointer"
-            >
-              {loading ? (
-                <>
-                  <span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  Updating Password...
-                </>
-              ) : (
-                <>
-                  <Lock className="h-4 w-4" />
-                  Reset Password
-                </>
+              {/* Success / Error Message */}
+              {error && (
+                <div className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-500 font-semibold">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
-            </button>
 
-            {/* Back to Login */}
-            <button
-              type="button"
-              onClick={() => router.push("/auth/login")}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-gray-500 hover:text-orange-500 transition-colors cursor-pointer"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Login
-            </button>
-          </form>
+              {success && (
+                <div className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-xs text-green-600 font-semibold">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>{success}</span>
+                </div>
+              )}
+
+              {/* Form */}
+              <form className="mt-5 space-y-4" onSubmit={handleResetPassword}>
+                {/* New Password */}
+                <div>
+                  <label className="text-[10px] font-bold text-gray-700 uppercase tracking-widest block mb-1.5 ml-1">
+                    New Password
+                  </label>
+                  <div className="relative group">
+                    <Lock
+                      size={14}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#F54900] transition-colors"
+                    />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      required
+                      className="w-full bg-[#fdfdfd] border border-gray-200 focus:bg-white focus:border-[#F54900] focus:ring-1 focus:ring-[#F54900]/20 rounded-xl pl-11 pr-12 py-3 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-all duration-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="text-[10px] font-bold text-gray-700 uppercase tracking-widest block mb-1.5 ml-1">
+                    Confirm Password
+                  </label>
+                  <div className="relative group">
+                    <Lock
+                      size={14}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#F54900] transition-colors"
+                    />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm password"
+                      required
+                      className="w-full bg-[#fdfdfd] border border-gray-200 focus:bg-white focus:border-[#F54900] focus:ring-1 focus:ring-[#F54900]/20 rounded-xl pl-11 pr-12 py-3 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-all duration-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      {showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#F54900] hover:bg-[#d93e00] hover:shadow-md hover:shadow-orange-500/20 active:scale-[0.99] disabled:opacity-55 text-white text-xs font-bold py-3.5 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-sm mt-2"
+                >
+                  {loading ? (
+                    <>
+                      <span className="h-3.5 w-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin mr-1" />
+                      <span>Updating Password...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Reset Password</span>
+                      <ArrowRight size={14} />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Back to Login */}
+              <div className="text-center mt-6 pt-5 border-t border-gray-100">
+                <Link
+                  href="/auth/login"
+                  className="text-xs font-bold text-[#F54900] hover:text-[#d93e00] transition-colors"
+                >
+                  ← Back to Sign In
+                </Link>
+              </div>
+            </div>
+
+            {/* Need help block */}
+            <div className="mt-5 max-w-[460px] w-full bg-white rounded-[20px] border border-gray-200/60 p-4 shadow-2xs">
+              <h4 className="text-[11px] font-bold text-gray-800 uppercase tracking-wider mb-3 ml-1">
+                Need help?
+              </h4>
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="flex flex-col items-center text-center p-2.5 rounded-xl bg-gray-50/50 hover:bg-orange-50/30 border border-gray-100/50 hover:border-orange-100/50 transition-all duration-300 cursor-pointer">
+                  <MessageSquare size={16} className="text-[#F54900] mb-1" />
+                  <span className="text-[9px] font-bold text-gray-800">Live Chat</span>
+                  <span className="text-[8px] text-gray-400 mt-0.5">Chat with us</span>
+                </div>
+                <a
+                  href="https://wa.me/YOUR_WHATSAPP_NUMBER"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center text-center p-2.5 rounded-xl bg-gray-50/50 hover:bg-orange-50/30 border border-gray-100/50 hover:border-orange-100/50 transition-all duration-300 cursor-pointer"
+                >
+                  <Phone size={16} className="text-[#F54900] mb-1" />
+                  <span className="text-[9px] font-bold text-gray-800">WhatsApp</span>
+                  <span className="text-[8px] text-gray-400 mt-0.5">Message us</span>
+                </a>
+                <a
+                  href="mailto:support@thegriva.com"
+                  className="flex flex-col items-center text-center p-2.5 rounded-xl bg-gray-50/50 hover:bg-orange-50/30 border border-gray-100/50 hover:border-orange-100/50 transition-all duration-300 cursor-pointer"
+                >
+                  <Headphones size={16} className="text-[#F54900] mb-1" />
+                  <span className="text-[9px] font-bold text-gray-800">Contact Support</span>
+                  <span className="text-[8px] text-gray-400 mt-0.5">We&apos;re here to help</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

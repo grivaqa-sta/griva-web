@@ -44,9 +44,9 @@ const sequelize = new Sequelize(connectionString, {
   dialect: "postgres",
   logging: process.env.NODE_ENV === "development" ? console.log : false,
   dialectOptions: {
-    ssl: process.env.NODE_ENV === "production" ? {
+    ssl: (process.env.NODE_ENV === "production" || connectionString.includes("neon.tech") || connectionString.includes("sslmode=require")) ? {
       require: true,
-      rejectUnauthorized: false, // Prevents Azure handshake failure
+      rejectUnauthorized: false, // Prevents cloud/Azure handshake failure
     } : false, // Disable SSL locally unless required
   },
   pool: {

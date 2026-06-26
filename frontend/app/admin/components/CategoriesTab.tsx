@@ -206,9 +206,9 @@ export default function CategoriesTab() {
       {/* Categories Table */}
       <div className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-[850px]">
             <thead>
-              <tr className="border-b border-orange-500/30 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50">
+              <tr className="border-b border-orange-500/30 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 whitespace-nowrap">
                 <th className="p-4 pl-6">Category Details</th>
                 <th className="p-4">Products Count</th>
                 <th className="p-4 text-center">Status</th>
@@ -216,7 +216,7 @@ export default function CategoriesTab() {
                 <th className="p-4 text-right pr-6">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-150">
+            <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
                   <td colSpan={5} className="p-10 text-center text-xs text-gray-400">Loading categories...</td>
@@ -229,20 +229,22 @@ export default function CategoriesTab() {
                 filteredCategories.map((cat) => {
                   const prodCount = getProductCountForCategory(cat.id);
                   return (
-                    <tr key={cat.id} className="hover:bg-orange-500/3 transition-colors group">
-                      <td className="p-4 pl-6 flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 border border-orange-500/30 overflow-hidden shadow-xs">
-                          {cat.image_url ? (
-                            <img src={cat.image_url} alt={cat.title} className="h-full w-full object-cover" />
-                          ) : (
-                            <span className="text-[10px] font-black text-orange-500">GRIVA</span>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-xs font-bold text-gray-800 block truncate max-w-[200px] group-hover:text-orange-500 transition-colors">
-                            {cat.title}
-                          </span>
-                          <span className="text-[9px] text-gray-400 font-semibold mt-1 block">ID: #{cat.id}</span>
+                    <tr key={cat.id} className="bg-white hover:bg-[#fff9f3] transition-colors group whitespace-nowrap">
+                      <td className="p-4 pl-6">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 border border-orange-500/30 overflow-hidden shadow-xs">
+                            {cat.image_url ? (
+                              <img src={cat.image_url} alt={cat.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-black text-orange-500">GRIVA</span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-gray-800 block truncate max-w-[200px] group-hover:text-orange-500 transition-colors">
+                              {cat.title}
+                            </span>
+                            <span className="text-[9px] text-gray-400 font-semibold mt-1 block">ID: #{cat.id}</span>
+                          </div>
                         </div>
                       </td>
 

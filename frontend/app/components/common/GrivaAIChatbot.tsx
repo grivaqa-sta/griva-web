@@ -201,8 +201,6 @@ export default function GrivaAIChatbot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
-  // Hide chatbot on admin views
-  if (pathname.startsWith("/admin")) return null;
 
   // Fetch real products from the backend API on mount
   useEffect(() => {
@@ -772,6 +770,9 @@ export default function GrivaAIChatbot() {
       );
     }
   };
+
+  // Hide chatbot on admin views to ensure all hooks run consistently
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <>

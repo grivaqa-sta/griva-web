@@ -25,6 +25,8 @@ import ProductGallery from "@/app/components/product/ProductGallery";
 import ProductCard from "@/app/components/product/ProductCard";
 import ScrollReveal from "@/app/components/common/ScrollReveal";
 import { trackViewContent, trackAddToCart } from "@/app/components/common/PixelScripts";
+import ProductSchema from "@/components/seo/ProductSchema";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -364,8 +366,21 @@ export default function ProductPage({ params }: ProductPageProps) {
     });
   };
 
+  const productMetaDesc = product.short_description || product.description?.substring(0, 155) || `Buy ${product.title} at GriVA Qatar. Premium electronics with same day delivery in Doha and COD options.`;
+  const canonicalUrl = `https://thegriva.com/product/${product.slug || slug}`;
+  const breadcrumbItems = [
+    { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop" },
+    { name: product.title, path: `/product/${product.slug || slug}` }
+  ];
+
   return (
     <div className="bg-white min-h-screen pt-8 pb-0 sm:pb-8">
+      <title>{product.title} — QAR {formatPrice(product.price)} | GriVA Qatar</title>
+      <meta name="description" content={productMetaDesc} />
+      <link rel="canonical" href={canonicalUrl} />
+      <ProductSchema product={product} />
+      <BreadcrumbSchema items={breadcrumbItems} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Breadcrumbs */}
         <div className="text-xs text-gray-500 mb-6 flex items-center gap-1.5">

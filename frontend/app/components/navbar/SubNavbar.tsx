@@ -49,10 +49,8 @@ export default function SubNavbar() {
 
   return (
     <>
-      {/* Inject keyframe animation + Sen font */}
+      {/* Inject keyframe animation + Apple font */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sen:wght@400;700&display=swap');
-
         /*
           Rows sit flush against each other (no gap, no per-row border).
           Rounding only applies to the outer 4 corners of the whole
@@ -76,11 +74,11 @@ export default function SubNavbar() {
         }
 
         .subnav-link {
-          font-family: 'Sen', sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
         .subnav-dropdown-panel {
-          font-family: 'Sen', sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
       `}</style>
 
@@ -107,7 +105,7 @@ export default function SubNavbar() {
                   {/* Nav trigger link */}
                   <Link
                     href={link.href}
-                    className={`subnav-link relative flex items-center gap-1 px-3 text-[13px] font-semibold transition-colors duration-200 whitespace-nowrap
+                    className={`subnav-link relative flex items-center gap-1 px-3 text-[13px] font-semibold uppercase tracking-wider transition-colors duration-200 whitespace-nowrap
                       ${isActive ? "text-orange-500" : "text-black hover:text-orange-500"}`}
                   >
                     {isActive && (
@@ -144,7 +142,7 @@ export default function SubNavbar() {
                           <Link
                             key={item.id}
                             href={item.href}
-                            className={`subnav-dropdown-row flex items-center gap-2 bg-white px-4 py-[9px] text-[13px] text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors
+                            className={`subnav-dropdown-row flex items-center gap-2 bg-white px-4 py-[9px] text-[13px] font-semibold uppercase text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors
                               ${isWide ? "w-1/2" : "w-full"}`}
                             style={{ animationDelay: `${idx * 100}ms` }}
                           >

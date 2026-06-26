@@ -41,8 +41,7 @@ function BannerCard({ banner }: { banner: BannerItem }) {
         {/* Title */}
         <h2
           className="whitespace-pre-line text-[26px] leading-snug font-light
-                     text-white tracking-wide max-w-[220px]"
-          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                     text-white tracking-wide max-w-[220px] uppercase font-bold"
         >
           {banner.title}
         </h2>

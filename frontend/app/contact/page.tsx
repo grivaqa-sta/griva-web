@@ -5,6 +5,7 @@ import SectionHeading from "@/app/components/common/SectionHeading";
 import ScrollReveal from "@/app/components/common/ScrollReveal";
 import { Mail, Phone, MapPin, Send, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/app/context/ToastContext";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
@@ -24,6 +25,13 @@ export default function ContactPage() {
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-12">
+      <title>Contact Us — GriVA Qatar | Premium Tech Concierge & Customer Care</title>
+      <meta name="description" content="Get in touch with GriVA customer support team. We offer dedicated sales help, order tracking updates, and warranty questions for premium tech products in Qatar." />
+      <link rel="canonical" href="https://thegriva.com/contact" />
+      <BreadcrumbSchema items={[
+        { name: "Home", path: "/" },
+        { name: "Contact Us", path: "/contact" }
+      ]} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading title="Contact GriVA" subtitle="We're here to answer your questions and assist with orders" />
 

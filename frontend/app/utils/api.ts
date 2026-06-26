@@ -98,6 +98,8 @@ export async function getProductsApi(): Promise<Product[]> {
   // Format backend fields back to frontend structure
   return productList.map((p: any) => ({
     id: p.id,
+    slug: p.slug || "",
+    isTrending: p.is_trending || p.is_best_seller || false,
     category: p.category?.title || "Gadgets",
     title: p.title,
     price: `QAR ${parseFloat(p.price.toString().replace(/([$]|qar|[\s,])/gi, "")).toFixed(2)}`,

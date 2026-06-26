@@ -309,6 +309,8 @@ export interface Review {
 
 export interface Product {
   id: number;
+  slug?: string;
+  isTrending?: boolean;
   category: string;
   title: string;
   image: string | StaticImageData;

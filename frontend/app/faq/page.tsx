@@ -5,6 +5,8 @@ import Image from "next/image";
 import { faqData } from "@/app/data/data";
 import { ChevronDown, HelpCircle, MessageSquare, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import FAQSchema from "@/components/seo/FAQSchema";
 
 export default function FAQPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -30,6 +32,14 @@ export default function FAQPage() {
 
   return (
     <div className="relative min-h-screen bg-[#FDFDFD] overflow-hidden py-16 px-4 md:py-24">
+      <title>FAQs & Customer Support — GriVA Qatar | Shipping, COD & Returns</title>
+      <meta name="description" content="Find answers to frequently asked questions about shopping on GriVA Qatar. Get detailed information on shipping speeds, Cash on Delivery, and return terms." />
+      <link rel="canonical" href="https://thegriva.com/faq" />
+      <BreadcrumbSchema items={[
+        { name: "Home", path: "/" },
+        { name: "FAQ", path: "/faq" }
+      ]} />
+      <FAQSchema faqs={faqData} />
       {/* Background Brand Pattern and Subtle Orange Lighting */}
       <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
         <Image 

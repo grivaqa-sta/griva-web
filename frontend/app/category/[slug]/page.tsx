@@ -3,13 +3,46 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { SlidersHorizontal, Star, RotateCcw, X, ChevronRight, Gamepad2, Sparkles, Smile, Baby, Smartphone, Utensils } from "lucide-react";
+import {
+  SlidersHorizontal,
+  Star,
+  RotateCcw,
+  X,
+  ChevronRight,
+  Gamepad2,
+  Smile,
+  Baby,
+  Smartphone,
+  Utensils,
+  ShieldCheck,
+  BookOpen,
+  LayoutGrid,
+  Moon,
+  Settings,
+  Clock,
+  Award,
+  Heart,
+  Zap,
+  Battery,
+  Watch,
+  Car,
+  Droplet,
+  Flame,
+  Tag
+} from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
 import { ApiProduct, Category, SubCategory } from "@/app/types/types";
 import { categoryService } from "@/app/services/category.service";
 import { subCategoryService } from "@/app/services/subCategory.service";
 import ProductCard from "@/app/components/product/ProductCard";
 import { motion, AnimatePresence } from "framer-motion";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+
+interface BenefitItem {
+  iconName: "shield" | "book" | "star" | "tag" | "clock" | "award" | "heart" | "zap";
+  title: string;
+  desc: string;
+}
 
 interface CategoryMetadata {
   title: string;
@@ -18,6 +51,45 @@ interface CategoryMetadata {
   bannerImage: string;
   accentColor: string;
   icon: React.ReactNode;
+  benefits: BenefitItem[];
+}
+
+function getBenefitIcon(iconName: string, color: string) {
+  const cls = "h-5 w-5";
+  switch (iconName) {
+    case "shield": return <ShieldCheck className={cls} style={{ color }} />;
+    case "book": return <BookOpen className={cls} style={{ color }} />;
+    case "star": return <Star className={cls} style={{ color }} />;
+    case "tag": return <Tag className={cls} style={{ color }} />;
+    case "clock": return <Clock className={cls} style={{ color }} />;
+    case "award": return <Award className={cls} style={{ color }} />;
+    case "heart": return <Heart className={cls} style={{ color }} />;
+    case "zap": return <Zap className={cls} style={{ color }} />;
+    default: return <Star className={cls} style={{ color }} />;
+  }
+}
+
+function getSubcategoryIcon(slug: string) {
+  const cls = "h-4 w-4 shrink-0";
+  const s = slug.toLowerCase();
+  
+  if (s.includes("newborn")) return <Baby className={cls} />;
+  if (s.includes("learning") && s.includes("islamic")) return <Moon className={cls} />;
+  if (s.includes("learning")) return <BookOpen className={cls} />;
+  if (s.includes("remote") || s.includes("control") || s.includes("gaming") || s.includes("console")) return <Gamepad2 className={cls} />;
+  if (s.includes("metal")) return <Settings className={cls} />;
+  
+  if (s.includes("perfume")) return <Droplet className={cls} />;
+  if (s.includes("buhoor") || s.includes("oud")) return <Flame className={cls} />;
+  
+  if (s.includes("charger") || s.includes("cable") || s.includes("adapter")) return <Zap className={cls} />;
+  if (s.includes("power") || s.includes("battery")) return <Battery className={cls} />;
+  if (s.includes("wearable") || s.includes("watch")) return <Watch className={cls} />;
+  
+  if (s.includes("kitchen") || s.includes("cook") || s.includes("appliance")) return <Utensils className={cls} />;
+  if (s.includes("car") || s.includes("truck")) return <Car className={cls} />;
+  
+  return <Tag className={cls} />;
 }
 
 const CATEGORY_META: Record<string, CategoryMetadata> = {
@@ -27,7 +99,12 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     gradient: "from-amber-700 via-rose-800 to-amber-900",
     bannerImage: "/banners/banner_perfumes-buhoor.png",
     accentColor: "#f59e0b",
-    icon: <Sparkles className="h-6 w-6 text-white" />,
+    icon: <Flame className="h-6 w-6 text-white" />,
+    benefits: [
+      { iconName: "shield", title: "100% Authentic", desc: "Premium Selection" },
+      { iconName: "clock", title: "Long Lasting", desc: "All Day Projection" },
+      { iconName: "award", title: "Premium Oud", desc: "Sourced Locally" }
+    ]
   },
   "toys": {
     title: "Toys & Games",
@@ -36,6 +113,11 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     bannerImage: "/banners/banner_toys.png",
     accentColor: "#FF6A00",
     icon: <Smile className="h-6 w-6 text-white" />,
+    benefits: [
+      { iconName: "shield", title: "Safe & Durable", desc: "Premium Quality" },
+      { iconName: "book", title: "Learning & Fun", desc: "For All Ages" },
+      { iconName: "star", title: "Trusted by Parents", desc: "Across Qatar" }
+    ]
   },
   "baby-products": {
     title: "Baby Products",
@@ -44,6 +126,11 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     bannerImage: "/banners/banner_baby-products.png",
     accentColor: "#34d399",
     icon: <Baby className="h-6 w-6 text-white" />,
+    benefits: [
+      { iconName: "shield", title: "Certified Safe", desc: "100% Non-Toxic" },
+      { iconName: "heart", title: "Ultra Soft", desc: "Gentle on Baby" },
+      { iconName: "star", title: "Loved by Moms", desc: "Top Qatar Choice" }
+    ]
   },
   "gadgets-electronics": {
     title: "Gadgets & Electronics",
@@ -52,6 +139,11 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     bannerImage: "/banners/banner_gadgets-electronics.png",
     accentColor: "#3b82f6",
     icon: <Smartphone className="h-6 w-6 text-white" />,
+    benefits: [
+      { iconName: "shield", title: "Official Warranty", desc: "100% Original" },
+      { iconName: "zap", title: "Fast Charging", desc: "High Efficiency" },
+      { iconName: "award", title: "Top Performance", desc: "Qatar Verified" }
+    ]
   },
   "gaming-accessories": {
     title: "Gaming Accessories",
@@ -60,6 +152,11 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     bannerImage: "/banners/banner_gaming-accessories.png",
     accentColor: "#8b5cf6",
     icon: <Gamepad2 className="h-6 w-6 text-white" />,
+    benefits: [
+      { iconName: "shield", title: "Pro Grade Quality", desc: "Zero Input Delay" },
+      { iconName: "zap", title: "Extreme Cooling", desc: "Lag-Free Play" },
+      { iconName: "award", title: "Competitive Edge", desc: "Loved by Gamers" }
+    ]
   },
   "kitchen-appliances-essentials": {
     title: "Kitchen Appliances & Essentials",
@@ -68,7 +165,12 @@ const CATEGORY_META: Record<string, CategoryMetadata> = {
     bannerImage: "/banners/banner_kitchen-appliances-essentials.png",
     accentColor: "#FF6A00",
     icon: <Utensils className="h-6 w-6 text-white" />,
-  },
+    benefits: [
+      { iconName: "shield", title: "Food Grade Safe", desc: "BPA Free Materials" },
+      { iconName: "tag", title: "Smart Kitchen", desc: "Effortless Cooking" },
+      { iconName: "award", title: "Highly Durable", desc: "Long Warranty" }
+    ]
+  }
 };
 
 function ProductCardSkeleton() {
@@ -94,6 +196,7 @@ export default function CategoryPage() {
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
@@ -208,7 +311,7 @@ export default function CategoryPage() {
     gradient: "from-zinc-800 via-zinc-900 to-black",
     bannerImage: "",
     accentColor: "#FF6A00",
-    icon: <Sparkles className="h-6 w-6 text-white" />,
+    icon: <Tag className="h-6 w-6 text-white" />,
   };
 
   return (
@@ -216,6 +319,14 @@ export default function CategoryPage() {
       className="bg-gray-50/40 min-h-screen py-8"
       style={{ ["--tw-selection-bg" as string]: "#FF6A00" }}
     >
+      <title>{meta.title} Qatar — Online Catalog & Premium Accessories | GriVA</title>
+      <meta name="description" content={`Shop ${meta.title} in Qatar. ${meta.tagline}. Same day doorstep delivery across Doha and secure Cash on Delivery.`} />
+      <link rel="canonical" href={`https://thegriva.com/category/${slug}`} />
+      <BreadcrumbSchema items={[
+        { name: "Home", path: "/" },
+        { name: "Shop", path: "/shop" },
+        { name: meta.title, path: `/category/${slug}` }
+      ]} />
       <style>{`::selection { background-color: #FF6A00; color: white; }`}</style>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
 
@@ -270,34 +381,46 @@ export default function CategoryPage() {
             className="absolute bottom-0 left-0 right-0 h-0.5 opacity-60"
             style={{ background: `linear-gradient(to right, ${meta.accentColor}, transparent)` }}
           />
-          <div className="relative p-8 md:p-12 max-w-2xl space-y-4">
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-              {meta.title.includes("&") ? (
-                <>
-                  {meta.title.split("&")[0]}
-                  <span style={{ color: meta.accentColor }}>&</span>
-                  {meta.title.split("&")[1]}
-                </>
-              ) : meta.title}
-            </h1>
-            <p className="text-sm md:text-base text-white/75 leading-relaxed max-w-md">
-              {meta.tagline}
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              {[
-                { icon: "🚚", label: "Qatar-Wide Delivery" },
-                { icon: "💳", label: "Cash on Delivery" },
-                { icon: "↩️", label: "7-Day Returns" },
-              ].map((badge) => (
-                <span
-                  key={badge.label}
-                  className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-full border border-white/20"
-                  style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}
-                >
-                  <span>{badge.icon}</span>
-                  <span className="text-white/80">{badge.label}</span>
-                </span>
-              ))}
+          <div className="relative p-8 md:p-12 max-w-2xl flex flex-col justify-center min-h-[220px]">
+            <div className="space-y-4">
+              {/* Premium Top Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-bold tracking-widest uppercase text-white/95 w-fit">
+                <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: meta.accentColor || "#FF6A00" }} />
+                Premium Qatar Collection
+              </div>
+
+              {/* Heading */}
+              <h1 className="text-3xl md:text-5xl font-extrabold tracking-wider uppercase leading-tight">
+                {meta.title.includes("&") ? (
+                  <>
+                    {meta.title.split("&")[0]}
+                    <span style={{ color: meta.accentColor || "#FF6A00" }}> & </span>
+                    {meta.title.split("&")[1]}
+                  </>
+                ) : meta.title}
+              </h1>
+
+              {/* Tagline */}
+              <p className="text-xs md:text-sm text-white/85 leading-relaxed max-w-md font-medium tracking-wide">
+                {meta.tagline}
+              </p>
+
+              {/* Professional Benefit Blocks */}
+              {meta.benefits && meta.benefits.length > 0 && (
+                <div className="flex flex-wrap gap-5 pt-3">
+                  {meta.benefits.map((benefit, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 backdrop-blur-xs">
+                        {getBenefitIcon(benefit.iconName, meta.accentColor || "#FF6A00")}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-bold text-white tracking-wide leading-tight">{benefit.title}</span>
+                        <span className="text-[9px] text-white/60 font-semibold tracking-wide mt-0.5">{benefit.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -307,12 +430,13 @@ export default function CategoryPage() {
           <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
             <Link
               href={`/category/${slug}`}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                 !subParam
-                  ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10"
+                  ? "bg-orange-50 border-orange-500 text-orange-600 shadow-sm"
                   : "bg-white border-gray-200 text-gray-700 hover:border-orange-200 hover:text-orange-500"
               }`}
             >
+              <LayoutGrid className="h-3.5 w-3.5" />
               All Products
             </Link>
             {categorySubcategories.map((sub) => {
@@ -321,12 +445,13 @@ export default function CategoryPage() {
                 <Link
                   key={sub.id}
                   href={`/category/${slug}?sub=${sub.slug}`}
-                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                     isSelected
-                      ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10"
+                      ? "bg-orange-50 border-orange-500 text-orange-600 shadow-sm"
                       : "bg-white border-gray-200 text-gray-700 hover:border-orange-200 hover:text-orange-500"
                   }`}
                 >
+                  {getSubcategoryIcon(sub.slug)}
                   {sub.title}
                 </Link>
               );
@@ -376,44 +501,49 @@ export default function CategoryPage() {
               <div>
                 <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Min Rating</h4>
                 <div className="space-y-2">
-                  {[4, 3, 2, 0].map((rating) => (
-                    <button
-                      key={rating}
-                      onClick={() => setMinRating(rating)}
-                      className="flex w-full items-center gap-2 text-xs py-1 px-2 rounded-md transition cursor-pointer"
-                      style={
-                        minRating === rating
-                          ? { backgroundColor: "#FF6A00", color: "white", fontWeight: 600 }
-                          : { color: "#4b5563" }
-                      }
-                      onMouseEnter={(e) => {
-                        if (minRating !== rating) e.currentTarget.style.backgroundColor = "#f9fafb";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (minRating !== rating) e.currentTarget.style.backgroundColor = "";
-                      }}
-                    >
-                      {rating === 0 ? (
-                        <span>Any Rating</span>
-                      ) : (
+                  {[5, 4, 3, 2].map((rating) => {
+                    const isSelected = minRating === rating;
+                    return (
+                      <button
+                        key={rating}
+                        onClick={() => setMinRating(rating)}
+                        className={`flex w-full items-center justify-between text-xs py-2 px-3 rounded-xl transition-all border cursor-pointer ${
+                          isSelected
+                            ? "bg-orange-50/50 border-orange-200 text-orange-600 font-semibold"
+                            : "bg-transparent border-transparent text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
                         <div className="flex items-center gap-1.5">
                           <div className="flex items-center gap-0.5">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className="h-3 w-3"
+                                className="h-3.5 w-3.5"
                                 style={{
-                                  fill: i < rating ? (minRating === rating ? "white" : "#FF6A00") : "transparent",
-                                  color: i < rating ? (minRating === rating ? "white" : "#FF6A00") : "#e5e7eb",
+                                  fill: i < rating ? "#FF6A00" : "transparent",
+                                  color: i < rating ? "#FF6A00" : "#d1d5db",
                                 }}
                               />
                             ))}
                           </div>
-                          <span>& Up</span>
+                          <span className={isSelected ? "text-orange-600" : "text-gray-400 font-medium"}>& Up</span>
                         </div>
-                      )}
+                      </button>
+                    );
+                  })}
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setMinRating(0)}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                        minRating === 0
+                          ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200/50"
+                      }`}
+                    >
+                      Any Rating
                     </button>
-                  ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -461,16 +591,45 @@ export default function CategoryPage() {
                   <option value="price-high-to-low">Price: High to Low</option>
                   <option value="rating">Rating</option>
                 </select>
+
+                <div className="flex items-center gap-1 ml-2 border border-gray-200 rounded-lg p-0.5 bg-white shadow-xs">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1.5 rounded-md transition cursor-pointer ${
+                      viewMode === "grid"
+                        ? "bg-orange-50 text-orange-500 border border-orange-105"
+                        : "text-gray-400 hover:text-gray-600 border border-transparent"
+                    }`}
+                    aria-label="Grid view"
+                  >
+                    <LayoutGrid size={14} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-1.5 rounded-md transition cursor-pointer ${
+                      viewMode === "list"
+                        ? "bg-orange-50 text-orange-500 border border-orange-105"
+                        : "text-gray-400 hover:text-gray-600 border border-transparent"
+                    }`}
+                    aria-label="List view"
+                  >
+                    <SlidersHorizontal size={14} />
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Product card loop */}
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
+              <div className={`grid gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none ${
+                viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3"
+              }`}>
                 {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
               </div>
             ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
+              <div className={`grid gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none ${
+                viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3"
+              }`}>
                 {filteredProducts.map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             ) : (

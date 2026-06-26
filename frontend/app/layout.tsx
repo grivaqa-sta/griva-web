@@ -7,7 +7,7 @@ import Footer from "@/app/components/footer/Footer";
 import { Providers } from "@/app/context/Providers";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import BackToTop from "@/app/components/common/BackToTop";
-import WhatsAppFloat from "@/app/components/common/WhatsAppFloat";
+import GrivaAIChatbot from "@/app/components/common/GrivaAIChatbot";
 import PixelScripts from "@/app/components/common/PixelScripts";
 
 const geistSans = Geist({
@@ -22,30 +22,117 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://thegriva.com"),
-  title: "GriVA — Premium Electronics Store in Qatar",
-  description: "Shop premium electronics, gadgets, toys, and lifestyle products in Qatar. Fast delivery across Doha. Cash on Delivery available.",
+  title: {
+    default: "GriVA Qatar — Premium Electronics Store | Fast Delivery Doha",
+    template: "%s | GriVA Qatar",
+  },
+  description: "Qatar's #1 online electronics store. Shop Sony, Apple, Samsung, JBL and more. Free delivery on orders over QAR 99. Cash on delivery available across Doha, Lusail, The Pearl, West Bay and all Qatar areas. Same day delivery guaranteed.",
+  keywords: [
+    "electronics qatar",
+    "online electronics store qatar",
+    "buy electronics qatar",
+    "electronics doha",
+    "tech store qatar",
+    "gadgets qatar",
+    "electronics online qatar",
+    "buy gadgets online qatar",
+    "electronics cash on delivery qatar",
+    "same day delivery electronics qatar",
+    "thegriva.com",
+    "griva qatar",
+    "griva electronics",
+    "griva doha",
+    "griva online store"
+  ],
+  applicationName: "GriVA Qatar",
+  authors: [{ name: "GriVA Qatar", url: "https://thegriva.com" }],
+  generator: "Next.js",
+  creator: "GriVA Qatar",
+  publisher: "GriVA Qatar",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
-    title: "GriVA — Premium Electronics Store in Qatar",
-    description: "Shop premium electronics, gadgets, toys, and lifestyle products in Qatar. Fast delivery across Doha.",
+    type: "website",
+    locale: "en_QA",
+    alternateLocale: "ar_QA",
     url: "https://thegriva.com",
     siteName: "GriVA Qatar",
+    title: "GriVA — Elevating Every Experience | Qatar Electronics Store",
+    description: "Premium electronics delivered same day across Qatar. Sony, Apple, Samsung and more. Cash on delivery available. Free delivery over QAR 99.",
     images: [
       {
-        url: "/images/logo-dark.png",
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "GriVA Qatar Online Store",
+        alt: "GriVA Qatar — Premium Electronics Store",
+        type: "image/jpeg",
       },
     ],
-    locale: "en_QA",
-    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "GriVA — Premium Electronics Store in Qatar",
-    description: "Shop premium electronics, gadgets, toys, and lifestyle products in Qatar.",
-    images: ["/images/logo-dark.png"],
+    site: "@grivaqa",
+    creator: "@grivaqa",
+    title: "GriVA Qatar Electronics Store — Same Day Delivery",
+    description: "Premium electronics. Same day Qatar delivery. Cash on delivery. Shop Sony, Apple, Samsung and more.",
+    images: ["/og-image.jpg"],
   },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      noimageindex: false,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
+      { url: "/icon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      { rel: "mask-icon", url: "/safari-pinned-tab.svg" },
+    ],
+  },
+  manifest: "/manifest.json",
+  alternates: {
+    canonical: "https://thegriva.com",
+    languages: {
+      "en-QA": "https://thegriva.com",
+      "ar-QA": "https://thegriva.com/ar",
+    },
+  },
+  verification: {
+    google: "ADD_YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE_HERE",
+    yandex: "ADD_IF_NEEDED",
+    other: {
+      me: ["support@thegriva.com"],
+    },
+  },
+  category: "electronics",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f97316" },
+    { media: "(prefers-color-scheme: dark)", color: "#f97316" },
+  ],
 };
 
 export default function RootLayout({
@@ -68,7 +155,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <CartDrawer />
-          <WhatsAppFloat />
+          <GrivaAIChatbot />
           <BackToTop />
           <PixelScripts />
         </Providers>

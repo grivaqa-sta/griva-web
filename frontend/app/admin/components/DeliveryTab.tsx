@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { UserPlus, Mail, Shield, User, Key, Users, RefreshCw, Send, Lock } from "lucide-react";
+import { UserPlus, Mail, Shield, User, Key, Users, RefreshCw, Send, Lock, ChevronDown } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -35,6 +35,7 @@ export default function DeliveryTab() {
   const [resetDriver, setResetDriver] = useState<DeliveryBoy | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [openRecipientSelect, setOpenRecipientSelect] = useState(false);
 
   const fetchDrivers = async () => {
     setLoading(true);
@@ -352,17 +353,58 @@ export default function DeliveryTab() {
           <form onSubmit={handleSendNotification} className="space-y-4">
             <div>
               <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1.5">Select Recipient</label>
-              <select
-                value={targetDriverId}
-                onChange={(e) => setTargetDriverId(e.target.value)}
-                className="w-full bg-white border border-orange-500/30 rounded-xl px-3 py-2.5 text-xs text-gray-800 focus:outline-none"
-                required
-              >
-                <option value="all">📢 Broadcast to All Drivers</option>
-                {drivers.map(driver => (
-                  <option key={driver.id} value={driver.id}>👤 {driver.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenRecipientSelect(!openRecipientSelect)}
+                  className="w-full flex items-center justify-between text-xs p-2.5 border border-orange-500/30 focus:border-orange-500 outline-none rounded-xl bg-white hover:border-orange-500/55 transition-colors text-left font-semibold text-gray-800 cursor-pointer"
+                >
+                  <span>
+                    {targetDriverId === "all"
+                      ? "📢 Broadcast to All Drivers"
+                      : `👤 ${drivers.find(d => String(d.id) === targetDriverId)?.name || targetDriverId}`}
+                  </span>
+                  <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openRecipientSelect ? "rotate-180 text-orange-500" : ""}`} />
+                </button>
+
+                {openRecipientSelect && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40 bg-transparent cursor-default"
+                      onClick={() => setOpenRecipientSelect(false)}
+                    />
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetDriverId("all");
+                          setOpenRecipientSelect(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors ${
+                          targetDriverId === "all" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"
+                        }`}
+                      >
+                        📢 Broadcast to All Drivers
+                      </button>
+                      {drivers.map((driver) => (
+                        <button
+                          key={driver.id}
+                          type="button"
+                          onClick={() => {
+                            setTargetDriverId(String(driver.id));
+                            setOpenRecipientSelect(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors ${
+                            targetDriverId === String(driver.id) ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"
+                          }`}
+                        >
+                          👤 {driver.name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             <div>
@@ -427,35 +469,36 @@ export default function DeliveryTab() {
             </button>
           </div>
 
-          <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead>
-              <tr className="border-b border-orange-500/30 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50">
-                <th className="p-4 pl-6">Driver</th>
-                <th className="p-4 text-center">Password</th>
-                <th className="p-4 text-center">Active Workload</th>
-                <th className="p-4 text-right pr-6">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-150">
-              {loading && drivers.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="p-10 text-center text-xs text-gray-400 font-semibold">
-                    <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-orange-500" />
-                    Loading drivers...
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[750px]">
+              <thead>
+                <tr className="border-b border-orange-500/30 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 whitespace-nowrap">
+                  <th className="p-4 pl-6">Driver</th>
+                  <th className="p-4 text-center">Password</th>
+                  <th className="p-4 text-center">Active Workload</th>
+                  <th className="p-4 text-right pr-6">Actions</th>
                 </tr>
-              ) : drivers.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="p-10 text-center text-xs text-gray-400 font-semibold">
-                    No drivers registered yet.
-                  </td>
-                </tr>
-              ) : (
-                drivers.map((driver) => {
-                  const initials = driver.name ? driver.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "D";
-                  return (
-                    <tr key={driver.id} className="hover:bg-orange-500/3 transition-colors group">
-                      <td className="p-4 pl-6">
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading && drivers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-10 text-center text-xs text-gray-400 font-semibold">
+                      <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-orange-500" />
+                      Loading drivers...
+                    </td>
+                  </tr>
+                ) : drivers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-10 text-center text-xs text-gray-400 font-semibold">
+                      No drivers registered yet.
+                    </td>
+                  </tr>
+                ) : (
+                  drivers.map((driver) => {
+                    const initials = driver.name ? driver.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "D";
+                    return (
+                      <tr key={driver.id} className="bg-white hover:bg-[#fff9f3] transition-colors group whitespace-nowrap">
+                        <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-orange-400 to-amber-500 flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs">
                             {initials}
@@ -506,7 +549,8 @@ export default function DeliveryTab() {
                 })
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </div>
     </div>

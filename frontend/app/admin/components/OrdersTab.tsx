@@ -32,16 +32,16 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 
 const STATUS_FLOW: Record<string, string[]> = {
   pending:          ['processing', 'cancelled'],
-  processing:       ['shipped', 'delivered', 'cancelled'],
-  assigned:         ['out_for_delivery', 'delivered', 'cancelled'],
+  processing:       ['shipped', 'cancelled'],
+  assigned:         ['out_for_delivery', 'cancelled'],
   out_for_delivery: ['delivered', 'cancelled'],
   shipped:          ['delivered', 'cancelled'],
   delivered:        [],
   completed:        [],
   cancelled:        [],
-  attempted:        ['processing', 'delivered', 'cancelled'],
+  attempted:        ['processing', 'cancelled'],
   rescheduled:      ['delivered', 'cancelled'],
-  failed:           ['processing', 'delivered', 'cancelled'],
+  failed:           ['processing', 'cancelled'],
 };
 
 interface DeliveryBoy {
@@ -63,6 +63,9 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDateRange, setFilterDateRange] = useState('all');
   const [filterPrintStatus, setFilterPrintStatus] = useState<string>('all');
+  const [openDateSelect, setOpenDateSelect] = useState(false);
+  const [openPrintSelect, setOpenPrintSelect] = useState(false);
+  const [openSlotSelect, setOpenSlotSelect] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportStartDate, setExportStartDate] = useState('');
   const [exportEndDate, setExportEndDate] = useState('');
@@ -842,7 +845,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
       )}
 
       {/* Order Operations Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-orange-500/30 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4.5 rounded-2xl border border-orange-500/30 shadow-xs">
         <div>
           <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">Order Operations</h3>
           <p className="text-[10px] text-gray-400 mt-0.5">Manage packing slips, batch printing, and flexible data exports.</p>
@@ -873,10 +876,10 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
         </div>
       </div>
 
-      {/* Search and Filters Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-2xl border border-orange-500/30 shadow-xs">
+      {/* Search and Dropdowns Filter Grid */}
+      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-2xl border border-orange-500/30 shadow-xs">
         {/* Unified Search Input */}
-        <div className="md:col-span-2 relative">
+        <div className="flex-1 min-w-[250px] relative">
           <input
             type="text"
             placeholder="Search by Order Number, Customer Name, Phone Number..."
@@ -895,155 +898,215 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
         </div>
 
         {/* Date Range Dropdown */}
-        <select
-          value={filterDateRange}
-          onChange={(e) => setFilterDateRange(e.target.value)}
-          className="text-xs font-bold text-gray-750 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl px-3 py-2.5 outline-none cursor-pointer focus:bg-white transition-all shadow-xs"
-        >
-          <option value="all">📅 All Time</option>
-          <option value="today">📅 Today</option>
-          <option value="yesterday">📅 Yesterday</option>
-          <option value="week">📅 Last 7 Days</option>
-        </select>
-
-        {/* Print Status Dropdown */}
-        <select
-          value={filterPrintStatus}
-          onChange={(e) => setFilterPrintStatus(e.target.value)}
-          className="text-xs font-bold text-gray-750 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl px-3 py-2.5 outline-none cursor-pointer focus:bg-white transition-all shadow-xs"
-        >
-          <option value="all">🖨️ All Print Statuses</option>
-          <option value="printed">🖨️ Printed Orders</option>
-          <option value="unprinted">🖨️ Unprinted Orders</option>
-        </select>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-xl border border-orange-500/30">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* All Tab */}
-          <div>
-            <button
-              onClick={() => setFilterStatus('all')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                filterStatus === 'all'
-                  ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/30'
-                  : 'bg-white text-gray-500 border-orange-500/20 hover:border-orange-500/50'
-              }`}
-            >
-              <span>All</span>
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${filterStatus === 'all' ? 'bg-white/20' : 'bg-gray-100'}`}>
-                {counts['all']}
-              </span>
-            </button>
-          </div>
-
-          {/* Action Required Group */}
-          <div className="flex flex-wrap items-center gap-2 bg-orange-50/45 p-3.5 pt-4 rounded-xl border border-orange-100 relative">
-            <span className="absolute -top-2 left-3 bg-white px-1.5 text-[8px] font-black text-orange-650 tracking-wider uppercase border border-orange-100 rounded-sm">
-              ⚠️ Action Required
+        <div className="relative z-[47]">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenDateSelect(!openDateSelect);
+              setOpenPrintSelect(false);
+              setOpenSlotSelect(false);
+            }}
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl text-xs font-bold text-gray-750 cursor-pointer min-w-[140px] text-left"
+          >
+            <span>
+              {filterDateRange === "all" && "📅 All Time"}
+              {filterDateRange === "today" && "📅 Today"}
+              {filterDateRange === "yesterday" && "📅 Yesterday"}
+              {filterDateRange === "week" && "📅 Last 7 Days"}
             </span>
-            {(['new', 'pending', 'processing', 'assigned', 'out_for_delivery']).map((status) => {
-              const cfg = STATUS_CONFIG[status];
-              const isActive = filterStatus === status;
-              
-              let activeClass = 'bg-orange-500 text-white border-orange-500 shadow-orange-500/30';
-              let inactiveClass = 'bg-white text-gray-500 border-orange-500/20 hover:border-orange-500/50';
-              if (status === 'new') {
-                activeClass = 'bg-red-600 text-white border-red-600 shadow-sm shadow-red-500/30';
-                inactiveClass = 'bg-white text-red-650 border-red-200 hover:border-red-400';
-              } else if (status === 'pending') {
-                activeClass = 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/30';
-                inactiveClass = 'bg-white text-orange-650 border-orange-200 hover:border-orange-400';
-              } else if (status === 'processing') {
-                activeClass = 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/30';
-                inactiveClass = 'bg-white text-amber-650 border-amber-200 hover:border-amber-400';
-              } else if (status === 'assigned') {
-                activeClass = 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/30';
-                inactiveClass = 'bg-white text-blue-650 border-blue-200 hover:border-blue-400';
-              } else if (status === 'out_for_delivery') {
-                activeClass = 'bg-orange-600 text-white border-orange-600 shadow-sm shadow-orange-550/30';
-                inactiveClass = 'bg-white text-orange-700 border-orange-200 hover:border-orange-400';
-              }
+            <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openDateSelect ? "rotate-180 text-orange-500" : ""}`} />
+          </button>
 
-              return (
+          {openDateSelect && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenDateSelect(false)} />
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 min-w-[140px]">
                 <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                    isActive ? activeClass : inactiveClass
-                  }`}
+                  type="button"
+                  onClick={() => { setFilterDateRange("all"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "all" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
                 >
-                  {cfg?.icon}
-                  <span className="capitalize">{status === 'new' ? 'New' : status.replace(/_/g, ' ')}</span>
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-gray-100'}`}>
-                    {counts[status]}
-                  </span>
+                  📅 All Time
                 </button>
-              );
-            })}
-          </div>
-
-          {/* Completed Group */}
-          <div className="flex flex-wrap items-center gap-2 bg-gray-50 p-3.5 pt-4 rounded-xl border border-gray-200 relative">
-            <span className="absolute -top-2 left-3 bg-white px-1.5 text-[8px] font-black text-gray-500 tracking-wider uppercase border border-gray-200 rounded-sm">
-              ✅ Completed
-            </span>
-            {(['shipped', 'delivered', 'cancelled']).map((status) => {
-              const cfg = STATUS_CONFIG[status];
-              const isActive = filterStatus === status;
-              
-              let activeClass = 'bg-gray-500 text-white border-gray-500 shadow-gray-500/30';
-              let inactiveClass = 'bg-white text-gray-500 border-gray-200 hover:border-gray-400';
-              if (status === 'shipped') {
-                activeClass = 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/30';
-                inactiveClass = 'bg-white text-indigo-650 border-indigo-200 hover:border-indigo-400';
-              } else if (status === 'delivered') {
-                activeClass = 'bg-green-600 text-white border-green-600 shadow-sm shadow-green-500/30';
-                inactiveClass = 'bg-white text-green-650 border-green-200 hover:border-green-400';
-              } else if (status === 'cancelled') {
-                activeClass = 'bg-gray-600 text-white border-gray-600 shadow-sm shadow-gray-550/30';
-                inactiveClass = 'bg-white text-gray-500 border-gray-200 hover:border-gray-450';
-              }
-
-              return (
                 <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                    isActive ? activeClass : inactiveClass
-                  }`}
+                  type="button"
+                  onClick={() => { setFilterDateRange("today"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "today" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
                 >
-                  {cfg?.icon}
-                  <span className="capitalize">{status}</span>
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-gray-100'}`}>
-                    {counts[status]}
-                  </span>
+                  📅 Today
                 </button>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  onClick={() => { setFilterDateRange("yesterday"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "yesterday" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  📅 Yesterday
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFilterDateRange("week"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "week" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  📅 Last 7 Days
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
-        <select
-          value={filterSlot}
-          onChange={(e) => setFilterSlot(e.target.value)}
-          className="text-xs font-bold text-gray-750 bg-white border border-orange-500/20 rounded-lg px-3 py-2.5 outline-none hover:border-orange-500/40 cursor-pointer md:ml-auto"
+        {/* Print Status Dropdown */}
+        <div className="relative z-[46]">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenPrintSelect(!openPrintSelect);
+              setOpenDateSelect(false);
+              setOpenSlotSelect(false);
+            }}
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl text-xs font-bold text-gray-750 cursor-pointer min-w-[160px] text-left"
+          >
+            <span>
+              {filterPrintStatus === "all" && "🖨️ All Print Statuses"}
+              {filterPrintStatus === "printed" && "🖨️ Printed Orders"}
+              {filterPrintStatus === "unprinted" && "🖨️ Unprinted Orders"}
+            </span>
+            <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openPrintSelect ? "rotate-180 text-orange-500" : ""}`} />
+          </button>
+
+          {openPrintSelect && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenPrintSelect(false)} />
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 min-w-[160px]">
+                <button
+                  type="button"
+                  onClick={() => { setFilterPrintStatus("all"); setOpenPrintSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterPrintStatus === "all" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  🖨️ All Print Statuses
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFilterPrintStatus("printed"); setOpenPrintSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterPrintStatus === "printed" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  🖨️ Printed Orders
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFilterPrintStatus("unprinted"); setOpenPrintSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterPrintStatus === "unprinted" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  🖨️ Unprinted Orders
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Delivery Slot Dropdown */}
+        <div className="relative z-[45]">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenSlotSelect(!openSlotSelect);
+              setOpenDateSelect(false);
+              setOpenPrintSelect(false);
+            }}
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl text-xs font-bold text-gray-750 cursor-pointer min-w-[170px] text-left"
+          >
+            <span>
+              {filterSlot === "all"
+                ? "🚚 All Delivery Slots"
+                : `🚚 ` + (deliverySlots.find((s) => String(s.id) === filterSlot)?.name || "Delivery Slot")}
+            </span>
+            <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openSlotSelect ? "rotate-180 text-orange-500" : ""}`} />
+          </button>
+
+          {openSlotSelect && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenSlotSelect(false)} />
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto min-w-[170px]">
+                <button
+                  type="button"
+                  onClick={() => { setFilterSlot("all"); setOpenSlotSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterSlot === "all" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  All Delivery Slots
+                </button>
+                {deliverySlots.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => { setFilterSlot(String(s.id)); setOpenSlotSelect(false); }}
+                    className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterSlot === String(s.id) ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Sleek Horizontal Status Tabs Strip */}
+      <div className="flex items-center gap-1 bg-white border-b border-orange-500/20 px-2 overflow-x-auto whitespace-nowrap scrollbar-none py-1 select-none">
+        {/* All Tab */}
+        <button
+          onClick={() => setFilterStatus('all')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all relative border-b-2 cursor-pointer ${
+            filterStatus === 'all'
+              ? 'text-orange-500 border-orange-500 font-extrabold'
+              : 'text-gray-500 border-transparent hover:text-gray-800'
+          }`}
         >
-          <option value="all">All Delivery Slots</option>
-          {deliverySlots.map(s => (
-            <option key={s.id} value={String(s.id)}>{s.name}</option>
-          ))}
-        </select>
+          <span>All</span>
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+            filterStatus === 'all' ? 'bg-orange-500/10 text-orange-600 font-black' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {counts['all']}
+          </span>
+        </button>
+
+        {/* Dynamic status tabs */}
+        {(['new', 'pending', 'processing', 'assigned', 'out_for_delivery', 'shipped', 'delivered', 'cancelled']).map((status) => {
+          const cfg = STATUS_CONFIG[status];
+          const isActive = filterStatus === status;
+          const label = status === 'new' ? 'New' : status.replace(/_/g, ' ');
+
+          return (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all relative border-b-2 cursor-pointer capitalize ${
+                isActive
+                  ? 'text-orange-500 border-orange-500 font-extrabold'
+                  : 'text-gray-500 border-transparent hover:text-gray-800'
+              }`}
+            >
+              {cfg?.icon && (
+                <span className="shrink-0">
+                  {cfg.icon}
+                </span>
+              )}
+              <span>{label}</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                isActive ? 'bg-orange-500/10 text-orange-600 font-black' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {counts[status]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Orders Table */}
       <div className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[750px]">
+          <table className="w-full text-left border-collapse min-w-[1250px]">
             <thead>
-              <tr className="border-b border-orange-500/20 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50">
-                <th className="p-4">Order</th>
+              <tr className="border-b border-orange-500/20 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 whitespace-nowrap">
+                <th className="p-4 pl-5 sticky left-0 bg-gray-50 z-20">Order</th>
                 <th className="p-4">Customer</th>
                 <th className="p-4">Items</th>
                 <th className="p-4">Delivery Slot</th>
@@ -1072,10 +1135,10 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                   return (
                     <React.Fragment key={order.id}>
                       <tr
-                        className={`hover:bg-orange-500/3 transition-colors cursor-pointer group ${
+                        className={`transition-colors cursor-pointer group whitespace-nowrap ${
                           order.status === 'pending' && !(order as any).reviewed_at
-                            ? 'border-l-4 border-l-amber-500 bg-amber-500/5'
-                            : ''
+                            ? 'bg-[#fdf8ee] hover:bg-[#fbf1dc]'
+                            : 'bg-white hover:bg-[#fff9f3]'
                         }`}
                         onClick={() => {
                           const isUnreviewed = order.status === 'pending' && !(order as any).reviewed_at;
@@ -1093,8 +1156,14 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                           setExpandedOrderId(isExpanded ? null : order.id);
                         }}
                       >
-                        {/* Order ID */}
-                        <td className="p-4">
+                        {/* Order ID (Sticky Left) */}
+                        <td
+                          className={`p-4 sticky left-0 z-10 transition-colors ${
+                            order.status === 'pending' && !(order as any).reviewed_at
+                              ? 'bg-[#fdf8ee] group-hover:bg-[#fbf1dc] border-l-4 border-l-amber-500 pl-4'
+                              : 'bg-white group-hover:bg-[#fff9f3] pl-5'
+                          }`}
+                        >
                           <div className="flex items-center gap-2 flex-wrap max-w-[150px]">
                             <div className="flex items-center gap-1">
                               <Hash className="h-3 w-3 text-orange-400" />
@@ -1216,7 +1285,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                       {/* Expanded Order Details */}
                       {isExpanded && (
                         <tr className="bg-orange-500/3">
-                          <td colSpan={9} className="px-4 pb-4">
+                          <td colSpan={9} className="px-4 pb-4 whitespace-normal">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                               {/* Items */}
                               <div className="space-y-2">

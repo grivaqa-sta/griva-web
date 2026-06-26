@@ -160,73 +160,71 @@ export default function ProductsTab() {
     <div className="space-y-6 animate-in fade-in-50 duration-300">
       {/* Top Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
         {/* Total Products */}
-        <div className="bg-white border border-orange-500/20 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-orange-500/40 transition-all duration-300">
-          <div className="absolute right-0 bottom-0 translate-x-3 translate-y-3 opacity-5 text-orange-500 pointer-events-none group-hover:scale-110 transition-transform duration-300">
-            <ShoppingBag className="h-28 w-28" />
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-orange-100 rounded-xl text-orange-500">
-              <ShoppingBag className="h-5 w-5" />
+        <div className="bg-white rounded-2xl p-5 border border-orange-500/15 shadow-sm hover:shadow-md hover:border-orange-500/30 transition-all duration-300 group">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-orange-50 group-hover:bg-orange-100 transition-colors flex items-center justify-center shrink-0">
+              <ShoppingBag className="h-6 w-6 text-orange-500" />
             </div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Products</span>
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Total Products</p>
+              <p className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{counts.total}</p>
+              <p className="text-[10px] font-semibold text-gray-400 truncate">
+                <span className="text-green-500 font-bold">{counts.active}</span> active
+                <span className="text-gray-300 mx-1">·</span>
+                <span className="text-red-400 font-bold">{counts.inactive}</span> inactive
+              </p>
+            </div>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">{counts.total}</h3>
-          <span className="text-[9px] text-gray-500 font-semibold block mt-1">
-            Active: <span className="text-green-500 font-bold">{counts.active}</span> | Inactive: <span className="text-red-500 font-bold">{counts.inactive}</span>
-          </span>
         </div>
 
         {/* Active Products */}
-        <div className="bg-white border border-orange-500/20 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-orange-500/40 transition-all duration-300">
-          <div className="absolute right-0 bottom-0 translate-x-3 translate-y-3 opacity-5 text-green-500 pointer-events-none group-hover:scale-110 transition-transform duration-300">
-            <CheckCircle className="h-28 w-28" />
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-green-100 rounded-xl text-green-600">
-              <CheckCircle className="h-5 w-5" />
+        <div className="bg-white rounded-2xl p-5 border border-orange-500/15 shadow-sm hover:shadow-md hover:border-orange-500/30 transition-all duration-300 group">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors flex items-center justify-center shrink-0">
+              <CheckCircle className="h-6 w-6 text-emerald-500" />
             </div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Active Products</span>
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Active Products</p>
+              <p className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{counts.active}</p>
+              <p className="text-[10px] font-semibold text-gray-400">
+                {counts.total > 0 ? Math.round((counts.active / counts.total) * 100) : 0}% of catalog
+              </p>
+            </div>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">{counts.active}</h3>
-          <span className="text-[9px] text-gray-500 font-semibold block mt-1">
-            Enabled catalog listings
-          </span>
         </div>
 
-        {/* Low Stock Products */}
-        <div className="bg-white border border-orange-500/20 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-orange-500/40 transition-all duration-300">
-          <div className="absolute right-0 bottom-0 translate-x-3 translate-y-3 opacity-5 text-orange-500 pointer-events-none group-hover:scale-110 transition-transform duration-300">
-            <AlertTriangle className="h-28 w-28" />
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-orange-100 rounded-xl text-orange-600">
-              <AlertTriangle className="h-5 w-5" />
+        {/* Low Stock */}
+        <div className="bg-white rounded-2xl p-5 border border-orange-500/15 shadow-sm hover:shadow-md hover:border-orange-500/30 transition-all duration-300 group">
+          <div className="flex items-center gap-4">
+            <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${counts.lowStock > 0 ? 'bg-amber-50 group-hover:bg-amber-100' : 'bg-gray-50 group-hover:bg-gray-100'}`}>
+              <AlertTriangle className={`h-6 w-6 ${counts.lowStock > 0 ? 'text-amber-500' : 'text-gray-400'}`} />
             </div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Low Stock Products</span>
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Low Stock</p>
+              <p className={`text-2xl font-black tracking-tight leading-none mb-1 ${counts.lowStock > 0 ? 'text-amber-500' : 'text-gray-900'}`}>{counts.lowStock}</p>
+              <p className="text-[10px] font-semibold text-gray-400">
+                Threshold: <span className="text-amber-500 font-bold">≤ 5 units</span>
+              </p>
+            </div>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">{counts.lowStock}</h3>
-          <span className="text-[9px] text-gray-500 font-semibold block mt-1">
-            Threshold: <span className="text-orange-500 font-bold">&le; 5 units</span>
-          </span>
         </div>
 
-        {/* Out Of Stock Products */}
-        <div className="bg-white border border-orange-500/20 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-orange-500/40 transition-all duration-300">
-          <div className="absolute right-0 bottom-0 translate-x-3 translate-y-3 opacity-5 text-red-500 pointer-events-none group-hover:scale-110 transition-transform duration-300">
-            <XCircle className="h-28 w-28" />
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-red-100 rounded-xl text-red-650">
-              <XCircle className="h-5 w-5" />
+        {/* Out of Stock */}
+        <div className="bg-white rounded-2xl p-5 border border-orange-500/15 shadow-sm hover:shadow-md hover:border-orange-500/30 transition-all duration-300 group">
+          <div className="flex items-center gap-4">
+            <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${counts.outOfStock > 0 ? 'bg-red-50 group-hover:bg-red-100' : 'bg-gray-50 group-hover:bg-gray-100'}`}>
+              <XCircle className={`h-6 w-6 ${counts.outOfStock > 0 ? 'text-red-500' : 'text-gray-400'}`} />
             </div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Out of Stock</span>
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Out of Stock</p>
+              <p className={`text-2xl font-black tracking-tight leading-none mb-1 ${counts.outOfStock > 0 ? 'text-red-500' : 'text-gray-900'}`}>{counts.outOfStock}</p>
+              <p className="text-[10px] font-semibold text-gray-400">Requires immediate reorder</p>
+            </div>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">{counts.outOfStock}</h3>
-          <span className="text-[9px] text-gray-500 font-semibold block mt-1">
-            Requires immediate reorder
-          </span>
         </div>
+
       </div>
 
       {/* Search & Action Bar */}
@@ -247,7 +245,7 @@ export default function ProductsTab() {
             <button
               type="button"
               onClick={() => setOpenCategoryFilter(!openCategoryFilter)}
-              className="bg-white border border-orange-500/30 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:border-orange-500/50 transition-all cursor-pointer flex items-center justify-between gap-1.5 outline-none h-[34px] min-w-[130px]"
+              className="bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-700 cursor-pointer min-w-[140px] text-left outline-none transition-all flex items-center justify-between gap-1.5"
             >
               <span>
                 {filterCategory === "all"
@@ -339,9 +337,9 @@ export default function ProductsTab() {
       {/* Products Table */}
       <div className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[700px]">
+        <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
-            <tr className="border-b border-orange-500/30 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50">
+            <tr className="border-b border-orange-500/30 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 whitespace-nowrap">
               <th className="p-4 pl-6">Product Details</th>
               <th className="p-4">Category / Sub</th>
               <th className="p-4">Price</th>
@@ -349,7 +347,7 @@ export default function ProductsTab() {
               <th className="p-4 text-right pr-6">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-150">
+          <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
                 <td colSpan={5} className="p-10 text-center text-xs text-gray-400">Loading products...</td>
@@ -364,7 +362,7 @@ export default function ProductsTab() {
                 const isOutOfStock = !p.stock || p.stock === 0;
 
                 return (
-                  <tr key={p.id} className="hover:bg-orange-500/3 transition-colors group">
+                  <tr key={p.id} className="bg-white hover:bg-[#fff9f3] transition-colors group whitespace-nowrap">
                     {/* Details: Product Title, ID & Status Badge */}
                     <td className="p-4 pl-6">
                       <div className="flex items-center gap-3">

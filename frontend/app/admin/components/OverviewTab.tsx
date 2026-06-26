@@ -480,45 +480,7 @@ export default function OverviewTab(props: OverviewTabProps) {
         })}
       </div>
 
-      {/* ── Campaign Control Switches ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {[
 
-          {
-            label: 'Midnight Flash',
-            title: 'Midnight Flash Sale',
-            desc: 'Forces storefront into Midnight theme mode with 75% off and a countdown timer.',
-            enabled: midnightSaleEnabled,
-            toggle: () => setMidnightSaleEnabled(!midnightSaleEnabled),
-            onText: 'Active (75% Off Applied)',
-            offText: 'Inactive',
-            iconEnabled: <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />,
-            iconDisabled: <span className="h-2 w-2 rounded-full bg-gray-400" />,
-            toggleColor: 'text-red-500',
-          },
-        ].map((c, i) => (
-          <div key={i} className="bg-white border border-orange-500/30 p-6 rounded-2xl flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">{c.label}</span>
-                {c.enabled ? c.iconEnabled : c.iconDisabled}
-              </div>
-              <h4 className="text-sm font-bold text-gray-900 mt-3">{c.title}</h4>
-              <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">{c.desc}</p>
-            </div>
-            <button
-              onClick={c.toggle}
-              className="flex items-center gap-2 mt-6 py-2.5 px-4 rounded-xl text-xs font-bold w-full justify-center border transition-all duration-300 cursor-pointer bg-white border-orange-500/30 hover:bg-orange-500/5"
-            >
-              {c.enabled ? (
-                <><ToggleRight className={`h-5 w-5 ${c.toggleColor}`} />{c.onText}</>
-              ) : (
-                <><ToggleLeft className="h-5 w-5 text-gray-400" />{c.offText}</>
-              )}
-            </button>
-          </div>
-        ))}
-      </div>
 
       {/* ── Shipping & Delivery Configurations ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">

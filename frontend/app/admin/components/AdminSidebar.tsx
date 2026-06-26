@@ -13,6 +13,11 @@ import {
   List,
   Layers,
   Truck,
+  Tag,
+  Mail,
+  UserCog,
+  Image,
+  Activity,
 } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
 
@@ -24,19 +29,57 @@ interface AdminSidebarProps {
   unreviewedCount?: number;
 }
 
-const NAV = [
-  { id: "overview",     label: "Overview & Analytics",  icon: <LayoutDashboard className="h-4 w-4" /> },
-  { id: "operations",   label: "Operations Dashboard",  icon: <LayoutDashboard className="h-4 w-4" /> },
-  { id: "customers",    label: "Manage Customers",      icon: <Users className="h-4 w-4" /> },
-  { id: "categories",   label: "Categories",             icon: <List className="h-4 w-4" /> },
-  { id: "subcategories",label: "Sub Categories",         icon: <Layers className="h-4 w-4" /> },
-  { id: "products",     label: "Manage Products",        icon: <Package className="h-4 w-4" /> },
-  { id: "orders",       label: "Orders",                 icon: <ShoppingBag className="h-4 w-4" /> },
-  { id: "delivery",     label: "Manage Drivers",         icon: <Truck className="h-4 w-4" /> },
-  { id: "banners",      label: "Banners & Layouts",      icon: <Sliders className="h-4 w-4" /> },
-  { id: "subscribers",  label: "Subscribers Hub",        icon: <Users className="h-4 w-4" /> },
-  { id: "staff",        label: "Staff Management",       icon: <Users className="h-4 w-4" /> },
-] as const;
+interface NavItem {
+  id: TabType;
+  label: string;
+  icon: React.ReactNode;
+  adminOnly?: boolean;
+  staffOnly?: boolean;
+}
+
+interface NavGroup {
+  group: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    group: "Dashboard",
+    items: [
+      { id: "overview", label: "Overview & Analytics", icon: <LayoutDashboard className="h-4 w-4" />, adminOnly: true },
+      { id: "operations", label: "Operations Dashboard", icon: <Activity className="h-4 w-4" />, staffOnly: true },
+    ]
+  },
+  {
+    group: "Sales & Operations",
+    items: [
+      { id: "orders", label: "Manage Orders", icon: <ShoppingBag className="h-4 w-4" /> },
+      { id: "delivery", label: "Manage Drivers", icon: <Truck className="h-4 w-4" />, adminOnly: true },
+    ]
+  },
+  {
+    group: "Catalog Management",
+    items: [
+      { id: "products", label: "Manage Products", icon: <Package className="h-4 w-4" /> },
+      { id: "categories", label: "Categories", icon: <Tag className="h-4 w-4" /> },
+      { id: "subcategories", label: "Sub Categories", icon: <Layers className="h-4 w-4" /> },
+    ]
+  },
+  {
+    group: "Marketing & Growth",
+    items: [
+      { id: "banners", label: "Banners & Layouts", icon: <Image className="h-4 w-4" /> },
+      { id: "subscribers", label: "Subscribers Hub", icon: <Mail className="h-4 w-4" /> },
+    ]
+  },
+  {
+    group: "User Settings",
+    items: [
+      { id: "customers", label: "Manage Customers", icon: <Users className="h-4 w-4" /> },
+      { id: "staff", label: "Staff Management", icon: <UserCog className="h-4 w-4" />, adminOnly: true },
+    ]
+  }
+];
 
 export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount }: AdminSidebarProps) {
   const router = useRouter();
@@ -47,50 +90,60 @@ export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount 
     router.replace("/admin/auth/login");
   };
 
-  const filteredNav = NAV.filter((item) => {
-    if (role === "staff") {
-      return item.id !== "overview" && item.id !== "delivery" && item.id !== "staff";
-    }
-    return item.id !== "operations";
-  });
+  const filteredGroups = NAV_GROUPS.map((g) => {
+    const items = g.items.filter((item) => {
+      if (role === "staff") {
+        return !item.adminOnly;
+      }
+      return !item.staffOnly;
+    });
+    return { ...g, items };
+  }).filter((g) => g.items.length > 0);
 
   return (
-    <aside className="w-64 bg-white border-r border-orange-500/30 flex flex-col justify-between p-6 shrink-0 h-screen sticky top-0">
+    <aside className="w-64 bg-white border-r border-orange-500/30 flex flex-col justify-between shrink-0 h-screen sticky top-0 select-none">
       {/* Logo */}
-      <div>
-        <div className="flex flex-col items-center px-6 h-16 -mt-6 -mx-6 mb-6 border-b border-orange-500/30 justify-center">
-          <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain mb-0.5" />
-          <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
-            {role === "staff" ? "Staff Control Panel" : "Admin Panel"}
-          </span>
-        </div>
+      <div className="flex flex-col items-center px-6 h-16 border-b border-orange-500/30 justify-center shrink-0">
+        <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain mb-0.5" />
+        <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
+          {role === "staff" ? "Staff Control Panel" : "Admin Panel"}
+        </span>
+      </div>
  
-        {/* Nav Links */}
-        <nav className="space-y-1">
-          {filteredNav.map((n) => (
-            <button
-              key={n.id}
-              onClick={() => setActiveTab(n.id as TabType)}
-              className={`w-full flex items-center text-left gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === n.id
-                  ? "bg-gradient-to-r from-orange-500/15 to-amber-500/5 text-orange-500 border-l-4 border-orange-500"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-              }`}
-            >
-              {n.icon}
-              <span className="flex-1">{n.label}</span>
-              {n.id === "orders" && unreviewedCount !== undefined && unreviewedCount > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white animate-pulse shrink-0">
-                  {unreviewedCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+      {/* Nav Links */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        {filteredGroups.map((g) => (
+          <div key={g.group} className="space-y-2">
+            <h3 className="px-4 text-[10px] font-bold text-gray-400 tracking-wider uppercase">
+              {g.group}
+            </h3>
+            <nav className="space-y-1">
+              {g.items.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => setActiveTab(n.id)}
+                  className={`w-full flex items-center text-left gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                    activeTab === n.id
+                      ? "bg-gradient-to-r from-orange-500/15 to-amber-500/5 text-orange-500 border-l-4 border-orange-500"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  {n.icon}
+                  <span className="flex-1">{n.label}</span>
+                  {n.id === "orders" && unreviewedCount !== undefined && unreviewedCount > 0 && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white animate-pulse shrink-0">
+                      {unreviewedCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+        ))}
       </div>
 
       {/* Footer */}
-      <div className="pt-4 border-t border-orange-500/30 space-y-3">
+      <div className="p-6 border-t border-orange-500/30 space-y-3 shrink-0">
         {/* Admin Identity */}
         <div className="flex items-center gap-3 px-2">
           <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-black text-sm text-white uppercase">

@@ -47,8 +47,7 @@ export default function ReviewCard({ review }: ReviewCardProps) {
 
       {/* Review Text */}
       <div className="mt-3">
-        <h5 className="text-sm font-bold text-gray-800">{review.title}</h5>
-        <p className="mt-1 text-xs leading-relaxed text-gray-500">
+        <p className="text-xs leading-relaxed text-gray-500">
           {review.body}
         </p>
       </div>

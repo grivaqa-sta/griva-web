@@ -217,7 +217,7 @@ exports.createOrderReviews = async (req, res, next) => {
           product_id,
           user_id: reviewUserId,
           rating: parseInt(rating, 10),
-          title: "Product Rating",
+          title: null,
           body,
           verified: true
         }, { transaction });

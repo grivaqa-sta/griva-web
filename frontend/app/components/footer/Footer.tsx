@@ -9,8 +9,10 @@ import {
   FaInstagram,
   FaPinterestP,
 } from "react-icons/fa";
-import { ChevronDown, Send } from "lucide-react";
+import { ChevronDown, Send, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { addSubscriberApi } from "@/app/utils/api";
+import { useToast } from "@/app/context/ToastContext";
 
 interface FooterLink {
   label: string;
@@ -54,16 +56,32 @@ const footerLinks: FooterLinkGroup[] = [
 ];
 
 export default function Footer() {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setSubscribed(true);
-    setEmail("");
-    setTimeout(() => setSubscribed(false), 5000);
+    if (!email.trim() || loading) return;
+
+    setLoading(true);
+    try {
+      await addSubscriberApi(email.trim());
+      setSubscribed(true);
+      setEmail("");
+    } catch (err: any) {
+      const errMsg = err.message || "An error occurred. Please try again.";
+      if (errMsg.toLowerCase().includes("already subscribed")) {
+        setSubscribed(true);
+        setEmail("");
+      } else {
+        toast.error(errMsg);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleAccordion = (title: string) => {
@@ -181,35 +199,30 @@ export default function Footer() {
               Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.
             </p>
 
-            <form onSubmit={handleSubscribe} className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter email..."
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs outline-none focus:border-orange-500 text-white placeholder:text-zinc-500"
-                required
-              />
-              <button
-                type="submit"
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer"
-              >
-                <Send size={14} />
-              </button>
-            </form>
-
-            <AnimatePresence>
-              {subscribed && (
-                <motion.p
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[10px] font-semibold text-green-500"
+            {subscribed ? (
+              <div className="text-green-400 bg-green-500/10 border border-green-500/20 px-4 py-3 rounded-lg text-xs font-semibold animate-in fade-in duration-300">
+                🎉 Thank you for subscribing! You will receive our latest offers and updates.
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="Enter email..."
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs outline-none focus:border-orange-500 text-white placeholder:text-zinc-500 disabled:opacity-50"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  Thanks for subscribing to GriVA!
-                </motion.p>
-              )}
-            </AnimatePresence>
+                  {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Send size={14} />}
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

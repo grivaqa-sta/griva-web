@@ -1,5 +1,6 @@
 import { Product, SlideData, OfferCard, CategoryItem } from "../types/types";
 import { products as mockProducts, slide as mockSlides, offers as mockOffers, categories as mockCategories } from "../data/data";
+import { processCloudinaryUrls } from "./image";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -70,7 +71,8 @@ async function safeFetch<T>(
       }
     }
 
-    return (await res.json()) as T;
+    const data = await res.json();
+    return processCloudinaryUrls(data) as T;
   } catch (error: any) {
     console.error(`🔴 [API CLIENT ERROR]: Failed reaching ${endpoint}:`, error.message);
     console.warn(`🛡️ [API CLIENT FALLBACK]: Falling back to local state mock data.`);

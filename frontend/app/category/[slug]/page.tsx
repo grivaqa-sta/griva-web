@@ -267,12 +267,12 @@ export default function CategoryPage() {
   }, [matchedCategory, categorySubcategories]);
 
   const filteredProducts = useMemo((): ApiProduct[] => {
+    if (taxonomyLoading) return [];
+    if (!matchedCategory) return [];
+
     let result = allProducts.filter((p) =>
       validSubcategoryIds.has(p.subcategory_id)
     );
-    if (validSubcategoryIds.size === 0 && !taxonomyLoading) {
-      result = [...allProducts];
-    }
     if (matchedSubcategory) {
       result = result.filter((p) => p.subcategory_id === matchedSubcategory.id);
     } else if (subParam) {
@@ -297,7 +297,7 @@ export default function CategoryPage() {
       result.sort((a, b) => b.rating - a.rating);
     }
     return result;
-  }, [allProducts, validSubcategoryIds, taxonomyLoading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
+  }, [allProducts, matchedCategory, validSubcategoryIds, taxonomyLoading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
 
   const handleResetFilters = () => {
     setMaxPrice(2000);

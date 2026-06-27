@@ -118,7 +118,10 @@ export default function AdminDashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const [newSubEmail, setNewSubEmail] = useState("");
+  const [broadcastSubject, setBroadcastSubject] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastTarget, setBroadcastTarget] = useState("all");
+  const [broadcastTargetEmail, setBroadcastTargetEmail] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   // ── Centralized Data fetch/reload helpers ──────────────────────────────
@@ -216,12 +219,23 @@ export default function AdminDashboard() {
       loadAnalytics();
     };
 
+    const handleNewSubscriber = (data: { email: string, country: string } | null) => {
+      console.log("🔌 [Socket.IO Event]: new-subscriber received. Refetching...", data);
+      if (data) {
+        toast.success(`🔔 New subscriber joined: ${data.email} (${data.country})`);
+      } else {
+        toast.success("🔔 New subscriber registered!");
+      }
+      loadInitialData();
+    };
+
     socket.on("new-order", handleNewOrder);
     socket.on("order-status-updated", handleOrderStatusUpdated);
     socket.on("order-updated", handleOrderUpdated);
     socket.on("driver-assigned", handleDriverAssigned);
     socket.on("print-status-updated", handlePrintStatusUpdated);
     socket.on("dashboard-metrics-updated", handleDashboardMetricsUpdated);
+    socket.on("new-subscriber", handleNewSubscriber);
 
     return () => {
       socket.off("new-order", handleNewOrder);
@@ -230,6 +244,7 @@ export default function AdminDashboard() {
       socket.off("driver-assigned", handleDriverAssigned);
       socket.off("print-status-updated", handlePrintStatusUpdated);
       socket.off("dashboard-metrics-updated", handleDashboardMetricsUpdated);
+      socket.off("new-subscriber", handleNewSubscriber);
     };
   }, [socket, loadInitialData, loadAnalytics, toast]);
 
@@ -253,12 +268,19 @@ export default function AdminDashboard() {
   };
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!broadcastMessage) return;
+    e.preventDefault(); if (!broadcastSubject || !broadcastMessage) return;
+    if (broadcastTarget === "individual" && !broadcastTargetEmail) return;
     setBroadcastStatus("sending");
-    const res = await broadcastNewsletterApi(broadcastMessage);
+    const res = await broadcastNewsletterApi(broadcastSubject, broadcastMessage, broadcastTarget, broadcastTargetEmail);
     if (res) {
       setBroadcastStatus("sent");
-      setTimeout(() => { setBroadcastStatus("idle"); setBroadcastMessage(""); }, 3000);
+      setTimeout(() => {
+        setBroadcastStatus("idle");
+        setBroadcastSubject("");
+        setBroadcastMessage("");
+        setBroadcastTarget("all");
+        setBroadcastTargetEmail("");
+      }, 3000);
     } else setBroadcastStatus("idle");
   };
 
@@ -271,8 +293,14 @@ export default function AdminDashboard() {
 
   const handleAddSubscriber = async (e: React.FormEvent) => {
     e.preventDefault(); if (!newSubEmail) return;
-    const s = await addSubscriberApi(newSubEmail);
-    if (s) { setSubscribersList((prev) => [s, ...prev]); setNewSubEmail(""); }
+    try {
+      const s = await addSubscriberApi(newSubEmail);
+      setSubscribersList((prev) => [s, ...prev]);
+      setNewSubEmail("");
+      toast.success("Subscriber added successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add subscriber.");
+    }
   };
 
 
@@ -338,7 +366,10 @@ export default function AdminDashboard() {
             <SubscribersTab
               subscribersList={subscribersList}
               newSubEmail={newSubEmail} setNewSubEmail={setNewSubEmail}
+              broadcastSubject={broadcastSubject} setBroadcastSubject={setBroadcastSubject}
               broadcastMessage={broadcastMessage} setBroadcastMessage={setBroadcastMessage}
+              broadcastTarget={broadcastTarget} setBroadcastTarget={setBroadcastTarget}
+              broadcastTargetEmail={broadcastTargetEmail} setBroadcastTargetEmail={setBroadcastTargetEmail}
               broadcastStatus={broadcastStatus} handleSendBroadcast={handleSendBroadcast}
               handleAddSubscriber={handleAddSubscriber}
             />

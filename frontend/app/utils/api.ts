@@ -326,39 +326,58 @@ export async function getSubscribersApi(): Promise<SubscriberInfo[]> {
   return res.subscribers;
 }
 
-export async function addSubscriberApi(email: string): Promise<SubscriberInfo | null> {
-  const res = await safeFetch<any>(
-    "/subscribers",
-    {
-      method: "POST",
-      body: JSON.stringify({ email, country: "Qatar" }),
-    },
-    null
-  );
-
-  if (res && res.subscriber) {
-    const s = res.subscriber;
-    return {
-      email: s.email,
-      joinedDate: new Date(s.createdAt || Date.now()).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric"
-      }),
-      country: s.country || "Qatar",
-    };
+export async function addSubscriberApi(email: string): Promise<SubscriberInfo> {
+  const headers: Record<string, string> = {};
+  const token = typeof window !== "undefined" ? localStorage.getItem("griva_auth_token") : null;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
-  return null;
+  headers["Content-Type"] = "application/json";
+
+  const res = await fetch(`${API_BASE_URL}/subscribers`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email, country: "Qatar" }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    let errMsg = "API Request Failed";
+    try {
+      const errJson = JSON.parse(errText);
+      errMsg = errJson.error || errMsg;
+    } catch (_) {
+      errMsg = errText || errMsg;
+    }
+    throw new Error(errMsg);
+  }
+
+  const data = await res.json();
+  const s = data.subscriber;
+  return {
+    email: s.email,
+    joinedDate: new Date(s.createdAt || Date.now()).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    }),
+    country: s.country || "Qatar",
+  };
 }
 
-export async function broadcastNewsletterApi(message: string): Promise<{ recipientCount: number }> {
+export async function broadcastNewsletterApi(
+  subject: string,
+  message: string,
+  target: string = "all",
+  targetEmail?: string
+): Promise<{ recipientCount: number }> {
   return await safeFetch<{ recipientCount: number }>(
     "/subscribers/broadcast",
     {
       method: "POST",
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ subject, message, target, targetEmail }),
     },
-    { recipientCount: 3 }
+    { recipientCount: 0 }
   );
 }
 

@@ -170,6 +170,26 @@ export default function OrderReviewPage() {
     );
   }
 
+  if (order && (order as any).delivery_rating !== null) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center text-white p-4">
+        <div className="bg-[#121212] p-8 rounded-2xl max-w-md w-full border border-[#ff6a00]/20 text-center shadow-xl">
+          <FaCheckCircle className="text-6xl text-[#ff6a00] mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Feedback Already Submitted</h2>
+          <p className="text-gray-400 mb-6">
+            Thank you! You have already rated this delivery and your items. We appreciate your response.
+          </p>
+          <button
+            onClick={() => router.push("/")}
+            className="w-full bg-[#ff6a00] hover:bg-[#e05d00] transition-colors py-3 rounded-xl font-semibold"
+          >
+            Go to Homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">

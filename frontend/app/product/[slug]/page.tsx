@@ -89,7 +89,6 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [newRating, setNewRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
-  const [newTitle, setNewTitle] = useState<string>("");
   const [newBody, setNewBody] = useState<string>("");
 
   const reviewsTabRef = React.useRef<HTMLDivElement>(null);
@@ -181,12 +180,11 @@ export default function ProductPage({ params }: ProductPageProps) {
       const res = await api.post("/reviews", {
         product_id: product?.id,
         rating: newRating,
-        title: newTitle || "Product Review",
+        title: null,
         body: newBody,
       });
       toast.success("Review posted successfully!");
       setNewRating(5);
-      setNewTitle("");
       setNewBody("");
       
       // Refresh reviews list
@@ -785,17 +783,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                           </div>
                         </div>
 
-                        {/* Title input */}
-                        <div>
-                          <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Title (Optional)</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. Great product, excellent quality"
-                            value={newTitle}
-                            onChange={(e) => setNewTitle(e.target.value)}
-                            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-xs text-black bg-white outline-none focus:ring-1 focus:ring-black focus:border-black placeholder:text-gray-400 transition-all"
-                          />
-                        </div>
 
                         {/* Body textarea */}
                         <div>
@@ -907,9 +894,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                                 </div>
                               </div>
 
-                              <p className="font-semibold text-gray-900 text-xs mb-1">
-                                {review.title || "User Review"}
-                              </p>
                               <p className="text-gray-600 leading-relaxed text-xs">
                                 {review.body}
                               </p>

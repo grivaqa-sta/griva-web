@@ -1,4 +1,5 @@
 import axios from "axios";
+import { processCloudinaryUrls } from "../utils/image";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -35,7 +36,12 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data) {
+      response.data = processCloudinaryUrls(response.data);
+    }
+    return response;
+  },
   (error) => {
     if (
       error.response?.status === 403 &&

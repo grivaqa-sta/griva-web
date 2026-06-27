@@ -355,18 +355,36 @@ export default function CategoryPage() {
 
         {/* Category Hero Banner */}
         <div
-          className="relative overflow-hidden rounded-3xl text-white shadow-2xl"
+          className="relative overflow-hidden rounded-3xl text-white shadow-2xl bg-zinc-950"
           style={{
             minHeight: "220px",
-            background: matchedCategory?.image_url
-              ? `url(${matchedCategory.image_url}) center/cover no-repeat`
-              : meta.bannerImage
-              ? `url(${meta.bannerImage}) center/cover no-repeat`
-              : `linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)`,
+            background: `linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)`,
           }}
         >
+          {/* Background Image with smooth fade-in to prevent flashing of old image */}
+          {(() => {
+            const imageUrl = !taxonomyLoading
+              ? (matchedCategory?.image_url || meta.bannerImage)
+              : null;
+            if (!imageUrl) return null;
+            return (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0 z-0"
+              >
+                <img
+                  src={imageUrl}
+                  alt={meta.title}
+                  className="h-full w-full object-cover object-center"
+                />
+              </motion.div>
+            );
+          })()}
+
           <div
-            className="absolute inset-0 rounded-3xl"
+            className="absolute inset-0 z-1 rounded-3xl"
             style={{
               background: (matchedCategory?.image_url || meta.bannerImage)
                 ? "linear-gradient(to right, rgba(10,10,15,0.88) 0%, rgba(10,10,15,0.6) 50%, rgba(10,10,15,0.15) 100%)"
@@ -374,14 +392,14 @@ export default function CategoryPage() {
             }}
           />
           <div
-            className="absolute -top-10 -left-10 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"
+            className="absolute -top-10 -left-10 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none z-1"
             style={{ backgroundColor: meta.accentColor }}
           />
           <div
-            className="absolute bottom-0 left-0 right-0 h-0.5 opacity-60"
+            className="absolute bottom-0 left-0 right-0 h-0.5 opacity-60 z-1"
             style={{ background: `linear-gradient(to right, ${meta.accentColor}, transparent)` }}
           />
-          <div className="relative p-8 md:p-12 max-w-2xl flex flex-col justify-center min-h-[220px]">
+          <div className="relative z-10 p-8 md:p-12 max-w-2xl flex flex-col justify-center min-h-[220px]">
             <div className="space-y-4">
               {/* Premium Top Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-bold tracking-widest uppercase text-white/95 w-fit">

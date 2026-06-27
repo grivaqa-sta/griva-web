@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { getProductsApi, getAllOrdersApi } from "@/app/utils/api";
+import { orderService } from "@/app/services/order.service";
 import { Product } from "@/app/types/types";
 import { 
   X, 
@@ -197,6 +198,8 @@ export default function GrivaAIChatbot() {
   
   // Interactive flow states
   const [isTrackingMode, setIsTrackingMode] = useState(false);
+  const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
+  const [isWaitingForPhone, setIsWaitingForPhone] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -330,18 +333,112 @@ export default function GrivaAIChatbot() {
     }, typingTime);
   };
 
+  // Helper to display tracking card in chatbot messages
+  const showTrackingDetails = (foundOrder: any) => {
+    // Map backend status to timeline steps
+    let step = 1; // Default to Processing
+    let displayStatus = "Processing";
+    
+    const statusLower = foundOrder.status ? foundOrder.status.toLowerCase() : "pending";
+    if (statusLower === "pending") {
+      step = 0; // Placed
+      displayStatus = "Order Placed";
+    } else if (statusLower === "processing") {
+      step = 1; // Processing
+      displayStatus = "Processing at Doha Center";
+    } else if (statusLower === "assigned") {
+      step = 1.5;
+      displayStatus = "Rider Assigned & Preparing Delivery";
+    } else if (statusLower === "shipped" || statusLower === "dispatch" || statusLower === "dispatched" || statusLower === "out_for_delivery") {
+      step = 2; // Dispatched / In Transit
+      displayStatus = "Dispatched & In Transit";
+    } else if (statusLower === "completed" || statusLower === "delivered") {
+      step = 3; // Delivered
+      displayStatus = "Delivered Successfully";
+    } else if (statusLower === "cancelled") {
+      step = -1; // Cancelled
+      displayStatus = "Cancelled";
+    }
+
+    // Format exact product items list
+    let itemsText = "Items in order";
+    if (foundOrder.items && foundOrder.items.length > 0) {
+      itemsText = foundOrder.items
+        .map((item: any) => `${item.product?.title || "Product"} (${item.quantity}x)`)
+        .join(", ");
+    }
+
+    // Set realistic delivery ETA based on dispatch status
+    let eta = "Within 24-48 hours";
+    if (statusLower === "completed" || statusLower === "delivered") {
+      eta = "Delivered";
+    } else if (statusLower === "out_for_delivery") {
+      eta = "Today by 8:00 PM (Doha Time)";
+    } else if (statusLower === "pending" || statusLower === "processing") {
+      eta = "Tomorrow by 6:00 PM";
+    }
+
+    const tracking: TrackingData = {
+      orderId: foundOrder.order_number || `#GRV-${foundOrder.id}`,
+      status: displayStatus,
+      step: step === -1 ? 0 : (step === 1.5 ? 2 : step), 
+      carrier: foundOrder.delivery_payment_method || foundOrder.payment_method || "GRIVA Express (Doha Branch)",
+      eta: eta,
+      amount: foundOrder.total_price || foundOrder.total || "QAR 0.00",
+      items: itemsText
+    };
+
+    if (statusLower === "cancelled") {
+      addBotResponse(
+        `❌ **Order Cancelled**\n\nYour order **${tracking.orderId}** has been marked as **Cancelled** in our system.\n\nIf you believe this is an error or would like to reactivate this order, please contact our support team on WhatsApp immediately.`,
+        [
+          { label: "💬 Contact WhatsApp Support", action: "chat_whatsapp" },
+          { label: "🔙 Back to Main Menu", action: "main_menu" }
+        ],
+        undefined,
+        tracking
+      );
+    } else {
+      addBotResponse(
+        `🔍 **Order Located!**\n\nWe found your order **${tracking.orderId}** in our database. Here are the live shipping details:`,
+        [
+          { label: "💬 Contact Support for this Order", action: "chat_whatsapp" },
+          { label: "🔙 Back to Main Menu", action: "main_menu" }
+        ],
+        undefined,
+        tracking
+      );
+    }
+  };
+
   // Real database-connected order tracking lookup
   const handleOrderTrackingSubmit = (orderId: string) => {
     setIsTrackingMode(false);
     
     // Clean search query ID
-    const queryId = orderId.trim().toLowerCase().replace("#", "");
+    const cleanOrderId = orderId.trim().replace("#", "");
+    const queryId = cleanOrderId.toLowerCase();
     
+    const token = typeof window !== "undefined" ? localStorage.getItem("griva_user_token") : null;
+    
+    if (!token) {
+      // Prompt for phone number verification for guest tracking (or if not logged in)
+      setTrackingOrderId(cleanOrderId);
+      setIsWaitingForPhone(true);
+      addBotResponse(
+        `🔑 **Identity Verification Required**\n\nTo track order **#${cleanOrderId}**, please enter the **Phone Number** associated with this order (the one you provided during checkout, e.g. **+974 5555 1234**) to verify your identity.`,
+        [{ label: "🔙 Cancel & Back to Menu", action: "main_menu" }]
+      );
+      return;
+    }
+
     setIsTyping(true);
     
-    getAllOrdersApi()
-      .then((orders) => {
+    // Try to lookup from user's own orders first (fast, secure, no phone number required!)
+    orderService.getMyOrders()
+      .then((res) => {
         setIsTyping(false);
+        const orders = res.orders || [];
         
         // Find matching order by ID or order number
         const foundOrder = orders.find((o) => {
@@ -351,79 +448,56 @@ export default function GrivaAIChatbot() {
         });
 
         if (foundOrder) {
-          // Map backend status to timeline steps
-          let step = 1; // Default to Processing
-          let displayStatus = "Processing";
-          
-          const statusLower = foundOrder.status.toLowerCase();
-          if (statusLower === "pending") {
-            step = 0; // Placed
-            displayStatus = "Order Placed";
-          } else if (statusLower === "processing") {
-            step = 1; // Processing
-            displayStatus = "Processing at Doha Center";
-          } else if (statusLower === "shipped" || statusLower === "dispatch" || statusLower === "dispatched") {
-            step = 2; // Dispatched
-            displayStatus = "Dispatched & In Transit";
-          } else if (statusLower === "completed") {
-            step = 3; // Out for Delivery
-            displayStatus = "Out for Delivery (Doha Express)";
-          } else if (statusLower === "cancelled") {
-            step = -1; // Cancelled
-            displayStatus = "Cancelled";
-          }
-
-          // Format exact product items list
-          let itemsText = "Items in order";
-          if (foundOrder.items && foundOrder.items.length > 0) {
-            itemsText = foundOrder.items
-              .map((item) => `${item.product?.title || "Product"} (${item.quantity}x)`)
-              .join(", ");
-          }
-
-          // Set realistic delivery ETA based on dispatch status
-          let eta = "Within 24-48 hours";
-          if (step === 3) {
-            eta = "Today by 8:00 PM (Doha Time)";
-          } else if (step === 0 || step === 1) {
-            eta = "Tomorrow by 6:00 PM";
-          }
-
-          const tracking: TrackingData = {
-            orderId: foundOrder.order_number || `#GRV-${foundOrder.id}`,
-            status: displayStatus,
-            step: step === -1 ? 0 : step, 
-            carrier: foundOrder.delivery_payment_method || "GRIVA Express (Doha Branch)",
-            eta: eta,
-            amount: foundOrder.total_price,
-            items: itemsText
-          };
-
-          if (statusLower === "cancelled") {
-            addBotResponse(
-              `❌ **Order Cancelled**\n\nYour order **${tracking.orderId}** has been marked as **Cancelled** in our system.\n\nIf you believe this is an error or would like to reactivate this order, please contact our support team on WhatsApp immediately.`,
-              [
-                { label: "💬 Contact WhatsApp Support", action: "chat_whatsapp" },
-                { label: "🔙 Back to Main Menu", action: "main_menu" }
-              ],
-              undefined,
-              tracking
-            );
-          } else {
-            addBotResponse(
-              `🔍 **Order Located!**\n\nWe found your order **${tracking.orderId}** in our database. Here are the live shipping details:`,
-              [
-                { label: "💬 Contact Support for this Order", action: "chat_whatsapp" },
-                { label: "🔙 Back to Main Menu", action: "main_menu" }
-              ],
-              undefined,
-              tracking
-            );
-          }
+          showTrackingDetails(foundOrder);
         } else {
-          // No order found
+          // If not found in personal orders, it might be a guest checkout or admin tracking.
+          // Fall back to asking for phone number to run public guest tracking!
+          setTrackingOrderId(cleanOrderId);
+          setIsWaitingForPhone(true);
           addBotResponse(
-            `❌ **Order Not Found**\n\nWe couldn't find any active order with ID **#${orderId.replace("#", "")}** in our Doha fulfillment system.\n\nPlease check your Order ID and try again, or chat with our live agent on WhatsApp for manual lookup.`,
+            `🔑 **Identity Verification Required**\n\nWe couldn't find order **#${cleanOrderId}** in your personal account.\n\nIf this was placed as a guest or under a different number, please enter the **Phone Number** associated with it (provided during checkout) to track:`,
+            [{ label: "🔙 Cancel & Back to Menu", action: "main_menu" }]
+          );
+        }
+      })
+      .catch((err) => {
+        setIsTyping(false);
+        console.error("Error looking up personal orders:", err);
+        // Fall back to guest lookup flow
+        setTrackingOrderId(cleanOrderId);
+        setIsWaitingForPhone(true);
+        addBotResponse(
+          `🔑 **Identity Verification Required**\n\nTo track order **#${cleanOrderId}**, please enter the **Phone Number** associated with this order (provided during checkout) to verify:`,
+          [{ label: "🔙 Cancel & Back to Menu", action: "main_menu" }]
+        );
+      });
+  };
+
+  // Submit phone number to complete guest order tracking
+  const handleOrderTrackingPhoneSubmit = (phone: string) => {
+    setIsWaitingForPhone(false);
+    
+    if (!trackingOrderId) {
+      addBotResponse("Something went wrong. Please try tracking your order again.", [
+        { label: "🔍 Track My Order", action: "prompt_tracking" },
+        { label: "🔙 Main Menu", action: "main_menu" }
+      ]);
+      return;
+    }
+
+    const orderNumber = trackingOrderId;
+    setTrackingOrderId(null);
+    setIsTyping(true);
+
+    orderService.trackOrder(orderNumber, phone.trim())
+      .then((response) => {
+        setIsTyping(false);
+        
+        if (response.success && response.order) {
+          showTrackingDetails(response.order);
+        } else {
+          addBotResponse(
+            `❌ **Order Not Found**\n\nWe couldn't find any active order **${orderNumber}** matching the phone number **${phone}** in our Doha fulfillment system.\n\nPlease verify your Order ID & phone number and try again.`,
             [
               { label: "🔍 Try Another ID", action: "prompt_tracking" },
               { label: "💬 Speak to Live Agent", action: "chat_whatsapp" },
@@ -434,11 +508,17 @@ export default function GrivaAIChatbot() {
       })
       .catch((err) => {
         setIsTyping(false);
-        console.error("Error retrieving orders from API:", err);
+        console.error("Error tracking guest order:", err);
+        
+        const errorMessage = err.response?.data?.message || err.response?.data?.error;
+        const fallbackText = errorMessage 
+          ? `❌ **Order Not Found**\n\n${errorMessage}`
+          : `❌ **Order Not Found**\n\nWe couldn't locate order **#${orderNumber}** matching the phone number **${phone}**.\n\nPlease make sure to enter the **exact phone number** you provided during checkout.`;
+
         addBotResponse(
-          `❌ **Order Lookup Error**\n\nWe experienced a temporary error trying to connect to the Doha shipping server.\n\nPlease try again in a few moments, or chat directly with our support team on WhatsApp.`,
+          fallbackText,
           [
-            { label: "🔍 Try Again", action: "prompt_tracking" },
+            { label: "🔍 Try Another ID", action: "prompt_tracking" },
             { label: "💬 Chat on WhatsApp", action: "chat_whatsapp" },
             { label: "🔙 Back to Main Menu", action: "main_menu" }
           ]
@@ -587,6 +667,8 @@ export default function GrivaAIChatbot() {
 
       case "main_menu":
         setIsTrackingMode(false);
+        setIsWaitingForPhone(false);
+        setTrackingOrderId(null);
         addBotResponse(
           "Here is the main menu. Let me know how I can help you: 👇",
           [
@@ -622,6 +704,12 @@ export default function GrivaAIChatbot() {
     // If waiting for order tracking ID
     if (isTrackingMode) {
       handleOrderTrackingSubmit(query);
+      return;
+    }
+
+    // If waiting for phone number verification (guest tracking)
+    if (isWaitingForPhone) {
+      handleOrderTrackingPhoneSubmit(query);
       return;
     }
 
@@ -929,74 +1017,100 @@ export default function GrivaAIChatbot() {
                   </div>
 
                   {/* Rich Simulated Order Tracking Card */}
-                  {msg.tracking && (
-                    <div className="mt-2.5 w-[85%] bg-white border border-gray-100 rounded-2xl p-3.5 shadow-sm space-y-3 select-none">
-                      {/* Header with Order ID */}
-                      <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                        <div className="flex items-center gap-1.5">
-                          <Package size={14} className="text-[#F54900]" />
-                          <span className="text-[11px] font-black text-gray-900">{msg.tracking.orderId}</span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-orange-50 text-[#F54900] border border-orange-100/50">
-                          {msg.tracking.status}
-                        </span>
-                      </div>
+                  {msg.tracking && (() => {
+                    const statusLower = msg.tracking.status.toLowerCase();
+                    const isCompleted = statusLower.includes("deliver") || statusLower.includes("complet");
+                    const isFailed = statusLower.includes("cancel") || statusLower.includes("fail") || statusLower.includes("return") || statusLower.includes("attempt");
 
-                      {/* Timeline Steps */}
-                      <div className="relative pl-5 space-y-3 text-[10px]">
-                        {/* Vertical Progress Line */}
-                        <div className="absolute left-1.5 top-1 bottom-1 w-[2px] bg-gray-100">
-                          <div 
-                            className="w-full bg-[#F54900] rounded-full transition-all duration-500" 
-                            style={{ height: `${(msg.tracking.step / 3) * 100}%` }}
-                          />
-                        </div>
+                    let statusPillClass = "bg-orange-50 text-[#F54900] border-orange-100/50";
+                    let etaColorClass = "text-orange-600";
+                    let timelineColorClass = "bg-[#F54900]";
+                    let dotColorFunc: (active: boolean) => string = (active: boolean) => active ? "bg-[#F54900] border-[#F54900]" : "bg-white border-gray-200";
+                    let textFunc: (active: boolean) => string = (active: boolean) => active ? "font-bold text-gray-800" : "text-gray-400";
 
-                        {/* Step 0: Order Placed */}
-                        <div className="relative flex items-center gap-2">
-                          <div className={`absolute -left-[18.5px] h-3 w-3 rounded-full border-2 flex items-center justify-center ${msg.tracking.step >= 0 ? "bg-[#F54900] border-[#F54900]" : "bg-white border-gray-200"}`}>
-                            {msg.tracking.step >= 0 && <span className="h-1 w-1 rounded-full bg-white" />}
+                    if (isCompleted) {
+                      statusPillClass = "bg-emerald-50 text-emerald-600 border-emerald-100";
+                      etaColorClass = "text-emerald-600";
+                      timelineColorClass = "bg-emerald-500";
+                      dotColorFunc = (active: boolean) => active ? "bg-emerald-500 border-emerald-500" : "bg-white border-gray-200";
+                      textFunc = (active: boolean) => active ? "font-bold text-emerald-700" : "text-gray-400";
+                    } else if (isFailed) {
+                      statusPillClass = "bg-rose-50 text-rose-600 border-rose-100";
+                      etaColorClass = "text-rose-600";
+                      timelineColorClass = "bg-rose-500";
+                      dotColorFunc = (active: boolean) => active ? "bg-rose-500 border-rose-500" : "bg-white border-gray-200";
+                      textFunc = (active: boolean) => active ? "font-bold text-rose-700" : "text-gray-400";
+                    }
+
+                    return (
+                      <div className="mt-2.5 w-[85%] bg-white border border-gray-100 rounded-2xl p-3.5 shadow-sm space-y-3 select-none">
+                        {/* Header with Order ID */}
+                        <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                          <div className="flex items-center gap-1.5">
+                            <Package size={14} className={isCompleted ? "text-emerald-500" : isFailed ? "text-rose-500" : "text-[#F54900]"} />
+                            <span className="text-[11px] font-black text-gray-900">{msg.tracking.orderId}</span>
                           </div>
-                          <span className={msg.tracking.step >= 0 ? "font-bold text-gray-800" : "text-gray-400"}>Order Placed</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-extrabold border ${statusPillClass}`}>
+                            {msg.tracking.status}
+                          </span>
                         </div>
 
-                        {/* Step 1: Dispatched */}
-                        <div className="relative flex items-center gap-2">
-                          <div className={`absolute -left-[18.5px] h-3 w-3 rounded-full border-2 flex items-center justify-center ${msg.tracking.step >= 2 ? "bg-[#F54900] border-[#F54900]" : "bg-white border-gray-200"}`}>
-                            {msg.tracking.step >= 2 && <span className="h-1 w-1 rounded-full bg-white" />}
+                        {/* Timeline Steps */}
+                        <div className="relative pl-5 space-y-3 text-[10px]">
+                          {/* Vertical Progress Line */}
+                          <div className="absolute left-1.5 top-1 bottom-1 w-[2px] bg-gray-100">
+                            <div 
+                              className={`w-full rounded-full transition-all duration-500 ${timelineColorClass}`}
+                              style={{ height: `${(msg.tracking.step / 3) * 100}%` }}
+                            />
                           </div>
-                          <span className={msg.tracking.step >= 2 ? "font-bold text-gray-800" : "text-gray-400"}>Dispatched from Warehouse</span>
+
+                          {/* Step 0: Order Placed */}
+                          <div className="relative flex items-center gap-2">
+                            <div className={`absolute -left-[18.5px] h-3 w-3 rounded-full border-2 flex items-center justify-center ${dotColorFunc(msg.tracking.step >= 0)}`}>
+                              {msg.tracking.step >= 0 && <span className="h-1 w-1 rounded-full bg-white" />}
+                            </div>
+                            <span className={textFunc(msg.tracking.step >= 0)}>Order Placed</span>
+                          </div>
+
+                          {/* Step 1: Dispatched */}
+                          <div className="relative flex items-center gap-2">
+                            <div className={`absolute -left-[18.5px] h-3 w-3 rounded-full border-2 flex items-center justify-center ${dotColorFunc(msg.tracking.step >= 2)}`}>
+                              {msg.tracking.step >= 2 && <span className="h-1 w-1 rounded-full bg-white" />}
+                            </div>
+                            <span className={textFunc(msg.tracking.step >= 2)}>Dispatched from Warehouse</span>
+                          </div>
+
+                          {/* Step 2: Out for Delivery */}
+                          <div className="relative flex items-center gap-2">
+                            <div className={`absolute -left-[18.5px] h-3 w-3 rounded-full border-2 flex items-center justify-center ${dotColorFunc(msg.tracking.step >= 3)}`}>
+                              {msg.tracking.step >= 3 && <span className="h-1 w-1 rounded-full bg-white" />}
+                            </div>
+                            <span className={textFunc(msg.tracking.step >= 3)}>Out for Delivery</span>
+                          </div>
                         </div>
 
-                        {/* Step 2: Out for Delivery */}
-                        <div className="relative flex items-center gap-2">
-                          <div className={`absolute -left-[18.5px] h-3 w-3 rounded-full border-2 flex items-center justify-center ${msg.tracking.step >= 3 ? "bg-[#F54900] border-[#F54900]" : "bg-white border-gray-200"}`}>
-                            {msg.tracking.step >= 3 && <span className="h-1 w-1 rounded-full bg-white" />}
+                        {/* Meta Information Grid */}
+                        <div className="bg-gray-50/50 rounded-xl p-2.5 space-y-1.5 text-[9px] border border-gray-100/50">
+                          <div className="flex items-center justify-between text-gray-500">
+                            <span className="flex items-center gap-1"><MapPin size={10} /> Carrier:</span>
+                            <span className="font-bold text-gray-800">{msg.tracking.carrier}</span>
                           </div>
-                          <span className={msg.tracking.step >= 3 ? "font-bold text-gray-800" : "text-gray-400"}>Out for Delivery</span>
+                          <div className="flex items-center justify-between text-gray-500">
+                            <span className="flex items-center gap-1"><Clock size={10} /> Estimated Delivery:</span>
+                            <span className={`font-bold ${etaColorClass}`}>{msg.tracking.eta}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-gray-500">
+                            <span className="flex items-center gap-1"><CreditCard size={10} /> Total Payment (COD):</span>
+                            <span className="font-extrabold text-gray-900">{msg.tracking.amount}</span>
+                          </div>
+                          <div className="border-t border-gray-100/80 pt-1.5 mt-1 text-gray-400 font-semibold truncate">
+                            Items: {msg.tracking.items}
+                          </div>
                         </div>
                       </div>
-
-                      {/* Meta Information Grid */}
-                      <div className="bg-gray-50/50 rounded-xl p-2.5 space-y-1.5 text-[9px] border border-gray-100/50">
-                        <div className="flex items-center justify-between text-gray-500">
-                          <span className="flex items-center gap-1"><MapPin size={10} /> Carrier:</span>
-                          <span className="font-bold text-gray-800">{msg.tracking.carrier}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-gray-500">
-                          <span className="flex items-center gap-1"><Clock size={10} /> Estimated Delivery:</span>
-                          <span className="font-bold text-orange-600">{msg.tracking.eta}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-gray-500">
-                          <span className="flex items-center gap-1"><CreditCard size={10} /> Total Payment (COD):</span>
-                          <span className="font-extrabold text-gray-900">{msg.tracking.amount}</span>
-                        </div>
-                        <div className="border-t border-gray-100/80 pt-1.5 mt-1 text-gray-400 font-semibold truncate">
-                          Items: {msg.tracking.items}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Real-time Interactive Product Cards Carousel (Wow Factor!) */}
                   {msg.products && msg.products.length > 0 && (

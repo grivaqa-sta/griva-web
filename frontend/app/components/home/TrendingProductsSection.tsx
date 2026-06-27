@@ -53,19 +53,30 @@ export default function TrendingProductsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         {/* Section Heading */}
-        <div className="flex items-start justify-between sm:px-0">
+        <div className="flex items-start justify-between sm:px-0 gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 lg:text-3xl">
+            <h2 className="text-[18px] xs:text-[20px] sm:text-2xl lg:text-3xl font-bold text-gray-900">
               Trending <span className="text-orange-500">Products</span>
             </h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-[11px] sm:text-sm text-gray-400 sm:text-gray-500">
               Discover what&apos;s hot and popular right now
             </p>
             <div className="mt-2 h-[3px] w-10 rounded-full bg-orange-500" />
           </div>
+          
+          {/* Mobile View All button */}
           <Link
             href="/shop"
-            className="flex items-center gap-1.5 text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors mt-1"
+            className="flex items-center gap-0.5 text-[10px] font-extrabold text-[#F54900] hover:text-orange-600 transition-colors mt-1 shrink-0 bg-orange-50/70 border border-orange-100/40 px-2.5 py-1 rounded-full hover:bg-orange-100/50 active:scale-95 transition-all sm:hidden"
+          >
+            <span>View All</span>
+            <ArrowRight size={10} strokeWidth={2.5} />
+          </Link>
+
+          {/* Desktop View All link */}
+          <Link
+            href="/shop"
+            className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors mt-1"
           >
             View All <ArrowRight size={16} />
           </Link>

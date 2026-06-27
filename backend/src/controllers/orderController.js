@@ -415,10 +415,15 @@ exports.trackGuestOrder = async (req, res, next) => {
       });
     }
 
+    // Clean and normalize the order number query
+    const cleanOrderNumber = order_number.trim().replace(/^#/, "");
+
     const DeliverySlot = require("../models/DeliverySlot");
     const order = await Order.findOne({
       where: {
-        order_number,
+        order_number: {
+          [Op.iLike]: cleanOrderNumber
+        }
       },
       include: [
         {

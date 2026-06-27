@@ -48,6 +48,7 @@ const sequelize = new Sequelize(connectionString, {
       require: true,
       rejectUnauthorized: false, // Prevents cloud/Azure handshake failure
     } : false, // Disable SSL locally unless required
+    connectTimeout: 10000, // 10 seconds timeout to prevent infinite hang on unreachable DB
   },
   pool: {
     max: 10,         // HikariCP's maximumPoolSize equivalent (Azure B1ms friendly)

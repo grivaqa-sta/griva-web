@@ -85,6 +85,15 @@ const startServer = async () => {
         console.log("ℹ️ [DATABASE]: Skipping FlashSaleProducts constraint update:", flashErr.message);
       }
 
+      // Safely add delivery_rating and delivery_comment to Orders table if they do not exist
+      try {
+        await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "delivery_rating" INTEGER;');
+        await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "delivery_comment" TEXT;');
+        console.log('🟢 [DATABASE]: Ensured delivery_rating and delivery_comment columns exist in Orders table.');
+      } catch (colErr) {
+        console.log('ℹ️ [DATABASE]: Skipping Orders column creation:', colErr.message);
+      }
+
       console.log("[DATABASE]: Syncing schemas...");
       await sequelize.sync();
       console.log("🟢 [DATABASE]: Schemas synced successfully.");

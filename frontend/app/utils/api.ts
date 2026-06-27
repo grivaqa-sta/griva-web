@@ -790,4 +790,31 @@ export async function bulkPrintOrdersApi(orderIds: number[]): Promise<boolean> {
   return !!res;
 }
 
+export async function getDeliveryReviewsApi(): Promise<any[]> {
+  const res = await safeFetch<{ reviews: any[] }>(
+    "/reviews/delivery",
+    { method: "GET" },
+    { reviews: [] }
+  );
+  return res.reviews || [];
+}
+
+export async function getProductReviewsApi(): Promise<any[]> {
+  const res = await safeFetch<{ reviews: any[] }>(
+    "/reviews",
+    { method: "GET" },
+    { reviews: [] }
+  );
+  return res.reviews || [];
+}
+
+export async function deleteReviewApi(id: number): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/reviews/${id}`,
+    { method: "DELETE" },
+    { success: false }
+  );
+  return !!res;
+}
+
 

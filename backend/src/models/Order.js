@@ -185,6 +185,18 @@ const Order = sequelize.define(
       allowNull: false,
       defaultValue: "not_applicable",
     },
+    delivery_rating: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 1,
+        max: 5,
+      },
+    },
+    delivery_comment: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     timestamps: true,

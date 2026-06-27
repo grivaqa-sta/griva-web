@@ -22,8 +22,9 @@ import AddProductModal from "./AddProductModal";
 import DeliveryTab from "./DeliveryTab";
 import CustomersTab from "./CustomersTab";
 import StaffTab from "./StaffTab";
+import ReviewsTab from "./ReviewsTab";
 
-export type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff";
+export type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function AdminDashboard() {
   const { socket } = useSocket();
   const { toast } = useToast();
 
-  const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff"];
+  const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff", "feedback"];
   const defaultTab = role === "staff" ? "operations" : "overview";
   const activeTab = tabParam && validTabs.includes(tabParam) ? tabParam : defaultTab;
 
@@ -385,6 +386,9 @@ export default function AdminDashboard() {
           )}
           {activeTab === "customers" && (
             <CustomersTab />
+          )}
+          {activeTab === "feedback" && (
+            <ReviewsTab />
           )}
         </div>
       </main>

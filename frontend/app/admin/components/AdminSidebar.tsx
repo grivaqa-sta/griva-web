@@ -18,10 +18,11 @@ import {
   UserCog,
   Image,
   Activity,
+  Star,
 } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
 
-type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff";
+type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback";
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -55,6 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "orders", label: "Manage Orders", icon: <ShoppingBag className="h-4 w-4" /> },
       { id: "delivery", label: "Manage Drivers", icon: <Truck className="h-4 w-4" />, adminOnly: true },
+      { id: "feedback", label: "Feedback & Reviews", icon: <Star className="h-4 w-4" /> },
     ]
   },
   {

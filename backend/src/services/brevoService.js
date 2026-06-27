@@ -180,6 +180,8 @@ const sendOutForDeliveryEmail = async (order) => {
 };
 const sendOrderDeliveredEmail = async (order) => {
   try {
+    const reviewUrl = `${process.env.FRONTEND_URL || "https://thegriva.com"}/reviews/order/${order.order_number}`;
+
     const sendSmtpEmail = {
       sender: {
         email: process.env.SENDER_EMAIL,
@@ -195,13 +197,28 @@ const sendOrderDeliveredEmail = async (order) => {
       subject: `Your Order ${order.order_number} Has Been Delivered`,
 
       htmlContent: `
-        <h2>Order Delivered Successfully 🎉</h2>
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #ff6a00;">
+            <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
+          </div>
+          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px; text-align: center;">Order Delivered 🎉</h2>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Hello ${order.customer_name},</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Your order <strong>${order.order_number}</strong> has been successfully delivered. We hope you are loving your new products!</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">Please take a moment to rate your delivery experience and the items you received. Your feedback helps us keep our services premium.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${reviewUrl}" 
+               style="background-color: #ff6a00; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block;">
+              Rate Your Experience
+            </a>
+          </div>
 
-        <p>Hello ${order.customer_name},</p>
-
-        <p>Your order <strong>${order.order_number}</strong> has been delivered successfully.</p>
-
-        <p>Thank you for shopping with us.</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Thank you for choosing <strong>GRIVA</strong>!</p>
+          <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+          <div style="text-align: center; color: #9ca3af; font-size: 11px;">
+            <p>© ${new Date().getFullYear()} GRIVA. All rights reserved.</p>
+          </div>
+        </div>
       `,
     };
 

@@ -5,9 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FaFacebookF,
-  FaTwitter,
   FaInstagram,
-  FaPinterestP,
+  FaWhatsapp,
 } from "react-icons/fa";
 import { ChevronDown, Send, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -112,9 +111,8 @@ export default function Footer() {
             <div className="flex items-center gap-3 pt-2">
               {[
                 { icon: <FaFacebookF size={12} />, href: "#", label: "Facebook" },
-                { icon: <FaTwitter size={12} />, href: "#", label: "Twitter" },
                 { icon: <FaInstagram size={12} />, href: "https://www.instagram.com/griva.qa", label: "Instagram", target: "_blank" },
-                { icon: <FaPinterestP size={12} />, href: "#", label: "Pinterest" },
+                { icon: <FaWhatsapp size={14} />, href: "https://wa.me/97455551234", label: "WhatsApp", target: "_blank" },
               ].map((item, idx) => (
                 <a
                   key={idx}

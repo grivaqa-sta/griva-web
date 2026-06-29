@@ -91,6 +91,8 @@ export default function ComingSoonOverlay() {
     }
   };
 
+  if (isBypassed) return null;
+
   return (
     <div className="fixed inset-0 z-[99999] bg-[#060608] text-white flex flex-col justify-between items-center px-6 py-16 select-none font-sans overflow-hidden">
       {/* Self-contained CSS Animations for maximum reliability */}

@@ -151,7 +151,7 @@ export default function CategorySection() {
       {/* Mobile — sticky categories */}
       <div
         id="categories-section"
-        className={`${isCollapsed ? "fixed" : "sticky"} top-[92px] z-30   bg-white block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 py-3`}
+        className={`${isCollapsed ? "fixed" : "sticky"} top-[92px] z-30 bg-white border-b border-gray-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 py-3`}
       >
         <div className="flex gap-3 min-w-max justify-around items-center">
           {categories.map((item) => (
@@ -188,6 +188,9 @@ export default function CategorySection() {
           ))}
         </div>
       </div>
+
+      {/* Mobile placeholder to preserve layout space (since categories-section is sticky/fixed) */}
+      <div className="block sm:hidden h-20" aria-hidden="true" />
 
       {/* Desktop/Tablet — carousel */}
       <section className="hidden sm:block w-full py-8">

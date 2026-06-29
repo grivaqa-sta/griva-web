@@ -364,7 +364,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     });
   };
 
-  const productMetaDesc = product.short_description || product.description?.substring(0, 155) || `Buy ${product.title} at GriVA Qatar. Premium electronics with same day delivery in Doha and COD options.`;
+  const productMetaDesc = product.short_description || product.description?.substring(0, 155) || `Buy ${product.title} at GRIVA Qatar. Premium electronics with same day delivery in Doha and COD options.`;
   const canonicalUrl = `https://thegriva.com/product/${product.slug || slug}`;
   const breadcrumbItems = [
     { name: "Home", path: "/" },
@@ -374,7 +374,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="bg-white min-h-screen pt-8 pb-0 sm:pb-8">
-      <title>{product.title} — QAR {formatPrice(product.price)} | GriVA Qatar</title>
+      <title>{product.title} — QAR {formatPrice(product.price)} | GRIVA Qatar</title>
       <meta name="description" content={productMetaDesc} />
       <link rel="canonical" href={canonicalUrl} />
       <ProductSchema product={product} />

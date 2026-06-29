@@ -14,7 +14,7 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h3 className="font-bold text-gray-900 text-base">1. Agreement to Terms</h3>
               <p>
-                By accessing and placing an order with GriVA, you confirm that you are in agreement with and bound by the terms of service contained in the Terms &amp; Conditions outlined below. These terms apply to the entire website and any email or other type of communication between you and GriVA.
+                By accessing and placing an order with GRIVA, you confirm that you are in agreement with and bound by the terms of service contained in the Terms &amp; Conditions outlined below. These terms apply to the entire website and any email or other type of communication between you and GRIVA.
               </p>
             </section>
 
@@ -35,7 +35,7 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h3 className="font-bold text-gray-900 text-base">4. Limitation of Liability</h3>
               <p>
-                In no case shall GriVA, our directors, officers, employees, affiliates, agents, contractors, interns, suppliers, service providers, or licensors be liable for any injury, loss, claim, or any direct, indirect, incidental, punitive, special, or consequential damages of any kind, including, without limitation lost profits, lost revenue, lost savings, loss of data, replacement costs, or any similar damages.
+                In no case shall GRIVA, our directors, officers, employees, affiliates, agents, contractors, interns, suppliers, service providers, or licensors be liable for any injury, loss, claim, or any direct, indirect, incidental, punitive, special, or consequential damages of any kind, including, without limitation lost profits, lost revenue, lost savings, loss of data, replacement costs, or any similar damages.
               </p>
             </section>
           </div>

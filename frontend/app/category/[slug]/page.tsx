@@ -319,7 +319,7 @@ export default function CategoryPage() {
       className="bg-gray-50/40 min-h-screen py-8"
       style={{ ["--tw-selection-bg" as string]: "#FF6A00" }}
     >
-      <title>{meta.title} Qatar — Online Catalog & Premium Accessories | GriVA</title>
+      <title>{meta.title} Qatar — Online Catalog & Premium Accessories | GRIVA</title>
       <meta name="description" content={`Shop ${meta.title} in Qatar. ${meta.tagline}. Same day doorstep delivery across Doha and secure Cash on Delivery.`} />
       <link rel="canonical" href={`https://thegriva.com/category/${slug}`} />
       <BreadcrumbSchema items={[

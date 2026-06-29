@@ -155,7 +155,7 @@ export default function ComingSoonOverlay() {
           {/* Solar Eclipse Glow behind the logo */}
           <div className="absolute inset-[-40px] rounded-full bg-gradient-to-tr from-[#f97316]/25 to-transparent pointer-events-none animate-corona" />
           
-          <img src="/images/logo-light.png" alt="GriVA Logo" className="h-12 w-auto object-contain relative z-10 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+          <img src="/images/logo-light.png" alt="GRIVA Logo" className="h-12 w-auto object-contain relative z-10 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
         </div>
         
         {/* Shimmering Curiosity Text */}

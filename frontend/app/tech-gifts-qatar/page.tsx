@@ -70,7 +70,7 @@ export default function TechGiftsPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white apple-font">
-      <title>Premium Tech Gifts Qatar & Luxury Gadgets | GriVA</title>
+      <title>Premium Tech Gifts Qatar & Luxury Gadgets | GRIVA</title>
       <meta name="description" content="Find the perfect luxury tech gift in Qatar. Premium gadget gift boxes, corporate electronics gifts, and custom gift notes with express Doha delivery." />
       <link rel="canonical" href="https://thegriva.com/tech-gifts-qatar" />
       <BreadcrumbSchema items={[

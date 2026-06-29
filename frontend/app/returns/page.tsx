@@ -122,7 +122,7 @@ export default function ReturnsPage() {
               </div>
               <h3 className="text-lg font-black text-gray-900 tracking-tight">Wallet Credit Refunds</h3>
               <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                Because we operate on a Cash on Delivery (COD) model, all approved refunds are credited directly to your GriVA wallet as store credit. You can use this credit to purchase any other items from our catalog at any time.
+                Because we operate on a Cash on Delivery (COD) model, all approved refunds are credited directly to your GRIVA wallet as store credit. You can use this credit to purchase any other items from our catalog at any time.
               </p>
             </div>
             <div className="mt-6 flex items-center gap-2 text-xs font-bold text-gray-400">

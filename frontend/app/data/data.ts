@@ -589,7 +589,7 @@ const faqData: FAQItem[] = [
   {
     question: "How can I track my order?",
     answer:
-      "Once your order is processed, you will receive order status notifications via SMS or WhatsApp. You can also view live delivery tracking details directly from your GriVA account dashboard.",
+      "Once your order is processed, you will receive order status notifications via SMS or WhatsApp. You can also view live delivery tracking details directly from your GRIVA account dashboard.",
   },
   {
     question: "Can I modify or cancel my order?",

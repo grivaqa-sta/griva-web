@@ -9,15 +9,15 @@ export default function OrganizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": "https://thegriva.com/#organization",
-    "name": "GriVA Qatar",
-    "alternateName": ["GriVA", "Griva Electronics Qatar", "griva.qa"],
+    "name": "GRIVA Qatar",
+    "alternateName": ["GRIVA", "Griva Electronics Qatar", "griva.qa"],
     "url": "https://thegriva.com",
     "logo": {
       "@type": "ImageObject",
       "url": "https://thegriva.com/images/logo.png",
       "width": 200,
       "height": 60,
-      "caption": "GriVA Qatar Logo"
+      "caption": "GRIVA Qatar Logo"
     },
     "image": "https://thegriva.com/og-image.jpg",
     "description": "Qatar's premier online electronics store offering premium tech products with same day delivery and cash on delivery across all Qatar areas.",
@@ -53,7 +53,7 @@ export default function OrganizationSchema() {
     ],
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
-      "name": "GriVA Electronics Catalog",
+      "name": "GRIVA Electronics Catalog",
       "itemListElement": [
         { "@type": "OfferCatalog", "name": "Electronics" },
         { "@type": "OfferCatalog", "name": "Headphones and Audio" },

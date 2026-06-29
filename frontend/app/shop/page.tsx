@@ -135,7 +135,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-16">
-      <title>Online Shop Qatar — Electronics, Gadgets & Tech Accessories | GriVA</title>
+      <title>Online Shop Qatar — Electronics, Gadgets & Tech Accessories | GRIVA</title>
       <meta name="description" content="Browse our complete collection of verified premium electronics in Qatar. Filter by category, price, and customer ratings. Direct same day delivery across Doha." />
       <link rel="canonical" href="https://thegriva.com/shop" />
       <BreadcrumbSchema items={[

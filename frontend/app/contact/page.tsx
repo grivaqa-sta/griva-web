@@ -25,15 +25,15 @@ export default function ContactPage() {
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-12">
-      <title>Contact Us — GriVA Qatar | Premium Tech Concierge & Customer Care</title>
-      <meta name="description" content="Get in touch with GriVA customer support team. We offer dedicated sales help, order tracking updates, and warranty questions for premium tech products in Qatar." />
+      <title>Contact Us — GRIVA Qatar | Premium Tech Concierge & Customer Care</title>
+      <meta name="description" content="Get in touch with GRIVA customer support team. We offer dedicated sales help, order tracking updates, and warranty questions for premium tech products in Qatar." />
       <link rel="canonical" href="https://thegriva.com/contact" />
       <BreadcrumbSchema items={[
         { name: "Home", path: "/" },
         { name: "Contact Us", path: "/contact" }
       ]} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading title="Contact GriVA" subtitle="We're here to answer your questions and assist with orders" />
+        <SectionHeading title="Contact GRIVA" subtitle="We're here to answer your questions and assist with orders" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
           {/* Info cards (Left) */}
@@ -100,7 +100,7 @@ export default function ContactPage() {
                     </div>
                     <h4 className="font-bold text-gray-900">Message Sent Successfully!</h4>
                     <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                      Thank you for contacting GriVA. Our support agents have received your enquiry and will follow up shortly.
+                      Thank you for contacting GRIVA. Our support agents have received your enquiry and will follow up shortly.
                     </p>
                     <button
                       onClick={() => setSubmitted(false)}

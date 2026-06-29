@@ -22,7 +22,7 @@ import FAQSchema from "@/components/seo/FAQSchema";
 
 const DELIVERY_FAQS = [
   {
-    question: "What are the shipping charges for GriVA orders in Qatar?",
+    question: "What are the shipping charges for GRIVA orders in Qatar?",
     answer: "Delivery is completely FREE across all municipalities in Qatar for orders above QAR 99. For orders below QAR 99, a flat delivery fee of QAR 15 applies to Doha and inner suburbs, and QAR 25-30 for remote outer zones."
   },
   {
@@ -90,7 +90,7 @@ export default function SameDayDeliveryPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white apple-font">
-      <title>Same Day Delivery Doha & Qatar Express Shipping | GriVA</title>
+      <title>Same Day Delivery Doha & Qatar Express Shipping | GRIVA</title>
       <meta name="description" content="Enjoy lightning fast same-day delivery across Doha, Lusail, West Bay, Pearl-Qatar, and all major Qatar regions. Free delivery on orders above QAR 99." />
       <link rel="canonical" href="https://thegriva.com/same-day-delivery-doha" />
       <BreadcrumbSchema items={[

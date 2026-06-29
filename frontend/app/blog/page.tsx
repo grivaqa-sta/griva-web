@@ -49,7 +49,7 @@ export default function BlogListingPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0c0c0c] text-zinc-100 apple-font">
-      <title>GriVA Journal — Qatar Tech Trends, Guides & E-Commerce Blog</title>
+      <title>GRIVA Journal — Qatar Tech Trends, Guides & E-Commerce Blog</title>
       <meta name="description" content="Explore Qatar's premium tech blog. Discover 2026 gadget trends, apple integration guides, mobile gaming tutorials, and Doha shipping logistics insights." />
       <link rel="canonical" href="https://thegriva.com/blog" />
       <BreadcrumbSchema items={[

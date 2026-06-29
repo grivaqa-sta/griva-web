@@ -34,7 +34,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
   }
 
   const sku = product.sku || String(product.id || "");
-  const brandName = product.brand || "GriVA Qatar";
+  const brandName = product.brand || "GRIVA Qatar";
   const categoryName = typeof product.category === "object" ? product.category.title : product.category || "";
   const productUrl = `https://thegriva.com/product/${product.id || product.slug || ""}`;
 
@@ -76,7 +76,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
       "itemCondition": "https://schema.org/NewCondition",
       "seller": {
         "@type": "Organization",
-        "name": "GriVA Qatar",
+        "name": "GRIVA Qatar",
         "url": "https://thegriva.com"
       },
       "hasMerchantReturnPolicy": {

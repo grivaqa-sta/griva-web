@@ -42,13 +42,13 @@ export async function generateMetadata(
     const pageUrl = `https://thegriva.com/product/${slug}`;
 
     return {
-      title: `${title} — GriVA Qatar`,
+      title: `${title} — GRIVA Qatar`,
       description: `${priceStr ? priceStr + " | " : ""}${description}`,
       openGraph: {
-        title: `${title} | GriVA Qatar`,
+        title: `${title} | GRIVA Qatar`,
         description: `${priceStr ? priceStr + " — " : ""}${description}`,
         url: pageUrl,
-        siteName: "GriVA Qatar",
+        siteName: "GRIVA Qatar",
         type: "website",
         images: [
           {
@@ -62,7 +62,7 @@ export async function generateMetadata(
       },
       twitter: {
         card: "summary_large_image",
-        title: `${title} | GriVA Qatar`,
+        title: `${title} | GRIVA Qatar`,
         description: `${priceStr ? priceStr + " — " : ""}${description}`,
         images: [imageUrl],
       },
@@ -70,13 +70,13 @@ export async function generateMetadata(
   } catch {
     // Fallback metadata if product fetch fails
     return {
-      title: "Product — GriVA Qatar",
+      title: "Product — GRIVA Qatar",
       description: "Shop premium products in Qatar with fast Doha delivery and Cash on Delivery.",
       openGraph: {
-        title: "Product — GriVA Qatar",
+        title: "Product — GRIVA Qatar",
         description: "Shop premium products in Qatar with fast Doha delivery.",
         images: ["/images/logo-dark.png"],
-        siteName: "GriVA Qatar",
+        siteName: "GRIVA Qatar",
         type: "website",
       },
     };

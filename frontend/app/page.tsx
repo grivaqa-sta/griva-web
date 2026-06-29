@@ -16,7 +16,7 @@ import OrganizationSchema from "@/components/seo/OrganizationSchema";
 import ComingSoonOverlay from "./components/common/ComingSoonOverlay";
 
 export const metadata: Metadata = {
-  title: "GriVA Qatar — Premium Electronics & Tech Gifts Store | Same Day Delivery Doha",
+  title: "GRIVA Qatar — Premium Electronics & Tech Gifts Store | Same Day Delivery Doha",
   description: "Shop premium electronics, gadgets, gaming gear, high-fidelity audio, and luxury gifts in Qatar. Enjoy free same day delivery in Doha on orders over QAR 99, 100% authentic products, and Cash on Delivery.",
   alternates: {
     canonical: "https://thegriva.com",

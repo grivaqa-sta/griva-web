@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
+const helmet = require("helmet");
 const { apiLimiter } = require("./middleware/rateLimit");
 
 // Initialize Database Models and Associations
@@ -9,8 +10,19 @@ require("./models");
 
 const app = express();
 
+// Secure HTTP response headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled on API layer to allow flexibility on separate SPA/client apps
+}));
+
 // Apply Global Middlewares
 const getAllowedOrigins = () => {
+  if (process.env.ALLOWED_ORIGINS) {
+    const customOrigins = process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()).filter(Boolean);
+    console.log("✅ [CORS] Allowed Origins (from Environment):", customOrigins);
+    return customOrigins;
+  }
+
   const origins = [
     // Local Development
     "http://localhost:3000",
@@ -37,7 +49,7 @@ const getAllowedOrigins = () => {
     origins.push(process.env.RENDER_BACKEND_URL.trim());
   }
 
-  console.log("✅ [CORS] Allowed Origins:", origins);
+  console.log("✅ [CORS] Allowed Origins (default):", origins);
   return origins;
 };
 

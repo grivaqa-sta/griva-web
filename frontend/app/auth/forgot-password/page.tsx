@@ -141,7 +141,7 @@ export default function ForgotPasswordPage() {
             <div className="bg-white rounded-[28px] border border-gray-200/60 shadow-sm p-6 lg:p-8 max-w-[460px] w-full">
               {/* Logo and Auth Security Badge */}
               <div className="flex items-center justify-between w-full pb-4 border-b border-gray-100/80">
-                <Link href="/">
+                <Link href="/" className="hidden md:block">
                   <Image
                     src="/images/logo-dark.png"
                     alt="Griva Logo"
@@ -151,7 +151,7 @@ export default function ForgotPasswordPage() {
                     className="h-7 w-auto object-contain"
                   />
                 </Link>
-                <div className="flex items-center gap-1 bg-orange-50 border border-orange-100/50 text-orange-700 text-[10px] font-bold px-3 py-1 rounded-full">
+                <div className="flex items-center gap-1 bg-orange-50 border border-orange-100/50 text-orange-700 text-[10px] font-bold px-3 py-1 rounded-full ml-auto md:ml-0">
                   <Lock size={10} className="text-orange-600" />
                   <span>Secure Reset</span>
                 </div>

@@ -13,6 +13,7 @@ import LazyFridayDeals from "./components/home/LazyFridayDeals";
 import MoreToExploreSection from "./components/home/MoreToExploreSection";
 import WebsiteSchema from "@/components/seo/WebsiteSchema";
 import OrganizationSchema from "@/components/seo/OrganizationSchema";
+import ComingSoonOverlay from "./components/common/ComingSoonOverlay";
 
 export const metadata: Metadata = {
   title: "GriVA Qatar — Premium Electronics & Tech Gifts Store | Same Day Delivery Doha",
@@ -23,12 +24,17 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
+  const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+
   return (
     <div>
+      <ComingSoonOverlay />
       <WebsiteSchema />
       <OrganizationSchema />
-      <SubNavbar />
-      <div className="px-0 sm:px-4 md:px-6 lg:px-8 pb-1 bg-[#ffff]">
+      <div id="layout-subnavbar" className={isComingSoon ? "hidden" : ""}>
+        <SubNavbar />
+      </div>
+      <div id="main-store-content" className={`px-0 sm:px-4 md:px-6 lg:px-8 pb-1 bg-[#ffff] ${isComingSoon ? "hidden" : ""}`}>
         <CategorySection />
         <HeroBanner />
         {/* <LazyFridayDeals /> */}

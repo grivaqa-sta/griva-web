@@ -65,6 +65,7 @@ export default function AdminDashboard() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [shippingFee, setShippingFee] = useState<number>(10);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [dateRangeOption, setDateRangeOption] = useState<string>("7days");
   const [customStartDate, setCustomStartDate] = useState<string>("");
@@ -313,16 +314,22 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-white text-gray-900 flex font-sans antialiased selection:bg-orange-500 selection:text-white">
 
       {/* ── Sidebar ── */}
-      <AdminSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} unreviewedCount={unreviewedCount} />
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={handleSetActiveTab}
+        unreviewedCount={unreviewedCount}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       {/* ── Main ── */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
 
         {/* ── Header ── */}
-        <AdminHeader activeTab={activeTab} />
+        <AdminHeader activeTab={activeTab} onMenuClick={() => setSidebarOpen(true)} />
 
         {/* ── Tab Content ── */}
-        <div className="p-6 max-w-7xl w-full mx-auto flex-1">
+        <div className="p-4 md:p-6 max-w-7xl w-full mx-auto flex-1">
           {activeTab === "operations" && (
             <OperationsTab ordersList={ordersList} setOrdersList={setOrdersList} setActiveTab={handleSetActiveTab} />
           )}

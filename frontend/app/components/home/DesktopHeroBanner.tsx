@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ShieldCheck, Star, Truck } from "lucide-react";
+import { ArrowRight, Wallet, Star, Truck } from "lucide-react";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { productService } from "@/app/services/product.service";
+import { getSettingsApi } from "@/app/utils/api";
 import { BannerProduct, HeroSlide } from "@/app/types/types";
 
 function mapProductToSlide(p: BannerProduct): HeroSlide {
@@ -25,6 +26,7 @@ function mapProductToSlide(p: BannerProduct): HeroSlide {
 export default function DesktopHeroBanner() {
     const [slides, setSlides] = useState<HeroSlide[]>([]);
     const [current, setCurrent] = useState(0);
+    const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
     const busyRef = useRef(false);
 
     useEffect(() => {
@@ -41,6 +43,14 @@ export default function DesktopHeroBanner() {
             .catch((err: Error) => {
                 console.error("Error fetching banners:", err);
             });
+
+        getSettingsApi()
+            .then((settings) => {
+                if (settings && settings.freeShippingThreshold !== undefined) {
+                    setFreeShippingThreshold(Number(settings.freeShippingThreshold));
+                }
+            })
+            .catch((err) => console.error("Failed to fetch settings in DesktopHeroBanner:", err));
     }, []);
 
     useEffect(() => {
@@ -171,14 +181,14 @@ export default function DesktopHeroBanner() {
                             <Truck className="text-orange-400" size={20} />
                             <div>
                                 <h4 className="text-sm font-bold text-white">Free Shipping</h4>
-                                <p className="text-xs text-gray-400">On all orders</p>
+                                <p className="text-xs text-gray-400">On orders over QAR {freeShippingThreshold}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <ShieldCheck className="text-orange-400" size={20} />
+                            <Wallet className="text-orange-400" size={20} />
                             <div>
-                                <h4 className="text-sm font-bold text-white">Secure Payment</h4>
-                                <p className="text-xs text-gray-400">100% protected</p>
+                                <h4 className="text-sm font-bold text-white">Cash on Delivery</h4>
+                                <p className="text-xs text-gray-400">Pay upon delivery</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">

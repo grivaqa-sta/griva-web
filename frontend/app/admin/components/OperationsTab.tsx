@@ -627,6 +627,37 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                                         </div>
                                       </div>
                                     )}
+
+                                    {/* Mobile-Friendly Status Actions */}
+                                    <div className="pt-3 border-t border-orange-500/10">
+                                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                        <span>⚙️</span> Update Order Status
+                                      </p>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {["pending", "processing", "out_for_delivery", "delivered", "cancelled"].map((statusOption) => {
+                                          const isCurrent = order.status === statusOption;
+                                          const nextCfg = STATUS_CONFIG[statusOption === 'completed' ? 'delivered' : statusOption] || STATUS_CONFIG.pending;
+                                          return (
+                                            <button
+                                              key={statusOption}
+                                              disabled={updatingId === order.id}
+                                              onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, statusOption); }}
+                                              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-black border transition-all cursor-pointer disabled:opacity-50 uppercase ${
+                                                isCurrent 
+                                                  ? "bg-orange-500 border-orange-500 text-white" 
+                                                  : `${nextCfg.bg} ${nextCfg.color} hover:opacity-80`
+                                              }`}
+                                            >
+                                              {updatingId === order.id && isCurrent ? (
+                                                <span className="h-2 w-2 border border-current border-t-transparent rounded-full animate-spin" />
+                                              ) : nextCfg.icon}
+                                              {statusOption.replace(/_/g, " ")}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
                                   </div>
                                 </div>
                               </div>

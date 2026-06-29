@@ -141,23 +141,15 @@ export default function RegisterPage() {
             {/* Soft Decorative Orange Glow behind the image */}
             <div className="absolute top-[120px] right-[-90px] xl:right-[-110px] w-[460px] xl:w-[520px] h-[460px] xl:h-[520px] rounded-full bg-[radial-gradient(circle,rgba(245,73,0,0.18)_0%,rgba(245,73,0,0.03)_50%,transparent_70%)] blur-xl z-0 pointer-events-none" />
 
-            {/* Relative container for Product Cutout and Neon Light Effect */}
-            <div className="absolute top-[150px] right-[-40px] xl:right-[-60px] w-[420px] xl:w-[480px] aspect-[1.5/1] z-10 select-none pointer-events-none">
-              {/* Soft Ambient Neon Glow on the floor/podium base */}
-              <div className="absolute bottom-[-5%] left-[8%] w-[84%] h-[28%] rounded-full bg-[#F54900]/25 blur-xl z-0" />
-              
-              {/* Sharp Neon Light Ring wrapping the podium base */}
-              <div className="absolute bottom-[-1.5%] left-[10.5%] w-[79%] h-[23%] rounded-full border-2 border-[#F54900] shadow-[0_0_18px_5px_rgba(245,73,0,0.85),inset_0_0_12px_3px_rgba(245,73,0,0.6)] z-0" />
-
-              {/* Product Cutout Image */}
-              <Image
-                src="/images/login-page-pic-cutout.png"
-                alt="Griva Premium Products"
-                fill
-                priority
-                className="object-contain z-10 drop-shadow-2xl"
-              />
-            </div>
+            {/* Product Cutout Image — absolute, centered in column, pushed right */}
+            <Image
+              src="/images/login-page-pic-cutout.png"
+              alt="Griva Premium Products"
+              width={520}
+              height={400}
+              priority
+              className="absolute top-[150px] right-[-40px] xl:right-[-60px] w-[420px] xl:w-[480px] h-auto object-contain drop-shadow-2xl select-none pointer-events-none z-10"
+            />
           </div>
 
           {/* ── RIGHT COLUMN: Create Account Card ── */}
@@ -165,7 +157,7 @@ export default function RegisterPage() {
             <div className="bg-white rounded-[28px] border border-gray-200/60 shadow-sm p-6 lg:p-8 max-w-[460px] w-full">
               {/* Logo and User Icon */}
               <div className="flex items-center justify-between w-full pb-4 border-b border-gray-100/80">
-                <Link href="/">
+                <Link href="/" className="hidden md:block">
                   <Image
                     src="/images/logo-dark.png"
                     alt="Griva Logo"
@@ -175,7 +167,7 @@ export default function RegisterPage() {
                     className="h-7 w-auto object-contain"
                   />
                 </Link>
-                <div className="flex items-center justify-center h-10 w-10 bg-orange-50 border border-orange-100/50 rounded-full">
+                <div className="flex items-center justify-center h-10 w-10 bg-orange-50 border border-orange-100/50 rounded-full ml-auto md:ml-0">
                   <User size={18} className="text-[#F54900]" />
                 </div>
               </div>

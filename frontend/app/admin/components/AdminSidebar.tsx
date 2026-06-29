@@ -28,6 +28,8 @@ interface AdminSidebarProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
   unreviewedCount?: number;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface NavItem {
@@ -83,7 +85,7 @@ const NAV_GROUPS: NavGroup[] = [
   }
 ];
 
-export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount }: AdminSidebarProps) {
+export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount, isOpen, onClose }: AdminSidebarProps) {
   const router = useRouter();
   const { logout, role, user } = useUser();
   
@@ -103,46 +105,62 @@ export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount 
   }).filter((g) => g.items.length > 0);
 
   return (
-    <aside className="w-64 bg-white border-r border-orange-500/30 flex flex-col justify-between shrink-0 h-screen sticky top-0 select-none">
-      {/* Logo */}
-      <div className="flex flex-col items-center px-6 h-16 border-b border-orange-500/30 justify-center shrink-0">
-        <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain mb-0.5" />
-        <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
-          {role === "staff" ? "Staff Control Panel" : "Admin Panel"}
-        </span>
-      </div>
- 
-      {/* Nav Links */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-        {filteredGroups.map((g) => (
-          <div key={g.group} className="space-y-2">
-            <h3 className="px-4 text-[10px] font-bold text-gray-400 tracking-wider uppercase">
-              {g.group}
-            </h3>
-            <nav className="space-y-1">
-              {g.items.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => setActiveTab(n.id)}
-                  className={`w-full flex items-center text-left gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                    activeTab === n.id
-                      ? "bg-gradient-to-r from-orange-500/15 to-amber-500/5 text-orange-500 border-l-4 border-orange-500"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-                  }`}
-                >
-                  {n.icon}
-                  <span className="flex-1">{n.label}</span>
-                  {n.id === "orders" && unreviewedCount !== undefined && unreviewedCount > 0 && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white animate-pulse shrink-0">
-                      {unreviewedCount}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </nav>
-          </div>
-        ))}
-      </div>
+    <>
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={`w-64 bg-white border-r border-orange-500/30 flex flex-col justify-between shrink-0 h-screen lg:sticky lg:top-0 select-none transition-transform duration-300 z-50
+          fixed inset-y-0 left-0 lg:static lg:translate-x-0
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        {/* Logo */}
+        <div className="flex flex-col items-center px-6 h-16 border-b border-orange-500/30 justify-center shrink-0">
+          <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain mb-0.5" />
+          <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
+            {role === "staff" ? "Staff Control Panel" : "Admin Panel"}
+          </span>
+        </div>
+   
+        {/* Nav Links */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          {filteredGroups.map((g) => (
+            <div key={g.group} className="space-y-2">
+              <h3 className="px-4 text-[10px] font-bold text-gray-400 tracking-wider uppercase">
+                {g.group}
+              </h3>
+              <nav className="space-y-1">
+                {g.items.map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => {
+                      setActiveTab(n.id);
+                      onClose?.();
+                    }}
+                    className={`w-full flex items-center text-left gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                      activeTab === n.id
+                        ? "bg-gradient-to-r from-orange-500/15 to-amber-500/5 text-orange-500 border-l-4 border-orange-500"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    {n.icon}
+                    <span className="flex-1">{n.label}</span>
+                    {n.id === "orders" && unreviewedCount !== undefined && unreviewedCount > 0 && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white animate-pulse shrink-0">
+                        {unreviewedCount}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          ))}
+        </div>
 
       {/* Footer */}
       <div className="p-6 border-t border-orange-500/30 space-y-3 shrink-0">
@@ -181,5 +199,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount 
         </button>
       </div>
     </aside>
+    </>
   );
 }
+

@@ -1419,6 +1419,34 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                       Print Order Slip
                                     </button>
                                   </div>
+
+                                  {/* Mobile-Friendly Status Actions */}
+                                  {nextStatuses.length > 0 && (
+                                    <div className="pt-3 border-t border-orange-500/10">
+                                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                        <span>⚙️</span> Update Order Status
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {nextStatuses.map((nextStatus) => {
+                                          const nextCfg = STATUS_CONFIG[nextStatus];
+                                          return (
+                                            <button
+                                              key={nextStatus}
+                                              disabled={updatingId === order.id}
+                                              onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, nextStatus); }}
+                                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer disabled:opacity-50 ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
+                                            >
+                                              {updatingId === order.id ? (
+                                                <span className="h-2.5 w-2.5 border border-current border-t-transparent rounded-full animate-spin" />
+                                              ) : nextCfg.icon}
+                                              Mark {nextCfg.label}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+
                                   {/* FEATURE: Delivery Boy System — Assign Driver */}
                                  <div className="pt-3 border-t border-orange-500/10">
                                    {(order as any).delivery_boy_id ? (

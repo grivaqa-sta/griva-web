@@ -140,6 +140,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+
   return (
     <html
       lang="en"
@@ -148,12 +150,16 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-gray-900 font-sans" suppressHydrationWarning>
         <Providers>
-          <AnnouncementBar />
-          <Navbar />
+          <div id="layout-header" className={isComingSoon ? "hidden" : ""}>
+            <AnnouncementBar />
+            <Navbar />
+          </div>
           <main className="flex-grow pb-16 sm:pb-0">
             {children}
           </main>
-          <Footer />
+          <div id="layout-footer" className={isComingSoon ? "hidden" : ""}>
+            <Footer />
+          </div>
           <CartDrawer />
           <GrivaAIChatbot />
           <BackToTop />

@@ -22,12 +22,12 @@ import FAQSchema from "@/components/seo/FAQSchema";
 
 const ELECTRONICS_FAQS = [
   {
-    question: "Are all electronics sold on GriVA 100% authentic?",
-    answer: "Yes, every single product sold on GriVA is 100% genuine, sourced directly from official brand distributors. All devices come in factory-sealed retail packaging with official serial numbers."
+    question: "Are all electronics sold on GRIVA 100% authentic?",
+    answer: "Yes, every single product sold on GRIVA is 100% genuine, sourced directly from official brand distributors. All devices come in factory-sealed retail packaging with official serial numbers."
   },
   {
     question: "Do electronics come with warranty in Qatar?",
-    answer: "Absolutely. All major electronic items and gadgets purchased from GriVA include a standard 12-month local warranty against manufacturer defects. Some premium brands offer extended official warranty coverage."
+    answer: "Absolutely. All major electronic items and gadgets purchased from GRIVA include a standard 12-month local warranty against manufacturer defects. Some premium brands offer extended official warranty coverage."
   },
   {
     question: "What is your refund policy if the electronic device has a defect?",
@@ -71,7 +71,7 @@ export default function ElectronicsStorePage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white apple-font">
-      <title>Premium Electronics Store Qatar | GriVA Doha</title>
+      <title>Premium Electronics Store Qatar | GRIVA Doha</title>
       <meta name="description" content="Browse the finest electronics boutique in Qatar. Authentic Apple products, smart chargers, gaming gear, and tech accessories with 2-4 hour Doha delivery." />
       <link rel="canonical" href="https://thegriva.com/electronics-store-qatar" />
       <BreadcrumbSchema items={[
@@ -137,7 +137,7 @@ export default function ElectronicsStorePage() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="mx-auto mt-6 max-w-xl text-xs sm:text-sm leading-relaxed text-zinc-400"
             >
-              Step into the future with GriVA. Discover our curated catalog of elite chargers, high-grade audio gear, gaming triggers, and cutting-edge lifestyle gadgets. Built for local tech enthusiasts.
+              Step into the future with GRIVA. Discover our curated catalog of elite chargers, high-grade audio gear, gaming triggers, and cutting-edge lifestyle gadgets. Built for local tech enthusiasts.
             </motion.p>
 
             <motion.div

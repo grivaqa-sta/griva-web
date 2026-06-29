@@ -26,7 +26,7 @@ const GAMING_FAQS = [
     answer: "Yes, all our mobile gaming triggers and controllers are cross-platform compatible, working flawlessly on both iOS and Android smartphones without requiring root access or key-mapping apps."
   },
   {
-    question: "How effective are the smartphone cooling fans sold by GriVA?",
+    question: "How effective are the smartphone cooling fans sold by GRIVA?",
     answer: "Our active cooling fans use advanced semiconductor refrigeration technology, capable of dropping your phone's temperature by up to 15°C within 1 minute, preventing thermal throttling and frame drops during intense gaming sessions."
   },
   {
@@ -71,7 +71,7 @@ export default function GamingStorePage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white apple-font">
-      <title>Pro Gaming Accessories Store Qatar | GriVA Doha</title>
+      <title>Pro Gaming Accessories Store Qatar | GRIVA Doha</title>
       <meta name="description" content="Shop professional gaming accessories in Qatar. High accuracy mobile triggers, gaming cooling fans, and high-fidelity gaming headsets with same day Doha delivery." />
       <link rel="canonical" href="https://thegriva.com/gaming-store-qatar" />
       <BreadcrumbSchema items={[

@@ -18,7 +18,7 @@ export const BLOG_POSTS = [
 
 The year 2026 has witnessed an unprecedented surge in demand for hyper-functional, premium tech accessories in Qatar. Doha's tech-savvy population is no longer satisfied with generic, low-grade electronic gear. Instead, there is a clear shift towards high-performance products that integrate seamlessly into busy daily routines, e-sports gaming, and luxury smart lifestyles.
 
-As Qatar's premier electronics boutique, **GriVA** has tracked purchasing patterns across Pearl-Qatar, West Bay, Lusail, and Al Waab to compile this definitive guide to the top 10 trending gadgets in 2026.
+As Qatar's premier electronics boutique, **GRIVA** has tracked purchasing patterns across Pearl-Qatar, West Bay, Lusail, and Al Waab to compile this definitive guide to the top 10 trending gadgets in 2026.
 
 ---
 
@@ -41,9 +41,9 @@ Standard Bluetooth earbuds have noticeable lag during gaming or editing. The new
 
 ## WHY QATAR'S SHOPPERS PREFER LOCAL BOUTIQUES
 
-With same-day delivery and cash-on-delivery options, Qatari consumers are choosing premium local electronics stores like **GriVA** over slow international shippers. Getting authentic, warrantied devices delivered in under 4 hours creates a new level of convenience.
+With same-day delivery and cash-on-delivery options, Qatari consumers are choosing premium local electronics stores like **GRIVA** over slow international shippers. Getting authentic, warrantied devices delivered in under 4 hours creates a new level of convenience.
 
-Stay ahead of the curve by upgrading your tech stack today. Explore these trending gadgets on our official [GriVA Shop](/shop) page!
+Stay ahead of the curve by upgrading your tech stack today. Explore these trending gadgets on our official [GRIVA Shop](/shop) page!
 `
   },
   {
@@ -68,7 +68,7 @@ The e-commerce landscape in Qatar is changing rapidly. A few years ago, consumer
 
 For tech shoppers in Doha, West Bay, Al Sadd, and Lusail, waiting is no longer acceptable. When a charger breaks, a tablet screen cracked protector needs immediate replacement, or a gamer prepares for a weekend tournament, they need solutions *today*.
 
-At **GriVA**, we recognized this shift early on. Our localized warehouse and dedicated in-house logistics team ensure that:
+At **GRIVA**, we recognized this shift early on. Our localized warehouse and dedicated in-house logistics team ensure that:
 * Orders placed before **4:00 PM** are delivered in **2 to 4 hours**.
 * Delivery is **FREE** for orders above QAR 99.
 * Real-time WhatsApp coordinate updates keep you in touch with the courier.
@@ -190,7 +190,7 @@ Established by the Qatar Central Bank (QCB), NAPS connects all local banks under
 * **Sovereign Encryption:** Data never leaves local financial networks.
 
 ### HOW GRIVA SECURES DOORSTEP TERMINALS
-To support this framework, GriVA equips all dispatch riders with secure, mobile POS terminals.
+To support this framework, GRIVA equips all dispatch riders with secure, mobile POS terminals.
 1. **PCI-DSS Compliance:** The hardware is certified under Payment Card Industry standards. Card numbers are instantly tokenized and encrypted.
 2. **Contactless Taps:** Supports Apple Pay, Google Wallet, and contactless Visa/Mastercard.
 3. **No Paper Trail Risk:** Transaction confirmations are instantly transmitted to your email or registered phone number as secure PDF invoices.
@@ -236,7 +236,7 @@ Standard overhead lights create screen glare and eye fatigue. Screenbars clip on
 ### 4. ERGONOMIC DEVICE ALIGNMENT
 Combine vertical laptop stands (to save space when running in clamshell mode) with high-strength magnetic MagSafe charging stands. Keeping your phone elevated next to your monitor allows you to monitor incoming messages hands-free.
 
-Ready to upgrade your productivity? Browse our premium workstation docks and accessories on the [GriVA Shop](/shop).
+Ready to upgrade your productivity? Browse our premium workstation docks and accessories on the [GRIVA Shop](/shop).
 `
   },
   {

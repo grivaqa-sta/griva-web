@@ -227,7 +227,7 @@ export default function Footer() {
         {/* Bottom copyright section */}
         <div className="border-t border-zinc-800 py-6 flex flex-col md:flex-row items-center justify-center gap-4">
           <p className="text-[11px] text-zinc-500 font-medium">
-            © {new Date().getFullYear()} GriVA Store. All Rights Reserved.
+            © {new Date().getFullYear()} GRIVA Store. All Rights Reserved.
           </p>
         </div>
       </div>

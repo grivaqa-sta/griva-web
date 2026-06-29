@@ -10,7 +10,7 @@ export default function WebsiteSchema() {
     "@type": "WebSite",
     "@id": "https://thegriva.com/#website",
     "url": "https://thegriva.com",
-    "name": "GriVA Qatar",
+    "name": "GRIVA Qatar",
     "description": "Qatar's premier online electronics store",
     "publisher": {
       "@id": "https://thegriva.com/#organization"

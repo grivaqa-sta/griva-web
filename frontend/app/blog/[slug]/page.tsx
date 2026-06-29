@@ -30,7 +30,7 @@ export default function BlogPostDetailPage({ params }: { params: Promise<{ slug:
   if (!post) {
     return (
       <div className="relative min-h-screen flex flex-col items-center justify-center bg-[#0c0c0c] text-zinc-100 px-4 apple-font">
-        <title>Article Not Found | GriVA Journal</title>
+        <title>Article Not Found | GRIVA Journal</title>
         <div className="text-center max-w-md">
           <h1 className="text-3xl font-extrabold text-white uppercase tracking-tight">ARTICLE NOT FOUND</h1>
           <p className="mt-4 text-xs text-zinc-400">
@@ -65,7 +65,7 @@ export default function BlogPostDetailPage({ params }: { params: Promise<{ slug:
     },
     "publisher": {
       "@type": "Organization",
-      "name": "GriVA Qatar",
+      "name": "GRIVA Qatar",
       "logo": {
         "@type": "ImageObject",
         "url": "https://thegriva.com/images/logo-light.png"
@@ -158,7 +158,7 @@ export default function BlogPostDetailPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0c0c0c] text-zinc-100 apple-font">
-      <title>{`${post.title} | GriVA Journal`}</title>
+      <title>{`${post.title} | GRIVA Journal`}</title>
       <meta name="description" content={post.summary} />
       <link rel="canonical" href={`https://thegriva.com/blog/${post.slug}`} />
       <BreadcrumbSchema items={[
@@ -295,7 +295,7 @@ export default function BlogPostDetailPage({ params }: { params: Promise<{ slug:
                 Subscribe to Tech Digest
               </h4>
               <p className="text-[10px] text-zinc-500 leading-relaxed">
-                Get Qatar's top tech reviews and exclusive GriVA coupon codes delivered directly to your inbox.
+                Get Qatar's top tech reviews and exclusive GRIVA coupon codes delivered directly to your inbox.
               </p>
               <div className="space-y-2">
                 <input

@@ -23,8 +23,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://thegriva.com"),
   title: {
-    default: "GriVA Qatar — Premium Electronics Store | Fast Delivery Doha",
-    template: "%s | GriVA Qatar",
+    default: "GRIVA Qatar — Premium Electronics Store | Fast Delivery Doha",
+    template: "%s | GRIVA Qatar",
   },
   description: "Qatar's #1 online electronics store. Shop Sony, Apple, Samsung, JBL and more. Free delivery on orders over QAR 99. Cash on delivery available across Doha, Lusail, The Pearl, West Bay and all Qatar areas. Same day delivery guaranteed.",
   keywords: [
@@ -44,11 +44,11 @@ export const metadata: Metadata = {
     "griva doha",
     "griva online store"
   ],
-  applicationName: "GriVA Qatar",
-  authors: [{ name: "GriVA Qatar", url: "https://thegriva.com" }],
+  applicationName: "GRIVA Qatar",
+  authors: [{ name: "GRIVA Qatar", url: "https://thegriva.com" }],
   generator: "Next.js",
-  creator: "GriVA Qatar",
-  publisher: "GriVA Qatar",
+  creator: "GRIVA Qatar",
+  publisher: "GRIVA Qatar",
   formatDetection: {
     email: false,
     address: false,
@@ -59,15 +59,15 @@ export const metadata: Metadata = {
     locale: "en_QA",
     alternateLocale: "ar_QA",
     url: "https://thegriva.com",
-    siteName: "GriVA Qatar",
-    title: "GriVA — Elevating Every Experience | Qatar Electronics Store",
+    siteName: "GRIVA Qatar",
+    title: "GRIVA — Elevating Every Experience | Qatar Electronics Store",
     description: "Premium electronics delivered same day across Qatar. Sony, Apple, Samsung and more. Cash on delivery available. Free delivery over QAR 99.",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "GriVA Qatar — Premium Electronics Store",
+        alt: "GRIVA Qatar — Premium Electronics Store",
         type: "image/jpeg",
       },
     ],
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@grivaqa",
     creator: "@grivaqa",
-    title: "GriVA Qatar Electronics Store — Same Day Delivery",
+    title: "GRIVA Qatar Electronics Store — Same Day Delivery",
     description: "Premium electronics. Same day Qatar delivery. Cash on delivery. Shop Sony, Apple, Samsung and more.",
     images: ["/og-image.jpg"],
   },

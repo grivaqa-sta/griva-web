@@ -32,8 +32,8 @@ export default function FAQPage() {
 
   return (
     <div className="relative min-h-screen bg-[#FDFDFD] overflow-hidden py-16 px-4 md:py-24">
-      <title>FAQs & Customer Support — GriVA Qatar | Shipping, COD & Returns</title>
-      <meta name="description" content="Find answers to frequently asked questions about shopping on GriVA Qatar. Get detailed information on shipping speeds, Cash on Delivery, and return terms." />
+      <title>FAQs & Customer Support — GRIVA Qatar | Shipping, COD & Returns</title>
+      <meta name="description" content="Find answers to frequently asked questions about shopping on GRIVA Qatar. Get detailed information on shipping speeds, Cash on Delivery, and return terms." />
       <link rel="canonical" href="https://thegriva.com/faq" />
       <BreadcrumbSchema items={[
         { name: "Home", path: "/" },

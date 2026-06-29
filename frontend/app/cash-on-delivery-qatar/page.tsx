@@ -22,7 +22,7 @@ import FAQSchema from "@/components/seo/FAQSchema";
 
 const PAYMENT_FAQS = [
   {
-    question: "How does Cash on Delivery (COD) work with GriVA?",
+    question: "How does Cash on Delivery (COD) work with GRIVA?",
     answer: "When checking out, simply select 'Cash on Delivery' as your payment method. We will process and dispatch your order. Once our courier rider arrives at your doorstep, you inspect the package and pay the order amount in cash."
   },
   {
@@ -31,11 +31,11 @@ const PAYMENT_FAQS = [
   },
   {
     question: "Is there any additional charge or fee for choosing Cash on Delivery?",
-    answer: "No, GriVA does not charge any extra processing fees or handling costs for Cash on Delivery. You pay exactly the price shown on your invoice at checkout."
+    answer: "No, GRIVA does not charge any extra processing fees or handling costs for Cash on Delivery. You pay exactly the price shown on your invoice at checkout."
   },
   {
     question: "What is your refund policy for orders paid via Cash on Delivery?",
-    answer: "For COD orders, we process refunds by issuing instant store credit directly into your GriVA digital wallet. You can use this credit to purchase any other item immediately. Alternatively, we can coordinate a bank transfer which takes 3-5 business days."
+    answer: "For COD orders, we process refunds by issuing instant store credit directly into your GRIVA digital wallet. You can use this credit to purchase any other item immediately. Alternatively, we can coordinate a bank transfer which takes 3-5 business days."
   },
   {
     question: "Can I inspect the product before making the payment?",
@@ -75,7 +75,7 @@ export default function CashOnDeliveryPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white apple-font">
-      <title>Cash on Delivery Qatar & Card on Delivery | GriVA</title>
+      <title>Cash on Delivery Qatar & Card on Delivery | GRIVA</title>
       <meta name="description" content="Shop premium electronics with Cash on Delivery (COD) or Card on Delivery across all Qatar locations. Safe, secure, and hassle-free payments on delivery." />
       <link rel="canonical" href="https://thegriva.com/cash-on-delivery-qatar" />
       <BreadcrumbSchema items={[
@@ -169,7 +169,7 @@ export default function CashOnDeliveryPage() {
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto mb-16 max-w-2xl text-center">
             <span className="text-xs font-extrabold uppercase tracking-[0.25em] text-[#FF6A00]">
-              Why COD with GriVA
+              Why COD with GRIVA
             </span>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl uppercase">
               SAFE & HASSLE-FREE PAYMENTS

@@ -71,7 +71,7 @@ export default function AppleProductsPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white apple-font">
-      <title>Premium Apple Accessories Qatar | GriVA Doha</title>
+      <title>Premium Apple Accessories Qatar | GRIVA Doha</title>
       <meta name="description" content="Shop premium Apple cases, fast chargers, MagSafe mounts, and smart accessories in Qatar. 100% authentic compatibility guaranteed with same day Doha delivery." />
       <link rel="canonical" href="https://thegriva.com/apple-products-qatar" />
       <BreadcrumbSchema items={[

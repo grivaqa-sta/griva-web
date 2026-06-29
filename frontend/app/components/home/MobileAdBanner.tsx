@@ -119,7 +119,7 @@ function MobileAdBanner() {
 // ─── Mobile Section Wrapper ────────────────────────────────────────────────
 export default function MobileHeroBanner() {
   return (
-    <div className="block lg:hidden px-4 py-2">
+    <div className="block lg:hidden px-4 mt-3 pb-2">
       <MobileAdBanner />
     </div>
   );

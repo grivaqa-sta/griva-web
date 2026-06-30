@@ -60,15 +60,20 @@ export default function CategorySection() {
   }, []);
 
   const handleResize = useCallback(() => {
-    const vw = window.innerWidth;
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
     const newVisibleCards = getVisibleCards(vw);
     setVisibleCards(newVisibleCards);
 
     if (containerRef.current) {
       const totalWidth = containerRef.current.offsetWidth;
-      const cw = (totalWidth - GAP * (newVisibleCards - 1)) / newVisibleCards;
-      setCardWidth(cw);
-      cardWidthRef.current = cw;
+      if (totalWidth > 0) {
+        const cw = (totalWidth - GAP * (newVisibleCards - 1)) / newVisibleCards;
+        setCardWidth(cw);
+        cardWidthRef.current = cw;
+      } else {
+        // Retry in 50ms if layout is not ready yet (e.g. during client-side transitions)
+        setTimeout(handleResize, 50);
+      }
     }
   }, []);
 

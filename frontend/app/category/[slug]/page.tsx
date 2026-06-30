@@ -192,7 +192,7 @@ export default function CategoryPage() {
   const slug = (params.slug as string)?.toLowerCase() || "";
   const subParam = searchParams.get("sub") || "";
 
-  const [maxPrice, setMaxPrice] = useState<number>(2000);
+  const [maxPrice, setMaxPrice] = useState<number>(1000000);
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -209,8 +209,11 @@ export default function CategoryPage() {
           categoryService.getCategories(),
           subCategoryService.getSubCategories(),
         ]);
-        const cData = catRes?.data || catRes;
-        const sData = subRes?.data || subRes;
+        // categoryService.getCategories() returns response.data.data (already unwrapped)
+        const cData = Array.isArray(catRes) ? catRes : (catRes?.data || []);
+        // subCategoryService.getSubCategories() returns response.data = { success, data: [...] }
+        const sRaw = subRes?.data || subRes;
+        const sData = Array.isArray(sRaw) ? sRaw : (sRaw?.data || []);
         setCategories(Array.isArray(cData) ? cData : []);
         setSubCategories(Array.isArray(sData) ? sData : []);
       } catch (err) {
@@ -266,6 +269,14 @@ export default function CategoryPage() {
     );
   }, [matchedCategory, categorySubcategories]);
 
+  // Compute maximum price dynamically for products in this category
+  const categoryMaxPrice = useMemo(() => {
+    const matchedProds = allProducts.filter((p) => validSubcategoryIds.has(p.subcategory_id));
+    if (matchedProds.length === 0) return 2000;
+    const maxVal = Math.max(...matchedProds.map((p) => Number(p.price || 0)));
+    return Math.max(Math.ceil(maxVal), 2000);
+  }, [allProducts, validSubcategoryIds]);
+
   const filteredProducts = useMemo((): ApiProduct[] => {
     if (taxonomyLoading) return [];
     if (!matchedCategory) return [];
@@ -285,7 +296,9 @@ export default function CategoryPage() {
       );
       if (subResult.length > 0) result = subResult;
     }
-    result = result.filter((p) => Number(p.price) <= maxPrice);
+    if (maxPrice < 1000000) {
+      result = result.filter((p) => Number(p.price) <= maxPrice);
+    }
     if (minRating > 0) {
       result = result.filter((p) => p.rating >= minRating);
     }
@@ -300,13 +313,33 @@ export default function CategoryPage() {
   }, [allProducts, matchedCategory, validSubcategoryIds, taxonomyLoading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
 
   const handleResetFilters = () => {
-    setMaxPrice(2000);
+    setMaxPrice(1000000);
     setMinRating(0);
     setSortBy("featured");
   };
 
+  // Dynamically compute and format category title for the metadata
+  const fallbackTitle = useMemo(() => {
+    if (matchedCategory?.title) {
+      const title = matchedCategory.title;
+      if (title === title.toUpperCase()) {
+        return title
+          .toLowerCase()
+          .split(" ")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      }
+      return title;
+    }
+    return slug
+      .replace(/[-_]/g, " ")
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  }, [matchedCategory, slug]);
+
   const meta = CATEGORY_META[slug] || {
-    title: slug.charAt(0).toUpperCase() + slug.slice(1),
+    title: fallbackTitle,
     tagline: "Browse our premium selected catalog products",
     gradient: "from-zinc-800 via-zinc-900 to-black",
     bannerImage: "",
@@ -502,16 +535,16 @@ export default function CategoryPage() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
-                  <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice}</span>
+                  <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice === 1000000 ? categoryMaxPrice : maxPrice}</span>
                 </div>
                 <input
-                  type="range" min="0" max="2000" step="50" value={maxPrice}
+                  type="range" min="0" max={categoryMaxPrice} step={categoryMaxPrice > 5000 ? 100 : 50} value={maxPrice === 1000000 ? categoryMaxPrice : maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                   style={{ accentColor: "#FF6A00" }}
                 />
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-semibold">
-                  <span>QAR 0</span><span>QAR 2,000</span>
+                  <span>QAR 0</span><span>QAR {categoryMaxPrice}</span>
                 </div>
               </div>
 
@@ -712,10 +745,10 @@ export default function CategoryPage() {
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
-                    <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice}</span>
+                    <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice === 1000000 ? categoryMaxPrice : maxPrice}</span>
                   </div>
                   <input
-                    type="range" min="0" max="2000" step="50" value={maxPrice}
+                    type="range" min="0" max={categoryMaxPrice} step={categoryMaxPrice > 5000 ? 100 : 50} value={maxPrice === 1000000 ? categoryMaxPrice : maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                     className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     style={{ accentColor: "#FF6A00" }}

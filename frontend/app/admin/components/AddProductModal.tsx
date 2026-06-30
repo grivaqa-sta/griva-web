@@ -53,6 +53,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const [error, setError] = useState("");
   const [openSubCategorySelect, setOpenSubCategorySelect] = useState(false);
+  const [subCategorySearch, setSubCategorySearch] = useState("");
 
   const mainImageFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
@@ -223,6 +224,12 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
 
   const filteredSubCategories = subCategories.filter(s => s.category_id === selectedCategory);
 
+  const searchedSubCategories = subCategories.filter((s) => {
+    const parentCat = categories.find(c => c.id === s.category_id);
+    const fullName = `${parentCat ? parentCat.title + " " : ""}${s.title}`.toLowerCase();
+    return fullName.includes(subCategorySearch.toLowerCase());
+  });
+
   if (!isOpen) return null;
 
   return (
@@ -274,61 +281,71 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">Sub Category *</label>
                   <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setOpenSubCategorySelect(!openSubCategorySelect)}
-                      className="w-full flex items-center justify-between border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-orange-500 outline-none bg-white hover:border-gray-300 transition-colors text-left"
-                    >
-                      <span className={formData.subcategory_id === 0 ? "text-gray-400" : "text-gray-900 font-semibold"}>
-                        {formData.subcategory_id === 0
-                          ? "Select Sub Category"
-                          : (() => {
-                              const s = subCategories.find(sub => sub.id === formData.subcategory_id);
-                              if (!s) return "Select Sub Category";
-                              const parentCat = categories.find(c => c.id === s.category_id);
-                              return parentCat ? `${parentCat.title} > ${s.title}` : s.title;
-                            })()}
-                      </span>
-                      <ChevronDown size={16} className={`text-gray-400 shrink-0 transition-transform ${openSubCategorySelect ? "rotate-180 text-orange-500" : ""}`} />
-                    </button>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={
+                          openSubCategorySelect
+                            ? subCategorySearch
+                            : (() => {
+                                const s = subCategories.find(sub => sub.id === formData.subcategory_id);
+                                if (!s) return "";
+                                const parentCat = categories.find(c => c.id === s.category_id);
+                                return parentCat ? `${parentCat.title} > ${s.title}` : s.title;
+                              })()
+                        }
+                        onChange={(e) => {
+                          setSubCategorySearch(e.target.value);
+                          if (!openSubCategorySelect) setOpenSubCategorySelect(true);
+                        }}
+                        onFocus={() => { setOpenSubCategorySelect(true); setSubCategorySearch(""); }}
+                        placeholder="Select Sub Category"
+                        className="w-full border border-gray-200 rounded-xl pl-4 pr-9 py-2.5 text-sm focus:border-orange-500 outline-none bg-white hover:border-gray-300 transition-colors text-gray-900 font-semibold placeholder:text-gray-400 placeholder:font-normal"
+                      />
+                      <ChevronDown
+                        size={16}
+                        onClick={() => setOpenSubCategorySelect(!openSubCategorySelect)}
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 shrink-0 transition-transform cursor-pointer ${openSubCategorySelect ? "rotate-180 text-orange-500" : ""}`}
+                      />
+                    </div>
 
                     {openSubCategorySelect && (
                       <>
                         <div
                           className="fixed inset-0 z-40 bg-transparent cursor-default"
-                          onClick={() => setOpenSubCategorySelect(false)}
+                          onClick={() => { setOpenSubCategorySelect(false); setSubCategorySearch(""); }}
                         />
                         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto">
-                          <button
-                            type="button"
-                            disabled
-                            className="w-full text-left px-3 py-2 text-sm font-semibold text-gray-300 bg-gray-50/50 cursor-not-allowed"
-                          >
-                            Select Sub Category
-                          </button>
-                          {subCategories.map((s) => {
-                            const parentCat = categories.find(c => c.id === s.category_id);
-                            return (
-                              <button
-                                key={s.id}
-                                type="button"
-                                onClick={() => {
-                                  const subId = s.id;
-                                  let newSku = formData.sku;
-                                  const prefix = s.title.substring(0, 3).toUpperCase();
-                                  const randomDigits = Math.floor(10000 + Math.random() * 90000);
-                                  newSku = `${prefix}${randomDigits}`;
-                                  setFormData(prev => ({ ...prev, subcategory_id: subId, sku: newSku }));
-                                  setOpenSubCategorySelect(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-sm font-semibold transition-colors ${
-                                  formData.subcategory_id === s.id ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"
-                                }`}
-                              >
-                                {parentCat ? `${parentCat.title} > ` : ''}{s.title}
-                              </button>
-                            );
-                          })}
+                          {searchedSubCategories.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-gray-400 font-semibold">
+                              No sub category found
+                            </div>
+                          ) : (
+                            searchedSubCategories.map((s) => {
+                              const parentCat = categories.find(c => c.id === s.category_id);
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const subId = s.id;
+                                    let newSku = formData.sku;
+                                    const prefix = s.title.substring(0, 3).toUpperCase();
+                                    const randomDigits = Math.floor(10000 + Math.random() * 90000);
+                                    newSku = `${prefix}${randomDigits}`;
+                                    setFormData(prev => ({ ...prev, subcategory_id: subId, sku: newSku }));
+                                    setOpenSubCategorySelect(false);
+                                    setSubCategorySearch("");
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-sm font-semibold transition-colors ${
+                                    formData.subcategory_id === s.id ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"
+                                  }`}
+                                >
+                                  {parentCat ? `${parentCat.title} > ` : ''}{s.title}
+                                </button>
+                              );
+                            })
+                          )}
                         </div>
                       </>
                     )}

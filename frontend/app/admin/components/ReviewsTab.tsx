@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Star, Trash2, ShieldAlert, Award, MessageSquare, Truck, RefreshCw } from "lucide-react";
+import { Star, Trash2, ShieldAlert, Award, MessageSquare, Truck, RefreshCw, Search } from "lucide-react";
 import { getDeliveryReviewsApi, getProductReviewsApi, deleteReviewApi } from "@/app/utils/api";
 import { useToast } from "@/app/context/ToastContext";
 
@@ -49,6 +49,7 @@ export default function ReviewsTab() {
   const [productReviews, setProductReviews] = useState<ProductReview[]>([]);
   const [deliveryReviews, setDeliveryReviews] = useState<DeliveryReviewOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadData = async () => {
     setLoading(true);
@@ -70,6 +71,11 @@ export default function ReviewsTab() {
 
   useEffect(() => {
     loadData();
+  }, [activeSubTab]);
+
+  // Reset search when switching between Product Reviews / Delivery Feedback tabs
+  useEffect(() => {
+    setSearchQuery("");
   }, [activeSubTab]);
 
   const handleDeleteReview = async (id: number) => {
@@ -102,6 +108,34 @@ export default function ReviewsTab() {
       </div>
     );
   };
+
+  // Filter product reviews by product title, customer name, or email
+  const filteredProductReviews = productReviews.filter((review) => {
+    const q = searchQuery.toLowerCase();
+    if (!q) return true;
+    const productTitle = review.product?.title?.toLowerCase() || "";
+    const customerName = review.user?.name?.toLowerCase() || "";
+    const customerEmail = review.user?.email?.toLowerCase() || "";
+    return (
+      productTitle.includes(q) ||
+      customerName.includes(q) ||
+      customerEmail.includes(q)
+    );
+  });
+
+  // Filter delivery reviews by order number, customer name, or driver name
+  const filteredDeliveryReviews = deliveryReviews.filter((order) => {
+    const q = searchQuery.toLowerCase();
+    if (!q) return true;
+    const orderNumber = order.order_number?.toLowerCase() || "";
+    const customerName = order.customer_name?.toLowerCase() || "";
+    const driverName = order.deliveryBoy?.name?.toLowerCase() || "";
+    return (
+      orderNumber.includes(q) ||
+      customerName.includes(q) ||
+      driverName.includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-300">
@@ -138,6 +172,24 @@ export default function ReviewsTab() {
         </div>
       </div>
 
+      {/* Centered Search Bar */}
+      <div className="flex justify-center">
+        <div className="relative w-full max-w-md">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-350 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={
+              activeSubTab === "products"
+                ? "Search by product or customer name..."
+                : "Search by order, customer or driver name..."
+            }
+            className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium focus:border-orange-500 outline-none bg-white shadow-xs"
+          />
+        </div>
+      </div>
+
       {/* Main Panel Content */}
       <div className="bg-white border border-orange-500/20 rounded-2xl overflow-hidden shadow-xs">
         {loading ? (
@@ -160,14 +212,16 @@ export default function ReviewsTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
-                {productReviews.length === 0 ? (
+                {filteredProductReviews.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-16 text-center text-gray-400 font-semibold">
-                      No product reviews submitted yet.
+                      {productReviews.length === 0
+                        ? "No product reviews submitted yet."
+                        : "No reviews match your search."}
                     </td>
                   </tr>
                 ) : (
-                  productReviews.map((review) => (
+                  filteredProductReviews.map((review) => (
                     <tr key={review.id} className="hover:bg-[#fff9f3]/40 transition-colors whitespace-nowrap">
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
@@ -240,14 +294,16 @@ export default function ReviewsTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
-                {deliveryReviews.length === 0 ? (
+                {filteredDeliveryReviews.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-16 text-center text-gray-400 font-semibold">
-                      No delivery reviews submitted yet.
+                      {deliveryReviews.length === 0
+                        ? "No delivery reviews submitted yet."
+                        : "No reviews match your search."}
                     </td>
                   </tr>
                 ) : (
-                  deliveryReviews.map((order) => (
+                  filteredDeliveryReviews.map((order) => (
                     <tr key={order.id} className="hover:bg-[#fff9f3]/40 transition-colors whitespace-nowrap">
                       <td className="p-4 pl-6 font-bold text-gray-800">
                         {order.order_number}

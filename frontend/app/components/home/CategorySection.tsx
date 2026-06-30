@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Category } from "@/app/types/types";
-import { categoryService } from "@/app/services/category.service";
+import { useCategories } from "@/app/hooks/useCategories";
 import { useAdminSettings } from "@/app/context/AdminContext";
 // import { categoryService } from "@/services/categoryService"; // adjust path as needed
 // import { Category } from "@/types/types"; // adjust path as needed
@@ -30,19 +30,8 @@ function getVisibleCards(width: number): number {
 export default function CategorySection() {
   const { announcementBarEnabled } = useAdminSettings();
   // ── API state ──────────────────────────────────────────────────────────────
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    categoryService
-      .getCategories()
-      .then((data: Category[]) =>
-        // filter out inactive categories before rendering
-        setCategories(data.filter((c) => c.is_active))
-      )
-      .catch((err: unknown) => console.error("Failed to fetch categories:", err))
-      .finally(() => setIsLoading(false));
-  }, []);
+  const { categories: rawCategories, loading: isLoading } = useCategories();
+  const categories = rawCategories.filter((c) => c.is_active);
 
   console.log("categories", categories)
   // ──────────────────────────────────────────────────────────────────────────

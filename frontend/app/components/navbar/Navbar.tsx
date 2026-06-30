@@ -78,12 +78,21 @@ export default function Navbar() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Close search dropdown on click outside and set mounted state
   useEffect(() => {
     setMounted(true);
+
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
       if (target instanceof Element && !target.closest(".search-container")) {
@@ -102,6 +111,7 @@ export default function Navbar() {
     }));
   };
 
+  if (!comingSoonVisible) return null;
   if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) return null;
 
   return (

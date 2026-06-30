@@ -124,6 +124,7 @@ export default function CheckoutPage() {
             image: item.image,
             price: item.price,
             priceNumber: item.priceNumber,
+            oldPriceNumber: item.oldPriceNumber || item.priceNumber,
             quantity: item.quantity,
             category: item.category,
             selectedColor: item.selectedColor,
@@ -178,6 +179,13 @@ export default function CheckoutPage() {
     );
   }, [selectedItems]);
 
+  const selectedTotalOldPrice = useMemo(() => {
+    return selectedItems.reduce(
+      (sum, item) => sum + (item.oldPriceNumber || item.priceNumber) * item.quantity,
+      0
+    );
+  }, [selectedItems]);
+
   const selectedTotalItems = useMemo(() => {
     return selectedItems.reduce((sum, item) => sum + item.quantity, 0);
   }, [selectedItems]);
@@ -187,8 +195,9 @@ export default function CheckoutPage() {
       items: selectedItems,
       totalItems: selectedTotalItems,
       totalPrice: selectedTotalPrice,
+      totalOldPrice: selectedTotalOldPrice,
     };
-  }, [selectedItems, selectedTotalItems, selectedTotalPrice]);
+  }, [selectedItems, selectedTotalItems, selectedTotalPrice, selectedTotalOldPrice]);
 
   // Frozen cart state to prevent UI reset during order placement transitions
   const [frozenCart, setFrozenCart] = useState<CartState | null>(null);
@@ -196,6 +205,7 @@ export default function CheckoutPage() {
     items: isBuyNow && buyNowItem ? [buyNowItem] : cartState.items,
     totalItems: selectedTotalItems,
     totalPrice: selectedTotalPrice,
+    totalOldPrice: selectedTotalOldPrice,
   };
 
   // Form state
@@ -1478,22 +1488,35 @@ export default function CheckoutPage() {
 
               {/* Totals */}
               <div className="border-t pt-4 space-y-3 text-sm">
+                {/* Price (count of items) */}
                 <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
+                  <span>Price ({activeCart.totalItems} item{activeCart.totalItems !== 1 ? "s" : ""})</span>
                   <span className="font-semibold text-gray-900">
-                    QAR {activeCart.totalPrice.toFixed(2)}
+                    QAR {activeCart.totalOldPrice.toFixed(2)}
                   </span>
                 </div>
+
+                {/* Discount */}
+                <div className="flex justify-between text-gray-600">
+                  <span>Discount</span>
+                  <span className="font-semibold text-green-600">
+                    &minus; QAR {(activeCart.totalOldPrice - activeCart.totalPrice).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Shipping Charge */}
                 <div className="flex justify-between text-gray-600">
                   <span className="flex items-center gap-1">
                     <Truck className="h-3.5 w-3.5" />
-                    Delivery
+                    Shipping Charge
                   </span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold">
                     {shippingCost === 0 ? (
-                      <span className="text-green-600">Free</span>
+                      <span className="text-green-600">
+                        &minus; QAR {shippingConfig.shippingFee.toFixed(2)}
+                      </span>
                     ) : (
-                      `QAR ${shippingCost.toFixed(2)}`
+                      <span className="text-gray-900">QAR {shippingCost.toFixed(2)}</span>
                     )}
                   </span>
                 </div>
@@ -1502,11 +1525,22 @@ export default function CheckoutPage() {
                     Free delivery on orders over QAR {shippingConfig.freeShippingThreshold.toFixed(0)}
                   </p>
                 )}
+
+                {/* Total Amount */}
                 <div className="border-t pt-3 flex justify-between text-base font-bold text-gray-900">
-                  <span>Total</span>
+                  <span>Total Amount</span>
                   <span className="text-gray-900 text-lg font-black">QAR {orderTotal.toFixed(2)}</span>
                 </div>
               </div>
+
+              {/* Savings message */}
+              {activeCart.totalOldPrice - activeCart.totalPrice + (shippingCost === 0 ? shippingConfig.shippingFee : 0) > 0 && (
+                <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 text-center">
+                  <p className="text-xs font-bold text-green-700">
+                    🎉 You saved QAR {(activeCart.totalOldPrice - activeCart.totalPrice + (shippingCost === 0 ? shippingConfig.shippingFee : 0)).toFixed(2)} on this order
+                  </p>
+                </div>
+              )}
 
               {/* Stock Warning Sidebar Notice Card */}
               {hasStockErrors && (

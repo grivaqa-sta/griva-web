@@ -56,12 +56,22 @@ export default function AnnouncementBar() {
   const [shoppersCount, setShoppersCount] = useState<number | null>(null);
   const [trend, setTrend] = useState<"up" | "down" | "neutral">("neutral");
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
 
   const { announcementBarEnabled } = useAdminSettings();
   const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
+
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+
     const initial = SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
     setShoppersCount(initial);
 
@@ -96,7 +106,7 @@ export default function AnnouncementBar() {
     return () => clearInterval(timer);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted || !comingSoonVisible) return null;
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) {
     return null;

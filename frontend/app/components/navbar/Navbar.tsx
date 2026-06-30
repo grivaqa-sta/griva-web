@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Menu,
   ShoppingCart,
@@ -11,6 +11,7 @@ import {
   Home,
   LayoutGrid,
   Package,
+  ArrowLeft,
 } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
 import { useSearch } from "@/app/context/SearchContext";
@@ -26,6 +27,43 @@ import { useAdminSettings } from "@/app/context/AdminContext";
 export default function Navbar() {
   const scrolled = useScrolled(10);
   const pathname = usePathname();
+  const router = useRouter();
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Keep navbar visible at the top of the page
+      if (currentScrollY <= 50) {
+        setVisible(true);
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      // Avoid bouncing effect at the bottom of the page on iOS
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (currentScrollY >= maxScroll) {
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      if (currentScrollY > lastScrollY) {
+        // Scrolling down
+        setVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up
+        setVisible(true);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   const { announcementBarEnabled } = useAdminSettings();
 
   const { state: cartState, openDrawer } = useCart();
@@ -73,11 +111,12 @@ export default function Navbar() {
         className={announcementBarEnabled ? "h-[92px] sm:h-[120px]" : "h-[64px] sm:h-[80px]"}
       />
       <header
-        className={`fixed left-0 right-0 ${
-          announcementBarEnabled ? "top-7 sm:top-10" : "top-0"
-        } w-full border-b border-gray-100 bg-white transition-shadow duration-300 sm:px-6 lg:px-8 xl:px-10 ${
-          mobileMenuOpen ? "z-10001" : "z-40"
-        } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
+        className={`fixed left-0 right-0 ${announcementBarEnabled ? "top-7 sm:top-10" : "top-0"
+          } w-full border-b border-gray-100 bg-white transition-transform transition-shadow duration-300 ease-in-out sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
+          } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
+        style={{
+          transform: (visible || mobileMenuOpen || categoryDrawerOpen) ? "translateY(0)" : "translateY(-200px)"
+        }}
       >
         {/* Desktop and Tablet Navbar Content (Visible on screens >= 640px) */}
         <div className="hidden sm:flex mx-auto h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4 w-full">
@@ -160,7 +199,9 @@ export default function Navbar() {
                   <User size={18} className="text-black group-hover:text-orange-500 transition-colors" />
                 </div>
                 <div className="text-left leading-tight">
-                  <p className="text-[10px] text-gray-400">{isCustomerLoggedIn ? "Account" : "Welcome"}</p>
+                  {isCustomerLoggedIn && (
+                    <p className="text-[10px] text-gray-400">Welcome</p>
+                  )}
                   <p className="text-xs font-bold text-black group-hover:text-orange-500 transition-colors truncate max-w-28">
                     {isCustomerLoggedIn ? userState.user?.name : "Sign In"}
                   </p>
@@ -266,10 +307,20 @@ export default function Navbar() {
         {/* Mobile Navbar Content (Visible on screens < 640px, rendered client-side only to prevent hydration errors) */}
         {mounted && (
           <div className="flex sm:hidden flex-row items-center justify-between gap-3 px-4 py-2 w-full">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain" />
-            </Link>
+            {/* Logo or Back Button */}
+            {pathname === "/" ? (
+              <Link href="/" className="flex items-center gap-2 shrink-0">
+                <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain" />
+              </Link>
+            ) : (
+              <button
+                onClick={() => router.back()}
+                className="flex items-center justify-center p-1 text-gray-700 hover:text-orange-500 transition-colors shrink-0 cursor-pointer"
+                aria-label="Go Back"
+              >
+                <ArrowLeft size={24} className="stroke-[2.5]" />
+              </button>
+            )}
 
             {/* Search Input Box */}
             <div className="flex-1 min-w-0 pb-0.5 search-container relative">

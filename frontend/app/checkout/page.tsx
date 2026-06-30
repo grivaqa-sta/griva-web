@@ -53,6 +53,8 @@ interface CheckoutForm {
   landmark: string;
   deliveryNotes: string;
   deliverySlotId: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const INITIAL_FORM: CheckoutForm = {
@@ -68,6 +70,8 @@ const INITIAL_FORM: CheckoutForm = {
   landmark: "",
   deliveryNotes: "",
   deliverySlotId: "",
+  latitude: undefined,
+  longitude: undefined,
 };
 
 const extractQatarLocalNumber = (phoneStr: string): string => {
@@ -207,6 +211,94 @@ export default function CheckoutPage() {
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const [checkoutToken, setCheckoutToken] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationSuccess, setLocationSuccess] = useState(false);
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocating(true);
+    setLocationSuccess(false);
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 0
+    };
+
+    const successCallback = async (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      setForm((prev) => ({ ...prev, latitude, longitude }));
+      
+      try {
+        // Fetch reverse geocoding from OpenStreetMap Nominatim with an explicit User-Agent as required by their policy
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              "Accept-Language": "en",
+              "User-Agent": "GrivaEcommerce/1.0"
+            }
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const addr = data.address || {};
+          const streetName = addr.road || addr.suburb || addr.neighbourhood || "";
+          const areaName = addr.quarter || addr.suburb || addr.city_district || addr.town || addr.city || "";
+          const zoneNum = addr.postcode || "";
+          
+          setForm((prev) => ({
+            ...prev,
+            area: areaName || prev.area,
+            street: streetName || prev.street,
+            zone: zoneNum.match(/^\d+$/) ? zoneNum : prev.zone,
+          }));
+          setLocationSuccess(true);
+          toast.success("Location coordinates and address details retrieved successfully!");
+        } else {
+          setLocationSuccess(true);
+          toast.success("Location coordinates saved!");
+        }
+      } catch (err) {
+        console.error("Reverse geocoding error:", err);
+        setLocationSuccess(true);
+        toast.success("Location coordinates saved!");
+      } finally {
+        setLocating(false);
+      }
+    };
+
+    const errorCallback = (error: GeolocationPositionError) => {
+      // If high accuracy failed/timed out, try fallback with low accuracy
+      if (options.enableHighAccuracy && (error.code === 3 || error.code === 2)) {
+        console.log("High accuracy geolocation failed/timeout. Retrying with low accuracy...");
+        options.enableHighAccuracy = false;
+        options.timeout = 10000;
+        navigator.geolocation.getCurrentPosition(successCallback, finalErrorCallback, options);
+      } else {
+        finalErrorCallback(error);
+      }
+    };
+
+    const finalErrorCallback = (error: GeolocationPositionError) => {
+      setLocating(false);
+      console.error("Geolocation error:", error);
+      if (error.code === 1) {
+        toast.error(
+          "Location permission is blocked! Please click the 'Not Secure' / Info icon (or Lock icon) in your browser address bar next to localhost:3000, then toggle Location access to ALLOW."
+        );
+      } else if (error.code === 3) {
+        toast.error("Location request timed out. Please try again or type your address manually.");
+      } else {
+        toast.error("Unable to retrieve your location. Please check your browser/device settings or type your address manually.");
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
+  };
 
   useEffect(() => {
     // Generate checkout token on cart change
@@ -656,6 +748,8 @@ export default function CheckoutPage() {
         city: customerCity,
         delivery_slot_id: selectedSlotId || undefined,
         checkout_token: checkoutToken, // Pass checkout token for idempotency
+        latitude: isLoggedIn && !useNewAddress && selectedAddress ? selectedAddress.latitude : form.latitude,
+        longitude: isLoggedIn && !useNewAddress && selectedAddress ? selectedAddress.longitude : form.longitude,
       });
 
       if (response.success) {
@@ -1024,6 +1118,29 @@ export default function CheckoutPage() {
               {/* Inline Address Form (guests, or logged-in with "new address" selected) */}
               {(!isLoggedIn || useNewAddress || addresses.length === 0) && !addressesLoading && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Use Current Location Button */}
+                  <div className="sm:col-span-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={handleUseMyLocation}
+                      disabled={locating}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-orange-500/25 bg-orange-50/30 hover:bg-orange-50 text-orange-600 font-bold text-sm transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {locating ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                      ) : (
+                        <MapPin className="h-4 w-4 text-orange-500" />
+                      )}
+                      <span>
+                        {locating
+                          ? "Locating your GPS coordinates..."
+                          : locationSuccess
+                          ? "📍 Location coordinates saved! (Click to locate again)"
+                          : "📍 Use My Location (Exact GPS)"}
+                      </span>
+                    </button>
+                  </div>
+
                   {/* Area */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">

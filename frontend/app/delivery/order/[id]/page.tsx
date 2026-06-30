@@ -59,6 +59,8 @@ interface DeliveryOrder {
   items?: OrderItem[];
   user?: { id: number; name: string; email: string };
   delivery_payment_method?: string;
+  latitude?: number;
+  longitude?: number;
 }
 export default function DeliveryOrderDetailPage() {
   const router = useRouter();
@@ -353,7 +355,11 @@ export default function DeliveryOrderDetailPage() {
           )}
 
           <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress + ", Qatar")}`}
+            href={
+              order.latitude && order.longitude
+                ? `https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress + ", Qatar")}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="w-full bg-zinc-900 hover:bg-zinc-800 text-[#FF6A00] text-xs font-bold py-3.5 rounded-2xl transition-colors cursor-pointer border border-zinc-800 flex items-center justify-center gap-1.5"

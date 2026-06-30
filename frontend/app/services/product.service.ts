@@ -1,9 +1,11 @@
 import { api } from "../lib/axios";
 import { ProductRequest } from "../types/types";
+import { queryClient } from "../utils/cache";
 
 export const productService = {
   createProduct: async (data: ProductRequest) => {
     const response = await api.post("/products", data);
+    queryClient.invalidate("products");
     return response.data;
   },
 
@@ -44,16 +46,19 @@ export const productService = {
 
   updateProduct: async (id: number, data: Partial<ProductRequest>) => {
     const response = await api.put(`/products/${id}`, data);
+    queryClient.invalidate("products");
     return response.data;
   },
 
   updateProductStock: async (id: number, stock: number) => {
     const response = await api.patch(`/products/${id}/stock`, { stock });
+    queryClient.invalidate("products");
     return response.data;
   },
 
   deleteProduct: async (id: number) => {
     const response = await api.delete(`/products/${id}`);
+    queryClient.invalidate("products");
     return response.data;
   },
 
@@ -66,12 +71,14 @@ export const productService = {
   // Update banner status
   updateBannerStatus: async (id: number, is_banner: boolean, href?: string,mobile_ad_banner?:string, banner_background_color?: string, tags?: string[]) => {
     const response = await api.patch(`/products/${id}/banner`, { is_banner, href,banner_background_color,mobile_ad_banner, tags });
+    queryClient.invalidate("products");
     return response.data;
   },
 
   // Update deal of the day status
   updateDealOfDayStatus: async (id: number, deal_of_day: boolean) => {
     const response = await api.patch(`/products/${id}/deal-of-day`, { deal_of_day });
+    queryClient.invalidate("products");
     return response.data;
   },
 

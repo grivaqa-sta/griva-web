@@ -131,10 +131,6 @@ exports.createOrder = async (req, res, next) => {
       return res.status(400).json({ error: "Shipping delivery address is required." });
     }
 
-    if (!resolvedSlotId) {
-      return res.status(400).json({ error: "Preferred delivery time slot is required." });
-    }
-
     if (!resolvedEmail) {
       return res.status(400).json({ error: "Email address is required." });
     }
@@ -219,11 +215,13 @@ exports.createOrder = async (req, res, next) => {
       }
     }
 
-    const DeliverySlot = require("../models/DeliverySlot");
-    const activeSlot = await DeliverySlot.findByPk(resolvedSlotId, { transaction });
-    if (!activeSlot || !activeSlot.is_active) {
-      await transaction.rollback();
-      return res.status(400).json({ error: "Selected delivery slot is invalid or inactive." });
+    if (resolvedSlotId) {
+      const DeliverySlot = require("../models/DeliverySlot");
+      const activeSlot = await DeliverySlot.findByPk(resolvedSlotId, { transaction });
+      if (!activeSlot || !activeSlot.is_active) {
+        await transaction.rollback();
+        return res.status(400).json({ error: "Selected delivery slot is invalid or inactive." });
+      }
     }
 
     let calculatedTotal = 0;

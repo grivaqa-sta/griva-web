@@ -3,6 +3,7 @@ const Order = require("../models/Order");
 const { Op } = require("sequelize");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { sendPasswordResetEmail } = require("../services/brevoService");
 
 /**
  * Generate JWT Token
@@ -213,18 +214,26 @@ exports.forgotPassword = async (req, res, next) => {
       resetPasswordExpire,
     });
     let resetUrl;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     if(user.role === "customer"){
-        resetUrl =`${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
+        resetUrl =`${frontendUrl}/auth/reset-password/${resetToken}`;
     }else{
-        resetUrl =`${process.env.FRONTEND_URL}/admin/auth/reset-password/${resetToken}`;
+        resetUrl =`${frontendUrl}/admin/auth/reset-password/${resetToken}`;
     }
     
     console.log("Reset URL:", resetUrl);
 
+    try {
+      await sendPasswordResetEmail(user.email, user.name, resetUrl);
+    } catch (emailErr) {
+      console.error("Failed to send password reset email:", emailErr.message);
+      // We still return 200/success or return a warning in dev mode
+    }
+
     return res.status(200).json({
       success: true,
       message:
-        "Password reset link generated.",
+        "Password reset link sent to email.",
       resetUrl,
     });
   } catch (error) {
@@ -259,6 +268,14 @@ exports.resetPassword = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: "Token expired.",
+      });
+    }
+
+    const isSamePassword = await user.comparePassword(password);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be the same as your current password.",
       });
     }
 

@@ -65,6 +65,8 @@ export default function AdminDashboard() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [shippingFee, setShippingFee] = useState<number>(10);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
+  const [telegramLink, setTelegramLink] = useState<string>("");
+  const [whatsappCommunityLink, setWhatsappCommunityLink] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [dateRangeOption, setDateRangeOption] = useState<string>("7days");
@@ -137,6 +139,8 @@ export default function AdminDashboard() {
       setMidnightSaleEnabled(dbSettings.midnightSaleEnabled);
       setShippingFee(dbSettings.shippingFee !== undefined ? Number(dbSettings.shippingFee) : 10);
       setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 99);
+      setTelegramLink(dbSettings.telegramLink || "");
+      setWhatsappCommunityLink(dbSettings.whatsappCommunityLink || "");
       setSubscribersList(dbSubs);
       setOrdersList(dbOrders);
     } catch (err) {
@@ -268,6 +272,11 @@ export default function AdminDashboard() {
     setFreeShippingThreshold(threshold);
     await updateSettingsApi({ shippingFee: fee, freeShippingThreshold: threshold });
   };
+  const handleSaveExclusiveLinks = async (tg: string, wa: string) => {
+    setTelegramLink(tg);
+    setWhatsappCommunityLink(wa);
+    await updateSettingsApi({ telegramLink: tg, whatsappCommunityLink: wa });
+  };
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault(); if (!broadcastSubject || !broadcastMessage) return;
@@ -349,6 +358,9 @@ export default function AdminDashboard() {
               shippingFee={shippingFee}
               freeShippingThreshold={freeShippingThreshold}
               onSaveShippingConfig={handleSaveShippingConfig}
+              telegramLink={telegramLink}
+              whatsappCommunityLink={whatsappCommunityLink}
+              onSaveExclusiveLinks={handleSaveExclusiveLinks}
               dateRangeOption={dateRangeOption}
               setDateRangeOption={setDateRangeOption}
               customStartDate={customStartDate}

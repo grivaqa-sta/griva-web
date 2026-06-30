@@ -32,6 +32,9 @@ interface OverviewTabProps {
   shippingFee: number;
   freeShippingThreshold: number;
   onSaveShippingConfig: (fee: number, threshold: number) => Promise<void>;
+  telegramLink: string;
+  whatsappCommunityLink: string;
+  onSaveExclusiveLinks: (tg: string, wa: string) => Promise<void>;
   dateRangeOption: string;
   setDateRangeOption: (val: string) => void;
   customStartDate: string;
@@ -191,6 +194,7 @@ export default function OverviewTab(props: OverviewTabProps) {
     highlightedSchemaSection, setHighlightedSchemaSection,
     setActiveTab, slidesList, categoriesList, offersList,
     shippingFee, freeShippingThreshold, onSaveShippingConfig,
+    telegramLink, whatsappCommunityLink, onSaveExclusiveLinks,
     dateRangeOption, setDateRangeOption,
     customStartDate, setCustomStartDate,
     customEndDate, setCustomEndDate
@@ -200,7 +204,10 @@ export default function OverviewTab(props: OverviewTabProps) {
 
   const [thresholdInput, setThresholdInput] = useState(freeShippingThreshold);
   const [feeInput, setFeeInput] = useState(shippingFee);
+  const [tgInput, setTgInput] = useState(telegramLink);
+  const [waInput, setWaInput] = useState(whatsappCommunityLink);
   const [isSavingRules, setIsSavingRules] = useState(false);
+  const [isSavingLinks, setIsSavingLinks] = useState(false);
 
   // Sync inputs with props changes
   useEffect(() => {
@@ -210,6 +217,14 @@ export default function OverviewTab(props: OverviewTabProps) {
   useEffect(() => {
     setFeeInput(shippingFee);
   }, [shippingFee]);
+
+  useEffect(() => {
+    setTgInput(telegramLink);
+  }, [telegramLink]);
+
+  useEffect(() => {
+    setWaInput(whatsappCommunityLink);
+  }, [whatsappCommunityLink]);
 
   const [slots, setSlots] = useState<DeliverySlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
@@ -621,6 +636,56 @@ export default function OverviewTab(props: OverviewTabProps) {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* ── Exclusive Channels Configurations ── */}
+      <div className="bg-white border border-orange-500/30 rounded-2xl p-6">
+        <div className="border-b border-orange-500/10 pb-4 mb-5">
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Exclusive Offers Channels Settings</h4>
+          <p className="text-[10px] text-gray-400 mt-0.5">Configure invite links for Telegram and WhatsApp Community on the Exclusive Offers page.</p>
+        </div>
+
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          setIsSavingLinks(true);
+          try {
+            await onSaveExclusiveLinks(tgInput, waInput);
+            toast.success("Exclusive offers links saved successfully.");
+          } catch {
+            toast.error("Failed to save exclusive offers links.");
+          }
+          setIsSavingLinks(false);
+        }} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Telegram Link</label>
+              <input
+                type="text"
+                placeholder="e.g. https://t.me/yourchannel"
+                value={tgInput}
+                onChange={(e) => setTgInput(e.target.value)}
+                className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none focus:border-orange-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">WhatsApp Link</label>
+              <input
+                type="text"
+                placeholder="e.g. https://wa.me/9747770123"
+                value={waInput}
+                onChange={(e) => setWaInput(e.target.value)}
+                className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none focus:border-orange-500 transition-colors"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={isSavingLinks}
+            className="w-full md:w-auto px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-95 shadow-md shadow-orange-500/10 cursor-pointer disabled:opacity-50 transition-all"
+          >
+            {isSavingLinks ? "Saving Links..." : "Save Links"}
+          </button>
+        </form>
       </div>
 
       {/* ── Storefront Schema Mapper ── */}

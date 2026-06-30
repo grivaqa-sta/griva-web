@@ -201,6 +201,8 @@ export default function GrivaAIChatbot() {
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
   const [isWaitingForPhone, setIsWaitingForPhone] = useState(false);
 
+  const [scrolled, setScrolled] = useState(false);
+  const [atFooter, setAtFooter] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
@@ -237,6 +239,33 @@ export default function GrivaAIChatbot() {
       .catch((err) => {
         console.warn("Failed to fetch real products for chatbot:", err);
       });
+  }, []);
+
+  // Monitor scroll positioning to dynamically adapt bottom placement
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+
+      if (scrollTop > 300) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+
+      // Check if we are near the footer (within 380px on mobile, 250px on desktop)
+      const isMobile = window.innerWidth < 640;
+      const threshold = isMobile ? 380 : 250;
+      if (scrollHeight - (scrollTop + clientHeight) < threshold) {
+        setAtFooter(true);
+      } else {
+        setAtFooter(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Soft, premium synthesized notification sound (Web Audio API)
@@ -859,13 +888,16 @@ export default function GrivaAIChatbot() {
     }
   };
 
-  // Hide chatbot on admin views to ensure all hooks run consistently
-  if (pathname.startsWith("/admin")) return null;
+  // Hide chatbot on all pages except the homepage
+  if (pathname !== "/") return null;
 
   return (
     <>
-      {/* Floating Chat Trigger Button */}
-      <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-[998] flex flex-col items-end gap-2 select-none">
+      <div className={`fixed right-4 sm:right-6 z-[998] flex flex-col items-end gap-2 select-none transition-all duration-300 ${
+        scrolled ? "bottom-20 sm:bottom-24" : "bottom-20 sm:bottom-6"
+      } ${
+        atFooter && !isOpen ? "opacity-0 scale-75 pointer-events-none" : "opacity-100 scale-100"
+      }`}>
         {/* Unread message tooltip bubble */}
         <AnimatePresence>
           {!isOpen && showTooltip && (
@@ -903,7 +935,7 @@ export default function GrivaAIChatbot() {
           transition={{ duration: 0.8 }}
           whileHover={{ scale: 1.08, translateY: -2 }}
           whileTap={{ scale: 0.93 }}
-          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-transparent transition-all cursor-pointer focus:outline-none overflow-visible shadow-lg"
+          className="relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-[#0d0d0d] transition-all cursor-pointer focus:outline-none overflow-visible shadow-lg"
         >
           {/* Glowing Green Online Status indicator */}
           <span className="absolute top-0.5 right-0.5 z-20 flex h-3.5 w-3.5">
@@ -912,12 +944,12 @@ export default function GrivaAIChatbot() {
           </span>
 
           {/* Chatbot Icon - Full size of the button */}
-          <div className="relative h-full w-full overflow-hidden rounded-full border border-gray-200/10">
+          <div className="relative h-full w-full overflow-hidden rounded-full bg-[#0d0d0d] border border-white/5">
             <Image
               src="/images/chatbot-icon.png"
               alt="GRIVA Logo"
               fill
-              className="object-cover"
+              className="object-cover scale-130"
             />
           </div>
         </motion.button>
@@ -931,7 +963,9 @@ export default function GrivaAIChatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 350, damping: 25 }}
-            className="fixed bottom-[92px] right-[4%] sm:right-6 w-[92vw] sm:w-[340px] h-[450px] bg-white rounded-[24px] shadow-2xl border border-gray-100 z-[999] flex flex-col overflow-hidden"
+            className={`fixed right-[4%] sm:right-6 w-[92vw] sm:w-[340px] h-[450px] bg-white rounded-[24px] shadow-2xl border border-gray-100 z-[999] flex flex-col overflow-hidden transition-all duration-300 ${
+              scrolled ? "bottom-[140px] sm:bottom-[164px]" : "bottom-[140px] sm:bottom-[92px]"
+            }`}
           >
             {/* Header */}
             <div className="bg-[#F54900] px-4 py-3.5 text-white flex items-center justify-between relative shadow-md select-none touch-none">

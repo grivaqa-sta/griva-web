@@ -8,7 +8,7 @@ import {
   Edit, Trash2, Plus, Loader2, Star, Home, Briefcase,
   Clock, Truck, CheckCircle, XCircle, ChevronDown,
   Heart, Bell, HelpCircle, ChevronRight, MessageSquare,
-  MessageCircle, Undo, Search, Check, ShieldCheck, Mail, Phone, Calendar
+  MessageCircle, Undo, Search, Check, ShieldCheck, Mail, Phone, Calendar, ArrowLeft
 } from "lucide-react";
 import { addressService } from "@/app/services/address.service";
 import { authService } from "@/app/services/auth.service";
@@ -430,9 +430,20 @@ export default function AccountPage() {
     "block text-xs font-bold uppercase tracking-wider text-slate-400";
 
   return (
-    <div className="bg-slate-50/50 min-h-[90vh] py-10">
+    <div className="bg-slate-50/50 min-h-[90vh] py-5">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
+        {/* Back Button */}
+        <div className="mb-3 flex items-center">
+          <button 
+            onClick={() => router.back()} 
+            className="flex items-center gap-1.5 text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
 
           {/* Left Sidebar (Flipkart Style refined) */}
@@ -855,13 +866,7 @@ export default function AccountPage() {
                             className={inputClass} />
                         </div>
 
-                        {/* Mobile */}
-                        <div>
-                          <label className={labelClass}>Mobile Number</label>
-                          <input type="tel" required placeholder="e.g. 5555 4321" value={formData.mobile}
-                            onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                            className={inputClass} />
-                        </div>
+
 
                         {/* Area */}
                         <div>
@@ -1006,10 +1011,7 @@ export default function AccountPage() {
                                   
                                   {/* Address Details structured as tabular description */}
                                   <div className="mt-3.5 space-y-1.5 text-xs text-slate-500 font-medium">
-                                    <div className="flex gap-2">
-                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Mobile:</span>
-                                      <span className="text-slate-700 font-semibold">{addr.mobile}</span>
-                                    </div>
+
                                     <div className="flex gap-2">
                                       <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Address:</span>
                                       <span className="text-slate-600 leading-relaxed">
@@ -1023,7 +1025,7 @@ export default function AccountPage() {
                                     {addr.landmark && (
                                       <div className="flex gap-2">
                                         <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Landmark:</span>
-                                        <span className="text-slate-500 italic">Near {addr.landmark}</span>
+                                        <span className="text-slate-500 italic">{addr.landmark}</span>
                                       </div>
                                     )}
                                     <div className="flex gap-2">

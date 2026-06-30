@@ -19,12 +19,12 @@ import { Address, AddressRequest } from "@/app/types/types";
 import { useToast } from "@/app/context/ToastContext";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  pending:   { label: "Pending",   color: "text-amber-600",  bg: "bg-amber-50 border-amber-200",    icon: <Clock className="h-3 w-3" /> },
-  processing:{ label: "Processing",color: "text-orange-600", bg: "bg-orange-50 border-orange-200",  icon: <Clock className="h-3 w-3" /> },
-  shipped:   { label: "Shipped",   color: "text-blue-600",   bg: "bg-blue-50 border-blue-200",      icon: <Truck className="h-3 w-3" /> },
-  completed: { label: "Completed", color: "text-green-600",  bg: "bg-green-50 border-green-200",    icon: <CheckCircle className="h-3 w-3" /> },
-  delivered: { label: "Delivered", color: "text-green-600",  bg: "bg-green-50 border-green-200",    icon: <CheckCircle className="h-3 w-3" /> },
-  cancelled: { label: "Cancelled", color: "text-red-500",    bg: "bg-red-50 border-red-200",        icon: <XCircle className="h-3 w-3" /> },
+  pending: { label: "Pending", color: "text-amber-600", bg: "bg-amber-50 border-amber-200", icon: <Clock className="h-3 w-3" /> },
+  processing: { label: "Processing", color: "text-orange-600", bg: "bg-orange-50 border-orange-200", icon: <Clock className="h-3 w-3" /> },
+  shipped: { label: "Shipped", color: "text-blue-600", bg: "bg-blue-50 border-blue-200", icon: <Truck className="h-3 w-3" /> },
+  completed: { label: "Completed", color: "text-green-600", bg: "bg-green-50 border-green-200", icon: <CheckCircle className="h-3 w-3" /> },
+  delivered: { label: "Delivered", color: "text-green-600", bg: "bg-green-50 border-green-200", icon: <CheckCircle className="h-3 w-3" /> },
+  cancelled: { label: "Cancelled", color: "text-red-500", bg: "bg-red-50 border-red-200", icon: <XCircle className="h-3 w-3" /> },
 };
 
 const emptyForm: AddressRequest = {
@@ -108,7 +108,7 @@ export default function AccountPage() {
     const successCallback = async (position: GeolocationPosition) => {
       const { latitude, longitude } = position.coords;
       setFormData((prev) => ({ ...prev, latitude, longitude }));
-      
+
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
@@ -125,7 +125,7 @@ export default function AccountPage() {
           const streetName = addr.road || addr.suburb || addr.neighbourhood || "";
           const areaName = addr.quarter || addr.suburb || addr.city_district || addr.town || addr.city || "";
           const zoneNum = addr.postcode || "";
-          
+
           setFormData((prev) => ({
             ...prev,
             area: areaName || prev.area,
@@ -219,10 +219,10 @@ export default function AccountPage() {
       const result = Array.isArray(data)
         ? data
         : Array.isArray(data?.addresses)
-        ? data.addresses
-        : Array.isArray(data?.data)
-        ? data.data
-        : [];
+          ? data.addresses
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
       setAddresses(result);
     } catch {
       setAddressesError("Unable to load addresses.");
@@ -374,7 +374,7 @@ export default function AccountPage() {
       setIsEditingProfile(false);
       setProfileSuccessMsg("Profile updated successfully!");
       if (profile) {
-        profile.name = profileName; 
+        profile.name = profileName;
         profile.phone = fullMobile;
       }
       setTimeout(() => setProfileSuccessMsg(""), 3000);
@@ -432,35 +432,34 @@ export default function AccountPage() {
   return (
     <div className="bg-slate-50/50 min-h-[90vh] py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
 
           {/* Left Sidebar (Flipkart Style refined) */}
           <div className="md:col-span-3 space-y-5">
-            
+
             {/* User Greeting Box */}
-              <div className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300">
-                <div className="h-14 w-14 rounded-full bg-gradient-to-tr from-orange-500 via-orange-600 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-md border-2 border-white ring-4 ring-orange-500/10">
-                  {(profile?.name || "C").charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Welcome back,</p>
-                  <h4 className="text-sm font-bold text-slate-800 truncate mt-0.5">{profileName || profile?.name || "Customer"}</h4>
-                </div>
+            <div className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-tr from-orange-500 via-orange-600 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-md border-2 border-white ring-4 ring-orange-500/10">
+                {(profile?.name || "C").charAt(0).toUpperCase()}
               </div>
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Welcome back,</p>
+                <h4 className="text-sm font-bold text-slate-800 truncate mt-0.5">{profileName || profile?.name || "Customer"}</h4>
+              </div>
+            </div>
 
             {/* Structured Navigation Directory */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
-              
+
               {/* My Orders Section */}
               <button
                 onClick={() => {
                   setActiveTab("orders");
                   closeForm();
                 }}
-                className={`w-full flex items-center justify-between px-6 py-4.5 text-left font-semibold text-sm transition-all cursor-pointer relative group ${
-                  activeTab === "orders" ? "text-orange-500 bg-orange-50/20" : "text-slate-700 hover:text-orange-500"
-                }`}
+                className={`w-full flex items-center justify-between px-6 py-4.5 text-left font-semibold text-sm transition-all cursor-pointer relative group ${activeTab === "orders" ? "text-orange-500 bg-orange-50/20" : "text-slate-700 hover:text-orange-500"
+                  }`}
               >
                 {activeTab === "orders" && <span className="absolute left-0 top-0 bottom-0 w-[4px] bg-orange-500 rounded-r-md" />}
                 <div className="flex items-center gap-3">
@@ -482,9 +481,8 @@ export default function AccountPage() {
                       setActiveTab("profile");
                       closeForm();
                     }}
-                    className={`text-left transition-colors relative cursor-pointer ${
-                      activeTab === "profile" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
-                    }`}
+                    className={`text-left transition-colors relative cursor-pointer ${activeTab === "profile" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
+                      }`}
                   >
                     {activeTab === "profile" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
                     Profile Information
@@ -494,9 +492,8 @@ export default function AccountPage() {
                       setActiveTab("addresses");
                       closeForm();
                     }}
-                    className={`text-left transition-colors relative cursor-pointer ${
-                      activeTab === "addresses" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
-                    }`}
+                    className={`text-left transition-colors relative cursor-pointer ${activeTab === "addresses" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
+                      }`}
                   >
                     {activeTab === "addresses" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
                     Manage Addresses
@@ -520,9 +517,8 @@ export default function AccountPage() {
                       setActiveTab("notifications");
                       closeForm();
                     }}
-                    className={`text-left transition-colors relative cursor-pointer flex items-center justify-between ${
-                      activeTab === "notifications" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
-                    }`}
+                    className={`text-left transition-colors relative cursor-pointer flex items-center justify-between ${activeTab === "notifications" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
+                      }`}
                   >
                     {activeTab === "notifications" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
                     <span>Notifications</span>
@@ -532,9 +528,8 @@ export default function AccountPage() {
                       setActiveTab("support");
                       closeForm();
                     }}
-                    className={`text-left transition-colors relative cursor-pointer ${
-                      activeTab === "support" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
-                    }`}
+                    className={`text-left transition-colors relative cursor-pointer ${activeTab === "support" ? "text-orange-500" : "text-slate-500 hover:text-orange-500"
+                      }`}
                   >
                     {activeTab === "support" && <span className="absolute -left-3.5 top-0.5 bottom-0.5 w-[3px] bg-orange-500 rounded-r-sm" />}
                     Support Center
@@ -562,7 +557,7 @@ export default function AccountPage() {
               {/* PROFILE TAB */}
               {activeTab === "profile" && (
                 <div className="space-y-8 animate-fadeIn">
-                  
+
                   {/* Tab Header */}
                   <div className="border-b border-slate-100 pb-5 flex justify-between items-center">
                     <div>
@@ -593,10 +588,10 @@ export default function AccountPage() {
 
                   {profile && !profileLoading && (
                     <div className="space-y-8">
-                      
+
                       {/* Summary Cards */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        
+
                         {/* Orders count */}
                         <div className="p-5 bg-gradient-to-br from-orange-5/20 to-orange-500/5 border border-orange-100 rounded-2xl flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition duration-300">
                           <div className="h-11 w-11 rounded-xl bg-orange-100 flex items-center justify-center text-orange-650 shadow-sm shadow-orange-500/10">
@@ -687,34 +682,34 @@ export default function AccountPage() {
                             {profileMobileError && <p className="text-xs text-red-500 mt-1.5 font-semibold">{profileMobileError}</p>}
                           </div>
 
-                            <div className="pt-2 flex gap-3">
-                              <button
-                                type="submit"
-                                disabled={profileSaving || !!profileMobileError}
-                                className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-orange-500/15 transition disabled:opacity-60 flex items-center gap-1.5 cursor-pointer"
-                              >
-                                {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                                Save Changes
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProfileName(profile.name);
-                                  let phone = profile.phone || "";
-                                  phone = phone.replace(/^(?:\+?974)?\s?/, "").replace(/[\s-]/g, "");
-                                  setProfileMobile(phone);
-                                  setProfileMobileError("");
-                                  setIsEditingProfile(false);
-                                }}
-                                className="px-6 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </div>
+                          <div className="pt-2 flex gap-3">
+                            <button
+                              type="submit"
+                              disabled={profileSaving || !!profileMobileError}
+                              className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-orange-500/15 transition disabled:opacity-60 flex items-center gap-1.5 cursor-pointer"
+                            >
+                              {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                              Save Changes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProfileName(profile.name);
+                                let phone = profile.phone || "";
+                                phone = phone.replace(/^(?:\+?974)?\s?/, "").replace(/[\s-]/g, "");
+                                setProfileMobile(phone);
+                                setProfileMobileError("");
+                                setIsEditingProfile(false);
+                              }}
+                              className="px-6 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </form>
                       ) : (
                         <div className="max-w-2xl divide-y divide-slate-100 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-                          
+
                           <div className="grid grid-cols-1 sm:grid-cols-2 p-6 gap-6 hover:bg-slate-50/10 transition">
                             <div className="flex items-start gap-3">
                               <UserIcon className="h-5 w-5 text-slate-400 mt-0.5" />
@@ -763,7 +758,7 @@ export default function AccountPage() {
               {/* ADDRESSES TAB */}
               {activeTab === "addresses" && (
                 <div className="space-y-8 animate-fadeIn">
-                  
+
                   {/* Tab Header */}
                   <div className="border-b border-slate-100 pb-5 flex justify-between items-center">
                     <div>
@@ -809,11 +804,10 @@ export default function AccountPage() {
                                 key={l}
                                 type="button"
                                 onClick={() => setFormData({ ...formData, label: l })}
-                                className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl border text-xs font-semibold uppercase tracking-wider transition duration-200 cursor-pointer ${
-                                  formData.label === l
+                                className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl border text-xs font-semibold uppercase tracking-wider transition duration-200 cursor-pointer ${formData.label === l
                                     ? "bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/10"
                                     : "bg-white text-slate-500 border-slate-200 hover:border-orange-300 hover:text-orange-500"
-                                }`}
+                                  }`}
                               >
                                 {l === "home" && <Home className="h-3.5 w-3.5" />}
                                 {l === "office" && <Briefcase className="h-3.5 w-3.5" />}
@@ -841,8 +835,8 @@ export default function AccountPage() {
                               {locating
                                 ? "Locating your GPS coordinates..."
                                 : locationSuccess
-                                ? "📍 Location coordinates saved! (Click to locate again)"
-                                : "📍 Use My Location (Exact GPS)"}
+                                  ? "📍 Location coordinates saved! (Click to locate again)"
+                                  : "📍 Use My Location (Exact GPS)"}
                             </span>
                           </button>
                         </div>
@@ -979,84 +973,83 @@ export default function AccountPage() {
                               </button>
                             </div>
                           ) : (
-                          [...addresses]
-  .sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0))
-  .map((addr) => {
-                              const LabelIcon = labelIcons[addr.label] || MapPin;
-                              return (
-                                <div key={addr.id}
-                                  className={`p-6 rounded-2xl border relative group transition-all duration-300 bg-white ${
-                                    addr.isDefault
-                                      ? "border-orange-350 bg-orange-50/5 shadow-md shadow-orange-500/[0.02]"
-                                      : "border-slate-200/80 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5"
-                                  }`}>
+                            [...addresses]
+                              .sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0))
+                              .map((addr) => {
+                                const LabelIcon = labelIcons[addr.label] || MapPin;
+                                return (
+                                  <div key={addr.id}
+                                    className={`p-6 rounded-2xl border relative group transition-all duration-300 bg-white ${addr.isDefault
+                                        ? "border-orange-350 bg-orange-50/5 shadow-md shadow-orange-500/[0.02]"
+                                        : "border-slate-200/80 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5"
+                                      }`}>
 
-                                  {/* Badges row */}
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 border text-[9px] font-bold uppercase tracking-wider rounded-full capitalize ${labelColors[addr.label] || labelColors.other}`}>
-                                      <LabelIcon className="h-3 w-3" />
-                                      {addr.label}
-                                    </span>
-                                    {addr.isDefault && (
-                                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-600 border border-orange-200 text-[9px] font-bold uppercase tracking-wider rounded-full">
-                                        Default Shipping
+                                    {/* Badges row */}
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 border text-[9px] font-bold uppercase tracking-wider rounded-full capitalize ${labelColors[addr.label] || labelColors.other}`}>
+                                        <LabelIcon className="h-3 w-3" />
+                                        {addr.label}
                                       </span>
-                                    )}
-                                  </div>
+                                      {addr.isDefault && (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-600 border border-orange-200 text-[9px] font-bold uppercase tracking-wider rounded-full">
+                                          Default Shipping
+                                        </span>
+                                      )}
+                                    </div>
 
-                                  <h5 className="font-bold text-slate-800 text-sm">{addr.fullName}</h5>
-                                  
-                                  {/* Address Details structured as tabular description */}
-                                  <div className="mt-3.5 space-y-1.5 text-xs text-slate-500 font-medium">
-                                    <div className="flex gap-2">
-                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Mobile:</span>
-                                      <span className="text-slate-700 font-semibold">{addr.mobile}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Address:</span>
-                                      <span className="text-slate-600 leading-relaxed">
-                                        Building {addr.building_number}
-                                        {addr.villa_apartment && `, ${addr.villa_apartment}`}
-                                        {addr.floor && `, Floor ${addr.floor}`}
-                                        {`, ${addr.street}, ${addr.area}`}
-                                        {addr.zone && `, Zone ${addr.zone}`}
-                                      </span>
-                                    </div>
-                                    {addr.landmark && (
+                                    <h5 className="font-bold text-slate-800 text-sm">{addr.fullName}</h5>
+
+                                    {/* Address Details structured as tabular description */}
+                                    <div className="mt-3.5 space-y-1.5 text-xs text-slate-500 font-medium">
                                       <div className="flex gap-2">
-                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Landmark:</span>
-                                        <span className="text-slate-500 italic">Near {addr.landmark}</span>
+                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Mobile:</span>
+                                        <span className="text-slate-700 font-semibold">{addr.mobile}</span>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Address:</span>
+                                        <span className="text-slate-600 leading-relaxed">
+                                          Building {addr.building_number}
+                                          {addr.villa_apartment && `, ${addr.villa_apartment}`}
+                                          {addr.floor && `, Floor ${addr.floor}`}
+                                          {`, ${addr.street}, ${addr.area}`}
+                                          {addr.zone && `, Zone ${addr.zone}`}
+                                        </span>
+                                      </div>
+                                      {addr.landmark && (
+                                        <div className="flex gap-2">
+                                          <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Landmark:</span>
+                                          <span className="text-slate-500 italic">Near {addr.landmark}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex gap-2">
+                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Location:</span>
+                                        <span className="text-slate-700 font-semibold">{addr.city}, {addr.country}</span>
+                                      </div>
+                                    </div>
+
+                                    {!addr.isDefault && (
+                                      <div className="mt-4 pt-3.5 border-t border-slate-100">
+                                        <button
+                                          onClick={() => setDefaultAddress(addr.id)}
+                                          className="text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 transition cursor-pointer">
+                                          Set as default
+                                        </button>
                                       </div>
                                     )}
-                                    <div className="flex gap-2">
-                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Location:</span>
-                                      <span className="text-slate-700 font-semibold">{addr.city}, {addr.country}</span>
-                                    </div>
-                                  </div>
 
-                                  {!addr.isDefault && (
-                                    <div className="mt-4 pt-3.5 border-t border-slate-100">
-                                      <button
-                                        onClick={() => setDefaultAddress(addr.id)}
-                                        className="text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 transition cursor-pointer">
-                                        Set as default
+                                    <div className="absolute top-5 right-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                      <button onClick={() => openEditAddress(addr)}
+                                        className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-orange-100 hover:text-orange-600 hover:border-orange-200 transition cursor-pointer shadow-sm" title="Edit Address">
+                                        <Edit className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button onClick={() => deleteAddress(addr.id)}
+                                        className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-red-100 hover:text-red-650 hover:border-red-205 transition cursor-pointer shadow-sm" title="Delete Address">
+                                        <Trash2 className="h-3.5 w-3.5" />
                                       </button>
                                     </div>
-                                  )}
-
-                                  <div className="absolute top-5 right-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <button onClick={() => openEditAddress(addr)}
-                                      className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-orange-100 hover:text-orange-600 hover:border-orange-200 transition cursor-pointer shadow-sm" title="Edit Address">
-                                      <Edit className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button onClick={() => deleteAddress(addr.id)}
-                                      className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-red-100 hover:text-red-650 hover:border-red-205 transition cursor-pointer shadow-sm" title="Delete Address">
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
                                   </div>
-                                </div>
-                              );
-                            })
+                                );
+                              })
                           )}
                         </div>
                       )}
@@ -1068,7 +1061,7 @@ export default function AccountPage() {
               {/* ORDERS TAB */}
               {activeTab === "orders" && (
                 <div className="space-y-8 animate-fadeIn">
-                  
+
                   {/* Tab Header */}
                   <div className="border-b border-slate-100 pb-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
@@ -1082,11 +1075,10 @@ export default function AccountPage() {
                         <button
                           key={st}
                           onClick={() => setOrderStatusFilter(st)}
-                          className={`px-3.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition border cursor-pointer ${
-                            orderStatusFilter === st
+                          className={`px-3.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition border cursor-pointer ${orderStatusFilter === st
                               ? "bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/10"
                               : "bg-white text-slate-500 border-slate-200 hover:border-orange-200 hover:text-orange-500"
-                          }`}
+                            }`}
                         >
                           {st}
                         </button>
@@ -1127,10 +1119,10 @@ export default function AccountPage() {
                         const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
                         const isExpanded = expandedOrderId === order.id;
                         const orderStep = getOrderStatusStep(order.status);
-                        
+
                         return (
                           <div key={order.id} className="border border-slate-200 rounded-2xl overflow-hidden hover:border-orange-200 hover:shadow-md transition-all duration-300 bg-white">
-                            
+
                             {/* Order Header Summary */}
                             <div
                               className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 cursor-pointer hover:bg-slate-50/10 transition"
@@ -1150,7 +1142,7 @@ export default function AccountPage() {
                                   </div>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center gap-4.5">
                                 <span className={`inline-flex items-center gap-1.5 text-[9px] font-bold px-3 py-1 rounded-full border uppercase tracking-wider ${cfg.bg} ${cfg.color} shadow-sm shadow-black/[0.01]`}>
                                   {cfg.icon}
@@ -1173,36 +1165,32 @@ export default function AccountPage() {
                                 />
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
-                                    orderStep >= 1 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
-                                  }`}>
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${orderStep >= 1 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
+                                    }`}>
                                     {orderStep >= 1 ? <Check className="h-3.5 w-3.5" /> : "1"}
                                   </div>
                                   <span className={orderStep >= 1 ? "text-orange-500 font-semibold" : ""}>Placed</span>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
-                                    orderStep >= 2 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
-                                  }`}>
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${orderStep >= 2 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
+                                    }`}>
                                     {orderStep >= 2 ? <Check className="h-3.5 w-3.5" /> : "2"}
                                   </div>
                                   <span className={orderStep >= 2 ? "text-orange-500 font-semibold" : ""}>Processing</span>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
-                                    orderStep >= 3 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
-                                  }`}>
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${orderStep >= 3 ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/10" : "bg-white border-slate-300 text-slate-400"
+                                    }`}>
                                     {orderStep >= 3 ? <Check className="h-3.5 w-3.5" /> : "3"}
                                   </div>
                                   <span className={orderStep >= 3 ? "text-orange-500 font-semibold" : ""}>Shipped</span>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${
-                                    orderStep >= 4 ? "bg-green-500 border-green-500 text-white shadow-md shadow-green-500/10" : "bg-white border-slate-300 text-slate-400"
-                                  }`}>
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center border font-semibold text-[9px] transition-all duration-300 ${orderStep >= 4 ? "bg-green-500 border-green-500 text-white shadow-md shadow-green-500/10" : "bg-white border-slate-300 text-slate-400"
+                                    }`}>
                                     {orderStep >= 4 ? <Check className="h-3.5 w-3.5" /> : "4"}
                                   </div>
                                   <span className={orderStep >= 4 ? "text-green-600 font-semibold" : ""}>Delivered</span>
@@ -1226,7 +1214,7 @@ export default function AccountPage() {
                                           />
                                         )}
                                       </div>
-                                      
+
                                       <div className="min-w-0 flex-1">
                                         <h5 className="text-xs font-bold text-slate-800 truncate">{item.product?.title || `Product #${item.product_id}`}</h5>
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1.5 text-[9px] text-slate-400 font-semibold tracking-wider uppercase">
@@ -1235,7 +1223,7 @@ export default function AccountPage() {
                                           {item.selected_storage && <span>• Spec: {item.selected_storage}</span>}
                                         </div>
                                       </div>
-                                      
+
                                       <div className="text-right shrink-0">
                                         <span className="text-xs font-semibold text-slate-900 block">
                                           QAR {(Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}

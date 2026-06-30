@@ -565,13 +565,6 @@ export default function CheckoutPage() {
       if (!firstErrorMsg) firstErrorMsg = "Delivery notes must not exceed 300 characters.";
     }
 
-    // Delivery slot
-    if (!selectedSlotId) {
-      errors.deliverySlotId = "Preferred delivery slot is required";
-      if (!firstErrorMsg) firstErrorMsg = "Please select a preferred delivery time.";
-      hasRequiredMissing = true;
-    }
-
     // Show only the first error message toast
     if (firstErrorMsg) {
       toast.error(firstErrorMsg);
@@ -1184,14 +1177,12 @@ export default function CheckoutPage() {
             </div>
 
             {/* ── Section: Preferred Delivery Time ── */}
-            <div className={`bg-white rounded-2xl border shadow-sm p-6 transition-all duration-200 ${
-              formErrors.deliverySlotId ? "border-red-300 bg-red-50/10" : "border-gray-100"
-            }`}>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 transition-all duration-200">
               <div className="flex items-center gap-2 mb-5 border-b pb-3">
                 <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
-                  <Clock className={`h-4 w-4 ${formErrors.deliverySlotId ? "text-red-500" : "text-orange-500"}`} />
+                  <Clock className="h-4 w-4 text-orange-500" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Preferred Delivery Time</h3>
+                <h3 className="text-lg font-bold text-gray-900">Preferred Delivery Time <span className="text-sm font-normal text-gray-400 ml-1">(Optional)</span></h3>
               </div>
 
               {deliverySlots.length === 0 ? (
@@ -1199,17 +1190,12 @@ export default function CheckoutPage() {
                   Loading active delivery slots...
                 </div>
               ) : (
-                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-1 rounded-xl ${
-                  formErrors.deliverySlotId ? "ring-2 ring-red-300/30" : ""
-                }`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1 rounded-xl">
                   {deliverySlots.map((slot) => (
                     <div
                       key={slot.id}
                       onClick={() => {
-                        setSelectedSlotId(slot.id);
-                        if (formErrors.deliverySlotId) {
-                          setFormErrors((prev) => ({ ...prev, deliverySlotId: undefined }));
-                        }
+                        setSelectedSlotId((prev) => (prev === slot.id ? null : slot.id));
                       }}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
                         selectedSlotId === slot.id
@@ -1229,9 +1215,6 @@ export default function CheckoutPage() {
                     </div>
                   ))}
                 </div>
-              )}
-              {formErrors.deliverySlotId && (
-                <p className="text-xs text-red-500 mt-2 font-semibold">Please select a preferred delivery time.</p>
               )}
             </div>
 

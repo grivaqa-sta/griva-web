@@ -1002,50 +1002,14 @@ export default function AccountPage() {
                                       )}
                                     </div>
 
-<<<<<<< HEAD
-                                    <h5 className="font-bold text-slate-800 text-sm">{addr.fullName}</h5>
-
-                                    {/* Address Details structured as tabular description */}
-                                    <div className="mt-3.5 space-y-1.5 text-xs text-slate-500 font-medium">
-                                      <div className="flex gap-2">
-                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Mobile:</span>
-                                        <span className="text-slate-700 font-semibold">{addr.mobile}</span>
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Address:</span>
-                                        <span className="text-slate-600 leading-relaxed">
-                                          Building {addr.building_number}
-                                          {addr.villa_apartment && `, ${addr.villa_apartment}`}
-                                          {addr.floor && `, Floor ${addr.floor}`}
-                                          {`, ${addr.street}, ${addr.area}`}
-                                          {addr.zone && `, Zone ${addr.zone}`}
-                                        </span>
-                                      </div>
-                                      {addr.landmark && (
-                                        <div className="flex gap-2">
-                                          <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Landmark:</span>
-                                          <span className="text-slate-500 italic">Near {addr.landmark}</span>
-                                        </div>
-                                      )}
-                                      <div className="flex gap-2">
-                                        <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Location:</span>
-                                        <span className="text-slate-700 font-semibold">{addr.city}, {addr.country}</span>
-                                      </div>
-                                    </div>
-
-                                    {!addr.isDefault && (
-                                      <div className="mt-4 pt-3.5 border-t border-slate-100">
-                                        <button
-                                          onClick={() => setDefaultAddress(addr.id)}
-                                          className="text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-650 transition cursor-pointer">
-                                          Set as default
-                                        </button>
-=======
                                   <h5 className="font-bold text-slate-800 text-sm">{addr.fullName}</h5>
-                                  
+
                                   {/* Address Details structured as tabular description */}
                                   <div className="mt-3.5 space-y-1.5 text-xs text-slate-500 font-medium">
-
+                                    <div className="flex gap-2">
+                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Mobile:</span>
+                                      <span className="text-slate-700 font-semibold">{addr.mobile}</span>
+                                    </div>
                                     <div className="flex gap-2">
                                       <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Address:</span>
                                       <span className="text-slate-600 leading-relaxed">
@@ -1060,20 +1024,34 @@ export default function AccountPage() {
                                       <div className="flex gap-2">
                                         <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Landmark:</span>
                                         <span className="text-slate-500 italic">{addr.landmark}</span>
->>>>>>> 632ab01e154211faab4d8ff471b6cd579b40d5e2
                                       </div>
                                     )}
+                                    <div className="flex gap-2">
+                                      <span className="text-[10px] font-semibold uppercase text-slate-400 w-16 shrink-0 mt-0.5">Location:</span>
+                                      <span className="text-slate-700 font-semibold">{addr.city}, {addr.country}</span>
+                                    </div>
+                                  </div>
 
-                                    <div className="absolute top-5 right-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                      <button onClick={() => openEditAddress(addr)}
-                                        className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-orange-100 hover:text-orange-600 hover:border-orange-200 transition cursor-pointer shadow-sm" title="Edit Address">
-                                        <Edit className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button onClick={() => deleteAddress(addr.id)}
-                                        className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-red-100 hover:text-red-650 hover:border-red-205 transition cursor-pointer shadow-sm" title="Delete Address">
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                  {!addr.isDefault && (
+                                    <div className="mt-4 pt-3.5 border-t border-slate-100">
+                                      <button
+                                        onClick={() => setDefaultAddress(addr.id)}
+                                        className="text-xs font-semibold uppercase tracking-wider text-orange-500 hover:text-orange-600 transition cursor-pointer">
+                                        Set as default
                                       </button>
                                     </div>
+                                  )}
+
+                                  {/* Edit / Delete buttons */}
+                                  <div className="absolute top-5 right-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <button onClick={() => openEditAddress(addr)}
+                                      className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-orange-100 hover:text-orange-600 hover:border-orange-200 transition cursor-pointer shadow-sm" title="Edit Address">
+                                      <Edit className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button onClick={() => deleteAddress(addr.id)}
+                                      className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-red-100 hover:text-red-500 hover:border-red-200 transition cursor-pointer shadow-sm" title="Delete Address">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
                                   </div>
                                 );
                               })

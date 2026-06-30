@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -29,8 +29,15 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useUser();
+  const { login, isAuthenticated, loading: isUserLoading } = useUser();
   const router = useRouter();
+  const isRedirecting = useRef(false);
+
+  useEffect(() => {
+    if (!isUserLoading && isAuthenticated && !isRedirecting.current) {
+      router.push("/account");
+    }
+  }, [isAuthenticated, isUserLoading, router]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +54,9 @@ export default function RegisterPage() {
       const data = await authService.register({ name, email, password });
 
       if (data.success && data.token) {
+        isRedirecting.current = true;
         login({ name: data.user?.name || name, email, role: data.user?.role || "customer" }, data.token);
-        router.push("/account");
+        router.push("/");
       } else {
         setError(data.message || "Registration failed. Please try again.");
       }

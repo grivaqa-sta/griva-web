@@ -73,11 +73,9 @@ export default function Navbar() {
         className={announcementBarEnabled ? "h-[92px] sm:h-[120px]" : "h-[64px] sm:h-[80px]"}
       />
       <header
-        className={`fixed left-0 right-0 ${
-          announcementBarEnabled ? "top-7 sm:top-10" : "top-0"
-        } w-full border-b border-gray-100 bg-white transition-shadow duration-300 sm:px-6 lg:px-8 xl:px-10 ${
-          mobileMenuOpen ? "z-10001" : "z-40"
-        } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
+        className={`fixed left-0 right-0 ${announcementBarEnabled ? "top-7 sm:top-10" : "top-0"
+          } w-full border-b border-gray-100 bg-white transition-shadow duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
+          } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
       >
         {/* Desktop and Tablet Navbar Content (Visible on screens >= 640px) */}
         <div className="hidden sm:flex mx-auto h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4 w-full">
@@ -160,7 +158,9 @@ export default function Navbar() {
                   <User size={18} className="text-black group-hover:text-orange-500 transition-colors" />
                 </div>
                 <div className="text-left leading-tight">
-                  <p className="text-[10px] text-gray-400">{isCustomerLoggedIn ? "Account" : "Welcome"}</p>
+                  {isCustomerLoggedIn && (
+                    <p className="text-[10px] text-gray-400">Welcome</p>
+                  )}
                   <p className="text-xs font-bold text-black group-hover:text-orange-500 transition-colors truncate max-w-28">
                     {isCustomerLoggedIn ? userState.user?.name : "Sign In"}
                   </p>

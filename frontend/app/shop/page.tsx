@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { SlidersHorizontal, Star, RotateCcw, X } from "lucide-react";
+import { SlidersHorizontal, Star, RotateCcw, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
-import { ApiProduct } from "@/app/types/types";
+import { ApiProduct, Category, SubCategory } from "@/app/types/types";
+import { categoryService } from "@/app/services/category.service";
+import { subCategoryService } from "@/app/services/subCategory.service";
 import ProductCard from "@/app/components/product/ProductCard";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,15 +18,6 @@ interface ShopPageProps {
     search?: string;
   }>;
 }
-
-const CATEGORIES = [
-  { name: "Perfumes & Buhoor", slug: "perfumes-buhoor" },
-  { name: "Toys", slug: "toys" },
-  { name: "Baby Products", slug: "baby-products" },
-  { name: "Gadgets & Electronics", slug: "gadgets-electronics" },
-  { name: "Gaming Accessories", slug: "gaming-accessories" },
-  { name: "Kitchen Appliances & Essentials", slug: "kitchen-appliances-essentials" },
-];
 
 // Skeleton card
 function ProductCardSkeleton() {
@@ -45,11 +38,37 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
   const [searchVal, setSearchVal] = useState<string>("");
-  const [maxPrice, setMaxPrice] = useState<number>(2000);
+  const [maxPrice, setMaxPrice] = useState<number>(1000000);
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Dynamic categories & subcategories from API
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+
+  useEffect(() => {
+    async function loadTaxonomy() {
+      try {
+        const [catRes, subRes] = await Promise.all([
+          categoryService.getCategories(),
+          subCategoryService.getSubCategories(),
+        ]);
+        // categoryService.getCategories() returns response.data.data (already unwrapped array)
+        const cData = Array.isArray(catRes) ? catRes : (catRes?.data || []);
+        // subCategoryService.getSubCategories() returns response.data = { success, data: [...] }
+        const sRaw = subRes?.data || subRes;
+        const sData = Array.isArray(sRaw) ? sRaw : (sRaw?.data || []);
+        setCategories(Array.isArray(cData) ? cData : []);
+        setSubCategories(Array.isArray(sData) ? sData : []);
+      } catch (err) {
+        console.error("[ShopPage] Failed to load taxonomy:", err);
+      }
+    }
+    loadTaxonomy();
+  }, []);
 
   // Initialize filters from searchParams
   useEffect(() => {
@@ -64,23 +83,73 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const isRatingSearch = /(\d)\s*stars?/i.test(searchVal);
   // Fetch all products from API (search/price passed to backend)
   const { products, loading } = useAllProducts(
-    (searchVal && !isRatingSearch) || maxPrice < 2000
+    (searchVal && !isRatingSearch) || maxPrice < 1000000
       ? {
           search: (searchVal && !isRatingSearch) ? searchVal : undefined,
-          maxPrice: maxPrice < 2000 ? maxPrice : undefined,
+          maxPrice: maxPrice < 1000000 ? maxPrice : undefined,
         }
       : undefined
   );
 
+  const [maxProductPrice, setMaxProductPrice] = useState<number>(2000);
+
+  useEffect(() => {
+    if (products.length > 0 && maxPrice === 1000000) {
+      const maxVal = Math.max(...products.map((p) => Number(p.price || 0)));
+      setMaxProductPrice(Math.max(Math.ceil(maxVal), 2000));
+    }
+  }, [products, maxPrice]);
+
   const handleResetFilters = () => {
     setSelectedCategory("");
+    setSelectedSubCategory("");
     setSearchVal("");
-    setMaxPrice(2000);
+    setMaxPrice(1000000);
     setMinRating(0);
     setSortBy("featured");
   };
 
-  // Client-side filter for category, rating, and sort
+  // Helper to clean up category titles that are in all caps (e.g. "FLOWERS & BOUQUETS")
+  const formatCategoryTitle = (title: string) => {
+    if (!title) return "";
+    if (title === title.toUpperCase()) {
+      return title
+        .toLowerCase()
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    }
+    return title;
+  };
+
+  // Toggle category open/closed and reset subcategory selection
+  const handleSelectCategory = (slug: string) => {
+    if (selectedCategory === slug) {
+      setSelectedCategory("");
+    } else {
+      setSelectedCategory(slug);
+    }
+    setSelectedSubCategory("");
+  };
+
+  // Get subcategories of the currently selected category
+  const activeSubCategories = useMemo(() => {
+    if (!selectedCategory) return [];
+    const matchedCat = categories.find(
+      (c) => c.slug === selectedCategory || c.href?.includes(selectedCategory)
+    );
+    if (!matchedCat) return [];
+    return subCategories.filter((s) => s.category_id === matchedCat.id);
+  }, [selectedCategory, categories, subCategories]);
+
+  // Build a set of subcategory IDs belonging to the selected category
+  const selectedCategorySubIds = useMemo(() => {
+    if (!selectedCategory) return null;
+    if (activeSubCategories.length === 0) return null;
+    return new Set(activeSubCategories.map((s) => s.id));
+  }, [selectedCategory, activeSubCategories]);
+
+  // Client-side filter for category, subcategory, rating, and sort
   const processedProducts = useMemo((): ApiProduct[] => {
     let result = [...products];
 
@@ -95,25 +164,21 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
       result = result.filter((p) => Math.round(Number(p.rating || 0)) === ratingFromSearch);
     }
 
-    // Category filter (client-side — match against brand/title since no category slug on ApiProduct)
-    // The category filtering by subcategory is done on category page; shop page shows all
-    if (selectedCategory) {
-      result = result.filter((p) => {
-        const titleLower = p.title.toLowerCase();
-        const descLower = (p.short_description || p.description || "").toLowerCase();
-        const categoryMapped: Record<string, string[]> = {
-          "perfumes-buhoor": ["perfume", "oud", "buhoor", "fragrance", "scent"],
-          "toys": ["toy", "learning", "islamic", "remote control", "rc"],
-          "baby-products": ["baby", "infant", "play mat", "bouncer", "cradle"],
-          "gadgets-electronics": ["drone", "vr", "smartwatch", "speaker", "camera", "laptop", "macbook", "headphone", "earphone"],
-          "gaming-accessories": ["gaming", "xbox", "ps5", "controller", "trigger", "game"],
-          "kitchen-appliances-essentials": ["coffee", "kitchen", "rack", "espresso", "egg boiler"],
-        };
-        const keywords = categoryMapped[selectedCategory] || [];
-        return keywords.some(
-          (kw) => titleLower.includes(kw) || descLower.includes(kw)
-        );
-      });
+    // Subcategory filter — if a specific subcategory is selected, filter by that
+    if (selectedSubCategory) {
+      const matchedSub = activeSubCategories.find(
+        (s) => s.slug === selectedSubCategory
+      );
+      if (matchedSub) {
+        result = result.filter((p) => p.subcategory_id === matchedSub.id);
+      }
+    } else if (selectedCategory) {
+      if (selectedCategorySubIds) {
+        // Category filter — show all products from all subcategories of this category
+        result = result.filter((p) => selectedCategorySubIds.has(p.subcategory_id));
+      } else {
+        result = []; // Show no products if there are no subcategories in this category
+      }
     }
 
     // Rating Filter
@@ -131,7 +196,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
 
     return result;
-  }, [products, selectedCategory, minRating, sortBy, searchVal]);
+  }, [products, selectedCategory, selectedSubCategory, selectedCategorySubIds, activeSubCategories, minRating, sortBy, searchVal]);
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-16">
@@ -173,33 +238,69 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                 />
               </div>
 
-              {/* Categories */}
+              {/* Categories & Subcategories */}
               <div>
                 <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                   Categories
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <button
-                    onClick={() => setSelectedCategory("")}
-                    className={`block w-full text-left text-xs py-1 px-2 rounded-md transition-colors cursor-pointer ${selectedCategory === ""
+                    onClick={() => handleSelectCategory("")}
+                    className={`block w-full text-left text-xs py-1.5 px-2 rounded-md transition-colors cursor-pointer ${selectedCategory === ""
                       ? "bg-orange-500 text-white font-semibold"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                   >
                     All Categories
                   </button>
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.slug}
-                      onClick={() => setSelectedCategory(cat.slug)}
-                      className={`block w-full text-left text-xs py-1 px-2 rounded-md transition-colors cursor-pointer ${selectedCategory === cat.slug
-                        ? "bg-orange-500 text-white font-semibold"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
+                  {categories.map((cat) => {
+                    const isExpanded = selectedCategory === cat.slug;
+                    const catSubCategories = subCategories.filter((s) => s.category_id === cat.id);
+                    return (
+                      <div key={cat.slug}>
+                        <button
+                          onClick={() => handleSelectCategory(cat.slug)}
+                          className={`flex w-full items-center justify-between text-left text-xs py-1.5 px-2 rounded-md transition-colors cursor-pointer ${isExpanded
+                            ? "bg-orange-500 text-white font-semibold"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                            }`}
+                        >
+                          <span>{formatCategoryTitle(cat.title)}</span>
+                          {catSubCategories.length > 0 && (
+                            isExpanded
+                              ? <ChevronDown className="h-3 w-3 shrink-0" />
+                              : <ChevronRight className="h-3 w-3 shrink-0" />
+                          )}
+                        </button>
+                        {/* Subcategories — shown when this category is expanded */}
+                        {isExpanded && catSubCategories.length > 0 && (
+                          <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-orange-100 pl-2">
+                            <button
+                              onClick={() => setSelectedSubCategory("")}
+                              className={`block w-full text-left text-[11px] py-1 px-2 rounded-md transition-colors cursor-pointer ${selectedSubCategory === ""
+                                ? "bg-orange-50 text-orange-600 font-semibold"
+                                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                }`}
+                            >
+                              All {formatCategoryTitle(cat.title)}
+                            </button>
+                            {catSubCategories.map((sub) => (
+                              <button
+                                key={sub.slug}
+                                onClick={() => setSelectedSubCategory(sub.slug)}
+                                className={`block w-full text-left text-[11px] py-1 px-2 rounded-md transition-colors cursor-pointer ${selectedSubCategory === sub.slug
+                                  ? "bg-orange-50 text-orange-600 font-semibold"
+                                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                  }`}
+                              >
+                                {sub.title}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -209,20 +310,20 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                     Max Price
                   </h4>
-                  <span className="text-xs font-bold text-orange-500">QAR {maxPrice}</span>
+                  <span className="text-xs font-bold text-orange-500">QAR {maxPrice === 1000000 ? maxProductPrice : maxPrice}</span>
                 </div>
                 <input
                   type="range"
                   min="0"
-                  max="2000"
-                  step="50"
-                  value={maxPrice}
+                  max={maxProductPrice}
+                  step={maxProductPrice > 5000 ? 100 : 50}
+                  value={maxPrice === 1000000 ? maxProductPrice : maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                 />
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-semibold">
                   <span>QAR 0</span>
-                  <span>QAR 2,000</span>
+                  <span>QAR {maxProductPrice}</span>
                 </div>
               </div>
 
@@ -381,14 +482,14 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                   />
                 </div>
 
-                {/* Categories */}
+                {/* Categories & Subcategories */}
                 <div>
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                     Categories
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => setSelectedCategory("")}
+                      onClick={() => handleSelectCategory("")}
                       className={`text-xs py-1.5 px-3 rounded-lg border transition cursor-pointer ${selectedCategory === ""
                         ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
                         : "border-gray-200 text-gray-600 bg-white"
@@ -396,19 +497,50 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                     >
                       All Categories
                     </button>
-                    {CATEGORIES.map((cat) => (
+                    {categories.map((cat) => (
                       <button
                         key={cat.slug}
-                        onClick={() => setSelectedCategory(cat.slug)}
-                        className={`text-xs py-1.5 px-3 rounded-lg border transition cursor-pointer ${selectedCategory === cat.slug
+                        onClick={() => handleSelectCategory(cat.slug)}
+                        className={`text-xs py-1.5 px-3 rounded-lg border transition cursor-pointer flex items-center gap-1 ${selectedCategory === cat.slug
                           ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
                           : "border-gray-200 text-gray-600 bg-white"
                           }`}
                       >
-                        {cat.name}
+                        {formatCategoryTitle(cat.title)}
+                        {subCategories.some((s) => s.category_id === cat.id) && (
+                          selectedCategory === cat.slug
+                            ? <ChevronDown className="h-3 w-3 shrink-0" />
+                            : <ChevronRight className="h-3 w-3 shrink-0" />
+                        )}
                       </button>
                     ))}
                   </div>
+                  {/* Subcategories for selected category */}
+                  {selectedCategory && activeSubCategories.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => setSelectedSubCategory("")}
+                        className={`text-[11px] py-1 px-2.5 rounded-lg border transition cursor-pointer ${selectedSubCategory === ""
+                          ? "border-orange-400 bg-orange-50 text-orange-600 font-bold"
+                          : "border-gray-200 text-gray-500 bg-white"
+                          }`}
+                      >
+                        All
+                      </button>
+                      {activeSubCategories.map((sub) => (
+                        <button
+                          key={sub.slug}
+                          onClick={() => setSelectedSubCategory(sub.slug)}
+                          className={`text-[11px] py-1 px-2.5 rounded-lg border transition cursor-pointer ${selectedSubCategory === sub.slug
+                            ? "border-orange-400 bg-orange-50 text-orange-600 font-bold"
+                            : "border-gray-200 text-gray-500 bg-white"
+                            }`}
+                        >
+                          {sub.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Price Slider */}
@@ -417,14 +549,14 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                     <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                       Max Price
                     </h4>
-                    <span className="text-xs font-bold text-orange-500">QAR {maxPrice}</span>
+                    <span className="text-xs font-bold text-orange-500">QAR {maxPrice === 1000000 ? maxProductPrice : maxPrice}</span>
                   </div>
                   <input
                     type="range"
                     min="0"
-                    max="2000"
-                    step="50"
-                    value={maxPrice}
+                    max={maxProductPrice}
+                    step={maxProductPrice > 5000 ? 100 : 50}
+                    value={maxPrice === 1000000 ? maxProductPrice : maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                     className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                   />

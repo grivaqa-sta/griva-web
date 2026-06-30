@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { SlidersHorizontal, Star, RotateCcw, X, ChevronDown, ChevronRight, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, Star, RotateCcw, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
 import { ApiProduct, Category, SubCategory } from "@/app/types/types";
 import { categoryService } from "@/app/services/category.service";

@@ -348,6 +348,65 @@ const sendAdminNewSubscriberNotification = async (email, country) => {
   }
 };
 
+const sendPasswordResetEmail = async (email, name, resetUrl) => {
+  try {
+    if (!process.env.BREVO_API_KEY || process.env.BREVO_API_KEY === "your_brevo_api_key_here") {
+      console.log(`✉️ [SIMULATED RESET EMAIL] To: ${email} | URL: ${resetUrl}`);
+      logEmailResult("PASSWORD_RESET", email, "SIMULATED", { resetUrl });
+      return { messageId: "simulated-reset-id-" + Math.random() };
+    }
+
+    const sendSmtpEmail = {
+      sender: {
+        email: process.env.SENDER_EMAIL || "support@thegriva.com",
+        name: process.env.SENDER_NAME || "GRIVA Store",
+      },
+      to: [
+        {
+          email: email,
+        },
+      ],
+      subject: "Reset Your Password - GRIVA Store",
+      htmlContent: `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #ff6a00;">
+            <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
+          </div>
+          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px; text-align: center;">Reset Your Password</h2>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Hello ${name || "Customer"},</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6;">You are receiving this email because you (or someone else) requested a password reset for your account on the GRIVA Store.</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">Please click the button below to choose a new password. This link is only valid for 15 minutes.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" 
+               style="background-color: #ff6a00; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block;">
+              Reset Password
+            </a>
+          </div>
+
+          <p style="color: #9ca3af; font-size: 12px; line-height: 1.6;">If the button above does not work, copy and paste the following URL into your web browser:</p>
+          <p style="color: #ff6a00; font-size: 12px; word-break: break-all; margin-bottom: 24px;">${resetUrl}</p>
+
+          <p style="color: #374151; font-size: 14px; line-height: 1.6;">If you did not request a password reset, please ignore this email; your password will remain unchanged.</p>
+          
+          <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+          <div style="text-align: center; color: #9ca3af; font-size: 11px;">
+            <p>© ${new Date().getFullYear()} GRIVA Store. All rights reserved.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const result = await client.transactionalEmails.sendTransacEmail(sendSmtpEmail);
+    logEmailResult("PASSWORD_RESET", email, "SUCCESS", result);
+    return result;
+  } catch (error) {
+    console.error(`Error sending password reset email to ${email}:`, error);
+    logEmailResult("PASSWORD_RESET", email, "ERROR", { message: error.message, stack: error.stack });
+    throw error;
+  }
+};
+
 module.exports = {
   sendTestEmail,
   sendAdminOrderNotification,
@@ -357,4 +416,5 @@ module.exports = {
   sendBroadcastEmail,
   sendSubscriberWelcomeEmail,
   sendAdminNewSubscriberNotification,
+  sendPasswordResetEmail,
 };

@@ -1,11 +1,40 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Check, ArrowUpRight, MessageSquare, Send } from "lucide-react";
+import { getSettingsApi } from "@/app/utils/api";
+import { useToast } from "@/app/context/ToastContext";
 
 export default function ExclusiveDeals() {
+  const { toast } = useToast();
+  const [telegramLink, setTelegramLink] = useState<string>("");
+  const [whatsappLink, setWhatsappLink] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function loadLinks() {
+      try {
+        const settings = await getSettingsApi();
+        setTelegramLink(settings.telegramLink || "");
+        setWhatsappLink(settings.whatsappCommunityLink || "");
+      } catch (err) {
+        console.error("Failed to fetch campaign links:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadLinks();
+  }, []);
+
+  const handleChannelClick = (e: React.MouseEvent<HTMLAnchorElement>, name: string, url: string) => {
+    if (!url || url.trim() === "") {
+      e.preventDefault();
+      toast.info(`${name} is coming soon!`);
+    }
+  };
+
   const channelLinks = [
     {
       name: "Telegram Channel",
@@ -17,7 +46,7 @@ export default function ExclusiveDeals() {
         "Direct link to VIP collection pages"
       ],
       actionText: "Join Telegram Channel",
-      href: "https://t.me/griva_qa",
+      href: telegramLink,
       colorClass: "bg-[#229ED9] hover:bg-[#1a8bbf]",
       icon: <Send size={22} className="text-[#229ED9]" />,
       iconBg: "bg-[#229ED9]/5",
@@ -33,7 +62,7 @@ export default function ExclusiveDeals() {
         "Early access to seasonal sales"
       ],
       actionText: "Join WhatsApp Community",
-      href: "https://wa.me/9747770123",
+      href: whatsappLink,
       colorClass: "bg-[#25D366] hover:bg-[#1dba57]",
       icon: <MessageSquare size={22} className="text-[#25D366]" />,
       iconBg: "bg-[#25D366]/5",
@@ -42,7 +71,7 @@ export default function ExclusiveDeals() {
   ];
 
   return (
-    <div className="relative min-h-screen bg-[#FDFDFD] overflow-hidden pt-2 pb-16 px-4 md:pt-4 md:pb-24">
+    <div className="relative min-h-screen bg-[#FDFDFD] overflow-hidden pt-12 pb-16 px-4 md:pt-20 md:pb-24">
       {/* Background Brand Pattern and Subtle Orange Lighting */}
       <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
         <Image 
@@ -136,8 +165,9 @@ export default function ExclusiveDeals() {
               </div>
 
               <a
-                href={channel.href}
-                target="_blank"
+                href={channel.href || "#"}
+                onClick={(e) => handleChannelClick(e, channel.name, channel.href)}
+                target={channel.href ? "_blank" : undefined}
                 rel="noopener noreferrer"
                 className={`w-full mt-8 py-3.5 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 shadow-sm ${channel.colorClass} active:scale-[0.995]`}
               >

@@ -205,6 +205,8 @@ export interface GlobalSettings {
   freeShippingThreshold?: number;
   whatsappNumber?: string;
   supportEmail?: string;
+  telegramLink?: string;
+  whatsappCommunityLink?: string;
 }
 
 export async function getSettingsApi(): Promise<GlobalSettings> {

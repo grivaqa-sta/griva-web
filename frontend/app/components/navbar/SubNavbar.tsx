@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { Category, SubCategory } from "@/app/types/types";
 import { useCategoriesWithSubcategories } from "@/app/hooks/useCategories";
+import { useAdminSettings } from "@/app/context/AdminContext";
 
 interface CategoryWithSubcategories extends Category {
   subcategories: SubCategory[];
@@ -17,6 +18,43 @@ export default function SubNavbar() {
   const { categories: rawCategories } = useCategoriesWithSubcategories();
   const navLinks = rawCategories.filter((cat) => cat.is_active);
   const [comingSoonVisible, setComingSoonVisible] = useState(true);
+  const [visible, setVisible] = useState(true);
+  const { announcementBarEnabled } = useAdminSettings();
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Keep visible at the top of the page
+      if (currentScrollY <= 50) {
+        setVisible(true);
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      // Avoid bouncing effect at the bottom of the page on iOS
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (currentScrollY >= maxScroll) {
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      if (currentScrollY > lastScrollY) {
+        // Scrolling down
+        setVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up
+        setVisible(true);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
@@ -65,7 +103,15 @@ export default function SubNavbar() {
         }
       `}</style>
 
-      <div className="hidden lg:block w-full border-y border-gray-200 bg-white px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div
+        className="hidden lg:block fixed left-0 right-0 z-30 border-y border-gray-200 bg-white px-4 sm:px-6 lg:px-8 xl:px-10 transition-all duration-300 ease-in-out"
+        style={{
+          top: announcementBarEnabled ? "120px" : "80px",
+          transform: visible ? "translateY(0)" : "translateY(-60px)",
+          opacity: visible ? 1 : 0,
+          pointerEvents: visible ? "auto" : "none"
+        }}
+      >
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-center px-4 sm:px-6 lg:px-8">
 
           <nav className="flex items-center gap-1">
@@ -143,6 +189,8 @@ export default function SubNavbar() {
 
         </div>
       </div>
+      {/* Desktop placeholder to preserve layout space (since SubNavbar is fixed) */}
+      <div className="hidden lg:block h-14" aria-hidden="true" />
     </>
   );
 }

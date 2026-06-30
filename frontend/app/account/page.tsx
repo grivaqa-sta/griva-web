@@ -40,6 +40,8 @@ const emptyForm: AddressRequest = {
   city: "Doha",
   country: "Qatar",
   isDefault: false,
+  latitude: undefined,
+  longitude: undefined,
 };
 
 const labelIcons = {
@@ -85,6 +87,93 @@ export default function AccountPage() {
   const [formData, setFormData] = useState<AddressRequest>(emptyForm);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [locating, setLocating] = useState(false);
+  const [locationSuccess, setLocationSuccess] = useState(false);
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocating(true);
+    setLocationSuccess(false);
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 0
+    };
+
+    const successCallback = async (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      setFormData((prev) => ({ ...prev, latitude, longitude }));
+      
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              "Accept-Language": "en",
+              "User-Agent": "GrivaEcommerce/1.0"
+            }
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const addr = data.address || {};
+          const streetName = addr.road || addr.suburb || addr.neighbourhood || "";
+          const areaName = addr.quarter || addr.suburb || addr.city_district || addr.town || addr.city || "";
+          const zoneNum = addr.postcode || "";
+          
+          setFormData((prev) => ({
+            ...prev,
+            area: areaName || prev.area,
+            street: streetName || prev.street,
+            zone: zoneNum.match(/^\d+$/) ? zoneNum : prev.zone,
+          }));
+          setLocationSuccess(true);
+          toast.success("Location coordinates and address details retrieved successfully!");
+        } else {
+          setLocationSuccess(true);
+          toast.success("Location coordinates saved!");
+        }
+      } catch (err) {
+        console.error("Reverse geocoding error:", err);
+        setLocationSuccess(true);
+        toast.success("Location coordinates saved!");
+      } finally {
+        setLocating(false);
+      }
+    };
+
+    const errorCallback = (error: GeolocationPositionError) => {
+      // If high accuracy failed/timed out, try fallback with low accuracy
+      if (options.enableHighAccuracy && (error.code === 3 || error.code === 2)) {
+        console.log("High accuracy geolocation failed/timeout. Retrying with low accuracy...");
+        options.enableHighAccuracy = false;
+        options.timeout = 10000;
+        navigator.geolocation.getCurrentPosition(successCallback, finalErrorCallback, options);
+      } else {
+        finalErrorCallback(error);
+      }
+    };
+
+    const finalErrorCallback = (error: GeolocationPositionError) => {
+      setLocating(false);
+      console.error("Geolocation error:", error);
+      if (error.code === 1) {
+        toast.error(
+          "Location permission is blocked! Please click the 'Not Secure' / Info icon (or Lock icon) in your browser address bar next to localhost:3000, then toggle Location access to ALLOW."
+        );
+      } else if (error.code === 3) {
+        toast.error("Location request timed out. Please try again or type your address manually.");
+      } else {
+        toast.error("Unable to retrieve your location. Please check your browser/device settings or type your address manually.");
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
+  };
 
   // Orders state
   const [orders, setOrders] = useState<MyOrder[]>([]);
@@ -224,6 +313,8 @@ export default function AccountPage() {
       city: addr.city || "Doha",
       country: addr.country || "Qatar",
       isDefault: addr.isDefault,
+      latitude: addr.latitude,
+      longitude: addr.longitude,
     });
     setEditingAddress(addr);
     setFormError("");
@@ -685,6 +776,29 @@ export default function AccountPage() {
                               </button>
                             ))}
                           </div>
+                        </div>
+
+                        {/* Use Current Location Button */}
+                        <div className="sm:col-span-2">
+                          <button
+                            type="button"
+                            onClick={handleUseMyLocation}
+                            disabled={locating}
+                            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-orange-500/25 bg-orange-50/30 hover:bg-orange-50 text-orange-600 font-bold text-xs uppercase tracking-wider transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                          >
+                            {locating ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                            ) : (
+                              <MapPin className="h-4 w-4 text-orange-500" />
+                            )}
+                            <span>
+                              {locating
+                                ? "Locating your GPS coordinates..."
+                                : locationSuccess
+                                ? "📍 Location coordinates saved! (Click to locate again)"
+                                : "📍 Use My Location (Exact GPS)"}
+                            </span>
+                          </button>
                         </div>
 
                         {/* Full Name */}

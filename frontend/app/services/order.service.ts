@@ -21,6 +21,8 @@ export interface CreateOrderPayload {
   delivery_slot_id?: number;
   checkout_token?: string;
   checkoutToken?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface OrderResponse {
@@ -61,6 +63,8 @@ export interface MyOrder {
   payment_method: string;
   createdAt: string;
   items: MyOrderItem[];
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface MyOrdersResponse {
@@ -82,6 +86,8 @@ export interface TrackedOrder {
   createdAt: string;
   updatedAt: string;
   items: MyOrderItem[];
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface TrackOrderResponse {

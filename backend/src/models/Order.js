@@ -180,6 +180,14 @@ const Order = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 8),
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(11, 8),
+      allowNull: true,
+    },
     cash_reconciliation_status: {
       type: DataTypes.STRING,
       allowNull: false,

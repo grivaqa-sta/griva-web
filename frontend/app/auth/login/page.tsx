@@ -33,12 +33,12 @@ function LoginForm() {
 
   useEffect(() => {
     if (!isUserLoading && isAuthenticated && !isRedirecting.current) {
-      router.push("/account");
+      router.push("/");
     }
   }, [isAuthenticated, isUserLoading, router]);
   const searchParams = useSearchParams();
 
-  const redirectPath = searchParams.get("redirect") || "/account";
+  const redirectPath = searchParams.get("redirect") || "/";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

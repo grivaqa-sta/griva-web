@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -27,11 +27,18 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useUser();
+  const { login, isAuthenticated, loading: isUserLoading } = useUser();
   const router = useRouter();
+  const isRedirecting = useRef(false);
+
+  useEffect(() => {
+    if (!isUserLoading && isAuthenticated && !isRedirecting.current) {
+      router.push("/");
+    }
+  }, [isAuthenticated, isUserLoading, router]);
   const searchParams = useSearchParams();
 
-  const redirectPath = searchParams.get("redirect") || "/account";
+  const redirectPath = searchParams.get("redirect") || "/";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +49,7 @@ function LoginForm() {
       const response = await authService.login({ email, password });
       if (response && response.token) {
         if (response.user?.role === "customer") {
+          isRedirecting.current = true;
           login(
             { name: response.user?.name || email.split("@")[0], email, role: "customer" },
             response.token
@@ -50,6 +58,7 @@ function LoginForm() {
         } else if (response.user?.role === "admin") {
           setError("Admin accounts cannot use this login page.");
         } else {
+          isRedirecting.current = true;
           login(
             { name: response.user?.name || email.split("@")[0], email, role: "customer" },
             response.token

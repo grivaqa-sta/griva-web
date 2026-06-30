@@ -979,7 +979,9 @@ export default function AccountPage() {
                               </button>
                             </div>
                           ) : (
-                            addresses.map((addr) => {
+                          [...addresses]
+  .sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0))
+  .map((addr) => {
                               const LabelIcon = labelIcons[addr.label] || MapPin;
                               return (
                                 <div key={addr.id}

@@ -206,9 +206,12 @@ exports.getCustomerById = async (req, res, next) => {
       customerSegment = "Repeat Customer";
     }
 
-    // Home and Office addresses
-    const homeAddress = user.addresses ? user.addresses.find(a => a.label === "home") || null : null;
-    const officeAddress = user.addresses ? user.addresses.find(a => a.label === "office") || null : null;
+    // Home and Office addresses (prefer the default one within each label group)
+    const homeAddresses = user.addresses ? user.addresses.filter(a => a.label === "home") : [];
+    const officeAddresses = user.addresses ? user.addresses.filter(a => a.label === "office") : [];
+
+    const homeAddress = homeAddresses.find(a => a.isDefault) || homeAddresses[0] || null;
+    const officeAddress = officeAddresses.find(a => a.isDefault) || officeAddresses[0] || null;
 
     // Latest 10 orders
     const recentOrders = await Order.findAll({

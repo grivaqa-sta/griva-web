@@ -514,7 +514,7 @@ export default function DeliveryDashboard() {
   const totalDelivered = orders.filter(o => o.status === "delivered").length;
   const totalPending = orders.filter(o => ["assigned", "out_for_delivery", "rescheduled"].includes(o.status)).length;
   const totalEarningsToday = orders
-    .filter(o => o.status === "delivered" && o.payment_method?.toUpperCase().includes("COD"))
+    .filter(o => o.status === "delivered" && o.delivery_payment_method === "Cash")
     .reduce((sum, o) => sum + parseFloat(parseTotal(o.total_price)), 0)
     .toFixed(2);
 
@@ -604,7 +604,7 @@ export default function DeliveryDashboard() {
                   { label: "Assigned", val: totalAssigned, icon: <Package size={14} className="text-blue-400" />, desc: "Active list" },
                   { label: "Delivered", val: totalDelivered, icon: <Check size={14} className="text-green-400" />, desc: "Delivered today" },
                   { label: "Pending", val: totalPending, icon: <Clock size={14} className="text-yellow-400" />, desc: "Awaiting drop" },
-                  { label: "COD Earnings", val: `QAR ${totalEarningsToday}`, icon: <DollarSign size={14} className="text-[#FF6A00]" />, desc: "Cash on delivery" },
+                  { label: "Cash Collected", val: `QAR ${totalEarningsToday}`, icon: <DollarSign size={14} className="text-[#FF6A00]" />, desc: "Physical cash in hand" },
                 ].map((stat, i) => (
                   <div key={i} className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 space-y-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.01)] relative overflow-hidden">
                     <div className="flex items-center justify-between">
@@ -793,15 +793,17 @@ export default function DeliveryDashboard() {
 
                         {/* Primary action buttons */}
                         <div className="space-y-3 pt-2">
-                          {/* Pick Up Action */}
-                          {order.status === "assigned" && (
+                          {/* Pick Up or Retry Action */}
+                          {(order.status === "assigned" || order.status === "attempted" || order.status === "rescheduled") && (
                             <button
                               onClick={() => handleStatusUpdate(order.id, "out_for_delivery")}
                               disabled={isUpdating}
                               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-xs font-bold py-3.5 rounded-2xl transition-all cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex items-center justify-center gap-2"
                               style={{ minHeight: "44px" }}
                             >
-                              <span>🚚 Pick Up Order</span>
+                              <span>
+                                {order.status === "assigned" ? "🚚 Pick Up Order" : "🚀 Retry Delivery"}
+                              </span>
                             </button>
                           )}
 

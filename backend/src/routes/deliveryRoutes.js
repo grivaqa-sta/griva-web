@@ -8,6 +8,9 @@ const { authenticateJWT, isAdmin } = require("../middleware/auth");
 // GET  /api/delivery/my-orders  — Today's assigned orders
 router.get("/my-orders", authenticateDelivery, deliveryController.getMyOrders);
 
+// GET  /api/delivery/orders/:id  — Specific order details
+router.get("/orders/:id", authenticateDelivery, deliveryController.getOrderDetails);
+
 // PATCH /api/delivery/orders/:id/status  — Update order status (assigned → out_for_delivery → delivered)
 router.patch("/orders/:id/status", authenticateDelivery, deliveryController.updateMyOrderStatus);
 

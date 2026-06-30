@@ -340,6 +340,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         image: product.main_image_url,
         price: `QAR ${formatPrice(product.price)}`,
         priceNumber: product.price,
+        oldPriceNumber: product.old_price || product.price,
         quantity,
         category: product.brand || "Product",
         selectedColor: selectedColor || undefined,

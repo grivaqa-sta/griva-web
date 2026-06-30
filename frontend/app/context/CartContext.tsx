@@ -71,7 +71,11 @@ function buildState(items: CartItem[]): CartState {
     (sum, item) => sum + item.priceNumber * item.quantity,
     0
   );
-  return { items, totalItems, totalPrice };
+  const totalOldPrice = items.reduce(
+    (sum, item) => sum + (item.oldPriceNumber || item.priceNumber) * item.quantity,
+    0
+  );
+  return { items, totalItems, totalPrice, totalOldPrice };
 }
 
 // ─────────────────────────────────────────────────────────
@@ -107,6 +111,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     items: [],
     totalItems: 0,
     totalPrice: 0,
+    totalOldPrice: 0,
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -257,13 +262,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        const priceNum = parsePriceNumber(product.price);
+        const oldPriceNum = serverProd.old_price
+          ? parseFloat(String(serverProd.old_price).replace(/([$]|qar|[\s,])/gi, ""))
+          : priceNum;
+
         const cartItem: CartItem = {
           id: Date.now() + Math.random(),
           productId: product.id,
           title: product.title,
           image: product.image,
           price: product.price,
-          priceNumber: parsePriceNumber(product.price),
+          priceNumber: priceNum,
+          oldPriceNumber: oldPriceNum,
           quantity: qty,
           category: product.category,
           selectedColor: product.selectedColor,

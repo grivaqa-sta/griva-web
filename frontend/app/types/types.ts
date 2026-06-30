@@ -400,6 +400,7 @@ export interface CartItem {
   image: string | StaticImageData;
   price: string;
   priceNumber: number;
+  oldPriceNumber: number;
   quantity: number;
   selectedColor?: string;
   selectedStorage?: string;
@@ -418,6 +419,7 @@ export interface CartState {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
+  totalOldPrice: number;
 }
 
 // ─────────────────────────────────────────────────────────

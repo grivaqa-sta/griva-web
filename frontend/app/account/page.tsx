@@ -11,6 +11,7 @@ import {
   MessageCircle, Undo, Search, Check, ShieldCheck, Mail, Phone, Calendar
 } from "lucide-react";
 import { addressService } from "@/app/services/address.service";
+import { authService } from "@/app/services/auth.service";
 import { orderService, MyOrder } from "@/app/services/order.service";
 import { useUser } from "@/app/context/UserContext";
 import { useWishlist } from "@/app/context/WishlistContext";
@@ -191,11 +192,14 @@ export default function AccountPage() {
   const [profileMobile, setProfileMobile] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState("");
+  const [profileMobileError, setProfileMobileError] = useState("");
 
   useEffect(() => {
     if (profile) {
       setProfileName(profile.name);
-      setProfileMobile("+974 5555 4321"); // Simulated mobile fallback
+      let phone = profile.phone || "";
+      phone = phone.replace(/^(?:\+?974)?\s?/, "").replace(/[\s-]/g, "");
+      setProfileMobile(phone);
     }
   }, [profile]);
 
@@ -347,19 +351,37 @@ export default function AccountPage() {
     }
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (profileMobileError) return;
+
+    if (profileMobile) {
+      const cleanNumber = profileMobile.replace(/[\s-]/g, "");
+      const regex = /^[3567]\d{7}$/;
+      if (!regex.test(cleanNumber)) {
+        setProfileMobileError("Please enter a valid Qatar mobile number.");
+        return;
+      }
+    }
+    setProfileMobileError("");
+
     setProfileSaving(true);
     setProfileSuccessMsg("");
-    setTimeout(() => {
+    try {
+      const fullMobile = profileMobile ? `+974 ${profileMobile.replace(/[\s-]/g, "")}` : "";
+      await authService.updateProfile({ name: profileName, phone: fullMobile });
       setProfileSaving(false);
       setIsEditingProfile(false);
       setProfileSuccessMsg("Profile updated successfully!");
       if (profile) {
-        profile.name = profileName; // Update local state simulation
+        profile.name = profileName; 
+        profile.phone = fullMobile;
       }
       setTimeout(() => setProfileSuccessMsg(""), 3000);
-    }, 1000);
+    } catch (error) {
+      setProfileSaving(false);
+      toast.error("Failed to update profile. Please try again.");
+    }
   };
 
   // Stepper calculator helper
@@ -637,18 +659,38 @@ export default function AccountPage() {
 
                           <div>
                             <label className={labelClass}>Mobile Number</label>
-                            <input
-                              type="tel"
-                              value={profileMobile}
-                              onChange={(e) => setProfileMobile(e.target.value)}
-                              className={inputClass}
-                            />
+                            <div className="mt-1.5 flex shadow-sm rounded-xl">
+                              <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 text-slate-600 sm:text-sm font-bold">
+                                +974
+                              </span>
+                              <input
+                                type="tel"
+                                maxLength={8}
+                                value={profileMobile}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, "").slice(0, 8);
+                                  setProfileMobile(val);
+                                  if (val) {
+                                    const regex = /^[3567]\d{7}$/;
+                                    if (!regex.test(val)) {
+                                      setProfileMobileError("Please enter a valid Qatar mobile number.");
+                                    } else {
+                                      setProfileMobileError("");
+                                    }
+                                  } else {
+                                    setProfileMobileError("");
+                                  }
+                                }}
+                                className={`block w-full flex-1 rounded-none rounded-r-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 ${profileMobileError ? "border-red-500 focus:border-red-500 focus:ring-red-500/10 z-10" : ""}`}
+                              />
+                            </div>
+                            {profileMobileError && <p className="text-xs text-red-500 mt-1.5 font-semibold">{profileMobileError}</p>}
                           </div>
 
                             <div className="pt-2 flex gap-3">
                               <button
                                 type="submit"
-                                disabled={profileSaving}
+                                disabled={profileSaving || !!profileMobileError}
                                 className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-orange-500/15 transition disabled:opacity-60 flex items-center gap-1.5 cursor-pointer"
                               >
                                 {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -658,6 +700,10 @@ export default function AccountPage() {
                                 type="button"
                                 onClick={() => {
                                   setProfileName(profile.name);
+                                  let phone = profile.phone || "";
+                                  phone = phone.replace(/^(?:\+?974)?\s?/, "").replace(/[\s-]/g, "");
+                                  setProfileMobile(phone);
+                                  setProfileMobileError("");
                                   setIsEditingProfile(false);
                                 }}
                                 className="px-6 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
@@ -691,7 +737,7 @@ export default function AccountPage() {
                               <Phone className="h-5 w-5 text-slate-400 mt-0.5" />
                               <div>
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mobile Number</p>
-                                <p className="text-sm font-semibold text-slate-800 mt-1">{profileMobile}</p>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{profileMobile ? `+974 ${profileMobile}` : ""}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">

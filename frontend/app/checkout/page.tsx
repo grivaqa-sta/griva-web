@@ -350,24 +350,27 @@ export default function CheckoutPage() {
   // Pre-fill form for logged-in users
   useEffect(() => {
     if (isLoggedIn && userState.user) {
+      const profilePhone = extractQatarLocalNumber(userState.profileData?.phone || "");
       setForm((prev) => ({
         ...prev,
         fullName: prev.fullName || userState.user?.name || "",
         email: prev.email || userState.user?.email || "",
+        phone: profilePhone || prev.phone,
       }));
     }
-  }, [isLoggedIn, userState.user]);
+  }, [isLoggedIn, userState.user, userState.profileData]);
 
   // Sync form contact details when selected address changes
   useEffect(() => {
     if (isLoggedIn && !useNewAddress && selectedAddress) {
+      const profilePhone = extractQatarLocalNumber(userState.profileData?.phone || "");
       setForm((prev) => ({
         ...prev,
         fullName: selectedAddress.fullName || prev.fullName,
-        phone: extractQatarLocalNumber(selectedAddress.mobile) || prev.phone,
+        phone: profilePhone || extractQatarLocalNumber(selectedAddress.mobile) || prev.phone,
       }));
     }
-  }, [selectedAddress, isLoggedIn, useNewAddress]);
+  }, [selectedAddress, isLoggedIn, useNewAddress, userState.profileData]);
 
   // Validate inventory in real-time
   useEffect(() => {

@@ -31,7 +31,7 @@
 
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/db");
-const { emitToRoles, emitToUser, emitToAll } = require("../socket/socket");
+const { emitToRoles, emitToUser, emitToAll, emitToOrder } = require("../socket/socket");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
@@ -315,6 +315,8 @@ exports.createOrder = async (req, res, next) => {
       city: resolvedCity,
       delivery_slot_id: resolvedSlotId,
       checkout_token: tokenVal,
+      latitude: req.body.latitude || null,
+      longitude: req.body.longitude || null,
     }, { transaction });
 
 
@@ -594,6 +596,7 @@ exports.updateOrderStatus = async (req, res, next) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToOrder(order.id, "order-status-updated", { orderId: order.id, status });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status });
         emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
@@ -863,6 +866,7 @@ exports.assignDeliveryBoy = async (req, res, next) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: "assigned" });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToOrder(order.id, "order-status-updated", { orderId: order.id, status: "assigned" });
     } catch (socketErr) {
       console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
     }
@@ -1200,6 +1204,7 @@ exports.cancelMyOrder = async (req, res, next) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: "cancelled" });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToOrder(order.id, "order-status-updated", { orderId: order.id, status: "cancelled" });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: "cancelled" });
         emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });

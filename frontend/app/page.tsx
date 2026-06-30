@@ -24,17 +24,14 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON === "true";
-
   return (
     <div>
-      <ComingSoonOverlay />
       <WebsiteSchema />
       <OrganizationSchema />
-      <div id="layout-subnavbar" className={isComingSoon ? "hidden" : ""}>
+      <div id="layout-subnavbar">
         <SubNavbar />
       </div>
-      <div id="main-store-content" className={`px-0 sm:px-4 md:px-6 lg:px-8 pb-1 bg-[#ffff] ${isComingSoon ? "hidden" : ""}`}>
+      <div id="main-store-content" className="px-0 sm:px-4 md:px-6 lg:px-8 pb-1 bg-[#ffff]">
         <CategorySection />
         <HeroBanner />
         {/* <LazyFridayDeals /> */}

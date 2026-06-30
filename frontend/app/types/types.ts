@@ -57,6 +57,8 @@ export interface AddressRequest {
   city?: string;
   country?: string;
   isDefault?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Address {
@@ -77,6 +79,8 @@ export interface Address {
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 // ─────────────────────────────────────────────────────────

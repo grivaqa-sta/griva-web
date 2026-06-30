@@ -16,6 +16,19 @@ export default function SubNavbar() {
   const pathname = usePathname();
   const { categories: rawCategories } = useCategoriesWithSubcategories();
   const navLinks = rawCategories.filter((cat) => cat.is_active);
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
+
+  useEffect(() => {
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+  }, []);
+
+  if (!comingSoonVisible) return null;
 
   return (
     <>

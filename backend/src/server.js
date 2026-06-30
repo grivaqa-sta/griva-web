@@ -94,6 +94,15 @@ const startServer = async () => {
         console.log('ℹ️ [DATABASE]: Skipping Orders column creation:', colErr.message);
       }
 
+      // Safely add telegramLink and whatsappCommunityLink to SiteSettings table if they do not exist
+      try {
+        await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "telegramLink" VARCHAR(255) DEFAULT \'\';');
+        await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "whatsappCommunityLink" VARCHAR(255) DEFAULT \'\';');
+        console.log('🟢 [DATABASE]: Ensured telegramLink and whatsappCommunityLink columns exist in SiteSettings table.');
+      } catch (colErr) {
+        console.log('ℹ️ [DATABASE]: Skipping SiteSettings columns creation:', colErr.message);
+      }
+
       console.log("[DATABASE]: Syncing schemas...");
       await sequelize.sync();
       console.log("🟢 [DATABASE]: Schemas synced successfully.");

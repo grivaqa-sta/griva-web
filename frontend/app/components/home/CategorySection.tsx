@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Category } from "@/app/types/types";
 import { categoryService } from "@/app/services/category.service";
+import { useAdminSettings } from "@/app/context/AdminContext";
 // import { categoryService } from "@/services/categoryService"; // adjust path as needed
 // import { Category } from "@/types/types"; // adjust path as needed
 
@@ -27,6 +28,7 @@ function getVisibleCards(width: number): number {
 }
 
 export default function CategorySection() {
+  const { announcementBarEnabled } = useAdminSettings();
   // ── API state ──────────────────────────────────────────────────────────────
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,7 +153,11 @@ export default function CategorySection() {
       {/* Mobile — sticky categories */}
       <div
         id="categories-section"
-        className={`${isCollapsed ? "fixed" : "sticky"} top-[92px] z-30 bg-white border-b border-gray-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 py-3`}
+        className={`${
+          isCollapsed ? "fixed" : "sticky"
+        } ${
+          announcementBarEnabled ? "top-[92px]" : "top-[64px]"
+        } z-30 bg-white border-b border-gray-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 py-3`}
       >
         <div className="flex gap-3 min-w-max justify-around items-center">
           {categories.map((item) => (

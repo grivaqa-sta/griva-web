@@ -45,6 +45,16 @@ const SiteSetting = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 150.00,
     },
+    telegramLink: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
+    },
+    whatsappCommunityLink: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
+    },
   },
   {
     timestamps: true,

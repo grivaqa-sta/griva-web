@@ -114,7 +114,7 @@ export default function AnnouncementBar() {
   return (
     <div
       suppressHydrationWarning
-      className="fixed top-0 left-0 right-0 z-[9999] bg-orange-600 flex h-7 w-full select-none items-center text-white  md:h-10"
+      className="fixed top-0 left-0 right-0 z-[9999] bg-orange-600 flex h-7 w-full select-none items-center text-white sm:h-10"
      
     >
       <div className="mx-auto flex h-full w-full  items-center justify-between">

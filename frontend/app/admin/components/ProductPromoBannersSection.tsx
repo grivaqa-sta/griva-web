@@ -113,7 +113,7 @@ export default function ProductPromoBannersSection() {
   return (
     <div className="space-y-4 mt-10">
       <div className="pb-3 border-b border-orange-500/20">
-        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">D. Product Promo Banners</h4>
+        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Product Promo Banners</h4>
         <p className="text-[10px] text-gray-400 mt-1">Manage promotional offer cards featuring specific products.</p>
       </div>
 

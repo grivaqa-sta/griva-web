@@ -89,9 +89,20 @@ const startServer = async () => {
       try {
         await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "delivery_rating" INTEGER;');
         await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "delivery_comment" TEXT;');
-        console.log('🟢 [DATABASE]: Ensured delivery_rating and delivery_comment columns exist in Orders table.');
+        await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "latitude" DECIMAL(10, 8);');
+        await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "longitude" DECIMAL(11, 8);');
+        console.log('🟢 [DATABASE]: Ensured delivery_rating, delivery_comment, latitude and longitude columns exist in Orders table.');
       } catch (colErr) {
         console.log('ℹ️ [DATABASE]: Skipping Orders column creation:', colErr.message);
+      }
+
+      // Safely add latitude and longitude to addresses table if they do not exist
+      try {
+        await sequelize.query('ALTER TABLE "addresses" ADD COLUMN IF NOT EXISTS "latitude" DECIMAL(10, 8);');
+        await sequelize.query('ALTER TABLE "addresses" ADD COLUMN IF NOT EXISTS "longitude" DECIMAL(11, 8);');
+        console.log('🟢 [DATABASE]: Ensured latitude and longitude columns exist in addresses table.');
+      } catch (colErr) {
+        console.log('ℹ️ [DATABASE]: Skipping addresses coordinates column creation:', colErr.message);
       }
 
       // Safely add telegramLink and whatsappCommunityLink to SiteSettings table if they do not exist

@@ -76,6 +76,8 @@ interface DeliveryOrder {
   user?: { id: number; name: string; email: string };
   delivery_payment_method?: string;
   cash_reconciliation_status?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -862,8 +864,12 @@ export default function DeliveryDashboard() {
                               </div>
                             )}
 
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.shipping_address + (order.city ? `, ${order.city}, Qatar` : ", Qatar"))}`}
+                             <a
+                              href={
+                                order.latitude && order.longitude
+                                  ? `https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`
+                                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.shipping_address + (order.city ? `, ${order.city}, Qatar` : ", Qatar"))}`
+                              }
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-[10px] font-bold text-[#FF6A00] border border-zinc-800 transition-colors"

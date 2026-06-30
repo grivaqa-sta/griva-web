@@ -3,7 +3,7 @@
 // Do not modify without reading feature documentation
 
 const { Op } = require("sequelize");
-const { emitToRoles, emitToUser, emitToAll } = require("../socket/socket");
+const { emitToRoles, emitToUser, emitToAll, emitToOrder } = require("../socket/socket");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
@@ -37,6 +37,7 @@ const markAttempted = async (req, res) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToOrder(order.id, "order-status-updated", { orderId: order.id, status: order.status });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
         emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
@@ -85,6 +86,7 @@ const markRescheduled = async (req, res) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToOrder(order.id, "order-status-updated", { orderId: order.id, status: order.status });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
         emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
@@ -133,6 +135,7 @@ const markFailed = async (req, res) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToOrder(order.id, "order-status-updated", { orderId: order.id, status: order.status });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
         emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });
@@ -183,6 +186,7 @@ const reopenOrder = async (req, res) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: order.status });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToOrder(order.id, "order-status-updated", { orderId: order.id, status: order.status });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: order.status });
         emitToUser(order.delivery_boy_id, "order-updated", { orderId: order.id });

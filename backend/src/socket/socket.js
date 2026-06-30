@@ -55,7 +55,13 @@ const initSocket = (server) => {
       const token = socket.handshake.auth?.token || socket.handshake.query?.token;
       
       if (!token) {
-        return next(new Error("Authentication token is required"));
+        // Allow guest users without token (e.g. order tracking visitors)
+        socket.user = {
+          id: -1,
+          role: "guest",
+          name: "Guest User",
+        };
+        return next();
       }
 
       // Verify JWT token
@@ -98,27 +104,37 @@ const initSocket = (server) => {
     const { id: userId, role, name } = socket.user;
     console.log(`🟢 [Socket.IO CONNECT]: User: "${name}" (ID: ${userId}, Role: ${role}), Socket: ${socket.id}`);
 
-    // Track active connection
-    if (!userSockets.has(userId)) {
-      userSockets.set(userId, new Set());
+    // Track active connection (only for logged-in users)
+    if (userId !== -1) {
+      if (!userSockets.has(userId)) {
+        userSockets.set(userId, new Set());
+      }
+      userSockets.get(userId).add(socket.id);
+
+      // Join room based on role (role:admin, role:staff, role:delivery)
+      socket.join(`role:${role}`);
+      console.log(`🔌 [Socket.IO ROOMS]: Socket ${socket.id} joined room "role:${role}"`);
+
+      // Join room for specific user ID for direct/targeted messages
+      socket.join(`user:${userId}`);
     }
-    userSockets.get(userId).add(socket.id);
 
-    // Join room based on role (role:admin, role:staff, role:delivery)
-    socket.join(`role:${role}`);
-    console.log(`🔌 [Socket.IO ROOMS]: Socket ${socket.id} joined room "role:${role}"`);
-
-    // Join room for specific user ID for direct/targeted messages
-    socket.join(`user:${userId}`);
+    // Guest listener to join specific order tracking room
+    socket.on("join-order-tracking", (orderId) => {
+      socket.join(`order:${orderId}`);
+      console.log(`🔌 [Socket.IO ROOMS]: Socket ${socket.id} joined tracking room "order:${orderId}"`);
+    });
 
     // Handle Client Disconnect
     socket.on("disconnect", (reason) => {
       console.log(`🔴 [Socket.IO DISCONNECT]: Socket: ${socket.id}, Reason: ${reason}`);
-      const sockets = userSockets.get(userId);
-      if (sockets) {
-        sockets.delete(socket.id);
-        if (sockets.size === 0) {
-          userSockets.delete(userId);
+      if (userId !== -1) {
+        const sockets = userSockets.get(userId);
+        if (sockets) {
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
+            userSockets.delete(userId);
+          }
         }
       }
     });
@@ -167,6 +183,17 @@ const emitToUser = (userId, event, data = null) => {
 };
 
 /**
+ * Emit event to specific order tracking room
+ * @param {number} orderId 
+ * @param {string} event 
+ * @param {any} data 
+ */
+const emitToOrder = (orderId, event, data = null) => {
+  if (!io) return;
+  io.to(`order:${orderId}`).emit(event, data);
+};
+
+/**
  * Emit event to all connected clients
  * @param {string} event 
  * @param {any} data 
@@ -182,4 +209,5 @@ module.exports = {
   emitToRoles,
   emitToUser,
   emitToAll,
+  emitToOrder,
 };

@@ -14,9 +14,18 @@ interface CategoryWithSubcategories extends Category {
 export default function SubNavbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [navLinks, setNavLinks] = useState<CategoryWithSubcategories[]>([]);
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
   const pathname = usePathname();
 
   useEffect(() => {
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+
     const fetchCategories = async () => {
       try {
         const res = await categoryService.getCategoriesWithSubcategories();
@@ -46,6 +55,8 @@ export default function SubNavbar() {
     };
     fetchCategories();
   }, []);
+
+  if (!comingSoonVisible) return null;
 
   return (
     <>

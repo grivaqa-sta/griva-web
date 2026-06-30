@@ -10,6 +10,8 @@ import BackToTop from "@/app/components/common/BackToTop";
 import GrivaAIChatbot from "@/app/components/common/GrivaAIChatbot";
 import PixelScripts from "@/app/components/common/PixelScripts";
 
+import ComingSoonOverlay from "@/app/components/common/ComingSoonOverlay";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -140,8 +142,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON === "true";
-
   return (
     <html
       lang="en"
@@ -150,14 +150,15 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-gray-900 font-sans" suppressHydrationWarning>
         <Providers>
-          <div id="layout-header" className={isComingSoon ? "hidden" : ""}>
+          <ComingSoonOverlay />
+          <div id="layout-header">
             <AnnouncementBar />
             <Navbar />
           </div>
           <main className="flex-grow pb-16 sm:pb-0">
             {children}
           </main>
-          <div id="layout-footer" className={isComingSoon ? "hidden" : ""}>
+          <div id="layout-footer">
             <Footer />
           </div>
           <CartDrawer />

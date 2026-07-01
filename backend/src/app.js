@@ -104,6 +104,7 @@ app.get("/health", (req, res) => {
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const returnRoutes = require("./routes/returnRoutes");
 const settingRoutes = require("./routes/settingRoutes");
 const subscriberRoutes = require("./routes/subscriberRoutes");
 const flashSaleRoutes = require("./routes/flashSaleRoutes");
@@ -129,6 +130,7 @@ const productPromoBannerRoutes = require("./routes/productPromoBannerRoutes");
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/returns", returnRoutes);
 app.use("/api/settings", settingRoutes);
 app.use("/api/subscribers", subscriberRoutes);
 app.use("/api/flash-sales", flashSaleRoutes);

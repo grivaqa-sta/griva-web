@@ -54,7 +54,7 @@ export default function OrderReviewPage() {
 
     const fetchOrder = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
         const response = await axios.get(`${apiUrl}/reviews/order/${orderNumber}`);
         const orderData = response.data.order;
         setOrder(orderData);
@@ -100,7 +100,7 @@ export default function OrderReviewPage() {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
       
       const payload = {
         order_number: order.order_number,

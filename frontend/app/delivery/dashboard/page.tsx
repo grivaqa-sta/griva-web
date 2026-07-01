@@ -94,14 +94,16 @@ export default function DeliveryDashboard() {
   const { toast } = useToast();
   const { socket } = useSocket();
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
+  const [returns, setReturns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [updatingReturnId, setUpdatingReturnId] = useState<number | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [driverName, setDriverName] = useState("Griva Driver");
   const [driverEmail, setDriverEmail] = useState("driver@thegriva.com");
   const [activeTab, setActiveTab] = useState<'deliveries' | 'profile'>('deliveries');
-  const [deliverySubTab, setDeliverySubTab] = useState<'active' | 'history'>('active');
+  const [deliverySubTab, setDeliverySubTab] = useState<'active' | 'pickups' | 'history'>('active');
 
   // FEATURE: Delivery Attempt Management state
   const [activeModal, setActiveModal] = useState<{ type: 'not_answering' | 'come_later' | 'failed'; orderId: number } | null>(null);
@@ -272,9 +274,60 @@ export default function DeliveryDashboard() {
     }
   }, [token, router]);
 
+  const fetchReturns = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/delivery/my-returns`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReturns(data.returns || []);
+      }
+    } catch (err) {
+      console.error("Error fetching returns:", err);
+    }
+  }, [token]);
+
+  const handleRefresh = useCallback(() => {
+    fetchOrders();
+    fetchReturns();
+  }, [fetchOrders, fetchReturns]);
+
   useEffect(() => { 
-    if (token) fetchOrders(); 
-  }, [token, fetchOrders]);
+    if (token) {
+      fetchOrders();
+      fetchReturns();
+    }
+  }, [token, fetchOrders, fetchReturns]);
+
+  const handleReturnStatusUpdate = async (returnId: number, status: 'completed_replacement' | 'completed_refund') => {
+    if (!token) return;
+    setUpdatingReturnId(returnId);
+    try {
+      const res = await fetch(`${API_BASE}/delivery/returns/${returnId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        toast.error(errData.message || "Failed to update return task status");
+        return;
+      }
+
+      toast.success(`Return task marked as ${status.replace("_", " ")}!`);
+      handleRefresh();
+    } catch {
+      toast.error("Check your internet connection.");
+    } finally {
+      setUpdatingReturnId(null);
+    }
+  };
 
   // ── Socket.IO Real-time Events Listener ────────────────────────────────────
   useEffect(() => {
@@ -282,19 +335,19 @@ export default function DeliveryDashboard() {
 
     const handleDriverAssigned = (data: { orderId: number } | null) => {
       console.log("🔌 [Socket.IO Driver]: driver-assigned received.", data);
-      showToast("🔔 New delivery order assigned to you!", "success");
-      fetchOrders();
+      showToast("🔔 New delivery or pickup task assigned to you!", "success");
+      handleRefresh();
       fetchNotifications();
     };
 
     const handleOrderStatusUpdated = (data: { orderId: number, status: string } | null) => {
       console.log("🔌 [Socket.IO Driver]: order-status-updated received.", data);
-      fetchOrders();
+      handleRefresh();
     };
 
     const handleOrderUpdated = (data: { orderId: number } | null) => {
       console.log("🔌 [Socket.IO Driver]: order-updated received.", data);
-      fetchOrders();
+      handleRefresh();
     };
 
     socket.on("driver-assigned", handleDriverAssigned);
@@ -306,7 +359,7 @@ export default function DeliveryDashboard() {
       socket.off("order-status-updated", handleOrderStatusUpdated);
       socket.off("order-updated", handleOrderUpdated);
     };
-  }, [socket, fetchOrders, fetchNotifications]);
+  }, [socket, handleRefresh, fetchNotifications]);
 
   const handleStatusUpdate = async (orderId: number, newStatus: string, deliveryPaymentMethod?: string) => {
     if (!token) return;
@@ -510,16 +563,23 @@ export default function DeliveryDashboard() {
   };
 
   // Compute metrics dynamically
-  const totalAssigned = orders.length;
-  const totalDelivered = orders.filter(o => o.status === "delivered").length;
-  const totalPending = orders.filter(o => ["assigned", "out_for_delivery", "rescheduled"].includes(o.status)).length;
-  const totalEarningsToday = orders
+  const normalOrders = orders.filter(o => !o.order_number?.startsWith("RPL-"));
+  const activeNormalOrders = normalOrders.filter(o => ["assigned", "out_for_delivery", "rescheduled", "attempted"].includes(o.status));
+  const completedNormalOrders = normalOrders.filter(o => ["delivered", "failed", "cancelled", "returned"].includes(o.status));
+  const activePickups = returns.filter(r => ["approved_replacement", "approved_refund"].includes(r.status));
+  const completedPickups = returns.filter(r => ["completed_replacement", "completed_refund"].includes(r.status));
+
+  const totalAssigned = activeNormalOrders.length + activePickups.length + completedNormalOrders.length + completedPickups.length;
+  const totalDelivered = normalOrders.filter(o => o.status === "delivered").length + completedPickups.length;
+  const totalPending = activeNormalOrders.length + activePickups.length;
+  
+  const totalEarningsToday = normalOrders
     .filter(o => o.status === "delivered" && o.delivery_payment_method === "Cash")
     .reduce((sum, o) => sum + parseFloat(parseTotal(o.total_price)), 0)
     .toFixed(2);
 
-  const activeOrders = orders.filter(o => o.status !== "delivered" && o.status !== "failed");
-  const historyOrders = orders.filter(o => o.status === "delivered" || o.status === "failed");
+  const activeOrders = normalOrders.filter(o => o.status !== "delivered" && o.status !== "failed" && o.status !== "cancelled");
+  const historyOrders = normalOrders.filter(o => o.status === "delivered" || o.status === "failed" || o.status === "cancelled");
 
   const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
@@ -588,7 +648,7 @@ export default function DeliveryDashboard() {
                   <p className="text-xs text-zinc-400 font-semibold">{todayStr}</p>
                 </div>
                 <button
-                  onClick={fetchOrders}
+                  onClick={handleRefresh}
                   disabled={loading}
                   className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 border border-zinc-900 text-xs font-bold text-[#FF6A00] hover:text-[#FF8C00] rounded-xl cursor-pointer hover:border-zinc-800 transition-all active:scale-95 disabled:opacity-50 shadow-md"
                   style={{ minHeight: "36px" }}
@@ -629,7 +689,18 @@ export default function DeliveryDashboard() {
                       : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
                   }`}
                 >
-                  Active Tasks ({activeOrders.length})
+                  Deliveries ({activeOrders.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeliverySubTab('pickups')}
+                  className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    deliverySubTab === 'pickups'
+                      ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800'
+                      : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                  }`}
+                >
+                  Returns ({activePickups.length})
                 </button>
                 <button
                   type="button"
@@ -640,7 +711,7 @@ export default function DeliveryDashboard() {
                       : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
                   }`}
                 >
-                  History / Completed ({historyOrders.length})
+                  History ({historyOrders.length + completedPickups.length})
                 </button>
               </div>
 
@@ -653,11 +724,21 @@ export default function DeliveryDashboard() {
               {/* Delivery list */}
               <div className="space-y-4">
                 {(() => {
-                  const currentList = deliverySubTab === 'active' ? activeOrders : historyOrders;
+                  const currentList = 
+                    deliverySubTab === 'active' 
+                      ? activeOrders 
+                      : deliverySubTab === 'pickups'
+                        ? activePickups
+                        : [...historyOrders, ...completedPickups].sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+
                   return (
                     <>
                       <h3 className="text-xs font-bold tracking-widest text-zinc-400 uppercase ml-1">
-                        {deliverySubTab === 'active' ? `Assigned Tasks (${activeOrders.length})` : `Completed Tasks (${historyOrders.length})`}
+                        {deliverySubTab === 'active' 
+                          ? `Assigned Tasks (${activeOrders.length})` 
+                          : deliverySubTab === 'pickups'
+                            ? `Active Pickups (${activePickups.length})`
+                            : `Completed Tasks (${historyOrders.length + completedPickups.length})`}
                       </h3>
                       
                       {loading && currentList.length === 0 && (
@@ -685,29 +766,215 @@ export default function DeliveryDashboard() {
                           </div>
                           <div className="space-y-1">
                             <h4 className="text-sm font-bold text-white">
-                              {deliverySubTab === 'active' ? "No Active Orders" : "No Completed Orders"}
+                              {deliverySubTab === 'active' 
+                                ? "No Active Orders" 
+                                : deliverySubTab === 'pickups'
+                                  ? "No Return Pickups"
+                                  : "No Completed History"}
                             </h4>
                             <p className="text-xs text-zinc-500">
                               {deliverySubTab === 'active' 
                                 ? "You have no active/pending deliveries assigned. Pull down to refresh or check again later."
-                                : "Completed and failed orders will appear here for your history tracking."}
+                                : deliverySubTab === 'pickups'
+                                  ? "No return request pickups assigned to you currently. Any pending pickups will show up here."
+                                  : "Completed and failed orders will appear here for your history tracking."}
                             </p>
                           </div>
                         </div>
                       )}
 
-                      {/* Order cards */}
-                      {currentList.map((order) => {
-                  const statusCfg = STATUS_LABELS[order.status] || { label: order.status, color: "text-zinc-400", bg: "bg-zinc-950 border-zinc-900" };
-                  const totalAmount = parseTotal(order.total_price);
-                  const isCOD = order.payment_method?.toUpperCase().includes("COD");
-                  const customerName = order.customer_name || order.user?.name || "Customer";
-                  const customerPhone = order.customer_phone || "";
-                  const isUpdating = updatingId === order.id;
+                      {/* Card listing */}
+                      {currentList.map((item: any) => {
+                        const isReturn = 'order_item_id' in item;
 
-                  return (
-                    <div 
-                      key={order.id} 
+                        if (isReturn) {
+                          const req = item as any;
+                          const isUpdating = updatingReturnId === req.id;
+                          const custName = req.order?.customer_name || req.user?.name || "Customer";
+                          const custPhone = req.order?.customer_phone || req.user?.phone || "";
+                          const refundVal = (req.quantity * parseFloat(req.orderItem?.price_at_purchase || "0")).toFixed(2);
+
+                          const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
+                            approved_replacement: { label: "Replacement Swap", color: "text-blue-400", bg: "bg-blue-950/30 border-blue-900/50" },
+                            approved_refund: { label: "Refund Pickup", color: "text-[#FF6A00]", bg: "bg-[#FF6A00]/10 border-[#FF6A00]/30" },
+                            completed_replacement: { label: "Swap Completed", color: "text-green-400", bg: "bg-green-950/30 border-green-900/50" },
+                            completed_refund: { label: "Refund Completed", color: "text-green-400", bg: "bg-green-950/30 border-green-900/50" },
+                          };
+
+                          const cfg = statusLabels[req.status] || { label: req.status, color: "text-zinc-400", bg: "bg-zinc-950 border-zinc-900" };
+
+                          return (
+                            <div
+                              key={`ret-${req.id}`}
+                              className="bg-zinc-950/50 backdrop-blur-md border border-zinc-900 hover:border-zinc-800 rounded-3xl overflow-hidden shadow-xl transition-all duration-300 relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.01] before:to-transparent before:pointer-events-none"
+                            >
+                              {/* Card Top Details */}
+                              <div className="px-5 pt-5 pb-3 flex items-center justify-between border-b border-zinc-900/60">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-white tracking-wider">
+                                    RET-#{req.id}
+                                  </span>
+                                  <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-lg border ${cfg.bg} ${cfg.color} uppercase tracking-wider`}>
+                                    {cfg.label}
+                                  </span>
+                                </div>
+                                {req.type === "refund" ? (
+                                  <span className="text-[10px] font-bold text-red-400 bg-red-950/30 border border-red-900/35 px-2.5 py-1 rounded-xl">
+                                    Pay Refund: QAR {refundVal}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold text-blue-400 bg-blue-950/30 border border-blue-900/35 px-2.5 py-1 rounded-xl">
+                                    Exchange Product
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Customer info body */}
+                              <div className="p-5 space-y-4">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs font-bold text-zinc-100 flex items-center gap-1.5">
+                                      <span className="text-zinc-500">👤</span> {custName}
+                                    </p>
+                                    {custPhone && (
+                                      <a
+                                        href={`tel:${custPhone}`}
+                                        className="text-[10px] font-bold text-[#FF6A00] flex items-center gap-1 hover:underline cursor-pointer"
+                                      >
+                                        <Phone size={10} /> Call Now
+                                      </a>
+                                    )}
+                                  </div>
+
+                                  <div className="bg-[#0c0c0c]/80 border border-zinc-900/80 rounded-2xl p-3.5 space-y-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
+                                    <p className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Pickup Location</p>
+                                    <p className="text-xs font-semibold text-zinc-300 leading-relaxed flex items-start gap-1">
+                                      <MapPin size={12} className="text-[#FF6A00] shrink-0 mt-0.5" />
+                                      <span>
+                                        {req.order?.shipping_address || "No address details available."}
+                                      </span>
+                                    </p>
+                                  </div>
+
+                                  {req.reason && (
+                                    <p className="text-[11px] text-zinc-500 italic bg-zinc-900/20 px-3 py-2 rounded-xl border border-zinc-900/40">
+                                      💬 Reason: {req.reason.replace("_", " ")}
+                                    </p>
+                                  )}
+
+                                  {req.admin_notes && (
+                                    <p className="text-[11px] text-zinc-400 bg-zinc-900/40 px-3 py-2 rounded-xl border border-zinc-900/50">
+                                      📝 Admin Notes: {req.admin_notes}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Returned Items Preview */}
+                                <div className="border-t border-zinc-900/80 pt-3 space-y-1.5">
+                                  <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+                                    <span>Return Item</span>
+                                    <span>QTY</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-xs font-medium text-zinc-400">
+                                    <div className="flex items-center gap-2 max-w-[75%]">
+                                      <div className="h-8 w-8 rounded-lg overflow-hidden border border-zinc-900 flex items-center justify-center bg-zinc-950 shrink-0">
+                                        <img
+                                          src={req.orderItem?.product?.main_image_url || "/images/placeholder.jpg"}
+                                          alt={req.orderItem?.product?.title || "Product"}
+                                          className="object-contain max-h-full max-w-full"
+                                        />
+                                      </div>
+                                      <span className="truncate">{req.orderItem?.product?.title || "Product"}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-zinc-500 shrink-0">
+                                      {req.quantity} units
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Instructions Banner */}
+                                {["approved_replacement", "approved_refund"].includes(req.status) && (
+                                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-3.5 space-y-1">
+                                    <p className="text-[10px] font-bold text-[#FF6A00] uppercase tracking-wider flex items-center gap-1">
+                                      📢 Driver Instructions
+                                    </p>
+                                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                      {req.type === "replacement"
+                                        ? "🔄 Collect the old/faulty product from the customer and deliver the new replacement item."
+                                        : `💵 Collect the old/faulty product from the customer and hand over QAR ${refundVal} cash refund.`}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Primary action buttons */}
+                                {["approved_replacement", "approved_refund"].includes(req.status) && (
+                                  <div className="space-y-3 pt-2">
+                                    <button
+                                      onClick={() => handleReturnStatusUpdate(req.id, req.type === 'replacement' ? 'completed_replacement' : 'completed_refund')}
+                                      disabled={isUpdating}
+                                      className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-xs font-bold py-3.5 rounded-2xl transition-all cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex items-center justify-center gap-2"
+                                      style={{ minHeight: "44px" }}
+                                    >
+                                      {isUpdating ? (
+                                        <span>Syncing...</span>
+                                      ) : (
+                                        <span>
+                                          {req.type === "replacement" ? "🔄 Complete Product Swap" : "💵 Complete Refund Pickup"}
+                                        </span>
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Quick Navigation and Call utilities */}
+                                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                                  {custPhone ? (
+                                    <a
+                                      href={`tel:${custPhone}`}
+                                      className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 border border-zinc-800 transition-colors"
+                                      style={{ minHeight: "48px" }}
+                                    >
+                                      <Phone size={14} className="text-[#FF6A00]" />
+                                      <span>Call Customer</span>
+                                    </a>
+                                  ) : (
+                                    <button
+                                      disabled
+                                      className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900/40 rounded-xl text-xs font-bold text-zinc-600 border border-zinc-900/60 cursor-not-allowed"
+                                      style={{ minHeight: "48px" }}
+                                    >
+                                      <Phone size={14} />
+                                      <span>No Phone</span>
+                                    </button>
+                                  )}
+                                  <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(req.order?.shipping_address || "")}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 border border-zinc-800 transition-colors cursor-pointer"
+                                    style={{ minHeight: "48px" }}
+                                  >
+                                    <Map size={14} className="text-blue-400" />
+                                    <span>Open Map</span>
+                                  </a>
+                                </div>
+
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const order = item as any;
+                        const statusCfg = STATUS_LABELS[order.status] || { label: order.status, color: "text-zinc-400", bg: "bg-zinc-950 border-zinc-900" };
+                        const totalAmount = parseTotal(order.total_price);
+                        const isCOD = order.payment_method?.toUpperCase().includes("COD");
+                        const customerName = order.customer_name || order.user?.name || "Customer";
+                        const customerPhone = order.customer_phone || "";
+                        const isUpdating = updatingId === order.id;
+
+                        return (
+                          <div 
+                            key={order.id} 
                       className="bg-zinc-950/50 backdrop-blur-md border border-zinc-900 hover:border-zinc-800 rounded-3xl overflow-hidden shadow-xl transition-all duration-300 relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.01] before:to-transparent before:pointer-events-none"
                     >
                       {/* Card Top Details */}
@@ -781,7 +1048,7 @@ export default function DeliveryDashboard() {
                             <span>Order Items ({order.items?.length || 0})</span>
                             <span>QTY & Price</span>
                           </div>
-                          {(order.items || []).map((item) => (
+                          {(order.items || []).map((item: any) => (
                             <div key={item.id} className="flex items-center justify-between text-xs font-medium text-zinc-400">
                               <span className="truncate max-w-[65%]">{item.product?.title || `Product #${item.id}`}</span>
                               <span className="text-[10px] font-bold text-zinc-500 shrink-0">
@@ -812,9 +1079,14 @@ export default function DeliveryDashboard() {
                             <div className="space-y-2">
                               <button
                                 onClick={() => {
-                                  setDeliveryPaymentMethod("");
-                                  setPaymentModalOrderId(order.id);
-                                  setShowPaymentModal(true);
+                                  const isReplacement = order.payment_method?.toLowerCase().includes("replacement") || order.order_number?.startsWith("RPL-");
+                                  if (isReplacement) {
+                                    handleStatusUpdate(order.id, "delivered", "Replacement");
+                                  } else {
+                                    setDeliveryPaymentMethod("");
+                                    setPaymentModalOrderId(order.id);
+                                    setShowPaymentModal(true);
+                                  }
                                 }}
                                 disabled={isUpdating}
                                 className="w-full bg-gradient-to-r from-[#FF6A00] to-[#E04F00] hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-xs font-bold py-3.5 rounded-2xl transition-all cursor-pointer shadow-[0_4px_16px_rgba(255,106,0,0.2)] flex items-center justify-center gap-2"

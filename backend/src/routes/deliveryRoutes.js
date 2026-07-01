@@ -17,6 +17,12 @@ router.patch("/orders/:id/status", authenticateDelivery, deliveryController.upda
 // GET  /api/delivery/history  — Last 7 days completed deliveries
 router.get("/history", authenticateDelivery, deliveryController.getMyDeliveryHistory);
 
+// GET  /api/delivery/my-returns  — Assigned return/pickup tasks
+router.get("/my-returns", authenticateDelivery, deliveryController.getMyReturns);
+
+// PATCH /api/delivery/returns/:id/status  — Update return task status (completed_replacement or completed_refund)
+router.patch("/returns/:id/status", authenticateDelivery, deliveryController.updateReturnStatus);
+
 // ─────────────────────────────────────────────────────────
 // DRIVER NOTIFICATIONS
 // ─────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ import {
 import { useToast } from '@/app/context/ToastContext';
 import { AdminOrder, updateOrderStatusApi, downloadOrdersExportApi, bulkPrintOrdersApi, reconcileCashPaymentApi } from '../../utils/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 interface OrdersTabProps {
   ordersList: AdminOrder[];
@@ -1161,7 +1161,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           <table className="w-full text-left border-collapse min-w-[1250px]">
             <thead>
               <tr className="border-b border-orange-500/20 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 whitespace-nowrap">
-                <th className="p-4 pl-5 sticky left-0 bg-gray-50 z-20">Order</th>
+                <th className="p-4 pl-5 sticky left-0 bg-gray-50 z-20 min-w-[210px]">Order</th>
                 <th className="p-4">Customer</th>
                 <th className="p-4">Items</th>
                 <th className="p-4">Delivery Slot</th>
@@ -1212,6 +1212,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                         }}
                       >
                         {/* Order ID (Sticky Left) */}
+
                         <td
                           className={`p-4 sticky left-0 z-10 transition-colors ${
                             order.status === 'pending' && !(order as any).reviewed_at
@@ -1219,7 +1220,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                               : 'bg-white group-hover:bg-[#fff9f3] pl-5'
                           }`}
                         >
-                          <div className="flex items-center gap-2 flex-wrap max-w-[150px]">
+                          <div className="flex items-center gap-2 flex-wrap min-w-[210px]">
                             <div className="flex items-center gap-1">
                               <Hash className="h-3 w-3 text-orange-400" />
                               <span className="text-xs font-black text-gray-800">

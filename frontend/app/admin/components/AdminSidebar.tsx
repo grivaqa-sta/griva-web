@@ -20,10 +20,11 @@ import {
   Activity,
   Star,
   BarChart3,
+  Undo,
 } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
 
-type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback" | "analytics";
+type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback" | "analytics" | "returns";
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -59,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
     group: "Sales & Operations",
     items: [
       { id: "orders", label: "Manage Orders", icon: <ShoppingBag className="h-4 w-4" /> },
+      { id: "returns", label: "Returns & Refunds", icon: <Undo className="h-4 w-4" /> },
       { id: "delivery", label: "Manage Drivers", icon: <Truck className="h-4 w-4" />, adminOnly: true },
       { id: "feedback", label: "Feedback & Reviews", icon: <Star className="h-4 w-4" /> },
     ]

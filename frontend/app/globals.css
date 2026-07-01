@@ -3,6 +3,15 @@
 @theme {
   --color-brand-orange: #f97316;
   --color-brand-orange-dark: #ea580c;
+  --color-orange-55: #fff5eb;
+  --color-orange-550: #f26000;
+  --color-orange-650: #dd4b00;
+  --color-red-55: #fff0f1;
+  --color-red-550: #e02424;
+  --color-red-650: #c01e1e;
+  --color-slate-650: #3f4e60;
+  --color-blue-650: #2054d4;
+  --color-gray-650: #434e5a;
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
 

@@ -11,7 +11,7 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ activeTab, onMenuClick }: AdminHeaderProps) {
   return (
-    <header className="py-4 border-b border-orange-500/30 bg-white px-4 lg:px-6 flex items-center justify-between sticky top-0 z-40">
+    <header className="py-4 border-b border-orange-500/30 bg-white px-4 lg:px-6 flex items-center justify-between sticky top-0 z-[49]">
       <div className="flex items-center gap-3">
         {/* Mobile Hamburger menu */}
         <button

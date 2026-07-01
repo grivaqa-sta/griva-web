@@ -89,6 +89,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [assigningId, setAssigningId] = useState<number | null>(null);
   const [openDriverSelectId, setOpenDriverSelectId] = useState<number | null>(null);
   const [openReassignSelectId, setOpenReassignSelectId] = useState<number | null>(null);
+  const [dropdownDir, setDropdownDir] = useState<'bottom' | 'top'>('bottom');
 
   // FEATURE: Delivery Attempt Management — needs attention state
   interface NeedsAttentionOrder {
@@ -811,7 +812,17 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setOpenReassignSelectId(openReassignSelectId === order.id ? null : order.id);
+                          const isCurrentlyOpen = openReassignSelectId === order.id;
+                          if (!isCurrentlyOpen) {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            if (spaceBelow < 220 && rect.top > 220) {
+                              setDropdownDir('top');
+                            } else {
+                              setDropdownDir('bottom');
+                            }
+                          }
+                          setOpenReassignSelectId(isCurrentlyOpen ? null : order.id);
                         }}
                         className="text-[10px] font-bold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2 flex items-center justify-between gap-1.5 outline-none hover:border-orange-500/40 transition-all cursor-pointer min-w-[150px]"
                       >
@@ -833,7 +844,11 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                               setOpenReassignSelectId(null);
                             }}
                           />
-                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto min-w-[180px]">
+                          <div className={`absolute left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in duration-150 max-h-48 overflow-y-auto min-w-[180px] ${
+                            dropdownDir === 'top'
+                              ? "bottom-full mb-1 slide-in-from-bottom-2"
+                              : "top-full mt-1 slide-in-from-top-2"
+                          }`}>
                             <button
                               type="button"
                               onClick={() => {
@@ -1653,7 +1668,17 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                                type="button"
                                                onClick={(e) => {
                                                  e.stopPropagation();
-                                                 setOpenDriverSelectId(openDriverSelectId === order.id ? null : order.id);
+                                                 const isCurrentlyOpen = openDriverSelectId === order.id;
+                                                 if (!isCurrentlyOpen) {
+                                                   const rect = e.currentTarget.getBoundingClientRect();
+                                                   const spaceBelow = window.innerHeight - rect.bottom;
+                                                   if (spaceBelow < 220 && rect.top > 220) {
+                                                     setDropdownDir('top');
+                                                   } else {
+                                                     setDropdownDir('bottom');
+                                                   }
+                                                 }
+                                                 setOpenDriverSelectId(isCurrentlyOpen ? null : order.id);
                                                }}
                                                className="w-full flex items-center justify-between text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none hover:border-orange-500/40 transition-all cursor-pointer text-left h-[38px]"
                                              >
@@ -1676,7 +1701,11 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                                      setOpenDriverSelectId(null);
                                                    }}
                                                  />
-                                                 <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto">
+                                                 <div className={`absolute left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in duration-150 max-h-48 overflow-y-auto ${
+                                                    dropdownDir === 'top'
+                                                      ? "bottom-full mb-1 slide-in-from-bottom-2"
+                                                      : "top-full mt-1 slide-in-from-top-2"
+                                                  }`}>
                                                    <button
                                                      type="button"
                                                      onClick={() => {

@@ -40,6 +40,7 @@ const getFormattedCart = async (userId) => {
     const p = item.product;
     const priceStr = p ? p.price : "QAR 0.00";
     const priceNumber = p ? parseFloat(priceStr.replace(/([$]|qar|[\s,])/gi, "")) : 0;
+    const oldPriceNumber = p && p.old_price ? parseFloat(String(p.old_price).replace(/([$]|qar|[\s,])/gi, "")) : priceNumber;
 
     return {
       id: item.id,
@@ -48,6 +49,7 @@ const getFormattedCart = async (userId) => {
       image: p ? p.main_image_url : "",
       price: priceStr,
       priceNumber: priceNumber,
+      oldPriceNumber: oldPriceNumber,
       quantity: item.quantity,
       selectedColor: item.selected_color,
       selectedStorage: item.selected_storage,

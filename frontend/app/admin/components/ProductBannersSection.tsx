@@ -15,6 +15,10 @@ export default function ProductBannersSection() {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [saveSuccessId, setSaveSuccessId] = useState<number | null>(null);
   const [openDropdownSlot, setOpenDropdownSlot] = useState<number | null>(null);
+  // Queue of exactly 3 hex color strings shown as swatches per product
+  const [colorQueues, setColorQueues] = useState<Record<number, string[]>>({});
+  // Temporary picker value before user clicks Add
+  const [pendingColors, setPendingColors] = useState<Record<number, string>>({});
 
   // Local state for edits
   const [edits, setEdits] = useState<Record<number, {
@@ -36,6 +40,7 @@ export default function ProductBannersSection() {
       if (Array.isArray(pData)) {
         setProducts(pData);
         const initialEdits: any = {};
+        const initialQueues: Record<number, string[]> = {};
         pData.forEach((p: ApiProduct) => {
           if (p.is_banner) {
             initialEdits[p.id] = {
@@ -44,9 +49,16 @@ export default function ProductBannersSection() {
               tags: p.tags || [],
               href: p.href || `/product/${p.slug}`,
             };
+            // Initialize queue: if product has a saved custom color not in presets, put it in slot 3
+            const savedColor = p.banner_background_color;
+            const isCustom = savedColor && !COLORS.some(c => c.id === savedColor);
+            initialQueues[p.id] = isCustom
+              ? [COLORS[0].hex, COLORS[1].hex, savedColor!]
+              : [COLORS[0].hex, COLORS[1].hex, COLORS[2].hex];
           }
         });
         setEdits(initialEdits);
+        setColorQueues(initialQueues);
       }
     } catch (err) {
       console.error("Failed to load products for banners", err);
@@ -188,7 +200,7 @@ export default function ProductBannersSection() {
   return (
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20">
-        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">A. Hero Banners</h4>
+        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Hero Banners</h4>
         <p className="text-[10px] text-gray-400 mt-1">Manage up to 3 active product banners. Select a product for each slot below.</p>
       </div>
 
@@ -259,6 +271,13 @@ export default function ProductBannersSection() {
             // If slot is filled, show config
             const editState = edits[product.id];
             const isSaving = savingId === product.id;
+            const isChanged = editState && (
+              editState.banner_background_color !== (product.banner_background_color || COLORS[0].id) ||
+              (product.tags || []).length !== editState.tags.length ||
+              !(product.tags || []).every((t, i) => t === editState.tags[i]) ||
+              editState.href !== (product.href || `/product/${product.slug}`)
+            );
+            const showSaveButton = isChanged || isSaving || saveSuccessId === product.id;
 
             return (
               <div key={product.id} className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm flex flex-col">
@@ -290,18 +309,71 @@ export default function ProductBannersSection() {
                   {/* Color Selection */}
                   <div>
                     <label className="text-[10px] font-bold text-gray-700 block mb-2 uppercase tracking-wider">Background Color</label>
-                    <div className="flex gap-2">
-                      {COLORS.map(c => (
+                    <div className="flex gap-2 items-center flex-wrap">
+                      {/* 3 color slots from queue */}
+                      {(colorQueues[product.id] || COLORS.map(c => c.hex)).map((hex, idx) => (
                         <button
-                          key={c.id}
-                          onClick={() => updateEdit(product.id, 'banner_background_color', c.id)}
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            updateEdit(product.id, 'banner_background_color', hex);
+                            setPendingColors(prev => {
+                              const next = { ...prev };
+                              delete next[product.id];
+                              return next;
+                            });
+                          }}
                           className="w-7 h-7 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                          style={{ backgroundColor: c.hex }}
-                          title={c.name}
+                          style={{ backgroundColor: hex }}
+                          title={hex}
                         >
-                          {editState.banner_background_color === c.id && <Check className="w-3.5 h-3.5 text-white" />}
+                          {editState.banner_background_color === hex && !pendingColors[product.id] && (
+                            <Check className="w-3.5 h-3.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                          )}
                         </button>
                       ))}
+
+                      {/* Custom Color Picker Button */}
+                      <label 
+                        className="w-7 h-7 rounded-full border border-orange-500/20 bg-gray-50 flex items-center justify-center cursor-pointer transition-transform hover:scale-110 relative" 
+                        title="Choose custom color"
+                        style={{ backgroundColor: pendingColors[product.id] || undefined }}
+                      >
+                        <input
+                          type="color"
+                          value={pendingColors[product.id] || '#FFFFFF'}
+                          onChange={(e) => setPendingColors(prev => ({ ...prev, [product.id]: e.target.value }))}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                        />
+                        {pendingColors[product.id] ? (
+                          <Check className="w-3.5 h-3.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                        ) : (
+                          <span className="text-gray-400 font-bold text-sm leading-none">+</span>
+                        )}
+                      </label>
+
+                      {/* Add button — shifts queue left, new color enters at the end */}
+                      {pendingColors[product.id] && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newColor = pendingColors[product.id];
+                            const currentQueue = colorQueues[product.id] || COLORS.map(c => c.hex);
+                            // Shift: drop first, push new to end
+                            const newQueue = [...currentQueue.slice(1), newColor];
+                            setColorQueues(prev => ({ ...prev, [product.id]: newQueue }));
+                            updateEdit(product.id, 'banner_background_color', newColor);
+                            setPendingColors(prev => {
+                              const next = { ...prev };
+                              delete next[product.id];
+                              return next;
+                            });
+                          }}
+                          className="px-2.5 py-1 bg-orange-500 hover:bg-orange-600 text-white text-[9px] font-bold rounded-lg transition-colors cursor-pointer shrink-0 uppercase tracking-wide shadow-sm"
+                        >
+                          Add {pendingColors[product.id]}
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -357,25 +429,27 @@ export default function ProductBannersSection() {
                   </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 bg-gray-50">
-                  <button
-                    onClick={() => handleSaveBannerConfig(product.id)}
-                    disabled={isSaving || saveSuccessId === product.id}
-                    className={`w-full flex items-center justify-center gap-2 px-5 py-2.5 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-60 ${
-                      saveSuccessId === product.id 
-                        ? "bg-green-500 hover:bg-green-600" 
-                        : "bg-orange-500 hover:bg-orange-600"
-                    }`}
-                  >
-                    {isSaving ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...</>
-                    ) : saveSuccessId === product.id ? (
-                      <><Check className="w-4 h-4" /> Saved Successfully!</>
-                    ) : (
-                      'Save Configuration'
-                    )}
-                  </button>
-                </div>
+                {showSaveButton && (
+                  <div className="p-4 border-t border-gray-100 bg-gray-50">
+                    <button
+                      onClick={() => handleSaveBannerConfig(product.id)}
+                      disabled={isSaving || saveSuccessId === product.id}
+                      className={`w-full flex items-center justify-center gap-2 px-5 py-2.5 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-60 ${
+                        saveSuccessId === product.id 
+                          ? "bg-green-500 hover:bg-green-600" 
+                          : "bg-orange-500 hover:bg-orange-600"
+                      }`}
+                    >
+                      {isSaving ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...</>
+                      ) : saveSuccessId === product.id ? (
+                        <><Check className="w-4 h-4" /> Saved Successfully!</>
+                      ) : (
+                        'Save Configuration'
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

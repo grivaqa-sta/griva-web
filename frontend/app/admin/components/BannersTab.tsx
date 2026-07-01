@@ -104,7 +104,7 @@ function MobileBannersSection() {
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20 flex justify-between items-center">
         <div>
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">B. Mobile View Homepage Banners</h4>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Mobile View Homepage Banners</h4>
           <p className="text-[10px] text-gray-400 mt-1">Upload mobile-specific promo images for each active hero banner product.</p>
         </div>
         <button
@@ -386,7 +386,7 @@ function DealOfDaySection() {
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20 flex justify-between items-center">
         <div>
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">C. Deal of the Day ({deals.length}/4)</h4>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Deal of the Day ({deals.length}/4)</h4>
           <p className="text-[10px] text-gray-400 mt-1">Manage up to 4 deal of the day promotions on the homepage.</p>
         </div>
         <div className="flex items-center gap-3">

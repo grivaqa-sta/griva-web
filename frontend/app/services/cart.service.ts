@@ -7,6 +7,7 @@ export interface ApiCartItem {
   image: string;
   price: string;
   priceNumber: number;
+  oldPriceNumber: number;
   quantity: number;
   selectedColor?: string;
   selectedStorage?: string;

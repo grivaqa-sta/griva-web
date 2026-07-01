@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -53,13 +53,23 @@ const footerLinks: FooterLinkGroup[] = [
     ],
   },
 ];
-
 export default function Footer() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
+
+  useEffect(() => {
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +98,7 @@ export default function Footer() {
   };
 
   const pathname = usePathname();
+  if (!comingSoonVisible) return null;
   if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) return null;
 
   return (

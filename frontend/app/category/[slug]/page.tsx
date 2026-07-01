@@ -28,7 +28,8 @@ import {
   Car,
   Droplet,
   Flame,
-  Tag
+  Tag,
+  ChevronDown
 } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
 import { ApiProduct, Category, SubCategory } from "@/app/types/types";
@@ -192,10 +193,11 @@ export default function CategoryPage() {
   const slug = (params.slug as string)?.toLowerCase() || "";
   const subParam = searchParams.get("sub") || "";
 
-  const [maxPrice, setMaxPrice] = useState<number>(2000);
+  const [maxPrice, setMaxPrice] = useState<number>(1000000);
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [openSortDropdown, setOpenSortDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -209,8 +211,11 @@ export default function CategoryPage() {
           categoryService.getCategories(),
           subCategoryService.getSubCategories(),
         ]);
-        const cData = catRes?.data || catRes;
-        const sData = subRes?.data || subRes;
+        // categoryService.getCategories() returns response.data.data (already unwrapped)
+        const cData = Array.isArray(catRes) ? catRes : (catRes?.data || []);
+        // subCategoryService.getSubCategories() returns response.data = { success, data: [...] }
+        const sRaw = subRes?.data || subRes;
+        const sData = Array.isArray(sRaw) ? sRaw : (sRaw?.data || []);
         setCategories(Array.isArray(cData) ? cData : []);
         setSubCategories(Array.isArray(sData) ? sData : []);
       } catch (err) {
@@ -266,6 +271,14 @@ export default function CategoryPage() {
     );
   }, [matchedCategory, categorySubcategories]);
 
+  // Compute maximum price dynamically for products in this category
+  const categoryMaxPrice = useMemo(() => {
+    const matchedProds = allProducts.filter((p) => validSubcategoryIds.has(p.subcategory_id));
+    if (matchedProds.length === 0) return 2000;
+    const maxVal = Math.max(...matchedProds.map((p) => Number(p.price || 0)));
+    return Math.max(Math.ceil(maxVal), 2000);
+  }, [allProducts, validSubcategoryIds]);
+
   const filteredProducts = useMemo((): ApiProduct[] => {
     if (taxonomyLoading) return [];
     if (!matchedCategory) return [];
@@ -285,7 +298,9 @@ export default function CategoryPage() {
       );
       if (subResult.length > 0) result = subResult;
     }
-    result = result.filter((p) => Number(p.price) <= maxPrice);
+    if (maxPrice < 1000000) {
+      result = result.filter((p) => Number(p.price) <= maxPrice);
+    }
     if (minRating > 0) {
       result = result.filter((p) => p.rating >= minRating);
     }
@@ -300,13 +315,33 @@ export default function CategoryPage() {
   }, [allProducts, matchedCategory, validSubcategoryIds, taxonomyLoading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
 
   const handleResetFilters = () => {
-    setMaxPrice(2000);
+    setMaxPrice(1000000);
     setMinRating(0);
     setSortBy("featured");
   };
 
+  // Dynamically compute and format category title for the metadata
+  const fallbackTitle = useMemo(() => {
+    if (matchedCategory?.title) {
+      const title = matchedCategory.title;
+      if (title === title.toUpperCase()) {
+        return title
+          .toLowerCase()
+          .split(" ")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      }
+      return title;
+    }
+    return slug
+      .replace(/[-_]/g, " ")
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  }, [matchedCategory, slug]);
+
   const meta = CATEGORY_META[slug] || {
-    title: slug.charAt(0).toUpperCase() + slug.slice(1),
+    title: fallbackTitle,
     tagline: "Browse our premium selected catalog products",
     gradient: "from-zinc-800 via-zinc-900 to-black",
     bannerImage: "",
@@ -502,16 +537,16 @@ export default function CategoryPage() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
-                  <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice}</span>
+                  <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice === 1000000 ? categoryMaxPrice : maxPrice}</span>
                 </div>
                 <input
-                  type="range" min="0" max="2000" step="50" value={maxPrice}
+                  type="range" min="0" max={categoryMaxPrice} step={categoryMaxPrice > 5000 ? 100 : 50} value={maxPrice === 1000000 ? categoryMaxPrice : maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                   style={{ accentColor: "#FF6A00" }}
                 />
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-semibold">
-                  <span>QAR 0</span><span>QAR 2,000</span>
+                  <span>QAR 0</span><span>QAR {categoryMaxPrice}</span>
                 </div>
               </div>
 
@@ -585,54 +620,111 @@ export default function CategoryPage() {
                 >
                   <SlidersHorizontal className="h-4 w-4" /> Filters
                 </button>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="flex-1 appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <option value="featured">Sort: Featured</option>
-                  <option value="price-low-to-high">Sort: Lowest Price</option>
-                  <option value="price-high-to-low">Sort: Highest Price</option>
-                  <option value="rating">Sort: Top Rated</option>
-                </select>
+                <div className="flex-1 relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenSortDropdown(!openSortDropdown)}
+                    className="w-full flex items-center justify-between gap-1.5 px-4 py-2.5 bg-white border border-orange-500/20 hover:border-orange-500/50 rounded-xl text-xs font-bold text-gray-700 cursor-pointer shadow-sm text-left"
+                  >
+                    <span>
+                      {sortBy === "featured" && "Sort: Featured"}
+                      {sortBy === "price-low-to-high" && "Sort: Lowest Price"}
+                      {sortBy === "price-high-to-low" && "Sort: Highest Price"}
+                      {sortBy === "rating" && "Sort: Top Rated"}
+                    </span>
+                    <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openSortDropdown ? "rotate-180 text-orange-500" : ""}`} />
+                  </button>
+
+                  {openSortDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenSortDropdown(false)} />
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("featured"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "featured" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Featured
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-low-to-high"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-low-to-high" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Lowest Price
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-high-to-low"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-high-to-low" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Highest Price
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("rating"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "rating" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Top Rated
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="hidden lg:flex items-center gap-2">
                 <span className="text-xs text-gray-500 font-semibold">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="price-low-to-high">Price: Low to High</option>
-                  <option value="price-high-to-low">Price: High to Low</option>
-                  <option value="rating">Rating</option>
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenSortDropdown(!openSortDropdown)}
+                    className="flex items-center justify-between gap-1.5 px-4.5 py-2 bg-white border border-orange-500/20 hover:border-orange-500/50 rounded-xl text-xs font-bold text-gray-700 cursor-pointer shadow-sm min-w-[150px] text-left"
+                  >
+                    <span>
+                      {sortBy === "featured" && "Featured"}
+                      {sortBy === "price-low-to-high" && "Price: Low to High"}
+                      {sortBy === "price-high-to-low" && "Price: High to Low"}
+                      {sortBy === "rating" && "Rating"}
+                    </span>
+                    <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openSortDropdown ? "rotate-180 text-orange-500" : ""}`} />
+                  </button>
 
-                <div className="flex items-center gap-1 ml-2 border border-gray-200 rounded-lg p-0.5 bg-white shadow-xs">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-1.5 rounded-md transition cursor-pointer ${
-                      viewMode === "grid"
-                        ? "bg-orange-50 text-orange-500 border border-orange-105"
-                        : "text-gray-400 hover:text-gray-600 border border-transparent"
-                    }`}
-                    aria-label="Grid view"
-                  >
-                    <LayoutGrid size={14} />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`p-1.5 rounded-md transition cursor-pointer ${
-                      viewMode === "list"
-                        ? "bg-orange-50 text-orange-500 border border-orange-105"
-                        : "text-gray-400 hover:text-gray-600 border border-transparent"
-                    }`}
-                    aria-label="List view"
-                  >
-                    <SlidersHorizontal size={14} />
-                  </button>
+                  {openSortDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenSortDropdown(false)} />
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 min-w-[150px]">
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("featured"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "featured" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Featured
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-low-to-high"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-low-to-high" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Price: Low to High
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-high-to-low"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-high-to-low" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Price: High to Low
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("rating"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "rating" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Rating
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -712,10 +804,10 @@ export default function CategoryPage() {
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Max Price</h4>
-                    <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice}</span>
+                    <span className="text-xs font-bold" style={{ color: "#FF6A00" }}>QAR {maxPrice === 1000000 ? categoryMaxPrice : maxPrice}</span>
                   </div>
                   <input
-                    type="range" min="0" max="2000" step="50" value={maxPrice}
+                    type="range" min="0" max={categoryMaxPrice} step={categoryMaxPrice > 5000 ? 100 : 50} value={maxPrice === 1000000 ? categoryMaxPrice : maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                     className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     style={{ accentColor: "#FF6A00" }}

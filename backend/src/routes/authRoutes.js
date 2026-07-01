@@ -21,4 +21,7 @@ router.post("/forgot-password", authController.forgotPassword);
 // Maps to: PUT /api/auth/reset-password/:token
 router.put("/reset-password/:token", authController.resetPassword);
 
+// Maps to: PUT /api/auth/profile
+router.put("/profile", authenticateJWT, authController.updateProfile);
+
 module.exports = router;

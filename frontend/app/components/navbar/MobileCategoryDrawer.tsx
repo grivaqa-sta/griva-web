@@ -7,8 +7,7 @@ import { X, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { categories } from "@/app/data/data";
 import { useAllProducts } from "@/app/hooks/useProducts";
-import { categoryService } from "@/app/services/category.service";
-import { subCategoryService } from "@/app/services/subCategory.service";
+import { useCategories, useSubCategories } from "@/app/hooks/useCategories";
 
 interface Props {
   isOpen: boolean;
@@ -18,29 +17,9 @@ interface Props {
 export default function MobileCategoryDrawer({ isOpen, onClose }: Props) {
   const [activeCategory, setActiveCategory] = useState(categories[0]);
   const { products } = useAllProducts();
-  const [dbCategories, setDbCategories] = useState<any[]>([]);
-  const [dbSubcategories, setDbSubcategories] = useState<any[]>([]);
-  const [loadingTaxonomy, setLoadingTaxonomy] = useState(true);
-
-  useEffect(() => {
-    async function loadTaxonomy() {
-      try {
-        const [catRes, subRes] = await Promise.all([
-          categoryService.getCategories(),
-          subCategoryService.getSubCategories(),
-        ]);
-        const cData = catRes?.data || catRes;
-        const sData = subRes?.data || subRes;
-        setDbCategories(Array.isArray(cData) ? cData : []);
-        setDbSubcategories(Array.isArray(sData) ? sData : []);
-      } catch (err) {
-        console.error("[MobileCategoryDrawer] Failed to load taxonomy:", err);
-      } finally {
-        setLoadingTaxonomy(false);
-      }
-    }
-    loadTaxonomy();
-  }, []);
+  const { categories: dbCategories, loading: loadingCats } = useCategories();
+  const { subCategories: dbSubcategories, loading: loadingSubs } = useSubCategories();
+  const loadingTaxonomy = loadingCats || loadingSubs;
 
   const activeSlug = activeCategory.href.split("/").pop();
   const matchedDbCategory = useMemo(() => {

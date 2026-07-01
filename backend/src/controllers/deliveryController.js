@@ -30,9 +30,30 @@ exports.getMyOrders = async (req, res, next) => {
     const orders = await Order.findAll({
       where: {
         delivery_boy_id: driverId,
-        assigned_at: {
-          [Op.between]: [todayStart, todayEnd],
-        },
+        [Op.or]: [
+          {
+            status: {
+              [Op.in]: ["assigned", "out_for_delivery", "attempted", "rescheduled"]
+            }
+          },
+          {
+            status: {
+              [Op.in]: ["delivered", "failed", "cancelled", "returned"]
+            },
+            [Op.or]: [
+              {
+                assigned_at: {
+                  [Op.between]: [todayStart, todayEnd]
+                }
+              },
+              {
+                updatedAt: {
+                  [Op.between]: [todayStart, todayEnd]
+                }
+              }
+            ]
+          }
+        ]
       },
       include: [
         {
@@ -102,14 +123,17 @@ exports.updateMyOrderStatus = async (req, res, next) => {
 
     // Validate allowed status transitions for delivery boy
     const allowedTransitions = {
-      assigned: "out_for_delivery",
-      out_for_delivery: "delivered",
+      assigned: ["out_for_delivery"],
+      attempted: ["out_for_delivery"],
+      rescheduled: ["out_for_delivery"],
+      out_for_delivery: ["delivered"],
     };
 
-    if (allowedTransitions[order.status] !== status) {
+    const allowed = allowedTransitions[order.status] || [];
+    if (!allowed.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Cannot change status from '${order.status}' to '${status}'. Allowed: '${order.status}' → '${allowedTransitions[order.status] || "none"}'.`,
+        message: `Cannot change status from '${order.status}' to '${status}'. Allowed transitions: '${order.status}' → ${allowed.length ? allowed.map(x => `'${x}'`).join(", ") : "'none'"}.`,
       });
     }
 
@@ -226,6 +250,54 @@ exports.getMyDeliveryHistory = async (req, res, next) => {
       success: true,
       count: orders.length,
       orders,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/delivery/orders/:id
+ * Fetch details of a specific order assigned to the logged-in delivery boy
+ */
+exports.getOrderDetails = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const { id } = req.params;
+
+    const order = await Order.findOne({
+      where: {
+        id,
+        delivery_boy_id: driverId,
+      },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email"],
+        },
+        {
+          model: OrderItem,
+          as: "items",
+          include: {
+            model: Product,
+            as: "product",
+            attributes: ["id", "title", "main_image_url", "price", "gallery_images"],
+          },
+        },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or not assigned to you.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      order,
     });
   } catch (error) {
     next(error);

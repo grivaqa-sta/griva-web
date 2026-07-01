@@ -25,45 +25,9 @@ import { useAdminSettings } from "@/app/context/AdminContext";
 
 
 export default function Navbar() {
-  const scrolled = useScrolled(10);
+  const scrolled = useScrolled(20);
   const pathname = usePathname();
   const router = useRouter();
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // Keep navbar visible at the top of the page
-      if (currentScrollY <= 50) {
-        setVisible(true);
-        lastScrollY = currentScrollY;
-        return;
-      }
-
-      // Avoid bouncing effect at the bottom of the page on iOS
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      if (currentScrollY >= maxScroll) {
-        lastScrollY = currentScrollY;
-        return;
-      }
-
-      if (currentScrollY > lastScrollY) {
-        // Scrolling down
-        setVisible(false);
-      } else if (currentScrollY < lastScrollY) {
-        // Scrolling up
-        setVisible(true);
-      }
-
-      lastScrollY = currentScrollY;
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
   const { announcementBarEnabled } = useAdminSettings();
 
   const { state: cartState, openDrawer } = useCart();
@@ -79,11 +43,15 @@ export default function Navbar() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [comingSoonVisible, setComingSoonVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Close search dropdown on click outside and set mounted state
   useEffect(() => {
     setMounted(true);
+    setIsMobile(window.innerWidth < 640);
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
 
     const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
     if (isComingSoonActive) {
@@ -100,7 +68,10 @@ export default function Navbar() {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -122,10 +93,10 @@ export default function Navbar() {
       />
       <header
         className={`fixed left-0 right-0 ${announcementBarEnabled ? "top-7 sm:top-10" : "top-0"
-          } w-full border-b border-gray-100 bg-white transition-transform transition-shadow duration-300 ease-in-out sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
+          } w-full border-b border-gray-100 bg-white transition-all transition-shadow duration-300 ease-in-out sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
           } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
         style={{
-          transform: (visible || mobileMenuOpen || categoryDrawerOpen) ? "translateY(0)" : "translateY(-200px)"
+          transform: "translateY(0)"
         }}
       >
         {/* Desktop and Tablet Navbar Content (Visible on screens >= 640px) */}

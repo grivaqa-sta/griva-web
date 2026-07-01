@@ -4,9 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, Star, RotateCcw, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
-import { ApiProduct, Category, SubCategory } from "@/app/types/types";
-import { categoryService } from "@/app/services/category.service";
-import { subCategoryService } from "@/app/services/subCategory.service";
+import { useCategories, useSubCategories } from "@/app/hooks/useCategories";
+import { ApiProduct } from "@/app/types/types";
 import ProductCard from "@/app/components/product/ProductCard";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,30 +44,11 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Dynamic categories & subcategories from API
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  // Dynamic categories & subcategories from API (cached — no repeat fetches on navigation)
+  const { categories } = useCategories();
+  const { subCategories } = useSubCategories();
 
-  useEffect(() => {
-    async function loadTaxonomy() {
-      try {
-        const [catRes, subRes] = await Promise.all([
-          categoryService.getCategories(),
-          subCategoryService.getSubCategories(),
-        ]);
-        // categoryService.getCategories() returns response.data.data (already unwrapped array)
-        const cData = Array.isArray(catRes) ? catRes : (catRes?.data || []);
-        // subCategoryService.getSubCategories() returns response.data = { success, data: [...] }
-        const sRaw = subRes?.data || subRes;
-        const sData = Array.isArray(sRaw) ? sRaw : (sRaw?.data || []);
-        setCategories(Array.isArray(cData) ? cData : []);
-        setSubCategories(Array.isArray(sData) ? sData : []);
-      } catch (err) {
-        console.error("[ShopPage] Failed to load taxonomy:", err);
-      }
-    }
-    loadTaxonomy();
-  }, []);
+  const [openSortDropdown, setOpenSortDropdown] = useState(false);
 
   // Initialize filters from searchParams
   useEffect(() => {
@@ -386,16 +366,57 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
                 <div className="hidden lg:flex items-center gap-2">
                   <span className="text-xs text-gray-500 font-semibold">Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-                  >
-                    <option value="featured">Featured</option>
-                    <option value="price-low-to-high">Price: Low to High</option>
-                    <option value="price-high-to-low">Price: High to Low</option>
-                    <option value="rating">Rating</option>
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenSortDropdown(!openSortDropdown)}
+                      className="flex items-center justify-between gap-1.5 px-4.5 py-2 bg-white border border-orange-500/20 hover:border-orange-500/50 rounded-xl text-xs font-bold text-gray-700 cursor-pointer shadow-sm min-w-[150px] text-left"
+                    >
+                      <span>
+                        {sortBy === "featured" && "Featured"}
+                        {sortBy === "price-low-to-high" && "Price: Low to High"}
+                        {sortBy === "price-high-to-low" && "Price: High to Low"}
+                        {sortBy === "rating" && "Rating"}
+                      </span>
+                      <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openSortDropdown ? "rotate-180 text-orange-500" : ""}`} />
+                    </button>
+
+                    {openSortDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenSortDropdown(false)} />
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 min-w-[150px]">
+                          <button
+                            type="button"
+                            onClick={() => { setSortBy("featured"); setOpenSortDropdown(false); }}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "featured" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                          >
+                            Featured
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setSortBy("price-low-to-high"); setOpenSortDropdown(false); }}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-low-to-high" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                          >
+                            Price: Low to High
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setSortBy("price-high-to-low"); setOpenSortDropdown(false); }}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-high-to-low" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                          >
+                            Price: High to Low
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setSortBy("rating"); setOpenSortDropdown(false); }}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "rating" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                          >
+                            Rating
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Category } from "@/app/types/types";
-import { categoryService } from "@/app/services/category.service";
+import { useCategories } from "@/app/hooks/useCategories";
 import { useAdminSettings } from "@/app/context/AdminContext";
 // import { categoryService } from "@/services/categoryService"; // adjust path as needed
 // import { Category } from "@/types/types"; // adjust path as needed
@@ -30,19 +30,8 @@ function getVisibleCards(width: number): number {
 export default function CategorySection() {
   const { announcementBarEnabled } = useAdminSettings();
   // ── API state ──────────────────────────────────────────────────────────────
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    categoryService
-      .getCategories()
-      .then((data: Category[]) =>
-        // filter out inactive categories before rendering
-        setCategories(data.filter((c) => c.is_active))
-      )
-      .catch((err: unknown) => console.error("Failed to fetch categories:", err))
-      .finally(() => setIsLoading(false));
-  }, []);
+  const { categories: rawCategories, loading: isLoading } = useCategories();
+  const categories = rawCategories.filter((c) => c.is_active);
 
   console.log("categories", categories)
   // ──────────────────────────────────────────────────────────────────────────
@@ -71,15 +60,20 @@ export default function CategorySection() {
   }, []);
 
   const handleResize = useCallback(() => {
-    const vw = window.innerWidth;
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
     const newVisibleCards = getVisibleCards(vw);
     setVisibleCards(newVisibleCards);
 
     if (containerRef.current) {
       const totalWidth = containerRef.current.offsetWidth;
-      const cw = (totalWidth - GAP * (newVisibleCards - 1)) / newVisibleCards;
-      setCardWidth(cw);
-      cardWidthRef.current = cw;
+      if (totalWidth > 0) {
+        const cw = (totalWidth - GAP * (newVisibleCards - 1)) / newVisibleCards;
+        setCardWidth(cw);
+        cardWidthRef.current = cw;
+      } else {
+        // Retry in 50ms if layout is not ready yet (e.g. during client-side transitions)
+        setTimeout(handleResize, 50);
+      }
     }
   }, []);
 
@@ -153,11 +147,11 @@ export default function CategorySection() {
       {/* Mobile — sticky categories */}
       <div
         id="categories-section"
-        className={`${
-          isCollapsed ? "fixed" : "sticky"
-        } ${
+        className={`fixed left-0 right-0 ${
           announcementBarEnabled ? "top-[92px]" : "top-[64px]"
-        } z-30 bg-white border-b border-gray-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 py-3`}
+        } z-30 bg-white border-b border-gray-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 ${
+          isCollapsed ? "py-1.5" : "py-3"
+        }`}
       >
         <div className="flex gap-3 min-w-max justify-around items-center">
           {categories.map((item) => (

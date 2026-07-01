@@ -16,7 +16,7 @@ router.post("/login", strictLimiter, authController.login);
 router.get("/profile", authenticateJWT, authController.getProfile);
 
 // Maps to: POST /api/auth/forgot-password
-router.post("/forgot-password", authController.forgotPassword);
+router.post("/forgot-password", strictLimiter, authController.forgotPassword);
 
 // Maps to: PUT /api/auth/reset-password/:token
 router.put("/reset-password/:token", authController.resetPassword);

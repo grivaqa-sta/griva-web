@@ -117,13 +117,8 @@ export const metadata: Metadata = {
       "ar-QA": "https://thegriva.com/ar",
     },
   },
-  verification: {
-    google: "ADD_YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE_HERE",
-    yandex: "ADD_IF_NEEDED",
-    other: {
-      me: ["support@thegriva.com"],
-    },
-  },
+  // verification: Add your Google Search Console code here after setting up GSC
+  // verification: { google: "YOUR_CODE_HERE" },
   category: "electronics",
 };
 
@@ -173,6 +168,16 @@ export default function RootLayout({
             height="0"
             width="0"
             style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
+        {/* Meta Pixel (noscript) */}
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src="https://www.facebook.com/tr?id=2570473940080239&ev=PageView&noscript=1"
+            alt="Meta Pixel"
           />
         </noscript>
         <Providers>

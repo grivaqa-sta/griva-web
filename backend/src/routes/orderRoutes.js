@@ -56,6 +56,9 @@ router.get("/", authenticateJWT, isAdminOrStaff, orderController.getAllOrders);
 // Maps to: GET /api/orders/analytics (Fetches dynamic storefront sales metrics)
 router.get("/analytics", authenticateJWT, isAdmin, orderController.getAnalytics);
 
+// Maps to: GET /api/orders/deep-analytics (Fetches deep business analytics report)
+router.get("/deep-analytics", authenticateJWT, isAdmin, orderController.getDeepAnalytics);
+
 // FEATURE: Delivery Attempt Management — needs-attention must be before :id routes
 router.get("/needs-attention", authenticateJWT, isAdminOrStaff, getNeedsAttention);
 

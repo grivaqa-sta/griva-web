@@ -77,6 +77,11 @@ export default function AnnouncementBar() {
       setComingSoonVisible(true);
     }
 
+    const handleBypassEvent = () => {
+      setComingSoonVisible(true);
+    };
+    window.addEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+
     const initial = SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
     setShoppersCount(initial);
 
@@ -110,6 +115,7 @@ export default function AnnouncementBar() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("griva_coming_soon_bypassed", handleBypassEvent);
       clearInterval(timer);
     };
   }, []);

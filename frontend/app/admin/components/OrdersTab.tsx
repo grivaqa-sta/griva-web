@@ -74,6 +74,8 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('xlsx');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [openPrintMenuId, setOpenPrintMenuId] = useState<number | null>(null);
+  const [isBulkPrintModalOpen, setIsBulkPrintModalOpen] = useState(false);
 
   useEffect(() => {
     if (statusParam) {
@@ -243,16 +245,205 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     }
   };
 
-  const printOrderSlip = (order: AdminOrder) => {
-    const itemsHtml = (order.items || []).map(item => `
-      <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 8px 0; font-size: 14px;">${item.quantity} x ${item.product?.title || `Product #${item.product_id}`}</td>
-        <td style="padding: 8px 0; text-align: right; font-size: 14px; font-weight: bold;">
-          QAR ${(Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}
-        </td>
-      </tr>
-    `).join('');
+  const generateOrderSlipContent = (order: AdminOrder, type: 'packing' | 'invoice' | 'both') => {
+    const formatQatarPhone = (phone: string | undefined | null) => {
+      if (!phone) return 'N/A';
+      const clean = phone.replace(/[\s\-\(\)\+]/g, '');
+      if (clean.startsWith('974')) {
+        return `+974 ${clean.substring(3)}`;
+      }
+      return `+974 ${clean}`;
+    };
 
+    const orderNumber = order.order_number || `ORD-${String(order.id).padStart(4, '0')}`;
+    const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    const deliverySlotName = (order as any).deliverySlot?.name || deliverySlots.find(s => Number(s.id) === Number(order.delivery_slot_id))?.name || "None";
+
+    const subtotal = (order.items || []).reduce((acc, item) => {
+      const rawPrice = Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, ""));
+      return acc + (isNaN(rawPrice) ? 0 : rawPrice) * item.quantity;
+    }, 0);
+
+    const generatePackingSlipHtml = () => `
+      <div class="slip-container packing-slip">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+          <div>
+            <img src="${window.location.origin}/images/logo-dark.png" alt="GRIVA" style="height: 30px; width: auto; object-fit: contain; display: block; margin-bottom: 4px;" />
+            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #666; display: block; margin-top: 2px; font-family: sans-serif;">Packing & Fulfillment Checklist</span>
+          </div>
+          <div style="text-align: right; font-family: sans-serif;">
+            <div style="font-size: 12px; font-weight: bold; color: #333;">ORDER CHECKLIST</div>
+            <div style="font-size: 10px; color: #777; margin-top: 2px;">Please verify items before packing</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #eee; font-family: sans-serif;">
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #777; font-weight: bold; margin-bottom: 5px;">Order Details</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Order Number:</strong> ${orderNumber}</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Order Date:</strong> ${orderDate}</div>
+            <div style="font-size: 13px;"><strong style="color: #111;">Delivery Slot:</strong> <span style="background: #fff; padding: 2px 6px; border: 1px solid #ddd; border-radius: 4px; font-weight: bold; color: #f54900;">${deliverySlotName}</span></div>
+          </div>
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #777; font-weight: bold; margin-bottom: 5px;">Deliver To</div>
+            <div style="font-size: 13px; font-weight: bold; color: #111; margin-bottom: 3px;">${order.customer_name || 'N/A'}</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Phone:</strong> ${formatQatarPhone(order.customer_phone)}</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Email:</strong> ${order.user?.email || (order as any).customer_email || 'N/A'}</div>
+            <div style="font-size: 13px;"><strong style="color: #111;">Address:</strong> ${order.shipping_address}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px; font-family: sans-serif;">
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background: #111; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                <th style="padding: 10px; text-align: center; width: 60px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; border: 1px solid #eaeaea;">Packed</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #eaeaea;">Item Description</th>
+                <th style="padding: 10px; text-align: center; width: 80px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; border: 1px solid #eaeaea;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(order.items || []).map((item, idx) => `
+                <tr style="border-bottom: 1px solid #eaeaea; font-size: 13px;">
+                  <td style="padding: 12px; text-align: center; font-size: 18px; color: #bbb; font-weight: normal; border: 1px solid #eaeaea;">☐</td>
+                  <td style="padding: 12px; font-weight: bold; color: #222; border: 1px solid #eaeaea;">${item.product?.title || `Product #${item.product_id}`}</td>
+                  <td style="padding: 12px; text-align: center; font-weight: 900; font-size: 14px; color: #111; background: #fcfcfc; border: 1px solid #eaeaea;">${item.quantity}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${order.delivery_notes ? `
+          <div style="margin-bottom: 20px; border: 1px solid #f54900; background: #fffaf8; padding: 15px; border-radius: 12px; font-family: sans-serif;">
+            <div style="font-size: 11px; text-transform: uppercase; color: #f54900; font-weight: 900; margin-bottom: 5px; letter-spacing: 0.5px;">⚠️ Customer Instructions / Delivery Notes</div>
+            <div style="font-size: 13px; color: #333; font-weight: bold; line-height: 1.5;">${order.delivery_notes}</div>
+          </div>
+        ` : ''}
+
+        <div style="border-top: 1px dashed #ccc; padding-top: 15px; text-align: center; color: #777; font-size: 11px; font-family: sans-serif;">
+          <span>Thank you for shopping with Griva. Packing slip contains NO price info. Detailed invoice is packed inside.</span>
+        </div>
+      </div>
+    `;
+
+    const generateInvoiceHtml = () => `
+      <div class="slip-container invoice-slip">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif;">
+          <div>
+            <img src="${window.location.origin}/images/logo-dark.png" alt="GRIVA" style="height: 35px; width: auto; object-fit: contain; display: block; margin-bottom: 4px;" />
+            <span style="font-size: 10px; color: #999; display: block; margin-top: 1px;">State of Qatar | support@thegriva.com</span>
+          </div>
+          <div style="text-align: right;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #111; letter-spacing: 1px;">TAX INVOICE</h2>
+            <div style="font-size: 12px; font-weight: bold; color: #444; margin-top: 5px;">Invoice No: GRV-INV-${order.id}</div>
+            <div style="font-size: 11px; color: #777; margin-top: 2px;">Date: ${orderDate}</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 25px; font-family: sans-serif;">
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 6px; letter-spacing: 0.5px;">Sold By</div>
+            <div style="font-size: 13px; font-weight: bold; color: #111;">GRIVA</div>
+            <div style="font-size: 12px; color: #555; line-height: 1.5; margin-top: 3px;">
+              Commercial Registration: #129481A<br/>
+              State of Qatar<br/>
+              WhatsApp Support: ${formatQatarPhone('50921122')}
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 6px; letter-spacing: 0.5px;">Deliver To / Bill To</div>
+            <div style="font-size: 13px; font-weight: bold; color: #111;">${order.customer_name || 'N/A'}</div>
+            <div style="font-size: 12px; color: #555; line-height: 1.5; margin-top: 3px;">
+              <strong>Phone:</strong> ${formatQatarPhone(order.customer_phone)}<br/>
+              <strong>Email:</strong> ${order.user?.email || (order as any).customer_email || 'N/A'}<br/>
+              <strong>Address:</strong> ${order.shipping_address}<br/>
+              <strong>Delivery Slot:</strong> ${deliverySlotName}
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #fdfdfd; border: 1px solid #eaeaea; border-radius: 12px; padding: 15px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-family: sans-serif;">
+          <div>
+            <span style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; display: block;">Payment Method</span>
+            <span style="font-size: 13px; font-weight: bold; color: #111; display: block; margin-top: 2px;">${(order as any).delivery_payment_method || 'Cash on Delivery (COD)'}</span>
+          </div>
+          <div>
+            <span style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; display: block;">Payment Status</span>
+            <span style="font-size: 13px; font-weight: bold; color: ${order.status === 'delivered' || order.status === 'completed' ? '#16a34a' : '#ea580c'}; display: block; margin-top: 2px;">
+              ${order.status === 'delivered' || order.status === 'completed' ? 'Paid' : 'Unpaid (COD)'}
+            </span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 25px; font-family: sans-serif;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd; font-size: 10px; text-transform: uppercase; color: #555; letter-spacing: 0.5px;">
+                <th style="padding: 10px; text-align: left; width: 40px; border: 1px solid #eee;">S.No</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #eee;">Item Description</th>
+                <th style="padding: 10px; text-align: center; width: 60px; border: 1px solid #eee;">Qty</th>
+                <th style="padding: 10px; text-align: right; width: 100px; border: 1px solid #eee;">Unit Price</th>
+                <th style="padding: 10px; text-align: right; width: 120px; border: 1px solid #eee;">Total Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(order.items || []).map((item, idx) => {
+                const rawPrice = Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, ""));
+                const unitPrice = isNaN(rawPrice) ? 0 : rawPrice;
+                const totalItemPrice = unitPrice * item.quantity;
+                return `
+                  <tr style="border-bottom: 1px solid #eaeaea; font-size: 13px; color: #333;">
+                    <td style="padding: 12px 10px; color: #777; border: 1px solid #eee;">${idx + 1}</td>
+                    <td style="padding: 12px 10px; font-weight: bold; color: #111; border: 1px solid #eee;">${item.product?.title || `Product #${item.product_id}`}</td>
+                    <td style="padding: 12px 10px; text-align: center; border: 1px solid #eee;">${item.quantity}</td>
+                    <td style="padding: 12px 10px; text-align: right; border: 1px solid #eee;">QAR ${unitPrice.toFixed(2)}</td>
+                    <td style="padding: 12px 10px; text-align: right; font-weight: bold; color: #111; border: 1px solid #eee;">QAR ${totalItemPrice.toFixed(2)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px; font-family: sans-serif;">
+          <div style="width: 250px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; color: #555;">
+              <span>Subtotal:</span>
+              <span>QAR ${subtotal.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #555;">
+              <span>Delivery Fee:</span>
+              <span>QAR 0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; border-top: 1px solid #ccc; padding-top: 8px; color: #111;">
+              <span>Grand Total:</span>
+              <span>QAR ${subtotal.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px dashed #ccc; padding-top: 15px; text-align: center; color: #777; font-size: 11px; font-family: sans-serif;">
+          <p style="margin: 0; font-weight: bold; color: #333;">Thank you for shopping with Griva!</p>
+          <p style="margin: 3px 0 0 0;">This is a computer-generated tax invoice. No physical signature is required.</p>
+        </div>
+      </div>
+    `;
+
+    if (type === 'packing') {
+      return generatePackingSlipHtml();
+    } else if (type === 'invoice') {
+      return generateInvoiceHtml();
+    } else {
+      return `
+        ${generatePackingSlipHtml()}
+        <div class="page-break"></div>
+        ${generateInvoiceHtml()}
+      `;
+    }
+  };
+
+  const printOrderSlip = (order: AdminOrder, type: 'packing' | 'invoice' | 'both' = 'both') => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast.warning("Please allow popups in your browser to print orders.");
@@ -260,7 +451,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     }
 
     const orderNumber = order.order_number || `ORD-${String(order.id).padStart(4, '0')}`;
-    const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    const contentHtml = generateOrderSlipContent(order, type);
 
     const html = `
       <html>
@@ -268,98 +459,31 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           <title>Print Order ${orderNumber}</title>
           <style>
             body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+              margin: 10px;
               color: #333;
               line-height: 1.4;
             }
-            .header {
-              text-align: center;
-              margin-bottom: 20px;
+            .slip-container {
+              padding: 10px;
             }
-            .header h1 {
-              margin: 0;
-              font-size: 24px;
-              letter-spacing: 2px;
-            }
-            .section {
-              margin-bottom: 15px;
-              padding-bottom: 10px;
-              border-bottom: 1px dashed #ccc;
-            }
-            .section-title {
-              font-size: 12px;
-              text-transform: uppercase;
-              color: #777;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .info-row {
-              margin-bottom: 4px;
-              font-size: 14px;
-            }
-            .info-label {
-              font-weight: bold;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 15px 0;
-            }
-            .total-row {
-              font-size: 16px;
-              font-weight: bold;
-              display: flex;
-              justify-content: space-between;
-              margin-top: 10px;
+            @media print {
+              .page-break {
+                page-break-after: always;
+                break-after: page;
+                clear: both;
+                display: block;
+                height: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>GRIVA</h1>
-            <p style="font-size: 12px; margin: 5px 0 0 0; color: #666;">Order Print Slip</p>
-          </div>
-
-          <div class="section">
-            <div class="info-row"><span class="info-label">Order Number:</span> ${orderNumber}</div>
-            <div class="info-row"><span class="info-label">Date:</span> ${orderDate}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Customer Details</div>
-            <div class="info-row"><span class="info-label">Name:</span> ${order.customer_name || 'N/A'}</div>
-            <div class="info-row"><span class="info-label">Phone:</span> ${order.customer_phone || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Delivery Details</div>
-            <div class="info-row"><span class="info-label">Address:</span> ${order.shipping_address}</div>
-            <div class="info-row"><span class="info-label">Delivery Slot:</span> ${(order as any).deliverySlot?.name || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Products</div>
-            <table>
-              <tbody>
-                ${itemsHtml}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="section" style="border-bottom: none;">
-            <div class="total-row">
-              <span>Total Items:</span>
-              <span>${(order.items || []).reduce((acc, item) => acc + item.quantity, 0)}</span>
-            </div>
-            <div class="total-row" style="margin-top: 5px; font-size: 18px;">
-              <span>Total Amount:</span>
-              <span>${order.total_price || '—'}</span>
-            </div>
-            <div class="info-row" style="margin-top: 15px;"><span class="info-label">Order Status:</span> <span style="text-transform: capitalize;">${order.status}</span></div>
-            ${order.delivery_notes ? `<div class="info-row" style="margin-top: 10px;"><span class="info-label">Notes:</span> ${order.delivery_notes}</div>` : ''}
-          </div>
-
+          ${contentHtml}
           <script>
             window.onload = function() {
               window.print();
@@ -375,7 +499,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     printWindow.document.close();
   };
 
-  const handlePrintNewOrders = async () => {
+  const handlePrintNewOrders = async (type: 'packing' | 'invoice' | 'both' = 'both') => {
     const unprintedOrders = ordersList.filter(o => !(o as any).is_printed);
     if (unprintedOrders.length === 0) {
       setToastMsg('No new unprinted orders to print.');
@@ -389,63 +513,13 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
       return;
     }
 
-    const slipsHtml = unprintedOrders.map(order => {
-      const orderNumber = order.order_number || `ORD-${String(order.id).padStart(4, '0')}`;
-      const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
-      const itemsHtml = (order.items || []).map(item => `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 8px 0; font-size: 14px;">${item.quantity} x ${item.product?.title || `Product #${item.product_id}`}</td>
-          <td style="padding: 8px 0; text-align: right; font-size: 14px; font-weight: bold;">
-            QAR ${(Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}
-          </td>
-        </tr>
-      `).join('');
-
+    const slipsHtml = unprintedOrders.map((order, orderIdx) => {
+      const content = generateOrderSlipContent(order, type);
+      const isLast = orderIdx === unprintedOrders.length - 1;
       return `
-        <div class="order-slip">
-          <div class="header">
-            <h1>GRIVA</h1>
-            <p style="font-size: 12px; margin: 5px 0 0 0; color: #666;">Order Print Slip</p>
-          </div>
-
-          <div class="section">
-            <div class="info-row"><span class="info-label">Order Number:</span> ${orderNumber}</div>
-            <div class="info-row"><span class="info-label">Date:</span> ${orderDate}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Customer Details</div>
-            <div class="info-row"><span class="info-label">Name:</span> ${order.customer_name || 'N/A'}</div>
-            <div class="info-row"><span class="info-label">Phone:</span> ${order.customer_phone || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Delivery Details</div>
-            <div class="info-row"><span class="info-label">Address:</span> ${order.shipping_address}</div>
-            <div class="info-row"><span class="info-label">Delivery Slot:</span> ${(order as any).deliverySlot?.name || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Products</div>
-            <table>
-              <tbody>
-                ${itemsHtml}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="section" style="border-bottom: none;">
-            <div class="total-row">
-              <span>Total Items:</span>
-              <span>${(order.items || []).reduce((acc, item) => acc + item.quantity, 0)}</span>
-            </div>
-            <div class="total-row" style="margin-top: 5px; font-size: 18px;">
-              <span>Total Amount:</span>
-              <span>${order.total_price || '—'}</span>
-            </div>
-            <div class="info-row" style="margin-top: 15px;"><span class="info-label">Order Status:</span> <span style="text-transform: capitalize;">${order.status}</span></div>
-            ${order.delivery_notes ? `<div class="info-row" style="margin-top: 10px;"><span class="info-label">Notes:</span> ${order.delivery_notes}</div>` : ''}
-          </div>
+        <div class="order-slip-wrapper">
+          ${content}
+          ${!isLast ? '<div class="page-break"></div>' : ''}
         </div>
       `;
     }).join('');
@@ -456,68 +530,25 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           <title>Print Bulk Orders</title>
           <style>
             body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+              margin: 10px;
               color: #333;
               line-height: 1.4;
             }
-            .order-slip {
-              page-break-after: always;
-              border-bottom: 2px solid #333;
-              padding-bottom: 30px;
-              margin-bottom: 30px;
-            }
-            .order-slip:last-child {
-              page-break-after: avoid;
-              border-bottom: none;
-              padding-bottom: 0;
-              margin-bottom: 0;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 20px;
-            }
-            .header h1 {
-              margin: 0;
-              font-size: 24px;
-              letter-spacing: 2px;
-            }
-            .section {
-              margin-bottom: 15px;
-              padding-bottom: 10px;
-              border-bottom: 1px dashed #ccc;
-            }
-            .section-title {
-              font-size: 12px;
-              text-transform: uppercase;
-              color: #777;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .info-row {
-              margin-bottom: 4px;
-              font-size: 14px;
-            }
-            .info-label {
-              font-weight: bold;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 15px 0;
-            }
-            .total-row {
-              font-size: 16px;
-              font-weight: bold;
-              display: flex;
-              justify-content: space-between;
-              margin-top: 10px;
+            .order-slip-wrapper {
+              padding: 10px;
             }
             @media print {
-              .order-slip {
-                border-bottom: none;
-                padding-bottom: 0;
-                margin-bottom: 0;
+              .page-break {
+                page-break-after: always;
+                break-after: page;
+                clear: both;
+                display: block;
+                height: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
               }
             }
           </style>
@@ -852,7 +883,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={handlePrintNewOrders}
+            onClick={() => setIsBulkPrintModalOpen(true)}
             className="flex items-center gap-2 px-4.5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-xs font-bold shadow-md hover:opacity-90 transition-all cursor-pointer active:scale-95 flex items-center justify-center"
           >
             <Printer className="h-4 w-4" />
@@ -1255,23 +1286,90 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                 </button>
                               );
                             })}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                printOrderSlip(order);
-                                bulkPrintOrdersApi([order.id]).then(success => {
-                                  if (success) {
-                                    setOrdersList(prev =>
-                                      prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
-                                    );
-                                  }
-                                });
-                              }}
-                              title="Print Order Slip"
-                              className="p-1.5 rounded-lg text-orange-500 hover:text-orange-600 hover:bg-orange-55 border border-orange-500/20 cursor-pointer"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenPrintMenuId(openPrintMenuId === order.id ? null : order.id);
+                                }}
+                                title="Print Options"
+                                className={`p-1.5 rounded-lg border cursor-pointer transition-all ${
+                                  openPrintMenuId === order.id
+                                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                                    : "text-orange-500 hover:bg-orange-50 hover:text-orange-600 border-orange-500/20"
+                                }`}
+                              >
+                                <Printer className="h-3.5 w-3.5" />
+                              </button>
+
+                              {openPrintMenuId === order.id && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-40 bg-transparent cursor-default"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPrintMenuId(null);
+                                    }}
+                                  />
+                                  <div className="absolute right-0 mt-1 bg-white border border-gray-150 rounded-xl shadow-xl z-50 py-1.5 min-w-[170px] text-left animate-in fade-in slide-in-from-top-2 duration-150">
+                                    <div className="px-3 py-1 text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 mb-1">
+                                      Select Print Format
+                                    </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        printOrderSlip(order, 'packing');
+                                        bulkPrintOrdersApi([order.id]).then(success => {
+                                          if (success) {
+                                            setOrdersList(prev =>
+                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                            );
+                                          }
+                                        });
+                                        setOpenPrintMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-orange-55 hover:text-orange-600 transition-colors flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
+                                    >
+                                      📦 Packing Slip (No Price)
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        printOrderSlip(order, 'invoice');
+                                        bulkPrintOrdersApi([order.id]).then(success => {
+                                          if (success) {
+                                            setOrdersList(prev =>
+                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                            );
+                                          }
+                                        });
+                                        setOpenPrintMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-orange-55 hover:text-orange-600 transition-colors flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
+                                    >
+                                      📄 Tax Invoice (Detailed)
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        printOrderSlip(order, 'both');
+                                        bulkPrintOrdersApi([order.id]).then(success => {
+                                          if (success) {
+                                            setOrdersList(prev =>
+                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                            );
+                                          }
+                                        });
+                                        setOpenPrintMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-xs font-black text-orange-650 hover:bg-orange-55 transition-colors flex items-center gap-1.5 border-t border-gray-100 mt-1 pt-2 cursor-pointer bg-transparent"
+                                    >
+                                      📑 Twin Pack (Both Slips)
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                             <button
                               onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer border border-orange-500/20"
@@ -1401,23 +1499,56 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                         )}
                                       </p>
                                     </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        printOrderSlip(order);
-                                        bulkPrintOrdersApi([order.id]).then(success => {
-                                          if (success) {
-                                            setOrdersList(prev =>
-                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
-                                            );
-                                          }
-                                        });
-                                      }}
-                                      className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-[10px] font-bold text-white rounded-lg shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer h-[32px]"
-                                    >
-                                      <Printer size={12} />
-                                      Print Order Slip
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          printOrderSlip(order, 'packing');
+                                          bulkPrintOrdersApi([order.id]).then(success => {
+                                            if (success) {
+                                              setOrdersList(prev =>
+                                                prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                              );
+                                            }
+                                          });
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-white border border-orange-500/20 hover:border-orange-500 text-orange-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer h-[32px]"
+                                      >
+                                        📦 Packing Slip
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          printOrderSlip(order, 'invoice');
+                                          bulkPrintOrdersApi([order.id]).then(success => {
+                                            if (success) {
+                                              setOrdersList(prev =>
+                                                prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                              );
+                                            }
+                                          });
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-white border border-orange-500/20 hover:border-orange-500 text-orange-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer h-[32px]"
+                                      >
+                                        📄 Tax Invoice
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          printOrderSlip(order, 'both');
+                                          bulkPrintOrdersApi([order.id]).then(success => {
+                                            if (success) {
+                                              setOrdersList(prev =>
+                                                prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                              );
+                                            }
+                                          });
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-[10px] font-black shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer h-[32px]"
+                                      >
+                                        📑 Twin Pack (Both)
+                                      </button>
+                                    </div>
                                   </div>
 
                                   {/* Mobile-Friendly Status Actions */}
@@ -1692,6 +1823,68 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Print Selection Modal */}
+      {isBulkPrintModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setIsBulkPrintModalOpen(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" />
+          <div className="relative bg-white rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center space-y-1.5">
+              <div className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center mx-auto">
+                <Printer className="h-5 w-5 text-orange-500" />
+              </div>
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                Batch Printing System
+              </h3>
+              <p className="text-[11px] text-gray-400 font-semibold">
+                Select output format for {ordersList.filter(o => !(o as any).is_printed).length} new unprinted orders.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  handlePrintNewOrders('packing');
+                  setIsBulkPrintModalOpen(false);
+                }}
+                className="w-full py-3 px-4 rounded-xl border border-gray-200 hover:border-orange-500 hover:bg-orange-50/10 text-left font-bold text-xs text-gray-700 transition-all flex items-center justify-between cursor-pointer bg-white"
+              >
+                <span>📦 Packing Slips Only</span>
+                <span className="text-[10px] font-normal text-gray-400">No prices</span>
+              </button>
+              <button
+                onClick={() => {
+                  handlePrintNewOrders('invoice');
+                  setIsBulkPrintModalOpen(false);
+                }}
+                className="w-full py-3 px-4 rounded-xl border border-gray-200 hover:border-orange-500 hover:bg-orange-50/10 text-left font-bold text-xs text-gray-700 transition-all flex items-center justify-between cursor-pointer bg-white"
+              >
+                <span>📄 Tax Invoices Only</span>
+                <span className="text-[10px] font-normal text-gray-400">With prices & totals</span>
+              </button>
+              <button
+                onClick={() => {
+                  handlePrintNewOrders('both');
+                  setIsBulkPrintModalOpen(false);
+                }}
+                className="w-full py-3.5 px-4 rounded-xl border border-orange-200 bg-orange-50/20 hover:bg-orange-50/40 text-left font-black text-xs text-orange-700 transition-all flex items-center justify-between cursor-pointer"
+              >
+                <span>📑 Twin Packs (Slips + Invoices)</span>
+                <span className="text-[10px] font-bold text-orange-500">2 pages per order</span>
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsBulkPrintModalOpen(false)}
+                className="flex-1 py-2.5 bg-gray-50 border border-gray-250 text-xs font-bold rounded-xl text-gray-700 hover:bg-gray-100 transition-all cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

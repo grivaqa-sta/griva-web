@@ -3,29 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import productBannerService from "@/app/services/productBanner.service";
-import { ProductBanner } from "@/app/types/types";
+import { useActiveProductBanners } from "@/app/hooks/useHomeData";
 
 const ProductPromoBanner = () => {
-  const [banner, setBanner] = useState<ProductBanner | null>(null);
+  const { banners } = useActiveProductBanners();
+  const banner = banners[0] ?? null;
   const mobileImageRef = useRef<HTMLDivElement>(null);
   const desktopImageRef = useRef<HTMLDivElement>(null);
   const [showImage, setShowImage] = useState(false);
-
-  useEffect(() => {
-    const fetchBanner = async () => {
-      try {
-        const banners = await productBannerService.getActiveBanners();
-        if (banners && banners.length > 0) {
-          setBanner(banners[0]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch promo banner", err);
-      }
-    };
-    fetchBanner();
-  }, []);
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {

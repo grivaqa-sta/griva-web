@@ -46,7 +46,6 @@ export default function Navbar() {
   const [isMobile, setIsMobile] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Close search dropdown on click outside and set mounted state
   useEffect(() => {
     setMounted(true);
     setIsMobile(window.innerWidth < 640);
@@ -61,6 +60,11 @@ export default function Navbar() {
       setComingSoonVisible(true);
     }
 
+    const handleBypassEvent = () => {
+      setComingSoonVisible(true);
+    };
+    window.addEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
       if (target instanceof Element && !target.closest(".search-container")) {
@@ -70,6 +74,7 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("griva_coming_soon_bypassed", handleBypassEvent);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
@@ -383,15 +388,6 @@ export default function Navbar() {
           )}
         </AnimatePresence>
 
-        {/* Mobile Navigation Drawer */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <MobileMenu
-              isOpen={mobileMenuOpen}
-              onClose={() => setMobileMenuOpen(false)}
-            />
-          )}
-        </AnimatePresence>
       </header>
 
       {/* Fixed Bottom Navigation Bar (Mobile Only, rendered client-side only to prevent hydration errors) */}
@@ -459,6 +455,16 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Mobile Navigation Drawer */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <MobileMenu
+            isOpen={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Mobile Category Drawer */}
       <MobileCategoryDrawer

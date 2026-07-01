@@ -32,9 +32,8 @@ import {
   ChevronDown
 } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
-import { ApiProduct, Category, SubCategory } from "@/app/types/types";
-import { categoryService } from "@/app/services/category.service";
-import { subCategoryService } from "@/app/services/subCategory.service";
+import { useCategories, useSubCategories } from "@/app/hooks/useCategories";
+import { ApiProduct } from "@/app/types/types";
 import ProductCard from "@/app/components/product/ProductCard";
 import { motion, AnimatePresence } from "framer-motion";
 import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
@@ -201,13 +200,13 @@ export default function CategoryPage() {
   const [openSortDropdown, setOpenSortDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [taxonomyLoading, setTaxonomyLoading] = useState(true);
+  // Categories & subcategories from API (cached — no repeat fetches on navigation)
+  const { categories, loading: categoriesLoading } = useCategories();
+  const { subCategories, loading: subCategoriesLoading } = useSubCategories();
 
   // Smooth scroll to category products grid on filter changes
   useEffect(() => {
-    if (!taxonomyLoading && categories.length > 0) {
+    if (!categoriesLoading && categories.length > 0) {
       const el = document.getElementById("category-products-grid");
       if (el) {
         const offset = 140;
@@ -220,33 +219,10 @@ export default function CategoryPage() {
         });
       }
     }
-  }, [subParam, minRating, maxPrice, taxonomyLoading, categories]);
-
-  useEffect(() => {
-    async function loadTaxonomy() {
-      try {
-        const [catRes, subRes] = await Promise.all([
-          categoryService.getCategories(),
-          subCategoryService.getSubCategories(),
-        ]);
-        // categoryService.getCategories() returns response.data.data (already unwrapped)
-        const cData = Array.isArray(catRes) ? catRes : (catRes?.data || []);
-        // subCategoryService.getSubCategories() returns response.data = { success, data: [...] }
-        const sRaw = subRes?.data || subRes;
-        const sData = Array.isArray(sRaw) ? sRaw : (sRaw?.data || []);
-        setCategories(Array.isArray(cData) ? cData : []);
-        setSubCategories(Array.isArray(sData) ? sData : []);
-      } catch (err) {
-        console.error("[CategoryPage] Failed to load taxonomy:", err);
-      } finally {
-        setTaxonomyLoading(false);
-      }
-    }
-    loadTaxonomy();
-  }, []);
+  }, [subParam, minRating, maxPrice, categoriesLoading, categories]);
 
   const { products: allProducts, loading: productsLoading } = useAllProducts();
-  const loading = taxonomyLoading || productsLoading;
+  const loading = categoriesLoading || subCategoriesLoading || productsLoading;
 
   const matchedCategory = useMemo(() => {
     return categories.find(
@@ -298,7 +274,7 @@ export default function CategoryPage() {
   }, [allProducts, validSubcategoryIds]);
 
   const filteredProducts = useMemo((): ApiProduct[] => {
-    if (taxonomyLoading) return [];
+    if (loading) return [];
     if (!matchedCategory) return [];
 
     let result = allProducts.filter((p) =>
@@ -330,7 +306,7 @@ export default function CategoryPage() {
       result.sort((a, b) => b.rating - a.rating);
     }
     return result;
-  }, [allProducts, matchedCategory, validSubcategoryIds, taxonomyLoading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
+  }, [allProducts, matchedCategory, validSubcategoryIds, loading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
 
   const handleResetFilters = () => {
     setMaxPrice(1000000);
@@ -419,7 +395,7 @@ export default function CategoryPage() {
         >
           {/* Background Image with smooth fade-in to prevent flashing of old image */}
           {(() => {
-            const imageUrl = !taxonomyLoading
+            const imageUrl = !loading
               ? (matchedCategory?.image_url || meta.bannerImage)
               : null;
             if (!imageUrl) return null;

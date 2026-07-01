@@ -61,8 +61,8 @@ export default function NewsletterSection() {
 
           {/* Right Form */}
           {subscribed ? (
-            <div className="text-white bg-green-500/20 border border-green-500/30 px-6 py-4 rounded-xl text-sm font-bold animate-in fade-in duration-300">
-              🎉 Thank you for subscribing! You will receive our latest offers and updates.
+            <div className="text-white border  px-6 py-4 rounded-xl text-sm font-bold animate-in fade-in duration-300">
+             Thanks for subscribing! We'll keep you updated.
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex w-full max-w-lg overflow-hidden rounded-xl shadow-lg lg:w-auto">
@@ -89,4 +89,4 @@ export default function NewsletterSection() {
       </div>
     </section>
   );
-}
+}

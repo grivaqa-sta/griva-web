@@ -231,6 +231,8 @@ exports.createOrder = async (req, res, next) => {
     for (const item of items) {
       // Accept product_id OR id from frontend
       const productId = item.product_id || item.id;
+      const variantId = item.variant_id || item.variantId || null;
+      const sku = item.sku || null;
 
       // HIGH-6: Parse and validate qty
       const qty = parseInt(item.quantity, 10);
@@ -256,35 +258,144 @@ exports.createOrder = async (req, res, next) => {
         return res.status(400).json({ error: `Product '${product.title}' is currently inactive and cannot be ordered.` });
       }
 
-      if (product.stock < qty) {
-        await transaction.rollback();
-        return res.status(409).json({
-          error: `Insufficient stock for '${product.title}'. Only ${product.stock} units available.`,
-          code: "INSUFFICIENT_STOCK",
-          details: {
-            productId: product.id,
-            title: product.title,
-            requestedQuantity: qty,
-            availableStock: product.stock,
-          },
+      const ProductVariant = require("../models/ProductVariant");
+      let variant = null;
+
+      // Try to find variant by SKU first if provided, else fallback to variantId
+      if (sku) {
+        variant = await ProductVariant.findOne({
+          where: { product_id: product.id, sku },
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+      }
+      if (!variant && variantId) {
+        variant = await ProductVariant.findByPk(variantId, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
         });
       }
 
-      product.stock -= qty;
-      await product.save({ transaction });
+      if (variant) {
+        if (variant.stock < qty) {
+          await transaction.rollback();
+          return res.status(409).json({
+            error: `Insufficient stock for '${product.title}'. Only ${variant.stock} units available.`,
+            code: "INSUFFICIENT_STOCK",
+            details: {
+              productId: product.id,
+              variantId: variant.id,
+              title: product.title,
+              requestedQuantity: qty,
+              availableStock: variant.stock,
+            },
+          });
+        }
+        variant.stock -= qty;
+        await variant.save({ transaction });
 
-      const unitPrice = parseFloat(product.getDataValue("price"));
+        // Synchronize the parent product's JSONB variants column as well
+        if (Array.isArray(product.variants)) {
+          const updatedJSONVariants = product.variants.map((v) => {
+            if (v.sku === sku || v.sku === variant.sku) {
+              return { ...v, stock: Math.max(0, (v.stock || 0) - qty) };
+            }
+            return v;
+          });
+          product.variants = updatedJSONVariants;
+        }
+
+        // Update product cached stock sum from variants table
+        const totalStock = await ProductVariant.sum("stock", {
+          where: { product_id: product.id },
+          transaction
+        }) || 0;
+        product.stock = totalStock;
+        await product.save({ transaction });
+      } else {
+        // Fallback: Check if variant exists in JSONB column if table relation is empty
+        if (sku && Array.isArray(product.variants)) {
+          const vJSON = product.variants.find(x => x.sku === sku);
+          if (vJSON) {
+            const currentVariantStock = typeof vJSON.stock === 'number' ? vJSON.stock : 0;
+            if (currentVariantStock < qty) {
+              await transaction.rollback();
+              return res.status(409).json({
+                error: `Insufficient stock for variant '${sku}'. Only ${currentVariantStock} units available.`,
+                code: "INSUFFICIENT_STOCK",
+                details: {
+                  productId: product.id,
+                  title: product.title,
+                  requestedQuantity: qty,
+                  availableStock: currentVariantStock,
+                },
+              });
+            }
+            const updatedJSONVariants = product.variants.map((v) => {
+              if (v.sku === sku) {
+                return { ...v, stock: Math.max(0, currentVariantStock - qty) };
+              }
+              return v;
+            });
+            product.variants = updatedJSONVariants;
+            const totalStock = updatedJSONVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+            product.stock = totalStock;
+            await product.save({ transaction });
+          } else {
+            // standard product stock decrement
+            if (product.stock < qty) {
+              await transaction.rollback();
+              return res.status(409).json({
+                error: `Insufficient stock for '${product.title}'. Only ${product.stock} units available.`,
+                code: "INSUFFICIENT_STOCK",
+                details: {
+                  productId: product.id,
+                  title: product.title,
+                  requestedQuantity: qty,
+                  availableStock: product.stock,
+                },
+              });
+            }
+            product.stock -= qty;
+            await product.save({ transaction });
+          }
+        } else {
+          // Standard product stock check
+          if (product.stock < qty) {
+            await transaction.rollback();
+            return res.status(409).json({
+              error: `Insufficient stock for '${product.title}'. Only ${product.stock} units available.`,
+              code: "INSUFFICIENT_STOCK",
+              details: {
+                productId: product.id,
+                title: product.title,
+                requestedQuantity: qty,
+                availableStock: product.stock,
+              },
+            });
+          }
+          product.stock -= qty;
+          await product.save({ transaction });
+        }
+      }
+
+      const unitPrice = variant && variant.price ? parseFloat(variant.price) : parseFloat(product.getDataValue("price"));
       calculatedTotal += unitPrice * qty;
 
       itemsToCreate.push({
         product_id: product.id,
+        variant_id: variant ? variant.id : null,
+        selected_attributes: item.selectedAttributes || item.selected_attributes || {},
         quantity: qty,
-        selected_color: item.selectedColor || item.selected_color || null,
-        selected_storage: item.selectedStorage || item.selected_storage || null,
+        selected_color: item.selectedColor || item.selected_color || (item.selectedAttributes ? item.selectedAttributes.Color : null) || null,
+        selected_storage: item.selectedStorage || item.selected_storage || (item.selectedAttributes ? (item.selectedAttributes.Storage || item.selectedAttributes.Size) : null) || null,
         price_at_purchase: unitPrice,
+        sku: variant && variant.sku ? variant.sku : (product.sku || null),
+        image_snapshot: variant && Array.isArray(variant.images) && variant.images.length > 0 ? variant.images[0] : (product.main_image_url || null),
       });
 
-      orderSummaryLines.push(`▪ ${product.title} x${qty} — QAR ${unitPrice}`);
+      const displayTitle = variant ? `${product.title} (${Object.values(variant.combination).join(", ")})` : product.title;
+      orderSummaryLines.push(`▪ ${displayTitle} x${qty} — QAR ${unitPrice}`);
     }
 
     // Fetch site settings for shipping fee calculation
@@ -570,15 +681,38 @@ exports.updateOrderStatus = async (req, res, next) => {
 
       // HIGH-1: Restore stock on cancellation
       if (status === "cancelled") {
+        const ProductVariant = require("../models/ProductVariant");
         const items = await OrderItem.findAll({ where: { order_id: order.id }, transaction });
         for (const item of items) {
-          const product = await Product.findByPk(item.product_id, {
-            transaction,
-            lock: transaction.LOCK.UPDATE,
-          });
-          if (product) {
-            product.stock += item.quantity;
-            await product.save({ transaction });
+          if (item.variant_id) {
+            const variant = await ProductVariant.findByPk(item.variant_id, {
+              transaction,
+              lock: transaction.LOCK.UPDATE,
+            });
+            if (variant) {
+              variant.stock += item.quantity;
+              await variant.save({ transaction });
+
+              // Sync parent product stock
+              const product = await Product.findByPk(item.product_id, { transaction });
+              if (product) {
+                const totalStock = await ProductVariant.sum("stock", {
+                  where: { product_id: product.id },
+                  transaction
+                }) || 0;
+                product.stock = totalStock;
+                await product.save({ transaction });
+              }
+            }
+          } else {
+            const product = await Product.findByPk(item.product_id, {
+              transaction,
+              lock: transaction.LOCK.UPDATE,
+            });
+            if (product) {
+              product.stock += item.quantity;
+              await product.save({ transaction });
+            }
           }
         }
       }
@@ -1184,14 +1318,37 @@ exports.cancelMyOrder = async (req, res, next) => {
     }
 
     // Restore stock
+    const ProductVariant = require("../models/ProductVariant");
     for (const item of order.items) {
-      const product = await Product.findByPk(item.product_id, {
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
-      if (product) {
-        product.stock += item.quantity;
-        await product.save({ transaction });
+      if (item.variant_id) {
+        const variant = await ProductVariant.findByPk(item.variant_id, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+        if (variant) {
+          variant.stock += item.quantity;
+          await variant.save({ transaction });
+
+          // Sync parent product stock
+          const product = await Product.findByPk(item.product_id, { transaction });
+          if (product) {
+            const totalStock = await ProductVariant.sum("stock", {
+              where: { product_id: product.id },
+              transaction
+            }) || 0;
+            product.stock = totalStock;
+            await product.save({ transaction });
+          }
+        }
+      } else {
+        const product = await Product.findByPk(item.product_id, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+        if (product) {
+          product.stock += item.quantity;
+          await product.save({ transaction });
+        }
       }
     }
 

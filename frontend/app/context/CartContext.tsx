@@ -24,12 +24,16 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return buildState(action.payload);
     }
     case "ADD": {
-      const existing = state.items.find(
-        (item) =>
+      const existing = state.items.find((item) => {
+        if (action.payload.variantId || item.variantId) {
+          return item.productId === action.payload.productId && item.variantId === action.payload.variantId;
+        }
+        return (
           item.productId === action.payload.productId &&
           item.selectedColor === action.payload.selectedColor &&
           item.selectedStorage === action.payload.selectedStorage
-      );
+        );
+      });
       let newItems: CartItem[];
       if (existing) {
         newItems = state.items.map((item) =>
@@ -95,8 +99,11 @@ interface CartContextValue {
     category: string;
     selectedColor?: string;
     selectedStorage?: string;
+    variantId?: number;
+    selectedAttributes?: Record<string, string>;
     quantity?: number;
     slug?: string;
+    sku?: string;
   }) => Promise<void>;
 }
 
@@ -171,6 +178,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 quantity: item.quantity,
                 selectedColor: item.selectedColor,
                 selectedStorage: item.selectedStorage,
+                variantId: item.variantId,
+                selectedAttributes: item.selectedAttributes,
               }))
             );
             if (mergeResponse.success && mergeResponse.cart) {
@@ -209,11 +218,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     category: string;
     selectedColor?: string;
     selectedStorage?: string;
+    variantId?: number;
+    selectedAttributes?: Record<string, string>;
     quantity?: number;
     slug?: string;
+    sku?: string;
   }) => {
     const qty = product.quantity ?? 1;
-    const key = `add-${product.id}-${product.selectedColor || ""}-${product.selectedStorage || ""}`;
+    const key = `add-${product.id}-${product.variantId || ""}-${product.selectedColor || ""}-${product.selectedStorage || ""}`;
 
     if (activeRequestsRef.current[key]) return;
     activeRequestsRef.current[key] = true;
@@ -224,7 +236,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           product.id,
           product.selectedColor,
           product.selectedStorage,
-          qty
+          qty,
+          product.variantId,
+          product.selectedAttributes
         );
         if (response.success && response.cart) {
           dispatch({ type: "SET_CART", payload: response.cart.items });
@@ -232,12 +246,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // CRIT-6: Guest Cart Stock & Activity Validation
-        const existing = state.items.find(
-          (item) =>
+        const existing = state.items.find((item) => {
+          if (product.variantId || item.variantId) {
+            return item.productId === product.id && item.variantId === product.variantId;
+          }
+          return (
             item.productId === product.id &&
             item.selectedColor === product.selectedColor &&
             item.selectedStorage === product.selectedStorage
-        );
+          );
+        });
         const currentQty = existing ? existing.quantity : 0;
         const targetQty = currentQty + qty;
 
@@ -257,8 +275,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
           toast.warning("This product is no longer active and cannot be added to your cart.");
           return;
         }
-        if (targetQty > serverProd.stock) {
-          toast.warning(`Cannot add more items. Only ${serverProd.stock} left in stock.`);
+
+        // Validate variant stock if present, else base stock
+        let availableStock = serverProd.stock;
+        if (product.sku && Array.isArray(serverProd.productVariants)) {
+          const v = serverProd.productVariants.find((x: any) => x.sku === product.sku);
+          if (v) {
+            availableStock = v.stock;
+          }
+        } else if (product.variantId && Array.isArray(serverProd.productVariants)) {
+          const v = serverProd.productVariants.find((x: any) => x.id === product.variantId);
+          if (v) {
+            availableStock = v.stock;
+          }
+        }
+        
+        // Fallback: search in JSONB variants if productVariants table relation is empty
+        if ((!serverProd.productVariants || serverProd.productVariants.length === 0) && product.sku) {
+          const variantsList = serverProd.variants || [];
+          const v = variantsList.find((x: any) => x.sku === product.sku);
+          if (v) {
+            availableStock = v.stock;
+          }
+        }
+
+        if (targetQty > availableStock) {
+          toast.warning(`Cannot add more items. Only ${availableStock} left in stock.`);
           return;
         }
 
@@ -270,6 +312,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const cartItem: CartItem = {
           id: Date.now() + Math.random(),
           productId: product.id,
+          variantId: product.variantId,
+          selectedAttributes: product.selectedAttributes,
           title: product.title,
           image: product.image,
           price: product.price,
@@ -280,6 +324,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           selectedColor: product.selectedColor,
           selectedStorage: product.selectedStorage,
           slug: product.slug,
+          sku: product.sku,
         };
         dispatch({ type: "ADD", payload: cartItem });
         toast.cart("Product added to cart");

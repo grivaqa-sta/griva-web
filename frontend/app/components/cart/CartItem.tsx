@@ -64,17 +64,27 @@ export default function CartItem({ item }: CartItemProps) {
         </p>
 
         {/* Selected variants */}
-        {(item.selectedColor || item.selectedStorage) && (
+        {((item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0) || item.selectedColor || item.selectedStorage) && (
           <div className="mt-1 flex flex-wrap gap-2">
-            {item.selectedColor && (
-              <span className="inline-flex items-center rounded-md bg-gray-50 border px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-                Color: {item.selectedColor}
-              </span>
-            )}
-            {item.selectedStorage && (
-              <span className="inline-flex items-center rounded-md bg-gray-50 border px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-                Storage: {item.selectedStorage}
-              </span>
+            {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 ? (
+              Object.entries(item.selectedAttributes).map(([key, val]) => (
+                <span key={key} className="inline-flex items-center rounded-md bg-gray-50 border px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+                  {key}: {val}
+                </span>
+              ))
+            ) : (
+              <>
+                {item.selectedColor && (
+                  <span className="inline-flex items-center rounded-md bg-gray-50 border px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+                    Color: {item.selectedColor}
+                  </span>
+                )}
+                {item.selectedStorage && (
+                  <span className="inline-flex items-center rounded-md bg-gray-50 border px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+                    Storage: {item.selectedStorage}
+                  </span>
+                )}
+              </>
             )}
           </div>
         )}

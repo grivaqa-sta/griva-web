@@ -45,6 +45,27 @@ exports.createProduct = async (req, res) => {
     }
 
     const product = await Product.create(req.body);
+
+    const ProductVariant = require("../models/ProductVariant");
+    const { variants } = req.body;
+    if (Array.isArray(variants) && variants.length > 0) {
+      const variantsToCreate = variants.map(v => ({
+        product_id: product.id,
+        combination: v.combination,
+        stock: v.stock || 0,
+        sku: v.sku || null,
+        price: v.price || null,
+        old_price: v.old_price || null,
+        images: v.images || []
+      }));
+      await ProductVariant.bulkCreate(variantsToCreate);
+      
+      // Update parent product stock sum
+      const totalStock = variantsToCreate.reduce((sum, v) => sum + v.stock, 0);
+      product.stock = totalStock;
+      await product.save();
+    }
+
     cache.clear(); // Clear cache on catalog mutation
 
     res.status(201).json({
@@ -146,10 +167,13 @@ exports.getProductById = async (req, res) => {
   try {
     const isId = /^\d+$/.test(req.params.id);
     let product;
+    const ProductVariant = require("../models/ProductVariant");
+    const includeOption = [{ model: ProductVariant, as: "productVariants" }];
+
     if (isId) {
-      product = await Product.findByPk(req.params.id);
+      product = await Product.findByPk(req.params.id, { include: includeOption });
     } else {
-      product = await Product.findOne({ where: { slug: req.params.id } });
+      product = await Product.findOne({ where: { slug: req.params.id }, include: includeOption });
     }
 
     // CRIT-4: Add is_active check for public views on product details
@@ -376,6 +400,58 @@ exports.updateProduct = async (req, res) => {
     }
 
     await product.update(req.body);
+
+    const ProductVariant = require("../models/ProductVariant");
+    const { variants } = req.body;
+    if (Array.isArray(variants)) {
+      const existingVariants = await ProductVariant.findAll({
+        where: { product_id: product.id }
+      });
+
+      const payloadVariantIds = variants.filter(v => v.id).map(v => Number(v.id));
+      
+      // Delete variants not in the update payload
+      for (const ev of existingVariants) {
+        if (!payloadVariantIds.includes(ev.id)) {
+          await ev.destroy();
+        }
+      }
+
+      // Create / Update variants in payload
+      for (const v of variants) {
+        if (v.id) {
+          const ev = existingVariants.find(x => x.id === Number(v.id));
+          if (ev) {
+            await ev.update({
+              combination: v.combination,
+              stock: v.stock || 0,
+              sku: v.sku || null,
+              price: v.price || null,
+              old_price: v.old_price || null,
+              images: v.images || []
+            });
+          }
+        } else {
+          await ProductVariant.create({
+            product_id: product.id,
+            combination: v.combination,
+            stock: v.stock || 0,
+            sku: v.sku || null,
+            price: v.price || null,
+            old_price: v.old_price || null,
+            images: v.images || []
+          });
+        }
+      }
+
+      // Re-calculate parent product stock sum
+      const totalStock = await ProductVariant.sum("stock", {
+        where: { product_id: product.id }
+      }) || 0;
+      product.stock = totalStock;
+      await product.save();
+    }
+
     cache.clear(); // Clear cache on update
 
     res.status(200).json({
@@ -406,6 +482,16 @@ exports.updateProductStock = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Product not found",
+      });
+    }
+
+    // If the product has variants, stock must be modified via variants
+    const ProductVariant = require("../models/ProductVariant");
+    const variantCount = await ProductVariant.count({ where: { product_id: product.id } });
+    if (variantCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Stock of a variant-based product must be updated via variants."
       });
     }
 

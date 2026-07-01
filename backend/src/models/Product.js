@@ -100,6 +100,11 @@ const Product = sequelize.define(
       defaultValue: [],
     },
 
+    attributes: {
+      type: DataTypes.JSONB,
+      defaultValue: [],
+    },
+
     specifications: {
       type: DataTypes.JSONB,
       defaultValue: [],
@@ -223,6 +228,12 @@ Product.associate = (models) => {
   Product.hasOne(models.ProductPromoBanner, {
     foreignKey: "productId",
     as: "promoBanner",
+  });
+
+  Product.hasMany(models.ProductVariant, {
+    foreignKey: "product_id",
+    as: "productVariants",
+    onDelete: "CASCADE",
   });
 };
 

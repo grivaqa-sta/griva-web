@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
@@ -8,6 +9,7 @@ import Rating from "../rating/Rating";
 import { useCart } from "@/app/context/CartContext";
 import { useWishlist } from "@/app/context/WishlistContext";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const ORANGE = "#FF6A00";
 const INK = "#0D0D0D";
@@ -15,8 +17,51 @@ const INK = "#0D0D0D";
 export default function ProductCard({ product }: { product?: ApiProduct }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const router = useRouter();
 
   if (!product) return null;
+
+  const hasVariants = !!(product.attributes && product.attributes.length > 0);
+
+  const isOutOfStock = React.useMemo(() => {
+    if (!hasVariants) {
+      return (product.stock ?? 0) <= 0;
+    }
+    const variantsList = product.productVariants || product.variants || [];
+    if (!Array.isArray(variantsList) || variantsList.length === 0) {
+      return (product.stock ?? 0) <= 0;
+    }
+    const normalized = variantsList.map((v: any) => {
+      if (!v) return null;
+      if (v.combination) return v;
+      const combination: Record<string, string> = {};
+      const excludeKeys = ['id', 'product_id', 'stock', 'sku', 'price', 'images', 'createdAt', 'updatedAt', 'variantId', 'old_price'];
+      Object.keys(v).forEach(k => {
+        if (!excludeKeys.includes(k) && v[k] !== undefined && v[k] !== null) {
+          const normalizedKey = k.charAt(0).toUpperCase() + k.slice(1);
+          combination[normalizedKey] = String(v[k]);
+        }
+      });
+      return { combination, stock: typeof v.stock === 'number' ? v.stock : 0 };
+    }).filter(Boolean);
+
+    const activeAttributes = product.attributes || [];
+    const activeVariants = normalized.filter((v: any) => {
+      if (!v.combination) return false;
+      return Object.keys(v.combination).every((key) => {
+        const attr = activeAttributes.find(a => a.name.toLowerCase() === key.toLowerCase());
+        if (!attr) return false;
+        const val = v.combination[key];
+        return attr.values.some(opt => opt.toLowerCase() === val.toLowerCase());
+      });
+    });
+
+    if (activeVariants.length === 0) {
+      return (product.stock ?? 0) <= 0;
+    }
+
+    return activeVariants.every((v: any) => (v.stock ?? 0) <= 0);
+  }, [product, hasVariants]);
 
   const isWishlisted = isInWishlist(product.id);
 
@@ -45,6 +90,13 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const hasVariants = product.attributes && product.attributes.length > 0;
+    if (hasVariants) {
+      router.push(`/product/${product.slug}`);
+      return;
+    }
+
     addToCart({
       id: product.id,
       title: product.title,
@@ -56,7 +108,9 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
   };
 
   const getStockStatus = () => {
-    const stock = product.stock ?? 0;
+    const stock = hasVariants 
+      ? (product.productVariants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) || product.variants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) || 0)
+      : (product.stock ?? 0);
     if (stock > 5) {
       return null;
     } else if (stock >= 1 && stock <= 5) {
@@ -303,29 +357,29 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
           {/* Add to Cart Button (Full Width) */}
           <button
             onClick={handleAddToCart}
-            disabled={product.stock === 0}
+            disabled={isOutOfStock}
             className="w-full py-2 px-4 rounded border text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             style={{
-              borderColor: product.stock === 0 ? "#E5E7EB" : "#ECECEC",
-              color: product.stock === 0 ? "#9CA3AF" : INK,
-              backgroundColor: product.stock === 0 ? "#F3F4F6" : "transparent",
+              borderColor: isOutOfStock ? "#E5E7EB" : "#ECECEC",
+              color: isOutOfStock ? "#9CA3AF" : INK,
+              backgroundColor: isOutOfStock ? "#F3F4F6" : "transparent",
             }}
             onMouseEnter={(e) => {
-              if (product.stock === 0) return;
+              if (isOutOfStock) return;
               e.currentTarget.style.backgroundColor = ORANGE;
               e.currentTarget.style.borderColor = ORANGE;
               e.currentTarget.style.color = "#fff";
               e.currentTarget.style.boxShadow = "0 10px 20px rgba(255,106,0,0.2)";
             }}
             onMouseLeave={(e) => {
-              if (product.stock === 0) return;
+              if (isOutOfStock) return;
               e.currentTarget.style.backgroundColor = "transparent";
               e.currentTarget.style.borderColor = "#ECECEC";
               e.currentTarget.style.color = INK;
               e.currentTarget.style.boxShadow = "none";
             }}
           >
-            {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+            {isOutOfStock ? "Out of Stock" : (hasVariants ? "Select Options" : "Add to Cart")}
           </button>
         </div>
       </div>

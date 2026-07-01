@@ -67,9 +67,16 @@ export default function CartPage() {
             const data = await res.json();
             const product = data.data;
             if (product) {
+              let availableStock = product.stock;
+              if (item.variantId && Array.isArray(product.productVariants)) {
+                const v = product.productVariants.find((x: any) => x.id === item.variantId);
+                if (v) {
+                  availableStock = v.stock;
+                }
+              }
               statusMap[item.id] = {
-                available: product.stock,
-                ok: item.quantity <= product.stock && product.is_active,
+                available: availableStock,
+                ok: item.quantity <= availableStock && product.is_active,
                 active: product.is_active,
                 title: product.title,
               };
@@ -217,16 +224,26 @@ export default function CartPage() {
                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
                           {item.category}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {item.selectedColor && (
-                            <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
-                              Color: {item.selectedColor}
-                            </span>
-                          )}
-                          {item.selectedStorage && (
-                            <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
-                              Storage: {item.selectedStorage}
-                            </span>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 ? (
+                            Object.entries(item.selectedAttributes).map(([key, val]) => (
+                              <span key={key} className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
+                                {key}: {val}
+                              </span>
+                            ))
+                          ) : (
+                            <>
+                              {item.selectedColor && (
+                                <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
+                                  Color: {item.selectedColor}
+                                </span>
+                              )}
+                              {item.selectedStorage && (
+                                <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
+                                  Storage: {item.selectedStorage}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                         {/* HIGH-9: Stock error warning notice */}

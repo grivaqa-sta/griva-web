@@ -170,6 +170,16 @@ export default function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
+        {/* Meta Pixel (noscript) */}
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src="https://www.facebook.com/tr?id=2570473940080239&ev=PageView&noscript=1"
+            alt="Meta Pixel"
+          />
+        </noscript>
         <Providers>
           <ComingSoonOverlay />
           <div id="layout-header">

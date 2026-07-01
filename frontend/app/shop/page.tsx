@@ -4,9 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, Star, RotateCcw, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
-import { ApiProduct, Category, SubCategory } from "@/app/types/types";
-import { categoryService } from "@/app/services/category.service";
-import { subCategoryService } from "@/app/services/subCategory.service";
+import { useCategories, useSubCategories } from "@/app/hooks/useCategories";
+import { ApiProduct } from "@/app/types/types";
 import ProductCard from "@/app/components/product/ProductCard";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,30 +44,10 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Dynamic categories & subcategories from API
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  // Dynamic categories & subcategories from API (cached — no repeat fetches on navigation)
+  const { categories } = useCategories();
+  const { subCategories } = useSubCategories();
 
-  useEffect(() => {
-    async function loadTaxonomy() {
-      try {
-        const [catRes, subRes] = await Promise.all([
-          categoryService.getCategories(),
-          subCategoryService.getSubCategories(),
-        ]);
-        // categoryService.getCategories() returns response.data.data (already unwrapped array)
-        const cData = Array.isArray(catRes) ? catRes : (catRes?.data || []);
-        // subCategoryService.getSubCategories() returns response.data = { success, data: [...] }
-        const sRaw = subRes?.data || subRes;
-        const sData = Array.isArray(sRaw) ? sRaw : (sRaw?.data || []);
-        setCategories(Array.isArray(cData) ? cData : []);
-        setSubCategories(Array.isArray(sData) ? sData : []);
-      } catch (err) {
-        console.error("[ShopPage] Failed to load taxonomy:", err);
-      }
-    }
-    loadTaxonomy();
-  }, []);
   const [openSortDropdown, setOpenSortDropdown] = useState(false);
 
   // Initialize filters from searchParams

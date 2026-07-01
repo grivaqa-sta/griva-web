@@ -129,6 +129,14 @@ export function useQuery<T>(
   const [loading, setLoading] = useState(cachedData === null);
   const [error, setError] = useState<string | null>(null);
 
+  // Sync state variables immediately when key changes
+  useEffect(() => {
+    const freshCached = queryClient.get<T>(key);
+    setData(freshCached);
+    setLoading(freshCached === null);
+    setError(null);
+  }, [key]);
+
   const executeFetch = useCallback(async (force = false) => {
     if (queryClient.get(key) === null || force) {
       setLoading(true);

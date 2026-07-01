@@ -236,9 +236,9 @@ export default function CategoryPage() {
   const { categories, loading: categoriesLoading } = useCategories();
   const { subCategories, loading: subCategoriesLoading } = useSubCategories();
 
-  // Smooth scroll to category products grid on filter changes
+  // Smooth scroll to category products grid on subcategory changes only
   useEffect(() => {
-    if (!categoriesLoading && categories.length > 0) {
+    if (!categoriesLoading && categories.length > 0 && subParam) {
       const el = document.getElementById("category-products-grid");
       if (el) {
         const offset = 140;
@@ -251,7 +251,7 @@ export default function CategoryPage() {
         });
       }
     }
-  }, [subParam, minRating, maxPrice, categoriesLoading, categories]);
+  }, [subParam]);
 
   const { products: allProducts, loading: productsLoading } = useAllProducts();
   const loading = categoriesLoading || subCategoriesLoading || productsLoading;

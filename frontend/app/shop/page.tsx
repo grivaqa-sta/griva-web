@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { SlidersHorizontal, Star, RotateCcw, X, ChevronDown, ChevronRight } from "lucide-react";
@@ -39,6 +39,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
+  const [searchInputVal, setSearchInputVal] = useState<string>("");
   const [searchVal, setSearchVal] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<number>(1000000);
   const [minRating, setMinRating] = useState<number>(0);
@@ -54,30 +55,76 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const { subCategories } = useSubCategories();
 
   const [openSortDropdown, setOpenSortDropdown] = useState(false);
+  const hasInitializedRef = useRef(false);
 
-  // Initialize filters from URL on mount/update
+  // Debounce search input value
   useEffect(() => {
-    const categoryParam = searchParamsHook.get("category");
-    const subParam = searchParamsHook.get("sub");
-    const searchParam = searchParamsHook.get("search");
-    const ratingParam = searchParamsHook.get("rating");
-    const maxPriceParam = searchParamsHook.get("maxPrice");
-    const sortByParam = searchParamsHook.get("sortBy");
+    const handler = setTimeout(() => {
+      setSearchVal(searchInputVal);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchInputVal]);
+
+  // Initialize filters from URL on first mount
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+
+    const categoryParam = searchParamsHook.get("category") || resolvedParams.category || "";
+    const subParam = searchParamsHook.get("sub") || "";
+    const searchParam = searchParamsHook.get("search") || resolvedParams.search || "";
+    const ratingParam = searchParamsHook.get("rating") || "";
+    const maxPriceParam = searchParamsHook.get("maxPrice") || "";
+    const sortByParam = searchParamsHook.get("sortBy") || "featured";
 
     if (categoryParam) setSelectedCategory(categoryParam.toLowerCase());
-    else if (resolvedParams.category) setSelectedCategory(resolvedParams.category.toLowerCase());
-
     if (subParam) setSelectedSubCategory(subParam.toLowerCase());
-    if (searchParam) setSearchVal(searchParam);
-    else if (resolvedParams.search) setSearchVal(resolvedParams.search);
-
+    if (searchParam) {
+      setSearchInputVal(searchParam);
+      setSearchVal(searchParam);
+    }
     if (ratingParam) setMinRating(Number(ratingParam));
     if (maxPriceParam) setMaxPrice(Number(maxPriceParam));
     if (sortByParam) setSortBy(sortByParam);
-  }, [searchParamsHook, resolvedParams]);
+
+    hasInitializedRef.current = true;
+  }, [resolvedParams]);
+
+  // Sync URL changes (e.g. from Navbar clicks) to state after initialization
+  useEffect(() => {
+    if (!hasInitializedRef.current) return;
+
+    const categoryParam = searchParamsHook.get("category") || "";
+    const subParam = searchParamsHook.get("sub") || "";
+    const searchParam = searchParamsHook.get("search") || "";
+    const ratingParam = searchParamsHook.get("rating") ? Number(searchParamsHook.get("rating")) : 0;
+    const maxPriceParam = searchParamsHook.get("maxPrice") ? Number(searchParamsHook.get("maxPrice")) : 1000000;
+    const sortByParam = searchParamsHook.get("sortBy") || "featured";
+
+    if (categoryParam.toLowerCase() !== selectedCategory) {
+      setSelectedCategory(categoryParam.toLowerCase());
+    }
+    if (subParam.toLowerCase() !== selectedSubCategory) {
+      setSelectedSubCategory(subParam.toLowerCase());
+    }
+    if (searchParam !== searchInputVal) {
+      setSearchInputVal(searchParam);
+      setSearchVal(searchParam);
+    }
+    if (ratingParam !== minRating) {
+      setMinRating(ratingParam);
+    }
+    if (maxPriceParam !== maxPrice) {
+      setMaxPrice(maxPriceParam);
+    }
+    if (sortByParam !== sortBy) {
+      setSortBy(sortByParam);
+    }
+  }, [searchParamsHook]);
 
   // Sync state to URL params
   useEffect(() => {
+    if (!hasInitializedRef.current) return;
+
     const params = new URLSearchParams();
     if (selectedCategory) params.set("category", selectedCategory);
     if (selectedSubCategory) params.set("sub", selectedSubCategory);
@@ -93,7 +140,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
   // Smooth scroll to products grid on filter changes
   useEffect(() => {
-    if (categories.length > 0) {
+    if (categories.length > 0 && (selectedCategory || selectedSubCategory)) {
       const el = document.getElementById("shop-products-grid");
       if (el) {
         const offset = 140;
@@ -106,18 +153,11 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
         });
       }
     }
-  }, [selectedCategory, selectedSubCategory, minRating, maxPrice, searchVal]);
+  }, [selectedCategory, selectedSubCategory, categories.length]);
 
   const isRatingSearch = /(\d)\s*stars?/i.test(searchVal);
-  // Fetch all products from API (search/price passed to backend)
-  const { products, loading } = useAllProducts(
-    (searchVal && !isRatingSearch) || maxPrice < 1000000
-      ? {
-          search: (searchVal && !isRatingSearch) ? searchVal : undefined,
-          maxPrice: maxPrice < 1000000 ? maxPrice : undefined,
-        }
-      : undefined
-  );
+  // Fetch all products from API once for high-speed client-side filtering and fuzzy matching
+  const { products, loading } = useAllProducts();
 
   const [maxProductPrice, setMaxProductPrice] = useState<number>(2000);
 
@@ -131,6 +171,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const handleResetFilters = () => {
     setSelectedCategory("");
     setSelectedSubCategory("");
+    setSearchInputVal("");
     setSearchVal("");
     setMaxPrice(1000000);
     setMinRating(0);
@@ -181,6 +222,41 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const processedProducts = useMemo((): ApiProduct[] => {
     let result = [...products];
 
+    // Search filter: exact match, word prefix match, or subsequence/fuzzy match
+    if (searchVal && !isRatingSearch) {
+      const query = searchVal.toLowerCase().trim();
+      result = result.filter((p) => {
+        const title = (p.title || "").toLowerCase();
+        const desc = (p.description || "").toLowerCase();
+        const tags = Array.isArray(p.tags) ? p.tags.map(t => String(t).toLowerCase()) : [];
+        const brand = (p.brand || "").toLowerCase();
+
+        // 1. Substring matches
+        if (title.includes(query) || desc.includes(query) || brand.includes(query) || tags.some(t => t.includes(query))) {
+          return true;
+        }
+
+        // 2. Word prefix matches (e.g. "chrg" or "s25" starts some words)
+        const titleWords = title.split(/\s+/);
+        if (titleWords.some(word => word.startsWith(query))) {
+          return true;
+        }
+
+        // 3. Subsequence matches (e.g. "chrg" subsequences "charger")
+        let queryIdx = 0;
+        for (let charIdx = 0; charIdx < title.length && queryIdx < query.length; charIdx++) {
+          if (title[charIdx] === query[queryIdx]) {
+            queryIdx++;
+          }
+        }
+        if (queryIdx === query.length) {
+          return true;
+        }
+
+        return false;
+      });
+    }
+
     // Intercept rating searches like "1 star review", "5 star", etc.
     const starSearchMatch = searchVal.match(/(\d)\s*stars?/i);
     let ratingFromSearch: number | null = null;
@@ -209,6 +285,11 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
       }
     }
 
+    // Max Price filter
+    if (maxPrice < 1000000) {
+      result = result.filter((p) => Number(p.price || 0) <= maxPrice);
+    }
+
     // Rating Filter
     if (minRating > 0) {
       result = result.filter((p) => p.rating >= minRating);
@@ -224,7 +305,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
 
     return result;
-  }, [products, selectedCategory, selectedSubCategory, selectedCategorySubIds, activeSubCategories, minRating, sortBy, searchVal]);
+  }, [products, selectedCategory, selectedSubCategory, selectedCategorySubIds, activeSubCategories, minRating, sortBy, searchVal, maxPrice]);
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-16">
@@ -260,8 +341,8 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                 <input
                   type="text"
                   placeholder="Search products..."
-                  value={searchVal}
-                  onChange={(e) => setSearchVal(e.target.value)}
+                  value={searchInputVal}
+                  onChange={(e) => setSearchInputVal(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700 outline-none focus:border-orange-400"
                 />
               </div>
@@ -604,8 +685,8 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                   <input
                     type="text"
                     placeholder="Search products..."
-                    value={searchVal}
-                    onChange={(e) => setSearchVal(e.target.value)}
+                    value={searchInputVal}
+                    onChange={(e) => setSearchInputVal(e.target.value)}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700 outline-none focus:border-orange-400"
                   />
                 </div>

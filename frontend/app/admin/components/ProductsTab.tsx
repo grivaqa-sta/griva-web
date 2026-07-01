@@ -419,19 +419,19 @@ export default function ProductsTab() {
                     {/* Stock Status Badge */}
                     <td className="p-4">
                       {isOutOfStock ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-red-50 border-red-200 text-red-500">
-                          <XCircle className="h-3.5 w-3.5 text-red-500 animate-pulse" />
-                          Out of Stock
+                        <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-red-50 border-red-200 text-red-500">
+                          <span className="flex items-center gap-1"><XCircle className="h-3.5 w-3.5 text-red-500 animate-pulse" /> Out of Stock</span>
+                          {p.attributes && p.attributes.length > 0 && <span className="text-[8px] text-red-400 mt-0.5 font-semibold text-left">(via Variants)</span>}
                         </span>
                       ) : isLowStock ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-orange-50 border-orange-200 text-orange-600">
-                          <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
-                          Low Stock ({p.stock})
+                        <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-orange-50 border-orange-200 text-orange-600">
+                          <span className="flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5 text-orange-500" /> Low Stock ({p.stock})</span>
+                          {p.attributes && p.attributes.length > 0 && <span className="text-[8px] text-orange-400 mt-0.5 font-semibold text-left">(via Variants)</span>}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-green-50 border-green-200 text-green-600">
-                          <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                          In Stock ({p.stock})
+                        <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-green-50 border-green-200 text-green-600">
+                          <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> In Stock ({p.stock})</span>
+                          {p.attributes && p.attributes.length > 0 && <span className="text-[8px] text-green-400 mt-0.5 font-semibold text-left">(via Variants)</span>}
                         </span>
                       )}
                     </td>
@@ -439,42 +439,50 @@ export default function ProductsTab() {
                     {/* Actions: Edit, Add Stock icon-button, Delete */}
                     <td className="p-4 text-right pr-6" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
-                        {/* Adjust / Add Stock */}
-                        <button
-                          onClick={() => {
-                            setStockPromptValue('');
-                            setStockPromptProductId(p.id);
-                          }}
-                          title="Add Stock"
-                          className="p-1.5 rounded-lg text-orange-500 hover:text-white bg-white hover:bg-orange-500 border border-orange-500/20 cursor-pointer shadow-xs transition-colors"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
-                        
-                        {/* Direct Stock Edit Mode */}
-                        <div className="flex items-center border border-gray-250/60 rounded-lg overflow-hidden h-[29px] bg-gray-50/50">
-                          <button
-                            onClick={() => handleStockAdjustment(p.id, -1)}
-                            className="px-1.5 h-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 border-r border-gray-200 font-bold"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            className="w-10 text-center text-xs font-black bg-transparent border-none p-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-gray-800"
-                            value={p.stock || 0}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              handleDirectStockEdit(p.id, val);
-                            }}
-                          />
-                          <button
-                            onClick={() => handleStockAdjustment(p.id, 1)}
-                            className="px-1.5 h-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 border-l border-gray-200 font-bold"
-                          >
-                            +
-                          </button>
-                        </div>
+                        {p.attributes && p.attributes.length > 0 ? (
+                          <span className="text-[9px] font-bold text-gray-400 bg-gray-50 border border-gray-150 px-2 py-1.5 rounded-lg inline-block">
+                            ⚙️ Managed via Variants
+                          </span>
+                        ) : (
+                          <>
+                            {/* Adjust / Add Stock */}
+                            <button
+                              onClick={() => {
+                                setStockPromptValue('');
+                                setStockPromptProductId(p.id);
+                              }}
+                              title="Add Stock"
+                              className="p-1.5 rounded-lg text-orange-500 hover:text-white bg-white hover:bg-orange-500 border border-orange-500/20 cursor-pointer shadow-xs transition-colors"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                            
+                            {/* Direct Stock Edit Mode */}
+                            <div className="flex items-center border border-gray-250/60 rounded-lg overflow-hidden h-[29px] bg-gray-50/50">
+                              <button
+                                onClick={() => handleStockAdjustment(p.id, -1)}
+                                className="px-1.5 h-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 border-r border-gray-200 font-bold"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                className="w-10 text-center text-xs font-black bg-transparent border-none p-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-gray-800"
+                                value={p.stock || 0}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  handleDirectStockEdit(p.id, val);
+                                }}
+                              />
+                              <button
+                                onClick={() => handleStockAdjustment(p.id, 1)}
+                                className="px-1.5 h-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 border-l border-gray-200 font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </>
+                        )}
 
                         <button
                           onClick={() => handleOpenEdit(p)}

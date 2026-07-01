@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { ApiProduct } from "@/app/types/types";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,6 +8,7 @@ import Rating from "../rating/Rating";
 import { Heart, ShoppingCart } from "lucide-react";
 import { useWishlist } from "@/app/context/WishlistContext";
 import { useCart } from "@/app/context/CartContext";
+import { useRouter } from "next/navigation";
 
 const ORANGE = "#FF6A00";
 const INK = "#0D0D0D";
@@ -18,8 +20,51 @@ export default function TrendingProductCard({
 }) {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
+  const router = useRouter();
 
   if (!product) return null;
+
+  const hasVariants = !!(product.attributes && product.attributes.length > 0);
+
+  const isOutOfStock = React.useMemo(() => {
+    if (!hasVariants) {
+      return (product.stock ?? 0) <= 0;
+    }
+    const variantsList = product.productVariants || product.variants || [];
+    if (!Array.isArray(variantsList) || variantsList.length === 0) {
+      return (product.stock ?? 0) <= 0;
+    }
+    const normalized = variantsList.map((v: any) => {
+      if (!v) return null;
+      if (v.combination) return v;
+      const combination: Record<string, string> = {};
+      const excludeKeys = ['id', 'product_id', 'stock', 'sku', 'price', 'images', 'createdAt', 'updatedAt', 'variantId', 'old_price'];
+      Object.keys(v).forEach(k => {
+        if (!excludeKeys.includes(k) && v[k] !== undefined && v[k] !== null) {
+          const normalizedKey = k.charAt(0).toUpperCase() + k.slice(1);
+          combination[normalizedKey] = String(v[k]);
+        }
+      });
+      return { combination, stock: typeof v.stock === 'number' ? v.stock : 0 };
+    }).filter(Boolean);
+
+    const activeAttributes = product.attributes || [];
+    const activeVariants = normalized.filter((v: any) => {
+      if (!v.combination) return false;
+      return Object.keys(v.combination).every((key) => {
+        const attr = activeAttributes.find(a => a.name.toLowerCase() === key.toLowerCase());
+        if (!attr) return false;
+        const val = v.combination[key];
+        return attr.values.some(opt => opt.toLowerCase() === val.toLowerCase());
+      });
+    });
+
+    if (activeVariants.length === 0) {
+      return (product.stock ?? 0) <= 0;
+    }
+
+    return activeVariants.every((v: any) => (v.stock ?? 0) <= 0);
+  }, [product, hasVariants]);
 
   const isWishlisted = isInWishlist(product.id);
 
@@ -50,6 +95,13 @@ export default function TrendingProductCard({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const hasVariants = product.attributes && product.attributes.length > 0;
+    if (hasVariants) {
+      router.push(`/product/${product.slug}`);
+      return;
+    }
+
     addToCart({
       id: product.id,
       title: product.title,
@@ -61,7 +113,9 @@ export default function TrendingProductCard({
   };
 
   const getStockStatus = () => {
-    const stock = product.stock ?? 0;
+    const stock = hasVariants 
+      ? (product.productVariants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) || product.variants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) || 0)
+      : (product.stock ?? 0);
     if (stock > 5) {
       return null;
     } else if (stock >= 1 && stock <= 5) {
@@ -177,9 +231,9 @@ export default function TrendingProductCard({
               </div>
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={isOutOfStock}
                 className="flex items-center justify-center rounded bg-orange-500 p-2 text-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
-                aria-label="Add to cart"
+                aria-label={isOutOfStock ? "Out of stock" : (hasVariants ? "Select options" : "Add to cart")}
               >
                 <ShoppingCart size={12} strokeWidth={2.2} />
               </button>
@@ -284,9 +338,9 @@ export default function TrendingProductCard({
               </div>
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={isOutOfStock}
                 className="flex items-center justify-center rounded bg-orange-500 p-2 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0 shadow-sm"
-                aria-label="Add to cart"
+                aria-label={isOutOfStock ? "Out of stock" : (hasVariants ? "Select options" : "Add to cart")}
               >
                 <ShoppingCart size={13} strokeWidth={2.2} />
               </button>

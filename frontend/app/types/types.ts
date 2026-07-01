@@ -136,9 +136,13 @@ export interface SubCategory {
 // Product Types
 // ─────────────────────────────────────────────────────────
 export interface ApiProductVariant {
-  color: string;
-  size: string;
-};
+  combination: Record<string, string>;
+  stock: number;
+  sku?: string;
+  price?: string | number;
+  old_price?: string | number;
+  images?: string[];
+}
 
 export interface ProductSpecification {
   name: string;
@@ -160,6 +164,7 @@ export interface ProductRequest {
   main_image_url: string;
   gallery_images?: string[];
   variants?: ApiProductVariant[];
+  attributes?: { name: string; values: string[] }[];
   specifications?: ProductSpecification[];
   tags?: string[];
   is_featured?: boolean;
@@ -190,6 +195,8 @@ export interface ApiProduct {
   main_image_url: string;
   gallery_images?: string[];
   variants?: { color?: string; size?: string }[];
+  attributes?: { name: string; values: string[] }[];
+  productVariants?: DynamicProductVariant[];
   specifications?: { name: string; value: string }[];
   tags?: string[];
   rating: number;
@@ -284,6 +291,18 @@ export interface ProductBannerUpdateRequest {
 // ─────────────────────────────────────────────────────────
 // Core Product Types
 // ─────────────────────────────────────────────────────────
+
+export interface DynamicProductVariant {
+  id: number;
+  product_id: number;
+  combination: Record<string, string>;
+  stock: number;
+  sku?: string;
+  price?: string;
+  images?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface ProductVariant {
   label: string;
@@ -404,8 +423,11 @@ export interface CartItem {
   quantity: number;
   selectedColor?: string;
   selectedStorage?: string;
+  variantId?: number;
+  selectedAttributes?: Record<string, string>;
   category: string;
   slug?: string;
+  sku?: string;
 }
 
 export type CartAction =

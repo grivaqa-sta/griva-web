@@ -114,6 +114,51 @@ const startServer = async () => {
         console.log('ℹ️ [DATABASE]: Skipping SiteSettings columns creation:', colErr.message);
       }
 
+      // Dynamic Variants and Attributes Schema Alters
+      try {
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS "product_variants" (
+            "id" SERIAL PRIMARY KEY,
+            "product_id" INTEGER NOT NULL REFERENCES "products" ("id") ON DELETE CASCADE,
+            "combination" JSONB NOT NULL,
+            "stock" INTEGER NOT NULL DEFAULT 0,
+            "sku" VARCHAR(255),
+            "price" DECIMAL(10, 2),
+            "images" JSONB DEFAULT '[]'::jsonb,
+            "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL,
+            "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL
+          );
+        `);
+        console.log("🟢 [DATABASE]: Ensured product_variants table exists");
+      } catch (variantTableErr) {
+        console.log("ℹ️ [DATABASE]: Skipping product_variants table creation:", variantTableErr.message);
+      }
+
+      try {
+        await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "attributes" JSONB DEFAULT \'[]\'::jsonb;');
+        console.log("🟢 [DATABASE]: Ensured attributes column exists in products table");
+      } catch (prodColErr) {
+        console.log("ℹ️ [DATABASE]: Skipping raw products attributes column addition:", prodColErr.message);
+      }
+
+      try {
+        await sequelize.query('ALTER TABLE "CartItems" ADD COLUMN IF NOT EXISTS "variant_id" INTEGER REFERENCES "product_variants" ("id") ON DELETE CASCADE;');
+        await sequelize.query('ALTER TABLE "CartItems" ADD COLUMN IF NOT EXISTS "selected_attributes" JSONB DEFAULT \'{}\'::jsonb;');
+        console.log("🟢 [DATABASE]: Ensured variant_id and selected_attributes columns exist in CartItems table");
+      } catch (cartColErr) {
+        console.log("ℹ️ [DATABASE]: Skipping CartItems columns addition:", cartColErr.message);
+      }
+
+      try {
+        await sequelize.query('ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "variant_id" INTEGER REFERENCES "product_variants" ("id") ON DELETE SET NULL;');
+        await sequelize.query('ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "selected_attributes" JSONB DEFAULT \'{}\'::jsonb;');
+        await sequelize.query('ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "sku" VARCHAR(255);');
+        await sequelize.query('ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "image_snapshot" VARCHAR(255);');
+        console.log("🟢 [DATABASE]: Ensured variant_id, selected_attributes, sku, and image_snapshot columns exist in OrderItems table");
+      } catch (orderColErr) {
+        console.log("ℹ️ [DATABASE]: Skipping OrderItems columns addition:", orderColErr.message);
+      }
+
       console.log("[DATABASE]: Syncing schemas...");
       await sequelize.sync();
       console.log("🟢 [DATABASE]: Schemas synced successfully.");
@@ -128,6 +173,7 @@ const startServer = async () => {
 
   // ✅ Run after sync
   await createDefaultAdmin();
+  await migrateLegacyProducts();
 
   const { initSocket } = require("./socket/socket");
   const server = app.listen(PORT, () => {
@@ -154,6 +200,75 @@ const createDefaultAdmin = async () => {
     });
 
     console.log("✅ Default admin created");
+  }
+};
+
+const migrateLegacyProducts = async () => {
+  try {
+    const Product = require("./models/Product");
+    const ProductVariant = require("./models/ProductVariant");
+
+    const products = await Product.findAll();
+    for (const p of products) {
+      const legacyVariants = p.variants;
+      const dynamicAttrs = p.attributes;
+
+      if (Array.isArray(legacyVariants) && legacyVariants.length > 0 && (!Array.isArray(dynamicAttrs) || dynamicAttrs.length === 0)) {
+        console.log(`⏳ [MIGRATION]: Migrating legacy variants for product: ${p.title} (ID: ${p.id})`);
+
+        const attrMap = {};
+        legacyVariants.forEach(v => {
+          Object.keys(v).forEach(k => {
+            const normalizedKey = k.charAt(0).toUpperCase() + k.slice(1);
+            if (!attrMap[normalizedKey]) {
+              attrMap[normalizedKey] = new Set();
+            }
+            if (v[k]) {
+              attrMap[normalizedKey].add(v[k]);
+            }
+          });
+        });
+
+        const attributes = Object.keys(attrMap).map(name => ({
+          name,
+          values: Array.from(attrMap[name])
+        }));
+
+        p.attributes = attributes;
+        await p.save();
+
+        const baseStock = p.stock || 0;
+        const variantStock = Math.max(1, Math.floor(baseStock / legacyVariants.length));
+
+        for (const v of legacyVariants) {
+          const combination = {};
+          Object.keys(v).forEach(k => {
+            const normalizedKey = k.charAt(0).toUpperCase() + k.slice(1);
+            combination[normalizedKey] = v[k];
+          });
+
+          const existingVariant = await ProductVariant.findOne({
+            where: {
+              product_id: p.id,
+              combination
+            }
+          });
+
+          if (!existingVariant) {
+            const subSku = p.sku ? `${p.sku}-${Object.values(combination).map(val => String(val).toUpperCase().replace(/[^A-Z0-9]/g, '')).join('-')}` : null;
+            await ProductVariant.create({
+              product_id: p.id,
+              combination,
+              stock: variantStock,
+              sku: subSku
+            });
+          }
+        }
+        console.log(`✅ [MIGRATION]: Completed migration for product ID: ${p.id}`);
+      }
+    }
+  } catch (err) {
+    console.error("🔴 [MIGRATION]: Legacy products migration failed:", err.message);
   }
 };
 

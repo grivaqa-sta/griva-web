@@ -588,6 +588,9 @@ export interface OrderItem {
   quantity: number;
   price_at_purchase: number;
   product?: { id: number; title: string; main_image_url: string };
+  selected_attributes?: Record<string, string>;
+  selected_color?: string;
+  selected_storage?: string;
 }
 
 export interface AdminOrder {

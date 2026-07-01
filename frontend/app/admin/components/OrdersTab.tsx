@@ -303,13 +303,26 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
               </tr>
             </thead>
             <tbody>
-              ${(order.items || []).map((item, idx) => `
-                <tr style="border-bottom: 1px solid #eaeaea; font-size: 13px;">
-                  <td style="padding: 12px; text-align: center; font-size: 18px; color: #bbb; font-weight: normal; border: 1px solid #eaeaea;">☐</td>
-                  <td style="padding: 12px; font-weight: bold; color: #222; border: 1px solid #eaeaea;">${item.product?.title || `Product #${item.product_id}`}</td>
-                  <td style="padding: 12px; text-align: center; font-weight: 900; font-size: 14px; color: #111; background: #fcfcfc; border: 1px solid #eaeaea;">${item.quantity}</td>
-                </tr>
-              `).join('')}
+              ${(order.items || []).map((item, idx) => {
+                const title = item.product?.title || `Product #${item.product_id}`;
+                let attrsDesc = "";
+                if (item.selected_attributes && Object.keys(item.selected_attributes).length > 0) {
+                  attrsDesc = Object.entries(item.selected_attributes).map(([k, v]) => `${k}: ${v}`).join(", ");
+                } else {
+                  const parts = [];
+                  if (item.selected_color) parts.push(`Color: ${item.selected_color}`);
+                  if (item.selected_storage) parts.push(`Storage: ${item.selected_storage}`);
+                  attrsDesc = parts.join(", ");
+                }
+                const displayTitle = attrsDesc ? `${title} (${attrsDesc})` : title;
+                return `
+                  <tr style="border-bottom: 1px solid #eaeaea; font-size: 13px;">
+                    <td style="padding: 12px; text-align: center; font-size: 18px; color: #bbb; font-weight: normal; border: 1px solid #eaeaea;">☐</td>
+                    <td style="padding: 12px; font-weight: bold; color: #222; border: 1px solid #eaeaea;">${displayTitle}</td>
+                    <td style="padding: 12px; text-align: center; font-weight: 900; font-size: 14px; color: #111; background: #fcfcfc; border: 1px solid #eaeaea;">${item.quantity}</td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -392,10 +405,21 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                 const rawPrice = Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, ""));
                 const unitPrice = isNaN(rawPrice) ? 0 : rawPrice;
                 const totalItemPrice = unitPrice * item.quantity;
+                const title = item.product?.title || `Product #${item.product_id}`;
+                let attrsDesc = "";
+                if (item.selected_attributes && Object.keys(item.selected_attributes).length > 0) {
+                  attrsDesc = Object.entries(item.selected_attributes).map(([k, v]) => `${k}: ${v}`).join(", ");
+                } else {
+                  const parts = [];
+                  if (item.selected_color) parts.push(`Color: ${item.selected_color}`);
+                  if (item.selected_storage) parts.push(`Storage: ${item.selected_storage}`);
+                  attrsDesc = parts.join(", ");
+                }
+                const displayTitle = attrsDesc ? `${title} (${attrsDesc})` : title;
                 return `
                   <tr style="border-bottom: 1px solid #eaeaea; font-size: 13px; color: #333;">
                     <td style="padding: 12px 10px; color: #777; border: 1px solid #eee;">${idx + 1}</td>
-                    <td style="padding: 12px 10px; font-weight: bold; color: #111; border: 1px solid #eee;">${item.product?.title || `Product #${item.product_id}`}</td>
+                    <td style="padding: 12px 10px; font-weight: bold; color: #111; border: 1px solid #eee;">${displayTitle}</td>
                     <td style="padding: 12px 10px; text-align: center; border: 1px solid #eee;">${item.quantity}</td>
                     <td style="padding: 12px 10px; text-align: right; border: 1px solid #eee;">QAR ${unitPrice.toFixed(2)}</td>
                     <td style="padding: 12px 10px; text-align: right; font-weight: bold; color: #111; border: 1px solid #eee;">QAR ${totalItemPrice.toFixed(2)}</td>
@@ -1401,6 +1425,30 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <p className="text-xs font-bold text-gray-800 truncate">{item.product?.title || `Product #${item.product_id}`}</p>
+                                      {((item.selected_attributes && Object.keys(item.selected_attributes).length > 0) || item.selected_color || item.selected_storage) && (
+                                        <div className="flex flex-wrap gap-1.5 mt-0.5 mb-1">
+                                          {item.selected_attributes && Object.keys(item.selected_attributes).length > 0 ? (
+                                            Object.entries(item.selected_attributes).map(([k, v]) => (
+                                              <span key={k} className="inline-block text-[8px] bg-orange-50/70 border border-orange-100 text-orange-600 px-1 py-0.5 rounded font-bold">
+                                                {k}: {v}
+                                              </span>
+                                            ))
+                                          ) : (
+                                            <>
+                                              {item.selected_color && (
+                                                <span className="inline-block text-[8px] bg-orange-50/70 border border-orange-100 text-orange-600 px-1 py-0.5 rounded font-bold">
+                                                  Color: {item.selected_color}
+                                                </span>
+                                              )}
+                                              {item.selected_storage && (
+                                                <span className="inline-block text-[8px] bg-orange-50/70 border border-orange-100 text-orange-600 px-1 py-0.5 rounded font-bold">
+                                                  Storage: {item.selected_storage}
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
                                       <p className="text-[10px] text-gray-400">Qty: {item.quantity} × QAR {Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")).toFixed(2)}</p>
                                     </div>
                                     <span className="text-xs font-black text-gray-800 shrink-0">

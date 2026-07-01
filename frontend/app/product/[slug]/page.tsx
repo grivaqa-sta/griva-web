@@ -53,6 +53,38 @@ function ProductSkeleton() {
   );
 }
 
+const getCombinationValue = (combination: Record<string, string> | undefined, key: string): string => {
+  if (!combination || !key) return "";
+  const foundKey = Object.keys(combination).find(k => k.toLowerCase() === key.toLowerCase());
+  return foundKey ? String(combination[foundKey]) : "";
+};
+
+const normalizeVariants = (variants: any[]): any[] => {
+  if (!Array.isArray(variants)) return [];
+  return variants.map(v => {
+    if (!v) return v;
+    if (v.combination) {
+      return v;
+    }
+    const combination: Record<string, string> = {};
+    const excludeKeys = ['id', 'product_id', 'stock', 'sku', 'price', 'images', 'createdAt', 'updatedAt', 'variantId'];
+    Object.keys(v).forEach(k => {
+      if (!excludeKeys.includes(k) && v[k] !== undefined && v[k] !== null) {
+        const normalizedKey = k.charAt(0).toUpperCase() + k.slice(1);
+        combination[normalizedKey] = String(v[k]);
+      }
+    });
+    return {
+      id: v.id,
+      combination,
+      stock: typeof v.stock === 'number' ? v.stock : 10,
+      sku: v.sku || "",
+      price: v.price || "",
+      images: v.images || []
+    };
+  });
+};
+
 export default function ProductPage({ params }: ProductPageProps) {
   const { slug } = React.use(params);
   const router = useRouter();
@@ -66,7 +98,166 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
   const [subCategories, setSubCategories] = useState<any[]>([]);
+
+  const loadedVariants = React.useMemo(() => {
+    if (!product) return [];
+    const list = (product.productVariants && product.productVariants.length > 0)
+      ? product.productVariants
+      : (product.variants || []);
+    return normalizeVariants(list);
+  }, [product]);
+
+  const getValidOptionsForAttribute = (attrName: string, precedingAttrs: Record<string, string>): string[] => {
+    if (!product || !product.attributes || loadedVariants.length === 0) return [];
+    const attr = product.attributes.find((a: any) => a.name.toLowerCase() === attrName.toLowerCase());
+    if (!attr) return [];
+    
+    // Filter matching variants based only on the preceding selections
+    const matchingVariants = loadedVariants.filter((v: any) => {
+      return Object.keys(precedingAttrs).every((key) => {
+        const vVal = getCombinationValue(v.combination, key);
+        const selVal = precedingAttrs[key] || "";
+        return vVal.trim().toLowerCase() === selVal.trim().toLowerCase();
+      });
+    });
+
+    // Extract unique values for this attribute from the matching variants
+    const uniqueValues = new Set<string>();
+    matchingVariants.forEach((v) => {
+      const vVal = getCombinationValue(v.combination, attrName);
+      if (vVal) {
+        const matchedConfigVal = attr.values.find((val: string) => val.toLowerCase() === vVal.toLowerCase());
+        uniqueValues.add(matchedConfigVal || vVal);
+      }
+    });
+
+    return Array.from(uniqueValues);
+  };
+
+  const resolveSelectedAttributes = (selections: Record<string, string>): Record<string, string> => {
+    if (!product || !product.attributes) return selections;
+    
+    const next: Record<string, string> = {};
+    const attributes = product.attributes;
+    
+    // 1. First attribute is always preserved if present, otherwise default to first value
+    if (attributes.length > 0) {
+      const firstAttrName = attributes[0].name;
+      const firstAttrVal = getCombinationValue(selections, firstAttrName) || attributes[0].values[0];
+      const matchedFirstVal = attributes[0].values.find((val: string) => val.toLowerCase() === firstAttrVal.toLowerCase()) || firstAttrVal;
+      next[firstAttrName] = matchedFirstVal;
+    }
+    
+    // 2. Cascade resolve subsequent attributes
+    for (let i = 1; i < attributes.length; i++) {
+      const attr = attributes[i];
+      const validOptions = getValidOptionsForAttribute(attr.name, next);
+      
+      const currentSelectedVal = getCombinationValue(selections, attr.name);
+      const isStillValid = currentSelectedVal && validOptions.some(opt => opt.toLowerCase() === currentSelectedVal.toLowerCase());
+      
+      if (isStillValid) {
+        const matchedCasing = validOptions.find(opt => opt.toLowerCase() === currentSelectedVal.toLowerCase());
+        next[attr.name] = matchedCasing || currentSelectedVal;
+      }
+    }
+    
+    return next;
+  };
+
+  useEffect(() => {
+    if (product && product.attributes && product.attributes.length > 0) {
+      const initialAttrs: Record<string, string> = {};
+      
+      const firstAttrName = product.attributes[0].name;
+      const defaultFirstVal = product.attributes[0].values[0];
+      initialAttrs[firstAttrName] = defaultFirstVal;
+      
+      const resolved = resolveSelectedAttributes(initialAttrs);
+      setSelectedAttrs(resolved);
+    }
+  }, [product, loadedVariants]);
+
+  const isSelectionComplete = React.useMemo(() => {
+    if (!product || !product.attributes) return true;
+    return product.attributes.every((attr: any) => {
+      const val = getCombinationValue(selectedAttrs, attr.name);
+      return !!val;
+    });
+  }, [product, selectedAttrs]);
+
+  const missingAttribute = React.useMemo(() => {
+    if (!product || !product.attributes) return null;
+    return product.attributes.find((attr: any) => !getCombinationValue(selectedAttrs, attr.name));
+  }, [product, selectedAttrs]);
+
+  const selectedVariant = React.useMemo(() => {
+    if (loadedVariants.length === 0 || !isSelectionComplete) return null;
+    return loadedVariants.find((v: any) => {
+      return Object.keys(selectedAttrs).every(key => {
+        const vVal = getCombinationValue(v.combination, key);
+        const selVal = selectedAttrs[key] || "";
+        return vVal.trim().toLowerCase() === selVal.trim().toLowerCase();
+      });
+    }) || null;
+  }, [loadedVariants, selectedAttrs, isSelectionComplete]);
+
+  const getAttributeOptionStatus = (attrName: string, value: string) => {
+    if (loadedVariants.length === 0 || !product || !product.attributes) return { exists: false, inStock: false };
+
+    const attributes = product.attributes;
+    const attrIdx = attributes.findIndex((a: any) => a.name.toLowerCase() === attrName.toLowerCase());
+
+    const matchingVariants = loadedVariants.filter((v: any) => {
+      const valCombination = getCombinationValue(v.combination, attrName);
+      if (valCombination.trim().toLowerCase() !== value.trim().toLowerCase()) return false;
+      
+      // Only filter by selected values of preceding attributes (index < attrIdx)
+      for (let i = 0; i < attrIdx; i++) {
+        const precedingAttr = attributes[i];
+        const precedingVal = selectedAttrs[precedingAttr.name] || "";
+        const vVal = getCombinationValue(v.combination, precedingAttr.name);
+        if (vVal.trim().toLowerCase() !== precedingVal.trim().toLowerCase()) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (matchingVariants.length === 0) {
+      return { exists: false, inStock: false };
+    }
+
+    const hasInStock = matchingVariants.some((v: any) => v.stock > 0);
+    return { exists: true, inStock: hasInStock };
+  };
+
+  const handleSelectAttribute = (attrName: string, value: string) => {
+    const nextAttrs = { ...selectedAttrs, [attrName]: value };
+    const resolved = resolveSelectedAttributes(nextAttrs);
+    setSelectedAttrs(resolved);
+  };
+
+  const displayPrice = selectedVariant && selectedVariant.price ? selectedVariant.price : product?.price;
+  const displayOldPrice = selectedVariant 
+    ? (selectedVariant.old_price !== undefined ? selectedVariant.old_price : undefined)
+    : product?.old_price;
+  const displayStock = selectedVariant ? selectedVariant.stock : (product ? product.stock : 0);
+
+  const displayGalleryImages = React.useMemo(() => {
+    if (!product) return [];
+    const variantImages = selectedVariant && Array.isArray(selectedVariant.images) && selectedVariant.images.length > 0
+      ? selectedVariant.images
+      : [];
+    return Array.from(
+      new Set([
+        ...(variantImages.length > 0 ? variantImages : [product.main_image_url]),
+        ...(product.gallery_images || [])
+      ].filter(Boolean))
+    );
+  }, [product, selectedVariant]);
 
   useEffect(() => {
     async function loadSubCategories() {
@@ -312,40 +503,74 @@ export default function ProductPage({ params }: ProductPageProps) {
     return Number(price).toFixed(2);
   };
 
-  const handleQuantityIncrement = () => setQuantity((prev) => (product && prev < product.stock ? prev + 1 : prev));
+  const handleQuantityIncrement = () => setQuantity((prev) => (product && prev < displayStock ? prev + 1 : prev));
   const handleQuantityDecrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
   const handleAddToCart = () => {
+    if (!product) return;
+    if (missingAttribute) {
+      toast.error(`Please select ${missingAttribute.name}`);
+      return;
+    }
+    const hasVariants = product.attributes && product.attributes.length > 0;
+    const finalPrice = selectedVariant && selectedVariant.price ? `QAR ${formatPrice(selectedVariant.price)}` : `QAR ${formatPrice(product.price)}`;
+    const finalImage = selectedVariant && Array.isArray(selectedVariant.images) && selectedVariant.images.length > 0
+      ? selectedVariant.images[0]
+      : product.main_image_url;
+
     addToCart({
       id: product.id,
       title: product.title,
-      image: product.main_image_url,
-      price: `QAR ${formatPrice(product.price)}`,
+      image: finalImage,
+      price: finalPrice,
       category: product.brand || "Product",
-      selectedColor: selectedColor || undefined,
-      selectedStorage: selectedSize || undefined,
+      selectedColor: hasVariants ? (getCombinationValue(selectedAttrs, "Color") || undefined) : undefined,
+      selectedStorage: hasVariants ? (getCombinationValue(selectedAttrs, "Storage") || getCombinationValue(selectedAttrs, "Size") || undefined) : undefined,
+      variantId: selectedVariant ? selectedVariant.id : undefined,
+      selectedAttributes: hasVariants ? selectedAttrs : undefined,
       quantity,
       slug: product.slug,
+      sku: selectedVariant ? selectedVariant.sku : undefined,
     });
     // Fire AddToCart pixel event
-    const price = parseFloat(String(product.price || "0").replace(/[^0-9.]/g, ""));
+    const price = selectedVariant && selectedVariant.price ? parseFloat(String(selectedVariant.price)) : parseFloat(String(product.price || "0").replace(/[^0-9.]/g, ""));
     trackAddToCart(product.id, product.title, price * quantity);
   };
 
   const handleBuyNow = () => {
+    if (!product) return;
+    if (missingAttribute) {
+      toast.error(`Please select ${missingAttribute.name}`);
+      return;
+    }
     if (typeof window !== "undefined") {
+      const hasVariants = product.attributes && product.attributes.length > 0;
+      const finalPriceStr = selectedVariant && selectedVariant.price ? `QAR ${formatPrice(selectedVariant.price)}` : `QAR ${formatPrice(product.price)}`;
+      const finalPriceNum = selectedVariant && selectedVariant.price ? parseFloat(String(selectedVariant.price)) : parseFloat(String(product.price));
+      const finalOldPriceNum = selectedVariant && selectedVariant.old_price
+        ? parseFloat(String(selectedVariant.old_price))
+        : (selectedVariant && selectedVariant.price
+          ? finalPriceNum
+          : (product.old_price ? parseFloat(String(product.old_price)) : parseFloat(String(product.price))));
+      const finalImage = selectedVariant && Array.isArray(selectedVariant.images) && selectedVariant.images.length > 0
+        ? selectedVariant.images[0]
+        : product.main_image_url;
+
       const buyNowItem = {
         productId: product.id,
+        variantId: selectedVariant ? selectedVariant.id : undefined,
+        selectedAttributes: hasVariants ? selectedAttrs : undefined,
         title: product.title,
-        image: product.main_image_url,
-        price: `QAR ${formatPrice(product.price)}`,
-        priceNumber: product.price,
-        oldPriceNumber: product.old_price || product.price,
+        image: finalImage,
+        price: finalPriceStr,
+        priceNumber: finalPriceNum,
+        oldPriceNumber: finalOldPriceNum,
         quantity,
         category: product.brand || "Product",
-        selectedColor: selectedColor || undefined,
-        selectedStorage: selectedSize || undefined,
+        selectedColor: hasVariants ? (getCombinationValue(selectedAttrs, "Color") || undefined) : undefined,
+        selectedStorage: hasVariants ? (getCombinationValue(selectedAttrs, "Storage") || getCombinationValue(selectedAttrs, "Size") || undefined) : undefined,
         slug: product.slug,
+        sku: selectedVariant ? selectedVariant.sku : undefined,
       };
       sessionStorage.setItem("griva-buynow-item", JSON.stringify(buyNowItem));
     }
@@ -395,7 +620,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             {/* Left Column: Gallery */}
             <div className="lg:col-span-6">
-              <ProductGallery images={galleryImages} title={product.title} />
+              <ProductGallery images={displayGalleryImages} title={product.title} />
             </div>
 
             {/* Right Column: Buying Panel */}
@@ -473,18 +698,18 @@ export default function ProductPage({ params }: ProductPageProps) {
                     );
                   }
                 })()}
-                {product.stock === 0 ? (
+                {displayStock === 0 ? (
                   <>
                     <span className="text-gray-300">|</span>
                     <span className="text-xs font-semibold text-red-500">
                       Out of Stock
                     </span>
                   </>
-                ) : product.stock <= 5 ? (
+                ) : displayStock <= 5 ? (
                   <>
                     <span className="text-gray-300">|</span>
                     <span className="text-xs font-semibold text-amber-500">
-                      Low Stock (only {product.stock} left)
+                      Low Stock (only {displayStock} left)
                     </span>
                   </>
                 ) : null}
@@ -493,11 +718,11 @@ export default function ProductPage({ params }: ProductPageProps) {
               {/* Price Panel */}
               <div className="mt-6 flex items-baseline gap-3 border-b pb-6 flex-wrap">
                 <span className="text-2xl sm:text-3xl font-extrabold text-black whitespace-nowrap">
-                  QAR {formatPrice(product.price)}
+                  QAR {formatPrice(displayPrice)}
                 </span>
-                {product.old_price && (
+                {displayOldPrice && (
                   <span className="text-sm sm:text-base text-gray-400 line-through font-medium whitespace-nowrap">
-                    QAR {formatPrice(product.old_price)}
+                    QAR {formatPrice(displayOldPrice)}
                   </span>
                 )}
                 {(product.discount_percentage ?? 0) > 0 && (
@@ -514,8 +739,69 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
               )}
 
-              {/* Color Variants */}
-              {colorVariants.length > 0 && (
+              {/* Dynamic Attributes & Variants */}
+              {product.attributes && product.attributes.length > 0 && (
+                <div className="mt-6 space-y-5">
+                  {product.attributes.map((attr: any) => {
+                    const selectedVal = getCombinationValue(selectedAttrs, attr.name);
+                    const matchingAttrVal = attr.values.find((v: string) => v.toLowerCase() === selectedVal.toLowerCase()) || selectedVal;
+                    return (
+                      <div key={attr.name}>
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2.5">
+                          Select {attr.name}: <span className="text-gray-500 font-semibold">{matchingAttrVal}</span>
+                        </h3>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          {attr.values.map((val: string) => {
+                            const status = getAttributeOptionStatus(attr.name, val);
+                            const isSelected = selectedVal.trim().toLowerCase() === val.trim().toLowerCase();
+                            
+                            // Impossible / Inactive combination: hide entirely
+                            if (!status.exists) {
+                              return null;
+                            }
+
+                            // Out of stock combination: show but indicate out of stock (strike-through & disabled)
+                            if (!status.inStock) {
+                              return (
+                                <button
+                                  key={val}
+                                  disabled
+                                  className={`px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all cursor-not-allowed relative overflow-hidden ${
+                                    isSelected
+                                      ? "border-red-300 bg-red-50/50 text-red-400 font-bold"
+                                      : "border-gray-200 text-gray-450 bg-gray-50/50 opacity-50"
+                                  }`}
+                                  title={`${val} (Out of Stock)`}
+                                >
+                                  {val}
+                                </button>
+                              );
+                            }
+
+                            // Normal valid in-stock combination
+                            return (
+                              <button
+                                key={val}
+                                onClick={() => handleSelectAttribute(attr.name, val)}
+                                className={`px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
+                                    : "border-gray-200 text-gray-700 bg-white hover:bg-gray-50"
+                                }`}
+                              >
+                                {val}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Legacy Color Variants (Fallback) */}
+              {(!product.attributes || product.attributes.length === 0) && colorVariants.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                     Select Color: <span className="text-gray-500 font-semibold">{selectedColor}</span>
@@ -539,8 +825,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
               )}
 
-              {/* Size Variants */}
-              {(product.variants || []).some((v) => v.size) && (
+              {/* Legacy Size Variants (Fallback) */}
+              {(!product.attributes || product.attributes.length === 0) && (product.variants || []).some((v) => v.size) && (
                 <div className="mt-6">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                     Select Size: <span className="text-gray-500 font-semibold">{selectedSize}</span>
@@ -593,11 +879,11 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div className="flex gap-4">
                 <button
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
+                  disabled={isSelectionComplete && displayStock === 0}
                   className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart className="h-4 w-4" />
-                  {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                  {isSelectionComplete && displayStock === 0 ? "Out of Stock" : "Add to Cart"}
                 </button>
                 <button
                   onClick={handleWishlistToggle}

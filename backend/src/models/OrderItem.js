@@ -26,6 +26,7 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
 const Order = require("./Order");
 const Product = require("./Product");
+const ProductVariant = require("./ProductVariant");
 
 const OrderItem = sequelize.define(
   "OrderItem",
@@ -66,6 +67,28 @@ const OrderItem = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    variant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: ProductVariant,
+        key: "id",
+      },
+      onDelete: "SET NULL",
+    },
+    selected_attributes: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+      allowNull: true,
+    },
+    sku: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    image_snapshot: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     price_at_purchase: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
@@ -92,5 +115,8 @@ Order.hasMany(OrderItem, { foreignKey: "order_id", as: "items", onDelete: "CASCA
 
 OrderItem.belongsTo(Product, { foreignKey: "product_id", as: "product" });
 Product.hasMany(OrderItem, { foreignKey: "product_id", as: "orderItems", onDelete: "SET NULL" });
+
+OrderItem.belongsTo(ProductVariant, { foreignKey: "variant_id", as: "variant" });
+ProductVariant.hasMany(OrderItem, { foreignKey: "variant_id", as: "orderItems", onDelete: "SET NULL" });
 
 module.exports = OrderItem;

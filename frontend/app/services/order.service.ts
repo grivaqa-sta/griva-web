@@ -10,6 +10,10 @@ export interface CreateOrderPayload {
     quantity: number;
     selectedColor?: string;
     selectedStorage?: string;
+    variantId?: number;
+    variant_id?: number;
+    selectedAttributes?: Record<string, string>;
+    selected_attributes?: Record<string, string>;
   }>;
   shipping_address: string;
   customer_name?: string;
@@ -44,6 +48,8 @@ export interface MyOrderItem {
   quantity: number;
   selected_color?: string;
   selected_storage?: string;
+  variant_id?: number;
+  selected_attributes?: Record<string, string>;
   price_at_purchase: string | number;
   product?: {
     id: number;

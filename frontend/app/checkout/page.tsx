@@ -103,7 +103,7 @@ export default function CheckoutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const isSubmitRef = useRef(false);
   const [orderError, setOrderError] = useState("");
-  const [stockErrors, setStockErrors] = useState<Record<number, { title: string; availableStock: number }>>({});
+  const [stockErrors, setStockErrors] = useState<Record<string | number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
   const hasShownStockToastRef = useRef(false);
 
@@ -513,38 +513,44 @@ export default function CheckoutPage() {
   );
   const hasStockErrors = activeStockErrors.length > 0;
 
-  const handleUpdateStockQty = (itemId: number, productId: number, availableStock: number) => {
+  const handleUpdateStockQty = (itemId: number, errorKey: string, availableStock: number) => {
     cartDispatch({
       type: "UPDATE_QTY",
       payload: { id: itemId, quantity: availableStock },
     });
     setStockErrors((prev) => {
       const next = { ...prev };
-      delete next[productId];
+      delete next[errorKey];
       return next;
     });
     // Clear top error message if there are no more active stock errors
     const remaining = Object.keys(stockErrors).filter(
-      (id) => Number(id) !== productId && activeCart.items.some((item) => item.productId === Number(id))
+      (key) => String(key) !== String(errorKey) && activeCart.items.some((item) => {
+        const itemKey = item.variantId ? `${item.productId}-${item.variantId}` : String(item.productId);
+        return itemKey === key;
+      })
     );
     if (remaining.length === 0) {
       setOrderError("");
     }
   };
 
-  const handleRemoveStockItem = (itemId: number, productId: number) => {
+  const handleRemoveStockItem = (itemId: number, errorKey: string) => {
     cartDispatch({
       type: "REMOVE",
       payload: { id: itemId },
     });
     setStockErrors((prev) => {
       const next = { ...prev };
-      delete next[productId];
+      delete next[errorKey];
       return next;
     });
     // Clear top error message if there are no more active stock errors
     const remaining = Object.keys(stockErrors).filter(
-      (id) => Number(id) !== productId && activeCart.items.some((item) => item.productId === Number(id))
+      (key) => String(key) !== String(errorKey) && activeCart.items.some((item) => {
+        const itemKey = item.variantId ? `${item.productId}-${item.variantId}` : String(item.productId);
+        return itemKey === key;
+      })
     );
     if (remaining.length === 0) {
       setOrderError("");
@@ -751,6 +757,11 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           selectedColor: item.selectedColor,
           selectedStorage: item.selectedStorage,
+          variantId: item.variantId,
+          variant_id: item.variantId,
+          selectedAttributes: item.selectedAttributes,
+          selected_attributes: item.selectedAttributes,
+          sku: item.sku,
         })),
         shipping_address: buildShippingAddress(),
         customer_name: customerName,
@@ -841,9 +852,10 @@ export default function CheckoutPage() {
       const details = error.response?.data?.details;
 
       if (code === "INSUFFICIENT_STOCK" && details) {
+        const errorKey = details.variantId ? `${details.productId}-${details.variantId}` : details.productId;
         setStockErrors((prev) => ({
           ...prev,
-          [details.productId]: {
+          [errorKey]: {
             title: details.title,
             availableStock: details.availableStock,
           },
@@ -857,9 +869,10 @@ export default function CheckoutPage() {
           const availableStock = parseInt(match[2], 10);
           const item = effectiveCartState.items.find((i) => i.title === title);
           if (item) {
+            const errorKey = item.variantId ? `${item.productId}-${item.variantId}` : item.productId;
             setStockErrors((prev) => ({
               ...prev,
-              [item.productId]: { title, availableStock },
+              [errorKey]: { title, availableStock },
             }));
           }
         }
@@ -1404,7 +1417,8 @@ export default function CheckoutPage() {
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 {activeCart.items.map((item) => {
                   const isSelected = selectedItemIds.has(item.id);
-                  const stockErr = stockErrors[item.productId];
+                  const errorKey = item.variantId ? `${item.productId}-${item.variantId}` : String(item.productId);
+                  const stockErr = stockErrors[errorKey];
                   return (
                     <div key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                       {/* Checkbox (Left Side) */}
@@ -1433,16 +1447,26 @@ export default function CheckoutPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            {item.selectedColor && (
-                              <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                                {item.selectedColor}
-                              </span>
-                            )}
-                            {item.selectedStorage && (
-                              <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                                {item.selectedStorage}
-                              </span>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 ? (
+                              Object.entries(item.selectedAttributes).map(([key, val]) => (
+                                <span key={key} className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                  {key}: {val}
+                                </span>
+                              ))
+                            ) : (
+                              <>
+                                {item.selectedColor && (
+                                  <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                    {item.selectedColor}
+                                  </span>
+                                )}
+                                {item.selectedStorage && (
+                                  <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                    {item.selectedStorage}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
 
@@ -1460,14 +1484,14 @@ export default function CheckoutPage() {
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <button
-                                  onClick={() => handleRemoveStockItem(item.id, item.productId)}
+                                  onClick={() => handleRemoveStockItem(item.id, errorKey)}
                                   className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
                                 >
                                   Remove Item
                                 </button>
                                 {stockErr.availableStock > 0 && (
                                   <button
-                                    onClick={() => handleUpdateStockQty(item.id, item.productId, stockErr.availableStock)}
+                                    onClick={() => handleUpdateStockQty(item.id, errorKey, stockErr.availableStock)}
                                     className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-705 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
                                   >
                                     Update to {stockErr.availableStock}

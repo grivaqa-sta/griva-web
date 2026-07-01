@@ -23,8 +23,9 @@ import DeliveryTab from "./DeliveryTab";
 import CustomersTab from "./CustomersTab";
 import StaffTab from "./StaffTab";
 import ReviewsTab from "./ReviewsTab";
+import AnalyticsTab from "./AnalyticsTab";
 
-export type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback";
+export type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback" | "analytics";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function AdminDashboard() {
   const { socket } = useSocket();
   const { toast } = useToast();
 
-  const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff", "feedback"];
+  const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff", "feedback", "analytics"];
   const defaultTab = role === "staff" ? "operations" : "overview";
   const activeTab = tabParam && validTabs.includes(tabParam) ? tabParam : defaultTab;
 
@@ -408,6 +409,9 @@ export default function AdminDashboard() {
           )}
           {activeTab === "feedback" && (
             <ReviewsTab />
+          )}
+          {activeTab === "analytics" && role !== "staff" && (
+            <AnalyticsTab active={activeTab === "analytics"} />
           )}
         </div>
       </main>

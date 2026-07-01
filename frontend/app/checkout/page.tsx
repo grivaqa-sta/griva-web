@@ -103,7 +103,7 @@ export default function CheckoutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const isSubmitRef = useRef(false);
   const [orderError, setOrderError] = useState("");
-  const [stockErrors, setStockErrors] = useState<Record<number, { title: string; availableStock: number }>>({});
+  const [stockErrors, setStockErrors] = useState<Record<string | number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
   const hasShownStockToastRef = useRef(false);
 
@@ -360,24 +360,27 @@ export default function CheckoutPage() {
   // Pre-fill form for logged-in users
   useEffect(() => {
     if (isLoggedIn && userState.user) {
+      const profilePhone = extractQatarLocalNumber(userState.profileData?.phone || "");
       setForm((prev) => ({
         ...prev,
         fullName: prev.fullName || userState.user?.name || "",
         email: prev.email || userState.user?.email || "",
+        phone: profilePhone || prev.phone,
       }));
     }
-  }, [isLoggedIn, userState.user]);
+  }, [isLoggedIn, userState.user, userState.profileData]);
 
   // Sync form contact details when selected address changes
   useEffect(() => {
     if (isLoggedIn && !useNewAddress && selectedAddress) {
+      const profilePhone = extractQatarLocalNumber(userState.profileData?.phone || "");
       setForm((prev) => ({
         ...prev,
         fullName: selectedAddress.fullName || prev.fullName,
-        phone: extractQatarLocalNumber(selectedAddress.mobile) || prev.phone,
+        phone: profilePhone || extractQatarLocalNumber(selectedAddress.mobile) || prev.phone,
       }));
     }
-  }, [selectedAddress, isLoggedIn, useNewAddress]);
+  }, [selectedAddress, isLoggedIn, useNewAddress, userState.profileData]);
 
   // Validate inventory in real-time
   useEffect(() => {
@@ -510,7 +513,7 @@ export default function CheckoutPage() {
   );
   const hasStockErrors = activeStockErrors.length > 0;
 
-  const handleUpdateStockQty = (itemId: number, errorKey: string | number, availableStock: number) => {
+  const handleUpdateStockQty = (itemId: number, errorKey: string, availableStock: number) => {
     cartDispatch({
       type: "UPDATE_QTY",
       payload: { id: itemId, quantity: availableStock },
@@ -532,7 +535,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleRemoveStockItem = (itemId: number, errorKey: string | number) => {
+  const handleRemoveStockItem = (itemId: number, errorKey: string) => {
     cartDispatch({
       type: "REMOVE",
       payload: { id: itemId },
@@ -954,7 +957,7 @@ export default function CheckoutPage() {
                       onChange={(e) => updateForm("fullName", e.target.value)}
                       className={`block w-full rounded-xl border ${
                         formErrors.fullName ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                     />
                   </div>
                   {formErrors.fullName && (
@@ -969,7 +972,7 @@ export default function CheckoutPage() {
                   </label>
                   <div className={`flex rounded-xl border ${
                     formErrors.phone ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                  } focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500 overflow-hidden transition-colors`}>
+                  } focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 overflow-hidden transition-all duration-300`}>
                     <span className="bg-gray-50 border-r border-gray-200 px-3 py-2.5 text-sm text-gray-550 select-none flex items-center gap-1.5 font-bold shrink-0">
                       <Phone className="h-4 w-4 text-gray-450" />
                       <span>+974</span>
@@ -1006,7 +1009,7 @@ export default function CheckoutPage() {
                       onChange={(e) => updateForm("email", e.target.value)}
                       className={`block w-full rounded-xl border ${
                         formErrors.email ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-450 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-450 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                     />
                   </div>
                   {formErrors.email && (
@@ -1179,7 +1182,7 @@ export default function CheckoutPage() {
                         onChange={(e) => updateForm("area", e.target.value)}
                         className={`block w-full rounded-xl border ${
                           formErrors.area ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                       />
                     </div>
                     {formErrors.area && (
@@ -1203,7 +1206,7 @@ export default function CheckoutPage() {
                       }}
                       className={`block w-full rounded-xl border ${
                         formErrors.zone ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                     />
                     {formErrors.zone && (
                       <p className="text-xs text-red-500 mt-1">{formErrors.zone}</p>
@@ -1223,7 +1226,7 @@ export default function CheckoutPage() {
                       onChange={(e) => updateForm("street", e.target.value)}
                       className={`block w-full rounded-xl border ${
                         formErrors.street ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                     />
                     {formErrors.street && (
                       <p className="text-xs text-red-500 mt-1">{formErrors.street}</p>
@@ -1245,7 +1248,7 @@ export default function CheckoutPage() {
                         onChange={(e) => updateForm("buildingNumber", e.target.value)}
                         className={`block w-full rounded-xl border ${
                           formErrors.buildingNumber ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                       />
                     </div>
                     {formErrors.buildingNumber && (
@@ -1264,7 +1267,7 @@ export default function CheckoutPage() {
                       maxLength={50}
                       value={form.villaApartment}
                       onChange={(e) => updateForm("villaApartment", e.target.value)}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
                     />
                   </div>
 
@@ -1279,7 +1282,7 @@ export default function CheckoutPage() {
                       maxLength={20}
                       value={form.floor}
                       onChange={(e) => updateForm("floor", e.target.value)}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
                     />
                   </div>
 
@@ -1294,7 +1297,7 @@ export default function CheckoutPage() {
                       maxLength={150}
                       value={form.landmark}
                       onChange={(e) => updateForm("landmark", e.target.value)}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
                     />
                   </div>
 
@@ -1309,7 +1312,7 @@ export default function CheckoutPage() {
                       value={form.deliveryNotes}
                       onChange={(e) => updateForm("deliveryNotes", e.target.value)}
                       rows={2}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors resize-none"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 resize-none"
                     />
                   </div>
                 </div>
@@ -1414,7 +1417,7 @@ export default function CheckoutPage() {
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 {activeCart.items.map((item) => {
                   const isSelected = selectedItemIds.has(item.id);
-                  const errorKey = item.variantId ? `${item.productId}-${item.variantId}` : item.productId;
+                  const errorKey = item.variantId ? `${item.productId}-${item.variantId}` : String(item.productId);
                   const stockErr = stockErrors[errorKey];
                   return (
                     <div key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">

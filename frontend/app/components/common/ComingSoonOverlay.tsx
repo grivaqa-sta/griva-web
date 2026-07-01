@@ -21,6 +21,10 @@ export default function ComingSoonOverlay() {
         el.classList.remove("hidden");
       }
     });
+    // Dispatch custom event to notify other components
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("griva_coming_soon_bypassed"));
+    }
   };
 
   useEffect(() => {

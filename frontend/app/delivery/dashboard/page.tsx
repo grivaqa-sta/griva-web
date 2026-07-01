@@ -514,7 +514,7 @@ export default function DeliveryDashboard() {
   const totalDelivered = orders.filter(o => o.status === "delivered").length;
   const totalPending = orders.filter(o => ["assigned", "out_for_delivery", "rescheduled"].includes(o.status)).length;
   const totalEarningsToday = orders
-    .filter(o => o.status === "delivered" && o.payment_method?.toUpperCase().includes("COD"))
+    .filter(o => o.status === "delivered" && o.delivery_payment_method === "Cash")
     .reduce((sum, o) => sum + parseFloat(parseTotal(o.total_price)), 0)
     .toFixed(2);
 
@@ -604,7 +604,7 @@ export default function DeliveryDashboard() {
                   { label: "Assigned", val: totalAssigned, icon: <Package size={14} className="text-blue-400" />, desc: "Active list" },
                   { label: "Delivered", val: totalDelivered, icon: <Check size={14} className="text-green-400" />, desc: "Delivered today" },
                   { label: "Pending", val: totalPending, icon: <Clock size={14} className="text-yellow-400" />, desc: "Awaiting drop" },
-                  { label: "COD Earnings", val: `QAR ${totalEarningsToday}`, icon: <DollarSign size={14} className="text-[#FF6A00]" />, desc: "Cash on delivery" },
+                  { label: "Cash Collected", val: `QAR ${totalEarningsToday}`, icon: <DollarSign size={14} className="text-[#FF6A00]" />, desc: "Physical cash in hand" },
                 ].map((stat, i) => (
                   <div key={i} className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 space-y-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.01)] relative overflow-hidden">
                     <div className="flex items-center justify-between">
@@ -793,15 +793,17 @@ export default function DeliveryDashboard() {
 
                         {/* Primary action buttons */}
                         <div className="space-y-3 pt-2">
-                          {/* Pick Up Action */}
-                          {order.status === "assigned" && (
+                          {/* Pick Up or Retry Action */}
+                          {(order.status === "assigned" || order.status === "attempted" || order.status === "rescheduled") && (
                             <button
                               onClick={() => handleStatusUpdate(order.id, "out_for_delivery")}
                               disabled={isUpdating}
                               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-xs font-bold py-3.5 rounded-2xl transition-all cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex items-center justify-center gap-2"
                               style={{ minHeight: "44px" }}
                             >
-                              <span>🚚 Pick Up Order</span>
+                              <span>
+                                {order.status === "assigned" ? "🚚 Pick Up Order" : "🚀 Retry Delivery"}
+                              </span>
                             </button>
                           )}
 
@@ -826,19 +828,19 @@ export default function DeliveryDashboard() {
                               <div className="grid grid-cols-3 gap-1.5 pt-1">
                                 <button
                                   onClick={() => openModal('not_answering', order.id)}
-                                  className="py-2.5 rounded-xl border border-yellow-900/40 bg-yellow-950/10 text-yellow-500 hover:bg-yellow-950/20 active:scale-95 text-[10px] font-bold transition-all cursor-pointer"
+                                  className="py-3 rounded-xl border border-yellow-900/40 bg-yellow-950/10 text-yellow-500 hover:bg-yellow-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
                                 >
                                   📞 No Answer
                                 </button>
                                 <button
                                   onClick={() => openModal('come_later', order.id)}
-                                  className="py-2.5 rounded-xl border border-blue-900/40 bg-blue-950/10 text-blue-400 hover:bg-blue-950/20 active:scale-95 text-[10px] font-bold transition-all cursor-pointer"
+                                  className="py-3 rounded-xl border border-blue-900/40 bg-blue-950/10 text-blue-400 hover:bg-blue-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
                                 >
                                   🔄 Come Later
                                 </button>
                                 <button
                                   onClick={() => openModal('failed', order.id)}
-                                  className="py-2.5 rounded-xl border border-red-900/40 bg-red-950/10 text-red-400 hover:bg-red-950/20 active:scale-95 text-[10px] font-bold transition-all cursor-pointer"
+                                  className="py-3 rounded-xl border border-red-900/40 bg-red-950/10 text-red-400 hover:bg-red-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
                                 >
                                   ❌ Failed
                                 </button>
@@ -851,15 +853,15 @@ export default function DeliveryDashboard() {
                             {customerPhone ? (
                               <a
                                 href={`tel:${customerPhone}`}
-                                className="flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-[10px] font-bold text-zinc-300 border border-zinc-800 transition-colors"
-                                style={{ minHeight: "40px" }}
+                                className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 border border-zinc-800 transition-colors"
+                                style={{ minHeight: "48px" }}
                               >
-                                <Phone size={12} className="text-[#FF6A00]" />
+                                <Phone size={14} className="text-[#FF6A00]" />
                                 <span>Call Customer</span>
                               </a>
                             ) : (
-                              <div className="flex items-center justify-center gap-1.5 py-3 bg-zinc-900 opacity-40 rounded-xl text-[10px] font-bold text-zinc-500 border border-zinc-800">
-                                <Phone size={12} />
+                              <div className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 opacity-40 rounded-xl text-xs font-bold text-zinc-500 border border-zinc-800" style={{ minHeight: "48px" }}>
+                                <Phone size={14} />
                                 <span>No Phone</span>
                               </div>
                             )}
@@ -872,10 +874,10 @@ export default function DeliveryDashboard() {
                               }
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-[10px] font-bold text-[#FF6A00] border border-zinc-800 transition-colors"
-                              style={{ minHeight: "40px" }}
+                              className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-[#FF6A00] border border-zinc-800 transition-colors"
+                              style={{ minHeight: "48px" }}
                             >
-                              <Compass size={12} />
+                              <Compass size={14} />
                               <span>Open Maps</span>
                             </a>
                           </div>

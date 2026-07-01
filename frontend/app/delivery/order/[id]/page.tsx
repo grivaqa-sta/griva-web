@@ -107,7 +107,7 @@ export default function DeliveryOrderDetailPage() {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${API_BASE}/delivery/my-orders`, {
+        const res = await fetch(`${API_BASE}/delivery/orders/${orderId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.status === 401 || res.status === 403) {
@@ -115,16 +115,19 @@ export default function DeliveryOrderDetailPage() {
           return;
         }
         if (!res.ok) { 
-          setError("Something went wrong, try again."); 
+          if (res.status === 404) {
+            setError("Order not found or not assigned to you.");
+          } else {
+            setError("Something went wrong, try again."); 
+          }
           setLoading(false); 
           return; 
         }
         const data = await res.json();
-        const found = (data.orders || []).find((o: DeliveryOrder) => String(o.id) === orderId);
-        if (!found) { 
-          setError("Order not found or not assigned to you."); 
-        } else { 
-          setOrder(found); 
+        if (data.success && data.order) {
+          setOrder(data.order);
+        } else {
+          setError("Order not found or not assigned to you.");
         }
       } catch {
         setError("Check your internet connection.");
@@ -488,9 +491,20 @@ export default function DeliveryOrderDetailPage() {
           </div>
         )}
 
-        {["attempted", "rescheduled", "failed"].includes(order.status) && (
-          <div className="w-full text-center text-zinc-400 text-xs font-bold py-3.5 bg-zinc-950 border border-zinc-900 rounded-2xl uppercase tracking-wider">
-            {order.status} — Checked by Admin
+        {(order.status === "attempted" || order.status === "rescheduled") && (
+          <button
+            onClick={() => handleStatusUpdate("out_for_delivery")}
+            disabled={updating}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-sm font-bold py-4 rounded-2xl transition-all cursor-pointer shadow-[0_4px_16px_rgba(37,99,235,0.2)]"
+            style={{ minHeight: "48px" }}
+          >
+            {updating ? "Updating..." : "🚀 Retry Delivery"}
+          </button>
+        )}
+
+        {order.status === "failed" && (
+          <div className="w-full text-center text-zinc-400 text-xs font-bold py-3.5 bg-[#0a0a0a] border border-zinc-900 rounded-2xl uppercase tracking-wider">
+            failed — Checked by Admin
           </div>
         )}
       </div>

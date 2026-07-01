@@ -53,6 +53,38 @@ export default function CategorySection() {
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [hasMoved, setHasMoved] = useState(false);
+
+  const handleMobileMouseDown = (e: React.MouseEvent) => {
+    const el = mobileScrollRef.current;
+    if (!el) return;
+    setIsMouseDown(true);
+    setStartX(e.pageX - el.offsetLeft);
+    setScrollLeft(el.scrollLeft);
+    setHasMoved(false);
+  };
+
+  const handleMobileMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown) return;
+    const el = mobileScrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    if (Math.abs(walk) > 5) {
+      setHasMoved(true);
+    }
+    el.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMobileMouseUpOrLeave = () => {
+    setIsMouseDown(false);
+  };
+
   useEffect(() => {
     const handleScroll = () => setIsCollapsed(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -60,15 +92,20 @@ export default function CategorySection() {
   }, []);
 
   const handleResize = useCallback(() => {
-    const vw = window.innerWidth;
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
     const newVisibleCards = getVisibleCards(vw);
     setVisibleCards(newVisibleCards);
 
     if (containerRef.current) {
       const totalWidth = containerRef.current.offsetWidth;
-      const cw = (totalWidth - GAP * (newVisibleCards - 1)) / newVisibleCards;
-      setCardWidth(cw);
-      cardWidthRef.current = cw;
+      if (totalWidth > 0) {
+        const cw = (totalWidth - GAP * (newVisibleCards - 1)) / newVisibleCards;
+        setCardWidth(cw);
+        cardWidthRef.current = cw;
+      } else {
+        // Retry in 50ms if layout is not ready yet (e.g. during client-side transitions)
+        setTimeout(handleResize, 50);
+      }
     }
   }, []);
 
@@ -142,19 +179,28 @@ export default function CategorySection() {
       {/* Mobile — sticky categories */}
       <div
         id="categories-section"
-        className={`${
-          isCollapsed ? "fixed" : "sticky"
-        } ${
+        ref={mobileScrollRef}
+        onMouseDown={handleMobileMouseDown}
+        onMouseMove={handleMobileMouseMove}
+        onMouseUp={handleMobileMouseUpOrLeave}
+        onMouseLeave={handleMobileMouseUpOrLeave}
+        className={`fixed left-0 right-0 ${
           announcementBarEnabled ? "top-[92px]" : "top-[64px]"
-        } z-30 bg-white border-b border-gray-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 py-3`}
+        } z-30 bg-white border-b border-gray-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] block sm:hidden w-full overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-all duration-300 ease-in-out px-2 cursor-grab active:cursor-grabbing select-none ${
+          isCollapsed ? "py-1.5" : "py-3"
+        }`}
       >
-        <div className="flex gap-3 min-w-max justify-around items-center">
+        <div className="flex gap-5 px-4 min-w-max justify-start items-center">
           {categories.map((item) => (
             <Link
               key={item.id}
               href={item.href}
+              onClick={(e) => {
+                if (hasMoved) {
+                  e.preventDefault();
+                }
+              }}
               className="flex flex-col items-center  text-center shrink-0 group transition-all duration-300 ease-in-out"
-             
             >
               <div
                 className="relative overflow-hidden border-none  transition-all duration-300 ease-in-out flex-shrink-0 flex items-center justify-center"

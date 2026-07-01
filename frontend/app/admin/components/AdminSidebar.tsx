@@ -19,10 +19,11 @@ import {
   Image,
   Activity,
   Star,
+  BarChart3,
 } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
 
-type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback";
+type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback" | "analytics";
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -50,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
     group: "Dashboard",
     items: [
       { id: "overview", label: "Overview & Analytics", icon: <LayoutDashboard className="h-4 w-4" />, adminOnly: true },
+      { id: "analytics", label: "Business Analytics", icon: <BarChart3 className="h-4 w-4" />, adminOnly: true },
       { id: "operations", label: "Operations Dashboard", icon: <Activity className="h-4 w-4" />, staffOnly: true },
     ]
   },

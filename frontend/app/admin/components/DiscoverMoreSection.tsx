@@ -169,7 +169,7 @@ export default function DiscoverMoreSection() {
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20 flex justify-between items-center">
         <div>
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">E. Discover More Banners ({banners.length}/2)</h4>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Discover More Banners ({banners.length}/2)</h4>
           <p className="text-[10px] text-gray-400 mt-1">Manage Discover More promotional banners shown on the storefront.</p>
         </div>
         <div className="flex items-center gap-3">

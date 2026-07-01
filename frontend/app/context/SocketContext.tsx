@@ -60,7 +60,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const socketIo = io(socketUrl, {
       auth: { token },
       query: { token },
-      transports: ["polling", "websocket"],
+      transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import {
   SlidersHorizontal,
   Star,
@@ -28,12 +28,12 @@ import {
   Car,
   Droplet,
   Flame,
-  Tag
+  Tag,
+  ChevronDown
 } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
-import { ApiProduct, Category, SubCategory } from "@/app/types/types";
-import { categoryService } from "@/app/services/category.service";
-import { subCategoryService } from "@/app/services/subCategory.service";
+import { useCategories, useSubCategories } from "@/app/hooks/useCategories";
+import { ApiProduct } from "@/app/types/types";
 import ProductCard from "@/app/components/product/ProductCard";
 import { motion, AnimatePresence } from "framer-motion";
 import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
@@ -189,6 +189,7 @@ function ProductCardSkeleton() {
 export default function CategoryPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const slug = (params.slug as string)?.toLowerCase() || "";
   const subParam = searchParams.get("sub") || "";
 
@@ -196,37 +197,64 @@ export default function CategoryPage() {
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [openSortDropdown, setOpenSortDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [taxonomyLoading, setTaxonomyLoading] = useState(true);
+  const subCategoriesScrollRef = useRef<HTMLDivElement>(null);
+  const [isSubMouseDown, setIsSubMouseDown] = useState(false);
+  const [subStartX, setSubStartX] = useState(0);
+  const [subScrollLeft, setSubScrollLeft] = useState(0);
+  const [subHasMoved, setSubHasMoved] = useState(false);
 
+  const handleSubMouseDown = (e: React.MouseEvent) => {
+    const el = subCategoriesScrollRef.current;
+    if (!el) return;
+    setIsSubMouseDown(true);
+    setSubStartX(e.pageX - el.offsetLeft);
+    setSubScrollLeft(el.scrollLeft);
+    setSubHasMoved(false);
+  };
+
+  const handleSubMouseMove = (e: React.MouseEvent) => {
+    if (!isSubMouseDown) return;
+    const el = subCategoriesScrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - subStartX) * 1.5;
+    if (Math.abs(walk) > 5) {
+      setSubHasMoved(true);
+    }
+    el.scrollLeft = subScrollLeft - walk;
+  };
+
+  const handleSubMouseUpOrLeave = () => {
+    setIsSubMouseDown(false);
+  };
+
+  // Categories & subcategories from API (cached — no repeat fetches on navigation)
+  const { categories, loading: categoriesLoading } = useCategories();
+  const { subCategories, loading: subCategoriesLoading } = useSubCategories();
+
+  // Smooth scroll to category products grid on subcategory changes only
   useEffect(() => {
-    async function loadTaxonomy() {
-      try {
-        const [catRes, subRes] = await Promise.all([
-          categoryService.getCategories(),
-          subCategoryService.getSubCategories(),
-        ]);
-        // categoryService.getCategories() returns response.data.data (already unwrapped)
-        const cData = Array.isArray(catRes) ? catRes : (catRes?.data || []);
-        // subCategoryService.getSubCategories() returns response.data = { success, data: [...] }
-        const sRaw = subRes?.data || subRes;
-        const sData = Array.isArray(sRaw) ? sRaw : (sRaw?.data || []);
-        setCategories(Array.isArray(cData) ? cData : []);
-        setSubCategories(Array.isArray(sData) ? sData : []);
-      } catch (err) {
-        console.error("[CategoryPage] Failed to load taxonomy:", err);
-      } finally {
-        setTaxonomyLoading(false);
+    if (!categoriesLoading && categories.length > 0 && subParam) {
+      const el = document.getElementById("category-products-grid");
+      if (el) {
+        const offset = 140;
+        const elementPosition = el.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - offset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
       }
     }
-    loadTaxonomy();
-  }, []);
+  }, [subParam]);
 
   const { products: allProducts, loading: productsLoading } = useAllProducts();
-  const loading = taxonomyLoading || productsLoading;
+  const loading = categoriesLoading || subCategoriesLoading || productsLoading;
 
   const matchedCategory = useMemo(() => {
     return categories.find(
@@ -278,7 +306,7 @@ export default function CategoryPage() {
   }, [allProducts, validSubcategoryIds]);
 
   const filteredProducts = useMemo((): ApiProduct[] => {
-    if (taxonomyLoading) return [];
+    if (loading) return [];
     if (!matchedCategory) return [];
 
     let result = allProducts.filter((p) =>
@@ -310,12 +338,15 @@ export default function CategoryPage() {
       result.sort((a, b) => b.rating - a.rating);
     }
     return result;
-  }, [allProducts, matchedCategory, validSubcategoryIds, taxonomyLoading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
+  }, [allProducts, matchedCategory, validSubcategoryIds, loading, matchedSubcategory, subParam, maxPrice, minRating, sortBy]);
 
   const handleResetFilters = () => {
     setMaxPrice(1000000);
     setMinRating(0);
     setSortBy("featured");
+    if (subParam) {
+      router.push(`/category/${slug}`);
+    }
   };
 
   // Dynamically compute and format category title for the metadata
@@ -396,7 +427,7 @@ export default function CategoryPage() {
         >
           {/* Background Image with smooth fade-in to prevent flashing of old image */}
           {(() => {
-            const imageUrl = !taxonomyLoading
+            const imageUrl = !loading
               ? (matchedCategory?.image_url || meta.bannerImage)
               : null;
             if (!imageUrl) return null;
@@ -478,9 +509,21 @@ export default function CategoryPage() {
 
         {/* Subcategories Horizontal Scroll/Chips */}
         {categorySubcategories.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+          <div
+            ref={subCategoriesScrollRef}
+            onMouseDown={handleSubMouseDown}
+            onMouseMove={handleSubMouseMove}
+            onMouseUp={handleSubMouseUpOrLeave}
+            onMouseLeave={handleSubMouseUpOrLeave}
+            className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 cursor-grab active:cursor-grabbing select-none"
+          >
             <Link
               href={`/category/${slug}`}
+              onClick={(e) => {
+                if (subHasMoved) {
+                  e.preventDefault();
+                }
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                 !subParam
                   ? "bg-orange-50 border-orange-500 text-orange-600 shadow-sm"
@@ -496,6 +539,11 @@ export default function CategoryPage() {
                 <Link
                   key={sub.id}
                   href={`/category/${slug}?sub=${sub.slug}`}
+                  onClick={(e) => {
+                    if (subHasMoved) {
+                      e.preventDefault();
+                    }
+                  }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                     isSelected
                       ? "bg-orange-50 border-orange-500 text-orange-600 shadow-sm"
@@ -601,7 +649,7 @@ export default function CategoryPage() {
           </div>
 
           {/* Catalog view grid */}
-          <div className="lg:col-span-3 space-y-6">
+          <div id="category-products-grid" className="lg:col-span-3 space-y-6">
             <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-gray-500 font-semibold">
@@ -618,57 +666,155 @@ export default function CategoryPage() {
                 >
                   <SlidersHorizontal className="h-4 w-4" /> Filters
                 </button>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="flex-1 appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <option value="featured">Sort: Featured</option>
-                  <option value="price-low-to-high">Sort: Lowest Price</option>
-                  <option value="price-high-to-low">Sort: Highest Price</option>
-                  <option value="rating">Sort: Top Rated</option>
-                </select>
+                <div className="flex-1 relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenSortDropdown(!openSortDropdown)}
+                    className="w-full flex items-center justify-between gap-1.5 px-4 py-2.5 bg-white border border-orange-500/20 hover:border-orange-500/50 rounded-xl text-xs font-bold text-gray-700 cursor-pointer shadow-sm text-left"
+                  >
+                    <span>
+                      {sortBy === "featured" && "Sort: Featured"}
+                      {sortBy === "price-low-to-high" && "Sort: Lowest Price"}
+                      {sortBy === "price-high-to-low" && "Sort: Highest Price"}
+                      {sortBy === "rating" && "Sort: Top Rated"}
+                    </span>
+                    <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openSortDropdown ? "rotate-180 text-orange-500" : ""}`} />
+                  </button>
+
+                  {openSortDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenSortDropdown(false)} />
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("featured"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "featured" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Featured
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-low-to-high"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-low-to-high" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Lowest Price
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-high-to-low"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-high-to-low" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Highest Price
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("rating"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "rating" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Sort: Top Rated
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="hidden lg:flex items-center gap-2">
                 <span className="text-xs text-gray-500 font-semibold">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="price-low-to-high">Price: Low to High</option>
-                  <option value="price-high-to-low">Price: High to Low</option>
-                  <option value="rating">Rating</option>
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenSortDropdown(!openSortDropdown)}
+                    className="flex items-center justify-between gap-1.5 px-4.5 py-2 bg-white border border-orange-500/20 hover:border-orange-500/50 rounded-xl text-xs font-bold text-gray-700 cursor-pointer shadow-sm min-w-[150px] text-left"
+                  >
+                    <span>
+                      {sortBy === "featured" && "Featured"}
+                      {sortBy === "price-low-to-high" && "Price: Low to High"}
+                      {sortBy === "price-high-to-low" && "Price: High to Low"}
+                      {sortBy === "rating" && "Rating"}
+                    </span>
+                    <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openSortDropdown ? "rotate-180 text-orange-500" : ""}`} />
+                  </button>
 
-                <div className="flex items-center gap-1 ml-2 border border-gray-200 rounded-lg p-0.5 bg-white shadow-xs">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-1.5 rounded-md transition cursor-pointer ${
-                      viewMode === "grid"
-                        ? "bg-orange-50 text-orange-500 border border-orange-105"
-                        : "text-gray-400 hover:text-gray-600 border border-transparent"
-                    }`}
-                    aria-label="Grid view"
-                  >
-                    <LayoutGrid size={14} />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`p-1.5 rounded-md transition cursor-pointer ${
-                      viewMode === "list"
-                        ? "bg-orange-50 text-orange-500 border border-orange-105"
-                        : "text-gray-400 hover:text-gray-600 border border-transparent"
-                    }`}
-                    aria-label="List view"
-                  >
-                    <SlidersHorizontal size={14} />
-                  </button>
+                  {openSortDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenSortDropdown(false)} />
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 min-w-[150px]">
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("featured"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "featured" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Featured
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-low-to-high"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-low-to-high" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Price: Low to High
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("price-high-to-low"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "price-high-to-low" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Price: High to Low
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSortBy("rating"); setOpenSortDropdown(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold ${sortBy === "rating" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                        >
+                          Rating
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
+
+            {/* Active Filter Chips */}
+            {(subParam || minRating > 0 || maxPrice < 1000000) && (
+              <div className="flex flex-wrap gap-2 items-center py-2 animate-in fade-in duration-200">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Active Filters:</span>
+                
+                {subParam && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
+                    Subcategory: {subCategories.find(s => s.slug === subParam || s.href?.endsWith(`?sub=${subParam}`))?.title || subParam}
+                    <Link href={`/category/${slug}`} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
+                      <X className="h-3.5 w-3.5" />
+                    </Link>
+                  </span>
+                )}
+
+                {minRating > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
+                    Rating: {minRating}+ Stars
+                    <button onClick={() => setMinRating(0)} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {maxPrice < 1000000 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
+                    Price: &le; QAR {maxPrice}
+                    <button onClick={() => setMaxPrice(1000000)} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs font-bold text-gray-500 hover:text-orange-500 underline ml-2 cursor-pointer transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+            )}
 
             {/* Product card loop */}
             {loading ? (

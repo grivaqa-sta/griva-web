@@ -1231,6 +1231,11 @@ exports.exportOrders = async (req, res, next) => {
       where,
       include: [
         {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email"],
+        },
+        {
           model: DeliverySlot,
           as: "deliverySlot",
           attributes: ["id", "name", "start_time", "end_time"],
@@ -1249,21 +1254,36 @@ exports.exportOrders = async (req, res, next) => {
       order: [["createdAt", "DESC"]],
     });
 
+    const formatExcelDate = (dateVal) => {
+      if (!dateVal) return "N/A";
+      try {
+        const d = new Date(dateVal);
+        return d.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+      } catch (err) {
+        return "N/A";
+      }
+    };
+
     const exportData = orders.map((o) => ({
       "Order Number": o.order_number || `ORD-${String(o.id).padStart(4, "0")}`,
-      "Order Date": new Date(o.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      "Customer Name": o.customer_name || "N/A",
+      "Order Date": formatExcelDate(o.createdAt),
+      "Customer Name": o.customer_name || o.user?.name || "Guest",
+      "Customer Email": o.customer_email || o.user?.email || "N/A",
       "Phone Number": o.customer_phone || "N/A",
-      "Status": o.status,
-      "Delivery Slot": o.deliverySlot ? o.deliverySlot.name : "N/A",
-      "Total Amount": o.total_price || "—",
+      "Status": o.status || "N/A",
       "Payment Method": o.payment_method || "COD",
-      "Address": o.shipping_address,
-      // LOW-3: Format ordered items list
+      "Payment Status": o.payment_status || "unpaid",
+      "Total Amount": o.total_price || "0.00",
+      "Delivery Slot": o.deliverySlot ? o.deliverySlot.name : "N/A",
+      "Address": o.shipping_address || "N/A",
+      "City": o.city || "N/A",
+      "Delivery Notes": o.delivery_notes || "",
+      "Is Printed": o.is_printed ? "Yes" : "No",
+      "Printed At": o.printed_at ? formatExcelDate(o.printed_at) : "N/A",
       "Items Ordered": o.items && o.items.length > 0
         ? o.items.map((item) => `${item.product ? item.product.title : "Unknown Product"} (x${item.quantity})`).join(", ")
         : "N/A",
-      "Created Date": o.createdAt,
+      "Created Date": formatExcelDate(o.createdAt),
     }));
 
     const XLSX = require("xlsx");
@@ -1415,6 +1435,425 @@ exports.reconcileCashPayment = async (req, res, next) => {
       message: "Cash payment reconciled successfully.",
       order,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Super Admin Action: Get detailed analytics for business review
+ * GET /api/orders/deep-analytics
+ */
+exports.getDeepAnalytics = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const where = {};
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt[Op.lte] = end;
+      }
+    }
+
+    const DeliverySlot = require("../models/DeliverySlot");
+    const orders = await Order.findAll({
+      where,
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "phone"],
+        },
+        {
+          model: DeliverySlot,
+          as: "deliverySlot",
+          attributes: ["id", "name"],
+        },
+        {
+          model: OrderItem,
+          as: "items",
+          include: [{
+            model: Product,
+            as: "product",
+            attributes: ["id", "title", "price", "main_image_url"],
+            include: [{
+              model: SubCategory,
+              as: "subcategory",
+              attributes: ["id", "title"],
+              include: [{
+                model: Category,
+                as: "category",
+                attributes: ["id", "title"],
+              }]
+            }]
+          }]
+        }
+      ],
+      order: [["createdAt", "DESC"]]
+    });
+
+    // 1. Revenue Intelligence & Funnel
+    let totalRevenue = 0; // realized revenue (exclude cancelled, failed, returned)
+    let grossRevenue = 0; // all orders total
+    let netOrdersCount = 0; // realized orders
+    let totalOrdersCount = orders.length;
+
+    let orderStatusCounts = {
+      pending: 0,
+      processing: 0,
+      assigned: 0,
+      out_for_delivery: 0,
+      delivered: 0,
+      completed: 0,
+      cancelled: 0,
+      failed: 0,
+      returned: 0,
+      attempted: 0,
+      rescheduled: 0,
+    };
+
+    let paymentMethodRevenue = {
+      COD: 0,
+      Card: 0,
+      Online: 0,
+      Other: 0,
+    };
+
+    let dailyRevenueMap = {};
+    let categoryRevenueMap = {};
+    let categoryVolumeMap = {};
+    let subcategoryRevenueMap = {};
+    let hourlyHeatmap = Array(24).fill(0);
+    let dayOfWeekVolume = Array(7).fill(0); // 0 = Sunday, 1 = Monday, etc.
+
+    // Product-level aggregation
+    let productSalesMap = {}; // productId -> { title, image, qty, revenue, priceSum, count }
+    // Customer-level aggregation
+    let customerSpendMap = {}; // email/userId -> { name, email, phone, orders: [], spent: 0, lastDate }
+
+    // Delivery metrics
+    let deliveryTimes = []; // differences in milliseconds for (createdAt -> delivered/completed)
+    let deliverySlotCounts = {};
+
+    orders.forEach((order) => {
+      // Parse status
+      const status = order.status || "pending";
+      if (orderStatusCounts[status] !== undefined) {
+        orderStatusCounts[status]++;
+      } else {
+        orderStatusCounts[status] = 1;
+      }
+
+      const rawPrice = order.getDataValue("total_price");
+      const orderTotal = typeof rawPrice === "string" ? parseFloat(rawPrice.replace(/([$]|qar|[\s,])/gi, "")) : parseFloat(rawPrice) || 0;
+
+      grossRevenue += orderTotal;
+
+      // Realized revenue check: exclude cancelled, failed, returned
+      const isRealized = !["cancelled", "failed", "returned"].includes(status);
+      if (isRealized) {
+        totalRevenue += orderTotal;
+        netOrdersCount++;
+
+        // Payment method breakdown
+        const method = order.payment_method || "COD";
+        if (paymentMethodRevenue[method] !== undefined) {
+          paymentMethodRevenue[method] += orderTotal;
+        } else {
+          paymentMethodRevenue.Other += orderTotal;
+        }
+
+        // Daily trend
+        const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+        });
+        dailyRevenueMap[dateKey] = (dailyRevenueMap[dateKey] || 0) + orderTotal;
+
+        // Day of week volume
+        const dayIdx = new Date(order.createdAt).getDay();
+        dayOfWeekVolume[dayIdx]++;
+
+        // Hourly heatmap
+        const hourIdx = new Date(order.createdAt).getHours();
+        hourlyHeatmap[hourIdx]++;
+
+        // Delivery slot
+        if (order.deliverySlot) {
+          const slotName = order.deliverySlot.name;
+          deliverySlotCounts[slotName] = (deliverySlotCounts[slotName] || 0) + 1;
+        }
+
+        // Delivery time calculation
+        if ((status === "delivered" || status === "completed") && order.updatedAt) {
+          const diffMs = new Date(order.updatedAt) - new Date(order.createdAt);
+          if (diffMs > 0) {
+            deliveryTimes.push(diffMs);
+          }
+        }
+
+        // Customer spends
+        const customerId = order.user_id || `guest_${order.customer_email || order.customer_phone || order.id}`;
+        const cEmail = order.customer_email || order.user?.email || "N/A";
+        const cName = order.customer_name || order.user?.name || "Guest";
+        const cPhone = order.customer_phone || order.user?.phone || "N/A";
+
+        if (!customerSpendMap[customerId]) {
+          customerSpendMap[customerId] = {
+            name: cName,
+            email: cEmail,
+            phone: cPhone,
+            orderCount: 0,
+            spent: 0,
+            lastOrderDate: order.createdAt,
+          };
+        }
+        customerSpendMap[customerId].orderCount++;
+        customerSpendMap[customerId].spent += orderTotal;
+        if (new Date(order.createdAt) > new Date(customerSpendMap[customerId].lastOrderDate)) {
+          customerSpendMap[customerId].lastOrderDate = order.createdAt;
+        }
+
+        // Items and Products
+        if (order.items) {
+          order.items.forEach((item) => {
+            const qty = item.quantity || 1;
+            const price = typeof item.price_at_purchase === "string"
+              ? parseFloat(item.price_at_purchase.replace(/([$]|qar|[\s,])/gi, ""))
+              : parseFloat(item.price_at_purchase) || 0;
+            const itemTotal = price * qty;
+
+            if (item.product) {
+              const pId = item.product.id;
+              if (!productSalesMap[pId]) {
+                productSalesMap[pId] = {
+                  id: pId,
+                  title: item.product.title,
+                  image: item.product.main_image_url || "",
+                  qty: 0,
+                  revenue: 0,
+                  priceSum: 0,
+                  count: 0,
+                };
+              }
+              productSalesMap[pId].qty += qty;
+              productSalesMap[pId].revenue += itemTotal;
+              productSalesMap[pId].priceSum += price;
+              productSalesMap[pId].count++;
+
+              // Category mapping
+              const categoryTitle = item.product.subcategory?.category?.title || "Other";
+              const subcategoryTitle = item.product.subcategory?.title || "Other";
+
+              categoryRevenueMap[categoryTitle] = (categoryRevenueMap[categoryTitle] || 0) + itemTotal;
+              categoryVolumeMap[categoryTitle] = (categoryVolumeMap[categoryTitle] || 0) + qty;
+              subcategoryRevenueMap[subcategoryTitle] = (subcategoryRevenueMap[subcategoryTitle] || 0) + itemTotal;
+            }
+          });
+        }
+      }
+    });
+
+    // 2. Average metrics
+    const averageOrderValue = netOrdersCount > 0 ? (totalRevenue / netOrdersCount) : 0;
+
+    // Median & Highest
+    let realizedOrdersSorted = orders
+      .filter(o => !["cancelled", "failed", "returned"].includes(o.status))
+      .map(o => {
+        const raw = o.getDataValue("total_price");
+        return typeof raw === "string" ? parseFloat(raw.replace(/([$]|qar|[\s,])/gi, "")) : parseFloat(raw) || 0;
+      })
+      .sort((a, b) => a - b);
+
+    let medianOrderValue = 0;
+    if (realizedOrdersSorted.length > 0) {
+      const mid = Math.floor(realizedOrdersSorted.length / 2);
+      medianOrderValue = realizedOrdersSorted.length % 2 !== 0
+        ? realizedOrdersSorted[mid]
+        : (realizedOrdersSorted[mid - 1] + realizedOrdersSorted[mid]) / 2;
+    }
+    const highestSingleOrder = realizedOrdersSorted.length > 0 ? realizedOrdersSorted[realizedOrdersSorted.length - 1] : 0;
+
+    // Funnel rates
+    const fulfillmentRate = totalOrdersCount > 0
+      ? (((orderStatusCounts.delivered || 0) + (orderStatusCounts.completed || 0)) / totalOrdersCount) * 100
+      : 0;
+    const cancellationRate = totalOrdersCount > 0
+      ? ((orderStatusCounts.cancelled || 0) / totalOrdersCount) * 100
+      : 0;
+
+    // Delivery stats
+    const avgDeliveryTimeHours = deliveryTimes.length > 0
+      ? (deliveryTimes.reduce((sum, val) => sum + val, 0) / deliveryTimes.length) / (1000 * 60 * 60)
+      : 0;
+    const deliverySuccessRate = (orderStatusCounts.delivered + orderStatusCounts.completed + orderStatusCounts.failed + orderStatusCounts.attempted) > 0
+      ? (((orderStatusCounts.delivered || 0) + (orderStatusCounts.completed || 0)) / ((orderStatusCounts.delivered || 0) + (orderStatusCounts.completed || 0) + (orderStatusCounts.failed || 0) + (orderStatusCounts.attempted || 0))) * 100
+      : 100;
+
+    // Sort maps and limit
+    const bestSellers = Object.values(productSalesMap)
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        image: p.image,
+        qty: p.qty,
+        revenue: parseFloat(p.revenue.toFixed(2)),
+        avgPrice: parseFloat((p.priceSum / p.count).toFixed(2)),
+      }))
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 10);
+
+    const bestCustomers = Object.values(customerSpendMap)
+      .map(c => ({
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        orderCount: c.orderCount,
+        spent: parseFloat(c.spent.toFixed(2)),
+        lastOrderDate: c.lastOrderDate,
+        aov: parseFloat((c.spent / c.orderCount).toFixed(2)),
+      }))
+      .sort((a, b) => b.spent - a.spent)
+      .slice(0, 10);
+
+    const salesByCategory = Object.keys(categoryRevenueMap).map(cat => ({
+      category: cat,
+      sales: parseFloat(categoryRevenueMap[cat].toFixed(2)),
+      qty: categoryVolumeMap[cat] || 0,
+      avgPrice: categoryVolumeMap[cat] > 0 ? parseFloat((categoryRevenueMap[cat] / categoryVolumeMap[cat]).toFixed(2)) : 0,
+    }));
+
+    const salesOverTime = Object.keys(dailyRevenueMap).map(date => ({
+      date,
+      sales: parseFloat(dailyRevenueMap[date].toFixed(2)),
+    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // 3. Inventory Health (Parallel Query)
+    const products = await Product.findAll({
+      attributes: ["id", "title", "stock", "price", "main_image_url"]
+    });
+    const totalSKUs = products.length;
+    const outOfStockCount = products.filter(p => p.stock === 0).length;
+    const lowStockCount = products.filter(p => p.stock > 0 && p.stock < 5).length;
+    const totalInventoryValue = products.reduce((sum, p) => {
+      const pPrice = typeof p.price === "string" ? parseFloat(p.price.replace(/[$,]/g, "")) : parseFloat(p.price) || 0;
+      return sum + (p.stock * pPrice);
+    }, 0);
+
+    // 4. Customer Acquisition last 6 months
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0,0,0,0);
+
+    const newCustomers = await User.findAll({
+      where: {
+        role: "customer",
+        createdAt: {
+          [Op.gte]: sixMonthsAgo
+        }
+      },
+      attributes: ["createdAt"],
+      raw: true
+    });
+
+    // Bucket by month
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let acquisitionMap = {};
+    for (let i = 0; i < 6; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const mLabel = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      acquisitionMap[mLabel] = 0;
+    }
+
+    newCustomers.forEach(u => {
+      const ud = new Date(u.createdAt);
+      const mLabel = `${monthNames[ud.getMonth()]} ${ud.getFullYear()}`;
+      if (acquisitionMap[mLabel] !== undefined) {
+        acquisitionMap[mLabel]++;
+      }
+    });
+
+    const customerAcquisition = Object.keys(acquisitionMap).map(month => ({
+      month,
+      count: acquisitionMap[month],
+    })).reverse();
+
+    // Repeat customers calculation
+    const allRegisteredCustomers = await User.findAll({
+      where: { role: "customer" },
+      attributes: ["id"]
+    });
+    const customerIds = allRegisteredCustomers.map(c => c.id);
+
+    // Count orders per customer ID
+    let repeatCount = 0;
+    let ordersGroupedByCustomer = [];
+    if (customerIds.length > 0) {
+      ordersGroupedByCustomer = await Order.findAll({
+        where: {
+          user_id: { [Op.in]: customerIds },
+          status: { [Op.notIn]: ["cancelled", "failed", "returned"] }
+        },
+        attributes: ["user_id", [sequelize.fn("COUNT", sequelize.col("id")), "orderCount"]],
+        group: ["user_id"],
+        raw: true
+      });
+    }
+
+    ordersGroupedByCustomer.forEach(group => {
+      const count = parseInt(group.orderCount || 0, 10);
+      if (count > 1) {
+        repeatCount++;
+      }
+    });
+
+    const repeatCustomerRate = allRegisteredCustomers.length > 0
+      ? (repeatCount / allRegisteredCustomers.length) * 100
+      : 0;
+
+    res.status(200).json({
+      success: true,
+      analytics: {
+        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        grossRevenue: parseFloat(grossRevenue.toFixed(2)),
+        totalOrders: totalOrdersCount,
+        netOrders: netOrdersCount,
+        averageOrderValue: parseFloat(averageOrderValue.toFixed(2)),
+        medianOrderValue: parseFloat(medianOrderValue.toFixed(2)),
+        highestSingleOrder: parseFloat(highestSingleOrder.toFixed(2)),
+        fulfillmentRate: parseFloat(fulfillmentRate.toFixed(2)),
+        cancellationRate: parseFloat(cancellationRate.toFixed(2)),
+        orderStatusCounts,
+        paymentMethodRevenue,
+        salesOverTime,
+        salesByCategory,
+        bestSellers,
+        bestCustomers,
+        deliverySlotCounts,
+        hourlyHeatmap,
+        dayOfWeekVolume,
+        inventory: {
+          totalSKUs,
+          outOfStockCount,
+          lowStockCount,
+          totalInventoryValue: parseFloat(totalInventoryValue.toFixed(2)),
+        },
+        customerAcquisition,
+        repeatCustomerRate: parseFloat(repeatCustomerRate.toFixed(2)),
+        avgDeliveryTimeHours: parseFloat(avgDeliveryTimeHours.toFixed(2)),
+        deliverySuccessRate: parseFloat(deliverySuccessRate.toFixed(2)),
+      }
+    });
+
   } catch (error) {
     next(error);
   }

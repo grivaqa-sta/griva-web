@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import {
   SlidersHorizontal,
   Star,
@@ -190,6 +190,7 @@ function ProductCardSkeleton() {
 export default function CategoryPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const slug = (params.slug as string)?.toLowerCase() || "";
   const subParam = searchParams.get("sub") || "";
 
@@ -203,6 +204,23 @@ export default function CategoryPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [taxonomyLoading, setTaxonomyLoading] = useState(true);
+
+  // Smooth scroll to category products grid on filter changes
+  useEffect(() => {
+    if (!taxonomyLoading && categories.length > 0) {
+      const el = document.getElementById("category-products-grid");
+      if (el) {
+        const offset = 140;
+        const elementPosition = el.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - offset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    }
+  }, [subParam, minRating, maxPrice, taxonomyLoading, categories]);
 
   useEffect(() => {
     async function loadTaxonomy() {
@@ -318,6 +336,9 @@ export default function CategoryPage() {
     setMaxPrice(1000000);
     setMinRating(0);
     setSortBy("featured");
+    if (subParam) {
+      router.push(`/category/${slug}`);
+    }
   };
 
   // Dynamically compute and format category title for the metadata
@@ -603,7 +624,7 @@ export default function CategoryPage() {
           </div>
 
           {/* Catalog view grid */}
-          <div className="lg:col-span-3 space-y-6">
+          <div id="category-products-grid" className="lg:col-span-3 space-y-6">
             <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-gray-500 font-semibold">
@@ -728,6 +749,47 @@ export default function CategoryPage() {
                 </div>
               </div>
             </div>
+
+            {/* Active Filter Chips */}
+            {(subParam || minRating > 0 || maxPrice < 1000000) && (
+              <div className="flex flex-wrap gap-2 items-center py-2 animate-in fade-in duration-200">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Active Filters:</span>
+                
+                {subParam && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
+                    Subcategory: {subCategories.find(s => s.slug === subParam || s.href?.endsWith(`?sub=${subParam}`))?.title || subParam}
+                    <Link href={`/category/${slug}`} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
+                      <X className="h-3.5 w-3.5" />
+                    </Link>
+                  </span>
+                )}
+
+                {minRating > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
+                    Rating: {minRating}+ Stars
+                    <button onClick={() => setMinRating(0)} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {maxPrice < 1000000 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
+                    Price: &le; QAR {maxPrice}
+                    <button onClick={() => setMaxPrice(1000000)} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs font-bold text-gray-500 hover:text-orange-500 underline ml-2 cursor-pointer transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+            )}
 
             {/* Product card loop */}
             {loading ? (

@@ -207,7 +207,7 @@ function LoginForm() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
                       required
-                      className="w-full bg-[#fdfdfd] border border-gray-200 focus:bg-white focus:border-[#F54900] focus:ring-1 focus:ring-[#F54900]/20 rounded-xl pl-11 pr-4 py-3 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-all duration-300"
+                      className="w-full bg-[#fdfdfd] border border-gray-200 focus:bg-white focus:border-[#F54900] focus:ring-2 focus:ring-[#F54900]/20 rounded-xl pl-11 pr-4 py-3 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-all duration-300"
                     />
                   </div>
                 </div>
@@ -227,7 +227,7 @@ function LoginForm() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
                       required
-                      className="w-full bg-[#fdfdfd] border border-gray-200 focus:bg-white focus:border-[#F54900] focus:ring-1 focus:ring-[#F54900]/20 rounded-xl pl-11 pr-12 py-3 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-all duration-300"
+                      className="w-full bg-[#fdfdfd] border border-gray-200 focus:bg-white focus:border-[#F54900] focus:ring-2 focus:ring-[#F54900]/20 rounded-xl pl-11 pr-12 py-3 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-all duration-300"
                     />
                     <button
                       type="button"

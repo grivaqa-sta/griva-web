@@ -64,6 +64,14 @@ export default function SubNavbar() {
     } else {
       setComingSoonVisible(true);
     }
+
+    const handleBypassEvent = () => {
+      setComingSoonVisible(true);
+    };
+    window.addEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+    return () => {
+      window.removeEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+    };
   }, []);
 
   if (!comingSoonVisible) return null;

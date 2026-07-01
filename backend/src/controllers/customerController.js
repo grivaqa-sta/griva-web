@@ -476,6 +476,16 @@ exports.exportCustomers = async (req, res, next) => {
     const includeRegistered = !segment || segment === "all" || segment === "registered";
     const includeGuest = !segment || segment === "all" || segment === "guest";
 
+    const formatWorldTime = (dateVal) => {
+      if (!dateVal) return "N/A";
+      try {
+        const d = new Date(dateVal);
+        return d.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+      } catch (err) {
+        return "N/A";
+      }
+    };
+
     if (includeRegistered) {
       // Fetch registered customers
       let userQuery = `
@@ -509,8 +519,8 @@ exports.exportCustomers = async (req, res, next) => {
           "Phone": u.phone || "N/A",
           "Email": u.email,
           "Total Orders": parseInt(u.totalOrders, 10) || 0,
-          "Last Order Date": u.lastOrderDate ? new Date(u.lastOrderDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A",
-          "Registration Date": new Date(u.registrationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          "Last Order Date": formatWorldTime(u.lastOrderDate),
+          "Registration Date": formatWorldTime(u.registrationDate),
           "Type": "Registered"
         });
       });
@@ -550,8 +560,8 @@ exports.exportCustomers = async (req, res, next) => {
           "Phone": g.phone || "N/A",
           "Email": g.email,
           "Total Orders": parseInt(g.totalOrders, 10) || 0,
-          "Last Order Date": g.lastOrderDate ? new Date(g.lastOrderDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A",
-          "Registration Date": new Date(g.registrationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          "Last Order Date": formatWorldTime(g.lastOrderDate),
+          "Registration Date": formatWorldTime(g.registrationDate),
           "Type": "Guest"
         });
       });

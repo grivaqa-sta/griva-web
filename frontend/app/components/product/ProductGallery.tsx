@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,6 +13,38 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const thumbsScrollRef = useRef<HTMLDivElement>(null);
+  const [isThumbsMouseDown, setIsThumbsMouseDown] = useState(false);
+  const [thumbsStartX, setThumbsStartX] = useState(0);
+  const [thumbsScrollLeft, setThumbsScrollLeft] = useState(0);
+  const [thumbsHasMoved, setThumbsHasMoved] = useState(false);
+
+  const handleThumbsMouseDown = (e: React.MouseEvent) => {
+    const el = thumbsScrollRef.current;
+    if (!el) return;
+    setIsThumbsMouseDown(true);
+    setThumbsStartX(e.pageX - el.offsetLeft);
+    setThumbsScrollLeft(el.scrollLeft);
+    setThumbsHasMoved(false);
+  };
+
+  const handleThumbsMouseMove = (e: React.MouseEvent) => {
+    if (!isThumbsMouseDown) return;
+    const el = thumbsScrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - thumbsStartX) * 1.5;
+    if (Math.abs(walk) > 5) {
+      setThumbsHasMoved(true);
+    }
+    el.scrollLeft = thumbsScrollLeft - walk;
+  };
+
+  const handleThumbsMouseUpOrLeave = () => {
+    setIsThumbsMouseDown(false);
+  };
 
   const activeImage = images[activeIndex] || images[0];
 
@@ -60,11 +92,22 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
 
       {/* Thumbnails Row */}
       {images.length > 1 && (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+        <div
+          ref={thumbsScrollRef}
+          onMouseDown={handleThumbsMouseDown}
+          onMouseMove={handleThumbsMouseMove}
+          onMouseUp={handleThumbsMouseUpOrLeave}
+          onMouseLeave={handleThumbsMouseUpOrLeave}
+          className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin no-scrollbar cursor-grab active:cursor-grabbing select-none"
+        >
           {images.map((img, idx) => (
             <button
               key={idx}
-              onClick={() => setActiveIndex(idx)}
+              onClick={() => {
+                if (!thumbsHasMoved) {
+                  setActiveIndex(idx);
+                }
+              }}
               className={`relative aspect-square w-20 shrink-0 overflow-hidden rounded-lg border bg-white p-1 transition-all cursor-pointer ${
                 activeIndex === idx
                   ? "border-orange-500 ring-2 ring-orange-200"

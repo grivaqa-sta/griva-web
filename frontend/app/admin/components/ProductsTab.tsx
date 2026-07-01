@@ -237,7 +237,7 @@ export default function ProductsTab() {
               placeholder="Search product title, slug..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-orange-500/30 rounded-xl pl-9 pr-4 py-2 text-xs text-gray-800 focus:outline-none"
+              className="w-full bg-white border border-orange-500/30 rounded-xl pl-9 pr-4 py-2 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-300"
             />
           </div>
 
@@ -245,7 +245,7 @@ export default function ProductsTab() {
             <button
               type="button"
               onClick={() => setOpenCategoryFilter(!openCategoryFilter)}
-              className="bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-700 cursor-pointer min-w-[140px] text-left outline-none transition-all flex items-center justify-between gap-1.5"
+              className="bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-700 cursor-pointer min-w-[140px] text-left outline-none transition-all flex items-center justify-between gap-1.5 duration-300"
             >
               <span>
                 {filterCategory === "all"

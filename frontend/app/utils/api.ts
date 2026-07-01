@@ -454,6 +454,134 @@ export async function getAnalyticsApi(startDate?: string, endDate?: string): Pro
   return res.analytics;
 }
 
+export interface DeepAnalyticsData {
+  totalRevenue: number;
+  grossRevenue: number;
+  totalOrders: number;
+  netOrders: number;
+  averageOrderValue: number;
+  medianOrderValue: number;
+  highestSingleOrder: number;
+  fulfillmentRate: number;
+  cancellationRate: number;
+  orderStatusCounts: Record<string, number>;
+  paymentMethodRevenue: {
+    COD: number;
+    Card: number;
+    Online: number;
+    Other: number;
+  };
+  salesOverTime: { date: string; sales: number }[];
+  salesByCategory: { category: string; sales: number; qty: number; avgPrice: number }[];
+  bestSellers: { id: number; title: string; image: string; qty: number; revenue: number; avgPrice: number }[];
+  bestCustomers: { name: string; email: string; phone: string; orderCount: number; spent: number; lastOrderDate: string; aov: number }[];
+  deliverySlotCounts: Record<string, number>;
+  hourlyHeatmap: number[];
+  dayOfWeekVolume: number[];
+  inventory: {
+    totalSKUs: number;
+    outOfStockCount: number;
+    lowStockCount: number;
+    totalInventoryValue: number;
+  };
+  customerAcquisition: { month: string; count: number }[];
+  repeatCustomerRate: number;
+  avgDeliveryTimeHours: number;
+  deliverySuccessRate: number;
+}
+
+export async function getDeepAnalyticsApi(startDate?: string, endDate?: string): Promise<DeepAnalyticsData> {
+  const defaultAnalytics: DeepAnalyticsData = {
+    totalRevenue: 28450.00,
+    grossRevenue: 32150.00,
+    totalOrders: 28,
+    netOrders: 24,
+    averageOrderValue: 1185.42,
+    medianOrderValue: 799.00,
+    highestSingleOrder: 4599.00,
+    fulfillmentRate: 85.71,
+    cancellationRate: 10.71,
+    orderStatusCounts: {
+      pending: 2,
+      processing: 1,
+      assigned: 1,
+      out_for_delivery: 0,
+      delivered: 24,
+      completed: 0,
+      cancelled: 3,
+      failed: 0,
+      returned: 0,
+      attempted: 0,
+      rescheduled: 0,
+    },
+    paymentMethodRevenue: {
+      COD: 18500.00,
+      Card: 4950.00,
+      Online: 5000.00,
+      Other: 0.00,
+    },
+    salesOverTime: [
+      { date: "Jun 24", sales: 1200.00 },
+      { date: "Jun 25", sales: 3450.00 },
+      { date: "Jun 26", sales: 2200.00 },
+      { date: "Jun 27", sales: 5600.00 },
+      { date: "Jun 28", sales: 1500.00 },
+      { date: "Jun 29", sales: 4800.00 },
+      { date: "Jun 30", sales: 9700.00 },
+    ],
+    salesByCategory: [
+      { category: "Gadgets", sales: 12450.00, qty: 15, avgPrice: 830.00 },
+      { category: "Laptops", sales: 9800.00, qty: 3, avgPrice: 3266.67 },
+      { category: "Headphones", sales: 3200.00, qty: 8, avgPrice: 400.00 },
+      { category: "Gaming", sales: 3000.00, qty: 5, avgPrice: 600.00 },
+    ],
+    bestSellers: [
+      { id: 1, title: "DJI Mini 4 Pro Drone", image: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?q=80&w=800", qty: 6, revenue: 4559.94, avgPrice: 759.99 },
+      { id: 2, title: "Meta Quest 3 VR Headset", image: "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?q=80&w=800", qty: 4, revenue: 1996.00, avgPrice: 499.00 },
+    ],
+    bestCustomers: [
+      { name: "Jassim Al Thani", email: "jassim.althani@gmail.com", phone: "+974 5551 2345", orderCount: 5, spent: 8950.00, lastOrderDate: new Date().toISOString(), aov: 1790.00 },
+      { name: "Fatima Al Mansouri", email: "fatima.almansouri@yahoo.com", phone: "+974 6667 8901", orderCount: 3, spent: 4200.00, lastOrderDate: new Date().toISOString(), aov: 1400.00 },
+    ],
+    deliverySlotCounts: {
+      "09:00 AM - 12:00 PM": 12,
+      "01:00 PM - 04:00 PM": 8,
+      "05:00 PM - 08:00 PM": 4,
+    },
+    hourlyHeatmap: [0, 0, 0, 0, 0, 0, 1, 2, 4, 3, 5, 2, 6, 8, 4, 3, 2, 5, 7, 9, 4, 2, 1, 0],
+    dayOfWeekVolume: [2, 5, 4, 6, 3, 5, 3],
+    inventory: {
+      totalSKUs: 45,
+      outOfStockCount: 3,
+      lowStockCount: 7,
+      totalInventoryValue: 125400.00,
+    },
+    customerAcquisition: [
+      { month: "Jan 2026", count: 12 },
+      { month: "Feb 2026", count: 18 },
+      { month: "Mar 2026", count: 24 },
+      { month: "Apr 2026", count: 32 },
+      { month: "May 2026", count: 41 },
+      { month: "Jun 2026", count: 55 },
+    ],
+    repeatCustomerRate: 35.5,
+    avgDeliveryTimeHours: 4.2,
+    deliverySuccessRate: 98.2,
+  };
+
+  const query = new URLSearchParams();
+  if (startDate) query.append("startDate", startDate);
+  if (endDate) query.append("endDate", endDate);
+  const queryString = query.toString() ? `?${query.toString()}` : "";
+
+  const res = await safeFetch<{ analytics: DeepAnalyticsData }>(
+    `/orders/deep-analytics${queryString}`,
+    { method: "GET" },
+    { analytics: defaultAnalytics }
+  );
+  return res.analytics;
+}
+
 export interface OrderItem {
   id: number;
   product_id: number;

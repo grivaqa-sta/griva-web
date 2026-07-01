@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import {
@@ -199,6 +199,38 @@ export default function CategoryPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [openSortDropdown, setOpenSortDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  const subCategoriesScrollRef = useRef<HTMLDivElement>(null);
+  const [isSubMouseDown, setIsSubMouseDown] = useState(false);
+  const [subStartX, setSubStartX] = useState(0);
+  const [subScrollLeft, setSubScrollLeft] = useState(0);
+  const [subHasMoved, setSubHasMoved] = useState(false);
+
+  const handleSubMouseDown = (e: React.MouseEvent) => {
+    const el = subCategoriesScrollRef.current;
+    if (!el) return;
+    setIsSubMouseDown(true);
+    setSubStartX(e.pageX - el.offsetLeft);
+    setSubScrollLeft(el.scrollLeft);
+    setSubHasMoved(false);
+  };
+
+  const handleSubMouseMove = (e: React.MouseEvent) => {
+    if (!isSubMouseDown) return;
+    const el = subCategoriesScrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - subStartX) * 1.5;
+    if (Math.abs(walk) > 5) {
+      setSubHasMoved(true);
+    }
+    el.scrollLeft = subScrollLeft - walk;
+  };
+
+  const handleSubMouseUpOrLeave = () => {
+    setIsSubMouseDown(false);
+  };
 
   // Categories & subcategories from API (cached — no repeat fetches on navigation)
   const { categories, loading: categoriesLoading } = useCategories();
@@ -477,9 +509,21 @@ export default function CategoryPage() {
 
         {/* Subcategories Horizontal Scroll/Chips */}
         {categorySubcategories.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+          <div
+            ref={subCategoriesScrollRef}
+            onMouseDown={handleSubMouseDown}
+            onMouseMove={handleSubMouseMove}
+            onMouseUp={handleSubMouseUpOrLeave}
+            onMouseLeave={handleSubMouseUpOrLeave}
+            className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 cursor-grab active:cursor-grabbing select-none"
+          >
             <Link
               href={`/category/${slug}`}
+              onClick={(e) => {
+                if (subHasMoved) {
+                  e.preventDefault();
+                }
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                 !subParam
                   ? "bg-orange-50 border-orange-500 text-orange-600 shadow-sm"
@@ -495,6 +539,11 @@ export default function CategoryPage() {
                 <Link
                   key={sub.id}
                   href={`/category/${slug}?sub=${sub.slug}`}
+                  onClick={(e) => {
+                    if (subHasMoved) {
+                      e.preventDefault();
+                    }
+                  }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                     isSelected
                       ? "bg-orange-50 border-orange-500 text-orange-600 shadow-sm"

@@ -828,19 +828,19 @@ export default function DeliveryDashboard() {
                               <div className="grid grid-cols-3 gap-1.5 pt-1">
                                 <button
                                   onClick={() => openModal('not_answering', order.id)}
-                                  className="py-2.5 rounded-xl border border-yellow-900/40 bg-yellow-950/10 text-yellow-500 hover:bg-yellow-950/20 active:scale-95 text-[10px] font-bold transition-all cursor-pointer"
+                                  className="py-3 rounded-xl border border-yellow-900/40 bg-yellow-950/10 text-yellow-500 hover:bg-yellow-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
                                 >
                                   📞 No Answer
                                 </button>
                                 <button
                                   onClick={() => openModal('come_later', order.id)}
-                                  className="py-2.5 rounded-xl border border-blue-900/40 bg-blue-950/10 text-blue-400 hover:bg-blue-950/20 active:scale-95 text-[10px] font-bold transition-all cursor-pointer"
+                                  className="py-3 rounded-xl border border-blue-900/40 bg-blue-950/10 text-blue-400 hover:bg-blue-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
                                 >
                                   🔄 Come Later
                                 </button>
                                 <button
                                   onClick={() => openModal('failed', order.id)}
-                                  className="py-2.5 rounded-xl border border-red-900/40 bg-red-950/10 text-red-400 hover:bg-red-950/20 active:scale-95 text-[10px] font-bold transition-all cursor-pointer"
+                                  className="py-3 rounded-xl border border-red-900/40 bg-red-950/10 text-red-400 hover:bg-red-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
                                 >
                                   ❌ Failed
                                 </button>
@@ -853,15 +853,15 @@ export default function DeliveryDashboard() {
                             {customerPhone ? (
                               <a
                                 href={`tel:${customerPhone}`}
-                                className="flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-[10px] font-bold text-zinc-300 border border-zinc-800 transition-colors"
-                                style={{ minHeight: "40px" }}
+                                className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 border border-zinc-800 transition-colors"
+                                style={{ minHeight: "48px" }}
                               >
-                                <Phone size={12} className="text-[#FF6A00]" />
+                                <Phone size={14} className="text-[#FF6A00]" />
                                 <span>Call Customer</span>
                               </a>
                             ) : (
-                              <div className="flex items-center justify-center gap-1.5 py-3 bg-zinc-900 opacity-40 rounded-xl text-[10px] font-bold text-zinc-500 border border-zinc-800">
-                                <Phone size={12} />
+                              <div className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 opacity-40 rounded-xl text-xs font-bold text-zinc-500 border border-zinc-800" style={{ minHeight: "48px" }}>
+                                <Phone size={14} />
                                 <span>No Phone</span>
                               </div>
                             )}
@@ -874,10 +874,10 @@ export default function DeliveryDashboard() {
                               }
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-[10px] font-bold text-[#FF6A00] border border-zinc-800 transition-colors"
-                              style={{ minHeight: "40px" }}
+                              className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-[#FF6A00] border border-zinc-800 transition-colors"
+                              style={{ minHeight: "48px" }}
                             >
-                              <Compass size={12} />
+                              <Compass size={14} />
                               <span>Open Maps</span>
                             </a>
                           </div>

@@ -11,6 +11,15 @@ const PORT = process.env.PORT || 8080;
 const startServer = async () => {
   await testDbConnection();
 
+  // Run critical migrations unconditionally regardless of DB_SYNC
+  try {
+    await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
+    await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
+    console.log('🟢 [DATABASE]: Unconditionally ensured delivery_boy_id and status type VARCHAR(50) exist in ReturnRequests table');
+  } catch (dbErr) {
+    console.log('ℹ️ [DATABASE]: Skipping unconditional ReturnRequests table alteration:', dbErr.message);
+  }
+
   if (process.env.DB_SYNC === "true") {
     try {
       // Safely alter the ENUM role type in PostgreSQL if it exists
@@ -273,6 +282,7 @@ const migrateLegacyProducts = async () => {
 };
 
 startServer(); // trigger nodemon restart
+// Trigger nodemon restart after disabling DB_SYNC to resolve ECONNRESET
 
 
 

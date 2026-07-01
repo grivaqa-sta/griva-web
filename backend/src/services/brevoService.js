@@ -535,6 +535,187 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
   }
 };
 
+const sendReturnRequestSubmittedEmail = async (request, user, orderNumber) => {
+  try {
+    const sendSmtpEmail = {
+      sender: {
+        email: process.env.SENDER_EMAIL,
+        name: process.env.SENDER_NAME,
+      },
+      to: [
+        {
+          email: user.email,
+        },
+      ],
+      subject: `Return Request Submitted - Order ${orderNumber}`,
+      htmlContent: `
+        <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
+              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+            </div>
+            <div style="padding: 32px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="background-color: #f59e0b; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Under Review</span>
+              </div>
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0 0 8px; text-align: center;">Return Request Received</h2>
+              <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0 0 28px;">We have received your return request and our support team is reviewing it.</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7;">Hello <strong>${user.name}</strong>,</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; margin-bottom: 24px;">Your return request for order <strong>${orderNumber}</strong> has been successfully submitted. We will inspect the details and get back to you shortly.</p>
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Request ID</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">#${request.id}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Request Type</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb; text-transform: capitalize;">${request.type}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Reason</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb; text-transform: capitalize;">${request.reason.replace("_", " ")}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Status</td>
+                    <td style="padding: 10px 0; color: #d97706; font-size: 13px; font-weight: 700; text-align: right;">Pending Review ⏳</td>
+                  </tr>
+                </table>
+              </div>
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+              <div style="text-align: center; color: #9ca3af; font-size: 11px;">
+                <p>© ${new Date().getFullYear()} GRIVA Store. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+    const result = await client.transactionalEmails.sendTransacEmail(sendSmtpEmail);
+    logEmailResult("RETURN_SUBMITTED", user.email, "SUCCESS", result);
+    return result;
+  } catch (error) {
+    console.error(`Error sending return submission email to ${user.email}:`, error);
+    logEmailResult("RETURN_SUBMITTED", user.email, "ERROR", { message: error.message });
+  }
+};
+
+const sendReturnRequestApprovedEmail = async (request, user, orderNumber, detailText) => {
+  try {
+    const sendSmtpEmail = {
+      sender: {
+        email: process.env.SENDER_EMAIL,
+        name: process.env.SENDER_NAME,
+      },
+      to: [
+        {
+          email: user.email,
+        },
+      ],
+      subject: `Return Request Approved! - Order ${orderNumber}`,
+      htmlContent: `
+        <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
+              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+            </div>
+            <div style="padding: 32px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="background-color: #059669; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Approved</span>
+              </div>
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0 0 8px; text-align: center;">Return Request Approved 🎉</h2>
+              <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0 0 28px;">Your return request has been approved and processed.</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7;">Hello <strong>${user.name}</strong>,</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; margin-bottom: 24px;">Good news! Your return request for order <strong>${orderNumber}</strong> has been approved.</p>
+              
+              <div style="background-color: #ecfdf5; border-left: 4px solid #059669; border-radius: 0 8px 8px 0; padding: 16px 20px; margin-bottom: 28px;">
+                <p style="color: #065f46; font-size: 14px; margin: 0; line-height: 1.6; font-weight: 600;">Action Details:</p>
+                <p style="color: #047857; font-size: 13px; margin: 6px 0 0; line-height: 1.6;">${detailText}</p>
+              </div>
+
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Request ID</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">#${request.id}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Resolved Status</td>
+                    <td style="padding: 10px 0; color: #059669; font-size: 13px; font-weight: 700; text-align: right; text-transform: capitalize;">${request.status.replace("_", " ")}</td>
+                  </tr>
+                </table>
+              </div>
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+              <div style="text-align: center; color: #9ca3af; font-size: 11px;">
+                <p>© ${new Date().getFullYear()} GRIVA Store. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+    const result = await client.transactionalEmails.sendTransacEmail(sendSmtpEmail);
+    logEmailResult("RETURN_APPROVED", user.email, "SUCCESS", result);
+    return result;
+  } catch (error) {
+    console.error(`Error sending return approval email to ${user.email}:`, error);
+    logEmailResult("RETURN_APPROVED", user.email, "ERROR", { message: error.message });
+  }
+};
+
+const sendReturnRequestRejectedEmail = async (request, user, orderNumber, reasonText) => {
+  try {
+    const sendSmtpEmail = {
+      sender: {
+        email: process.env.SENDER_EMAIL,
+        name: process.env.SENDER_NAME,
+      },
+      to: [
+        {
+          email: user.email,
+        },
+      ],
+      subject: `Update on your Return Request - Order ${orderNumber}`,
+      htmlContent: `
+        <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
+              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+            </div>
+            <div style="padding: 32px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="background-color: #dc2626; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Rejected</span>
+              </div>
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0 0 8px; text-align: center;">Return Request Rejected</h2>
+              <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0 0 28px;">Your return request has been reviewed and could not be approved.</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7;">Hello <strong>${user.name}</strong>,</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; margin-bottom: 24px;">Your return request for order <strong>${orderNumber}</strong> has been reviewed. Unfortunately, we were unable to approve it.</p>
+              
+              <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; padding: 16px 20px; margin-bottom: 28px;">
+                <p style="color: #991b1b; font-size: 14px; margin: 0; line-height: 1.6; font-weight: 600;">Reason for Rejection:</p>
+                <p style="color: #b91c1c; font-size: 13px; margin: 6px 0 0; line-height: 1.6;">${reasonText || "Does not comply with our e-commerce return policy rules."}</p>
+              </div>
+
+              <p style="color: #374151; font-size: 13px; line-height: 1.6;">If you have any questions or would like to submit further information, please contact our support chat.</p>
+
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+              <div style="text-align: center; color: #9ca3af; font-size: 11px;">
+                <p>© ${new Date().getFullYear()} GRIVA Store. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+    const result = await client.transactionalEmails.sendTransacEmail(sendSmtpEmail);
+    logEmailResult("RETURN_REJECTED", user.email, "SUCCESS", result);
+    return result;
+  } catch (error) {
+    console.error(`Error sending return rejection email to ${user.email}:`, error);
+    logEmailResult("RETURN_REJECTED", user.email, "ERROR", { message: error.message });
+  }
+};
+
 module.exports = {
   sendTestEmail,
   sendAdminOrderNotification,
@@ -545,4 +726,7 @@ module.exports = {
   sendSubscriberWelcomeEmail,
   sendAdminNewSubscriberNotification,
   sendPasswordResetEmail,
+  sendReturnRequestSubmittedEmail,
+  sendReturnRequestApprovedEmail,
+  sendReturnRequestRejectedEmail,
 };

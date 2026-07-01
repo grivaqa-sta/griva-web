@@ -2,7 +2,7 @@ import { Product, SlideData, OfferCard, CategoryItem } from "../types/types";
 import { products as mockProducts, slide as mockSlides, offers as mockOffers, categories as mockCategories } from "../data/data";
 import { processCloudinaryUrls } from "./image";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 // Helper to retrieve auth headers
 function getAuthHeaders(): HeadersInit {
@@ -948,6 +948,41 @@ export async function deleteReviewApi(id: number): Promise<boolean> {
     { success: false }
   );
   return !!res;
+}
+
+export async function getAllReturnRequestsApi(): Promise<any[]> {
+  const res = await safeFetch<{ success: boolean; returnRequests: any[] }>(
+    "/returns",
+    { method: "GET" },
+    { success: true, returnRequests: [] }
+  );
+  return res.returnRequests || [];
+}
+
+export async function updateReturnRequestStatusApi(
+  id: number,
+  status: "approved_replacement" | "approved_refund" | "rejected" | string,
+  admin_notes?: string,
+  deliveryBoyId?: number
+): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/returns/${id}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status, admin_notes, deliveryBoyId }),
+    },
+    { success: false }
+  );
+  return !!res;
+}
+
+export async function getDeliveryBoysApi(): Promise<any[]> {
+  const res = await safeFetch<{ success: boolean; deliveryBoys: any[] }>(
+    "/orders/admin/delivery-boys",
+    { method: "GET" },
+    { success: true, deliveryBoys: [] }
+  );
+  return res.deliveryBoys || [];
 }
 
 

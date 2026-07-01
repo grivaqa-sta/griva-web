@@ -2,7 +2,7 @@
 import React from "react";
 import { Menu } from "lucide-react";
 
-type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback" | "analytics";
+type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback" | "analytics" | "returns";
 
 interface AdminHeaderProps {
   activeTab: TabType;

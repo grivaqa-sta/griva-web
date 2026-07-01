@@ -48,7 +48,7 @@ const timeSince = (dateStr: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function OperationsTab({ ordersList, setOrdersList, setActiveTab }: OperationsTabProps) {
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);

@@ -8,6 +8,8 @@ const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const ReturnRequest = require("../models/ReturnRequest");
+const ProductVariant = require("../models/ProductVariant");
 const {
   sendOutForDeliveryEmail,
   sendOrderDeliveredEmail,
@@ -298,6 +300,144 @@ exports.getOrderDetails = async (req, res, next) => {
     res.status(200).json({
       success: true,
       order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/delivery/my-returns
+ * Fetch return requests assigned to the delivery boy
+ */
+exports.getMyReturns = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+
+    const returns = await ReturnRequest.findAll({
+      where: {
+        delivery_boy_id: driverId,
+      },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "phone"],
+        },
+        {
+          model: Order,
+          as: "order",
+          attributes: ["id", "order_number", "shipping_address", "customer_name", "customer_phone", "createdAt"],
+        },
+        {
+          model: OrderItem,
+          as: "orderItem",
+          include: [
+            {
+              model: Product,
+              as: "product",
+              attributes: ["id", "title", "main_image_url"],
+            },
+            {
+              model: ProductVariant,
+              as: "variant",
+              attributes: ["id", "sku", "stock"],
+            },
+          ],
+        },
+      ],
+      order: [["updatedAt", "DESC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      count: returns.length,
+      returns,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PATCH /api/delivery/returns/:id/status
+ * Driver updates return status to 'completed_replacement' or 'completed_refund'
+ */
+exports.updateReturnStatus = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const allowedStatuses = ["completed_replacement", "completed_refund"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Allowed values: completed_replacement, completed_refund",
+      });
+    }
+
+    const returnRequest = await ReturnRequest.findByPk(id, {
+      include: [
+        { model: Order, as: "order" }
+      ]
+    });
+    if (!returnRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Return request not found.",
+      });
+    }
+
+    if (returnRequest.delivery_boy_id !== driverId) {
+      return res.status(403).json({
+        success: false,
+        message: "This task is not assigned to you.",
+      });
+    }
+
+    returnRequest.status = status;
+    returnRequest.resolved_at = new Date();
+    await returnRequest.save();
+
+    // If replacement completed, find the generated replacement order (RPL-...) and mark it as delivered/completed
+    if (status === "completed_replacement" && returnRequest.order) {
+      const replacementOrder = await Order.findOne({
+        where: {
+          order_number: {
+            [Op.like]: `RPL-${returnRequest.order.order_number}%`
+          },
+          delivery_notes: {
+            [Op.like]: `%Request ID: #${returnRequest.id}%`
+          }
+        }
+      });
+
+      if (replacementOrder) {
+        replacementOrder.status = "delivered";
+        replacementOrder.payment_status = "paid";
+        await replacementOrder.save();
+
+        try {
+          emitToRoles(["admin", "staff"], "order-status-updated", { orderId: replacementOrder.id, status: "delivered" });
+          emitToOrder(replacementOrder.id, "order-status-updated", { orderId: replacementOrder.id, status: "delivered" });
+        } catch (socketErr) {
+          console.error("🔌 [Socket.IO Error]:", socketErr.message);
+        }
+      }
+    }
+
+    try {
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: returnRequest.order_id });
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Error]:", socketErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Return request marked as ${status.replace("_", " ")}.`,
+      returnRequest,
     });
   } catch (error) {
     next(error);

@@ -63,17 +63,52 @@ const sendAdminOrderNotification = async (order) => {
       subject: `New Order Received - ${order.order_number}`,
 
       htmlContent: `
-        <h2>New Order Received</h2>
-
-        <p><strong>Order Number:</strong> ${order.order_number}</p>
-
-        <p><strong>Customer Name:</strong> ${order.customer_name}</p>
-
-        <p><strong>Customer Phone:</strong> ${order.customer_phone}</p>
-
-        <p><strong>Total Amount:</strong> ${order.total_price}</p>
-
-        <p><strong>Payment Method:</strong> Cash On Delivery</p>
+        <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <!-- Header -->
+            <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
+              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+            </div>
+            <!-- Body -->
+            <div style="padding: 32px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="background-color: #ff6a00; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">New Order</span>
+              </div>
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0 0 8px; text-align: center;">🔔 New Order Received</h2>
+              <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0 0 28px;">A customer has just placed a new order on your store.</p>
+              <!-- Order Details Card -->
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.order_number}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Customer Name</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.customer_name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Customer Phone</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.customer_phone}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Total Amount</td>
+                    <td style="padding: 10px 0; color: #ff6a00; font-size: 15px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.total_price}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Payment Method</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 600; text-align: right;">Cash On Delivery</td>
+                  </tr>
+                </table>
+              </div>
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">Received on ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+            </div>
+            <!-- Footer -->
+            <div style="text-align: center; padding: 20px 32px; border-top: 1px solid #e5e7eb; background-color: #fafafa;">
+              <p style="color: #9ca3af; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} GRIVA. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
       `,
     };
 
@@ -108,29 +143,63 @@ const sendCustomerOrderConfirmation = async (
       subject: `Order Confirmation - ${order.order_number}`,
 
       htmlContent: `
-        <h2>Order Confirmed ✅</h2>
-
-        <p>Hello ${order.customer_name},</p>
-
-        <p>Thank you for your order. We have successfully received it.</p>
-
-        <hr>
-
-        <p><strong>Order Number:</strong> ${order.order_number}</p>
-
-        <p><strong>Products Ordered:</strong> ${productCount}</p>
-
-        <p><strong>Total Quantity:</strong> ${totalQuantity}</p>
-
-        <p><strong>Total Amount:</strong> ${order.total_price}</p>
-
-        <p><strong>Payment Method:</strong> Cash On Delivery</p>
-
-        <hr>
-
-        <p>We will notify you again when your order is shipped.</p>
-
-        <p>Thank you for shopping with us.</p>
+        <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <!-- Header -->
+            <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
+              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+            </div>
+            <!-- Body -->
+            <div style="padding: 32px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="background-color: #059669; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Confirmed</span>
+              </div>
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0 0 8px; text-align: center;">Order Confirmed ✅</h2>
+              <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0 0 28px;">Your order has been successfully placed and is being prepared.</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7;">Hello <strong>${order.customer_name}</strong>,</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; margin-bottom: 24px;">Thank you for your order! We have received it and are getting things ready for you. Here's a summary of your purchase:</p>
+              <!-- Order Summary Card -->
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.order_number}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Products Ordered</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 1px solid #e5e7eb;">${productCount}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Total Quantity</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 1px solid #e5e7eb;">${totalQuantity}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Total Amount</td>
+                    <td style="padding: 10px 0; color: #ff6a00; font-size: 15px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.total_price}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Payment Method</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 600; text-align: right;">Cash On Delivery</td>
+                  </tr>
+                </table>
+              </div>
+              <!-- Info Box -->
+              <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 14px 18px; margin-bottom: 28px;">
+                <p style="color: #92400e; font-size: 13px; margin: 0; line-height: 1.6;">📦 We will notify you via email once your order is shipped and out for delivery.</p>
+              </div>
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 30px 0 10px;">
+                <a href="${process.env.FRONTEND_URL || 'https://thegriva.com'}" 
+                   style="background-color: #ff6a00; color: #ffffff; padding: 13px 32px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; letter-spacing: 0.3px;">Continue Shopping</a>
+              </div>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; text-align: center; margin-top: 24px;">Thank you for choosing <strong>GRIVA</strong>! 🖤</p>
+            </div>
+            <!-- Footer -->
+            <div style="text-align: center; padding: 20px 32px; border-top: 1px solid #e5e7eb; background-color: #fafafa;">
+              <p style="color: #9ca3af; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} GRIVA. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
       `,
     };
 
@@ -159,15 +228,51 @@ const sendOutForDeliveryEmail = async (order) => {
       subject: `Your Order ${order.order_number} Is Out For Delivery`,
 
       htmlContent: `
-        <h2>Your Order Is Out For Delivery 🚚</h2>
-
-<p>Hello ${order.customer_name},</p>
-
-<p>Your order <strong>${order.order_number}</strong> is out for delivery.</p>
-
-<p>Our delivery partner is on the way to your location.</p>
-
-<p>Please keep your phone available for delivery coordination.</p>
+        <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <!-- Header -->
+            <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
+              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+            </div>
+            <!-- Body -->
+            <div style="padding: 32px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="background-color: #2563eb; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Out For Delivery</span>
+              </div>
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0 0 8px; text-align: center;">Your Order Is On Its Way! 🚚</h2>
+              <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0 0 28px;">Our delivery partner is heading to your location right now.</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7;">Hello <strong>${order.customer_name}</strong>,</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; margin-bottom: 24px;">Great news! Your order has been picked up and is currently on its way to you. Here are your order details:</p>
+              <!-- Order Details Card -->
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.order_number}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Status</td>
+                    <td style="padding: 10px 0; color: #2563eb; font-size: 13px; font-weight: 700; text-align: right;">Out For Delivery</td>
+                  </tr>
+                </table>
+              </div>
+              <!-- Info Box -->
+              <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; border-radius: 0 8px 8px 0; padding: 14px 18px; margin-bottom: 28px;">
+                <p style="color: #1e40af; font-size: 13px; margin: 0; line-height: 1.6;">📱 Please keep your phone available for delivery coordination. Our partner may call to confirm directions.</p>
+              </div>
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 30px 0 10px;">
+                <a href="${process.env.FRONTEND_URL || 'https://thegriva.com'}" 
+                   style="background-color: #ff6a00; color: #ffffff; padding: 13px 32px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; letter-spacing: 0.3px;">Track Your Order</a>
+              </div>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; text-align: center; margin-top: 24px;">Thank you for choosing <strong>GRIVA</strong>! 🖤</p>
+            </div>
+            <!-- Footer -->
+            <div style="text-align: center; padding: 20px 32px; border-top: 1px solid #e5e7eb; background-color: #fafafa;">
+              <p style="color: #9ca3af; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} GRIVA. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
       `,
     };
 
@@ -197,26 +302,49 @@ const sendOrderDeliveredEmail = async (order) => {
       subject: `Your Order ${order.order_number} Has Been Delivered`,
 
       htmlContent: `
-        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
-          <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #ff6a00;">
-            <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
-          </div>
-          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px; text-align: center;">Order Delivered 🎉</h2>
-          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Hello ${order.customer_name},</p>
-          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Your order <strong>${order.order_number}</strong> has been successfully delivered. We hope you are loving your new products!</p>
-          <p style="color: #374151; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">Please take a moment to rate your delivery experience and the items you received. Your feedback helps us keep our services premium.</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${reviewUrl}" 
-               style="background-color: #ff6a00; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block;">
-              Rate Your Experience
-            </a>
-          </div>
-
-          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Thank you for choosing <strong>GRIVA</strong>!</p>
-          <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-          <div style="text-align: center; color: #9ca3af; font-size: 11px;">
-            <p>© ${new Date().getFullYear()} GRIVA. All rights reserved.</p>
+        <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <!-- Header -->
+            <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
+              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+            </div>
+            <!-- Body -->
+            <div style="padding: 32px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="background-color: #059669; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Delivered</span>
+              </div>
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0 0 8px; text-align: center;">Order Delivered 🎉</h2>
+              <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0 0 28px;">Your order has been successfully delivered to your doorstep.</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7;">Hello <strong>${order.customer_name}</strong>,</p>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; margin-bottom: 24px;">Your order <strong>${order.order_number}</strong> has been successfully delivered. We hope you are loving your new products!</p>
+              <!-- Order Details Card -->
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+                    <td style="padding: 10px 0; color: #111827; font-size: 13px; font-weight: 700; text-align: right; border-bottom: 1px solid #e5e7eb;">${order.order_number}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Status</td>
+                    <td style="padding: 10px 0; color: #059669; font-size: 13px; font-weight: 700; text-align: right;">Delivered ✅</td>
+                  </tr>
+                </table>
+              </div>
+              <!-- Info Box -->
+              <div style="background-color: #ecfdf5; border-left: 4px solid #059669; border-radius: 0 8px 8px 0; padding: 14px 18px; margin-bottom: 28px;">
+                <p style="color: #065f46; font-size: 13px; margin: 0; line-height: 1.6;">⭐ Please take a moment to rate your delivery experience and the items you received. Your feedback helps us keep our services premium.</p>
+              </div>
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 30px 0 10px;">
+                <a href="${reviewUrl}" 
+                   style="background-color: #ff6a00; color: #ffffff; padding: 13px 32px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; letter-spacing: 0.3px;">Rate Your Experience</a>
+              </div>
+              <p style="color: #374151; font-size: 14px; line-height: 1.7; text-align: center; margin-top: 24px;">Thank you for choosing <strong>GRIVA</strong>! 🖤</p>
+            </div>
+            <!-- Footer -->
+            <div style="text-align: center; padding: 20px 32px; border-top: 1px solid #e5e7eb; background-color: #fafafa;">
+              <p style="color: #9ca3af; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} GRIVA. All rights reserved.</p>
+            </div>
           </div>
         </div>
       `,

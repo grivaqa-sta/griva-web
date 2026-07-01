@@ -1,40 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import OfferCards from "./OfferCards";
-import { productService } from "@/app/services/product.service";
+import { useNewArrivalProducts } from "@/app/hooks/useProducts";
 import { OfferCard } from "@/app/types/types";
 
 export default function OfferSection() {
-  const [offers, setOffers] = useState<OfferCard[]>([]);
+  const { products } = useNewArrivalProducts();
 
-  useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        const response = await productService.getNewArrivalProducts();
-        if (response?.success && response?.data) {
-          const bgColors = ["bg-rose-50", "bg-emerald-50", "bg-sky-50", "bg-amber-50"];
-          const formattedOffers = response.data.map((product: any, index: number) => {
-            return {
-              id: product.id,
-              href: `/product/${product.slug}`,
-              bgColor: bgColors[index % bgColors.length],
-              badge: product.discount_percentage ? `${product.discount_percentage}% OFF` : "NEW",
-              title: product.brand ? product.brand.toUpperCase() : product.title?.toUpperCase(),
-              subtitle: product.subcategories?.name.toUpperCase() || "Special Offer",
-              image: product.main_image_url,
-            };
-          });
-          setOffers(formattedOffers);
-        }
-      } catch (error) {
-        console.error("Failed to fetch new arrival products", error);
-      }
-    };
-    fetchOffers();
-  }, []);
+  const bgColors = ["bg-rose-50", "bg-emerald-50", "bg-sky-50", "bg-amber-50"];
+  const offers: OfferCard[] = products.map((product, index) => ({
+    id: product.id,
+    href: `/product/${product.slug}`,
+    bgColor: bgColors[index % bgColors.length],
+    badge: (product as any).discount_percentage ? `${(product as any).discount_percentage}% OFF` : "NEW",
+    title: (product as any).brand ? (product as any).brand.toUpperCase() : product.title?.toUpperCase(),
+    subtitle: (product as any).subcategories?.name?.toUpperCase() || "Special Offer",
+    image: product.main_image_url,
+  }));
 
   if (offers.length === 0) return null;
 

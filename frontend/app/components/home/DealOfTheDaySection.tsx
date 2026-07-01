@@ -9,40 +9,13 @@ import Rating from "../rating/Rating";
 import { useCountdown } from "@/app/hooks/useCountdown";
 import { useCart } from "@/app/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
-import dealOfDayService from "@/app/services/dealOfDay.service";
-import { Deal } from "@/app/types/types";
+import { useDealOfDay } from "@/app/hooks/useHomeData";
 
 export default function DealOfTheDaySection() {
   const { addToCart } = useCart();
   const router = useRouter();
 
-  const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDeal = async () => {
-      try {
-        const res = await dealOfDayService.getActiveDeal();
-        if (res?.success && res?.data) {
-          const data = Array.isArray(res.data) ? res.data : [res.data];
-          const now = new Date();
-          const validDeals = data.filter((deal: Deal) => {
-            const start = new Date(deal.startDate);
-            const end = new Date(deal.endDate);
-            return now >= start && now <= end;
-          });
-          setActiveDeals(validDeals);
-        } else {
-          setActiveDeals([]);
-        }
-      } catch (err) {
-        console.error("Error fetching deal of day", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDeal();
-  }, []);
+  const { deals: activeDeals, loading } = useDealOfDay();
 
   const slides = activeDeals.map(deal => {
     const p = deal.product;

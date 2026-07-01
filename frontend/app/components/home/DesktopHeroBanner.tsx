@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Wallet, Star, Truck } from "lucide-react";
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import { productService } from "@/app/services/product.service";
-import { getSettingsApi } from "@/app/utils/api";
+import { useBannerProducts, useGlobalSettings } from "@/app/hooks/useHomeData";
 import { BannerProduct, HeroSlide } from "@/app/types/types";
 
 function mapProductToSlide(p: BannerProduct): HeroSlide {
@@ -24,34 +23,12 @@ function mapProductToSlide(p: BannerProduct): HeroSlide {
 }
 
 export default function DesktopHeroBanner() {
-    const [slides, setSlides] = useState<HeroSlide[]>([]);
+    const { bannerProducts } = useBannerProducts();
+    const { settings } = useGlobalSettings();
+    const slides: HeroSlide[] = bannerProducts.map(mapProductToSlide);
     const [current, setCurrent] = useState(0);
-    const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
+    const freeShippingThreshold = settings?.freeShippingThreshold ?? 99;
     const busyRef = useRef(false);
-
-    useEffect(() => {
-        productService
-            .getBannerProducts()
-            .then((res: BannerProduct[] | { data: BannerProduct[] }) => {
-                const products: BannerProduct[] = Array.isArray(res)
-                    ? res
-                    : Array.isArray((res as { data: BannerProduct[] }).data)
-                    ? (res as { data: BannerProduct[] }).data
-                    : [];
-                setSlides(products.map(mapProductToSlide));
-            })
-            .catch((err: Error) => {
-                console.error("Error fetching banners:", err);
-            });
-
-        getSettingsApi()
-            .then((settings) => {
-                if (settings && settings.freeShippingThreshold !== undefined) {
-                    setFreeShippingThreshold(Number(settings.freeShippingThreshold));
-                }
-            })
-            .catch((err) => console.error("Failed to fetch settings in DesktopHeroBanner:", err));
-    }, []);
 
     useEffect(() => {
         if (slides.length === 0) return;

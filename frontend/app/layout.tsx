@@ -117,13 +117,8 @@ export const metadata: Metadata = {
       "ar-QA": "https://thegriva.com/ar",
     },
   },
-  verification: {
-    google: "ADD_YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE_HERE",
-    yandex: "ADD_IF_NEEDED",
-    other: {
-      me: ["support@thegriva.com"],
-    },
-  },
+  // verification: Add your Google Search Console code here after setting up GSC
+  // verification: { google: "YOUR_CODE_HERE" },
   category: "electronics",
 };
 

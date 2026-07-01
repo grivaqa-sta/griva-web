@@ -234,7 +234,6 @@ exports.forgotPassword = async (req, res, next) => {
       success: true,
       message:
         "Password reset link sent to email.",
-      resetUrl,
     });
   } catch (error) {
     next(error);

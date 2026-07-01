@@ -57,22 +57,21 @@ const allowedOrigins = getAllowedOrigins();
 
 app.use(cors({
   origin: (origin, callback) => {
-    console.log(`🔍 [CORS DEBUG] Incoming origin: "${origin}"`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🔍 [CORS DEBUG] Incoming origin: "${origin}"`);
+    }
     
     // Allow requests with no origin (Postman, curl, mobile apps)
     if (!origin) {
-      console.log("✅ [CORS] No origin header - allowing (Postman/curl/mobile)");
       callback(null, true);
       return;
     }
 
     // Check if origin is in allowedOrigins
     if (allowedOrigins.includes(origin)) {
-      console.log(`✅ [CORS] Origin allowed: ${origin}`);
       callback(null, true);
     } else {
       console.error(`❌ [CORS BLOCKED] Origin: ${origin}`);
-      console.error(`❌ [CORS] Allowed origins: ${allowedOrigins.join(", ")}`);
       callback(new Error(`CORS policy blocked origin: ${origin}`));
     }
   },
@@ -98,7 +97,6 @@ app.get("/health", (req, res) => {
     status: "healthy",
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || "development",
-    allowedOrigins: allowedOrigins,
   });
 });
 

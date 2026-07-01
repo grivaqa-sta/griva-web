@@ -209,9 +209,9 @@ export default function Footer() {
             </p>
 
             {subscribed ? (
-              <div className="text-green-400 bg-green-500/10 border border-green-500/20 px-4 py-3 rounded-lg text-xs font-semibold animate-in fade-in duration-300">
-                🎉 Thank you for subscribing! You will receive our latest offers and updates.
-              </div>
+              <div className=" border px-4 py-3 rounded-lg text-xs font-semibold animate-in fade-in duration-300">
+                Thanks for subscribing! We'll keep you updated.              
+                </div>
             ) : (
               <form onSubmit={handleSubscribe} className="flex gap-2">
                 <input

@@ -25,6 +25,8 @@ import {
   ChevronRight,
   Trash2,
   Clock,
+  Tag,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -1161,8 +1163,8 @@ export default function CheckoutPage() {
                         {locating
                           ? "Locating your GPS coordinates..."
                           : locationSuccess
-                          ? "📍 Location coordinates saved! (Click to locate again)"
-                          : "📍 Use My Location (Exact GPS)"}
+                          ? "Location coordinates saved! (Click to locate again)"
+                          : "Use My Location (Exact GPS)"}
                       </span>
                     </button>
                   </div>
@@ -1475,7 +1477,7 @@ export default function CheckoutPage() {
                           {stockErr && isSelected && (
                             <div className="mt-2 bg-red-55/65 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
                               <div className="flex items-center gap-1.5 text-red-600 font-bold text-[11px]">
-                                <span>❌</span>
+                                <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
                                 <span>
                                   {stockErr.availableStock === 0
                                     ? "Out Of Stock"
@@ -1511,9 +1513,9 @@ export default function CheckoutPage() {
               </div>
 
               {/* Totals */}
-              <div className="border-t pt-4 space-y-3 text-sm">
+              <div className="border-t pt-4 space-y-3.5 text-sm">
                 {/* Price (count of items) */}
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-gray-655">
                   <span>Price ({activeCart.totalItems} item{activeCart.totalItems !== 1 ? "s" : ""})</span>
                   <span className="font-semibold text-gray-900">
                     QAR {activeCart.totalOldPrice.toFixed(2)}
@@ -1521,47 +1523,53 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Discount */}
-                <div className="flex justify-between text-gray-600">
-                  <span>Discount</span>
-                  <span className="font-semibold text-green-600">
+                <div className="flex justify-between text-gray-655 items-center">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-600 border border-orange-200/50 rounded-md flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
+                      Discount
+                    </span>
+                  </span>
+                  <span className="font-bold text-green-600">
                     &minus; QAR {(activeCart.totalOldPrice - activeCart.totalPrice).toFixed(2)}
                   </span>
                 </div>
 
                 {/* Shipping Charge */}
-                <div className="flex justify-between text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <Truck className="h-3.5 w-3.5" />
-                    Shipping Charge
+                <div className="flex justify-between text-gray-655 items-center">
+                  <span className="flex items-center gap-1.5">
+                    <Truck className="h-4 w-4 text-gray-400" />
+                    <span>Shipping Charge</span>
                   </span>
                   <span className="font-semibold">
                     {shippingCost === 0 ? (
-                      <span className="text-green-600">
-                        &minus; QAR {shippingConfig.shippingFee.toFixed(2)}
+                      <span className="text-green-600 bg-green-50 border border-green-200/60 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Free
                       </span>
                     ) : (
-                      <span className="text-gray-900">QAR {shippingCost.toFixed(2)}</span>
+                      <span className="text-gray-900 font-bold">QAR {shippingCost.toFixed(2)}</span>
                     )}
                   </span>
                 </div>
                 {shippingCost > 0 && (
-                  <p className="text-[10px] text-green-600 text-right">
+                  <p className="text-[10px] text-green-600 text-right font-semibold">
                     Free delivery on orders over QAR {shippingConfig.freeShippingThreshold.toFixed(0)}
                   </p>
                 )}
 
                 {/* Total Amount */}
-                <div className="border-t pt-3 flex justify-between text-base font-bold text-gray-900">
+                <div className="border-t pt-4.5 flex justify-between items-center text-base font-bold text-gray-900">
                   <span>Total Amount</span>
-                  <span className="text-gray-900 text-lg font-black">QAR {orderTotal.toFixed(2)}</span>
+                  <span className="text-gray-900 text-xl font-black">QAR {orderTotal.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Savings message */}
-              {activeCart.totalOldPrice - activeCart.totalPrice + (shippingCost === 0 ? shippingConfig.shippingFee : 0) > 0 && (
-                <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 text-center">
-                  <p className="text-xs font-bold text-green-700">
-                    🎉 You saved QAR {(activeCart.totalOldPrice - activeCart.totalPrice + (shippingCost === 0 ? shippingConfig.shippingFee : 0)).toFixed(2)} on this order
+              {activeCart.totalOldPrice - activeCart.totalPrice > 0 && (
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-250/50 rounded-2xl px-4 py-3 text-center shadow-sm shadow-emerald-500/5 animate-in fade-in duration-300">
+                  <p className="text-xs font-bold text-emerald-700 flex items-center justify-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <span>You save <strong className="font-extrabold">QAR {(activeCart.totalOldPrice - activeCart.totalPrice).toFixed(2)}</strong> on this order!</span>
                   </p>
                 </div>
               )}
@@ -1594,7 +1602,7 @@ export default function CheckoutPage() {
                     ? "bg-gray-300 cursor-not-allowed shadow-none"
                     : (hasStockErrors || activeCart.totalItems === 0)
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none border border-gray-300/50"
-                    : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20 cursor-pointer active:scale-[0.98]"
+                    : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-orange-500/25 hover:shadow-orange-600/35 cursor-pointer active:scale-[0.985]"
                 }`}
               >
                 {isPlacingOrder && <Loader2 className="h-4 w-4 animate-spin" />}

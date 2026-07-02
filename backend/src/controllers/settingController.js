@@ -19,6 +19,7 @@ exports.getSettings = async (req, res, next) => {
         freeShippingThreshold: 150.00,
         telegramLink: "",
         whatsappCommunityLink: "",
+        fridaySaleConfig: null,
       });
     }
     res.status(200).json({ settings: setting });
@@ -43,6 +44,7 @@ exports.updateSettings = async (req, res, next) => {
       freeShippingThreshold,
       telegramLink,
       whatsappCommunityLink,
+      fridaySaleConfig,
     } = req.body;
     
     let setting = await SiteSetting.findOne();
@@ -58,6 +60,7 @@ exports.updateSettings = async (req, res, next) => {
         freeShippingThreshold: freeShippingThreshold !== undefined ? freeShippingThreshold : 150.00,
         telegramLink: telegramLink || "",
         whatsappCommunityLink: whatsappCommunityLink || "",
+        fridaySaleConfig: fridaySaleConfig || null,
       });
     } else {
       if (announcementBarEnabled !== undefined) setting.announcementBarEnabled = announcementBarEnabled;
@@ -70,6 +73,7 @@ exports.updateSettings = async (req, res, next) => {
       if (freeShippingThreshold !== undefined) setting.freeShippingThreshold = freeShippingThreshold;
       if (telegramLink !== undefined) setting.telegramLink = telegramLink;
       if (whatsappCommunityLink !== undefined) setting.whatsappCommunityLink = whatsappCommunityLink;
+      if (fridaySaleConfig !== undefined) setting.fridaySaleConfig = fridaySaleConfig;
       await setting.save();
     }
 

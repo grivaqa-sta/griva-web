@@ -34,9 +34,13 @@ export default function AdminLoginPage() {
         }
       }
 
-      setError("Invalid credentials. Please try again.");
-    } catch {
-      setError("Unable to connect to server. Please try again.");
+      setError("Incorrect email or password. Please try again.");
+    } catch (err: any) {
+      let errMsg = err.response?.data?.message || err.response?.data?.error || "Unable to connect to server. Please try again.";
+      if (errMsg.toLowerCase().includes("credentials") || errMsg.toLowerCase().includes("invalid")) {
+        errMsg = "Incorrect email or password. Please check your credentials and try again.";
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

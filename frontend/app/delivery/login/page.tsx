@@ -62,14 +62,18 @@ export default function DeliveryLoginPage() {
       });
 
       if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          setError("Invalid email or password.");
-        } else if (res.status >= 500) {
-          setError("Something went wrong, try again.");
-        } else {
+        let errorMsg = "Login failed.";
+        try {
           const data = await res.json();
-          setError(data.message || "Login failed.");
+          errorMsg = data.message || data.error || errorMsg;
+        } catch {
+          if (res.status === 401 || res.status === 403) {
+            errorMsg = "Invalid email or password.";
+          } else {
+            errorMsg = "Something went wrong, try again.";
+          }
         }
+        setError(errorMsg);
         setLoading(false);
         return;
       }
@@ -85,7 +89,7 @@ export default function DeliveryLoginPage() {
       localStorage.setItem("griva_delivery_token", data.token);
       router.replace("/delivery/dashboard");
     } catch {
-      setError("Check your internet connection.");
+      setError("Unable to connect to server. Please check your internet connection.");
       setLoading(false);
     }
   };

@@ -66,10 +66,14 @@ function LoginForm() {
           router.push(redirectPath);
         }
       } else {
-        setError("Invalid credentials");
+        setError("Incorrect email or password. Please try again or reset your password.");
       }
-    } catch {
-      setError("Login failed. Please check your credentials and try again.");
+    } catch (err: any) {
+      let errMsg = err.response?.data?.message || err.response?.data?.error || "Login failed. Please check your credentials and try again.";
+      if (errMsg.toLowerCase().includes("credentials") || errMsg.toLowerCase().includes("invalid")) {
+        errMsg = "Incorrect email or password. Please try again or reset your password.";
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

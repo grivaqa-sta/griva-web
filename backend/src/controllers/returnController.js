@@ -6,6 +6,7 @@ const Product = require("../models/Product");
 const ProductVariant = require("../models/ProductVariant");
 const { sequelize } = require("../config/db");
 const brevoService = require("../services/brevoService");
+const { emitToRoles, emitToUser, emitToAll, emitToOrder } = require("../socket/socket");
 
 /**
  * Customer Action: Submit a Return/Replacement Request
@@ -122,6 +123,13 @@ exports.submitReturnRequest = async (req, res, next) => {
       brevoService.sendReturnRequestSubmittedEmail(returnRequest, user, order.order_number).catch(err => {
         console.error("Failed to send return confirmation email:", err);
       });
+    }
+
+    try {
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: orderId });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Error]:", socketErr.message);
     }
 
     res.status(201).json({
@@ -280,6 +288,13 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
         ).catch(err => console.error("Email send fail:", err));
       }
 
+      try {
+        emitToRoles(["admin", "staff"], "order-updated", { orderId: returnRequest.order_id });
+        emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      } catch (socketErr) {
+        console.error("🔌 [Socket.IO Error]:", socketErr.message);
+      }
+
       return res.status(200).json({ success: true, message: "Return request rejected.", returnRequest });
     }
 
@@ -396,6 +411,17 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
         returnRequest.order.order_number,
         detailText
       ).catch(err => console.error("Email send fail:", err));
+    }
+
+    try {
+      emitToRoles(["admin", "staff"], "order-updated", { orderId: returnRequest.order_id });
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      if (assignedDriverId) {
+        emitToUser(assignedDriverId, "driver-assigned", { orderId: returnRequest.order_id });
+        emitToUser(assignedDriverId, "order-updated", { orderId: returnRequest.order_id });
+      }
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Error]:", socketErr.message);
     }
 
     res.status(200).json({

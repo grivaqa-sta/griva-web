@@ -5,6 +5,9 @@ import {
   ChevronRight, Package, Sliders
 } from 'lucide-react';
 import { useToast } from '@/app/context/ToastContext';
+import { useCategories, useSubCategories } from '@/app/hooks/useCategories';
+import { uploadService } from '@/app/services/upload.service';
+import { productService } from '@/app/services/product.service';
 import {
   AnalyticsData,
   DeliverySlot,
@@ -41,6 +44,8 @@ interface OverviewTabProps {
   setCustomStartDate: (val: string) => void;
   customEndDate: string;
   setCustomEndDate: (val: string) => void;
+  fridaySaleConfig: any;
+  onSaveFridaySaleConfig: (config: any) => Promise<void>;
 }
 
 const CATEGORY_COLORS = [
@@ -197,8 +202,42 @@ export default function OverviewTab(props: OverviewTabProps) {
     telegramLink, whatsappCommunityLink, onSaveExclusiveLinks,
     dateRangeOption, setDateRangeOption,
     customStartDate, setCustomStartDate,
-    customEndDate, setCustomEndDate
+    customEndDate, setCustomEndDate,
+    fridaySaleConfig, onSaveFridaySaleConfig
   } = props;
+
+  const { categories } = useCategories();
+  const { subCategories } = useSubCategories();
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const res = await productService.getProducts();
+        const data = res?.data || res;
+        setProducts(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load products in overview:", err);
+      }
+    };
+    loadProducts();
+  }, []);
+
+  const defaultCards = [
+    { number: "01", title: "Gaming Gear", subtitle: "Up to 35% OFF", type: "category", slug: "gaming-store-qatar", discount: 35, image: "/images/gamejoysticnew.png" },
+    { number: "02", title: "Premium Audio", subtitle: "Up to 40% OFF", type: "category", slug: "exclusive-offers", discount: 40, image: "/images/headphonenew.png" },
+    { number: "03", title: "Smartwatches", subtitle: "Up to 30% OFF", type: "category", slug: "shop", discount: 30, image: "/images/iwatch.png" },
+    { number: "04", title: "Speakers & More", subtitle: "Special Drops", type: "category", slug: "electronics-store-qatar", discount: 10, image: "/images/bspeaker.png" },
+  ];
+
+  const [cards, setCards] = useState<any[]>(defaultCards);
+  const [isSavingFridayConfig, setIsSavingFridayConfig] = useState(false);
+
+  useEffect(() => {
+    if (fridaySaleConfig && Array.isArray(fridaySaleConfig) && fridaySaleConfig.length === 4) {
+      setCards(fridaySaleConfig);
+    }
+  }, [fridaySaleConfig]);
 
   const statusCounts = analytics?.orderStatusCounts || { pending: 0, shipped: 0, delivered: 0, completed: 0, cancelled: 0 };
 
@@ -495,7 +534,364 @@ export default function OverviewTab(props: OverviewTabProps) {
         })}
       </div>
 
+      {/* ── Campaign Control Center ── */}
+      <div className="bg-white border border-orange-500/30 rounded-2xl p-6 shadow-sm">
+        <div className="border-b border-orange-500/10 pb-4 mb-5">
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Campaign Control Center</h4>
+          <p className="text-[10px] text-gray-400 mt-0.5">Enable or disable global promotional campaigns and storefront elements in real-time.</p>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Announcement Bar Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-xl hover:bg-orange-500/3 transition-all duration-300">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-gray-900 block">Top Announcement Bar</span>
+              <span className="text-[10px] text-gray-400 block">Header announcement message</span>
+            </div>
+            <button
+              onClick={() => setAnnouncementBarEnabled(!announcementBarEnabled)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                announcementBarEnabled
+                  ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100"
+              }`}
+            >
+              {announcementBarEnabled ? "Active" : "Disabled"}
+            </button>
+          </div>
+
+          {/* Friday Sale Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-xl hover:bg-orange-500/3 transition-all duration-300">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-gray-900 block">Friday Super Deals</span>
+              <span className="text-[10px] text-gray-400 block">Home promo category banner</span>
+            </div>
+            <button
+              onClick={() => setFridaySaleEnabled(!fridaySaleEnabled)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                fridaySaleEnabled
+                  ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100"
+              }`}
+            >
+              {fridaySaleEnabled ? "Active" : "Disabled"}
+            </button>
+          </div>
+
+          {/* Midnight Sale Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-xl hover:bg-orange-500/3 transition-all duration-300">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-gray-900 block">Midnight Flash Sale</span>
+              <span className="text-[10px] text-gray-400 block">Time-limited special deals</span>
+            </div>
+            <button
+              onClick={() => setMidnightSaleEnabled(!midnightSaleEnabled)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                midnightSaleEnabled
+                  ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100"
+              }`}
+            >
+              {midnightSaleEnabled ? "Active" : "Disabled"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Friday Deals Cards Manager ── */}
+      <div className="bg-white border border-orange-500/30 rounded-2xl p-6 shadow-sm space-y-6">
+        <div className="border-b border-orange-500/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Friday Deals Card Manager</h4>
+            <p className="text-[10px] text-gray-400 mt-0.5">Customize the titles, discounts, linked categories, and product images of the 4 storefront cards.</p>
+          </div>
+          <button
+            onClick={async () => {
+              setIsSavingFridayConfig(true);
+              try {
+                await onSaveFridaySaleConfig(cards);
+                toast.success("Friday Deals layout saved successfully.");
+              } catch (err) {
+                toast.error("Failed to save Friday Deals layout.");
+              } finally {
+                setIsSavingFridayConfig(false);
+              }
+            }}
+            disabled={isSavingFridayConfig}
+            className="inline-flex items-center justify-center rounded-xl bg-orange-500 hover:bg-orange-600 px-6 py-2.5 text-xs font-bold text-white transition shadow-md shadow-orange-500/10 cursor-pointer disabled:opacity-50"
+          >
+            {isSavingFridayConfig ? "Saving..." : "Save Deals Configuration"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {cards.map((card, idx) => {
+            const matchedProducts = (() => {
+              if (!card.slug) return [];
+              if (card.type === "subcategory") {
+                const sub = subCategories.find((s: any) => s.slug === card.slug);
+                return sub ? products.filter((p: any) => p.subcategory_id === sub.id) : [];
+              }
+              const cat = categories.find((c: any) => c.slug === card.slug);
+              if (!cat) return [];
+              const subIds = subCategories
+                .filter((sub: any) => sub.category_id === cat.id)
+                .map((sub: any) => sub.id);
+              return products.filter((p: any) => subIds.includes(p.subcategory_id));
+            })();
+            
+            const matchedCategoryUrl = (() => {
+              if (!card.slug) return null;
+              if (card.type === "subcategory") {
+                return subCategories.find((s: any) => s.slug === card.slug)?.image_url || null;
+              }
+              return categories.find((c: any) => c.slug === card.slug)?.image_url || null;
+            })();
+
+            return (
+              <div key={idx} className="bg-gray-50/50 border border-gray-100 rounded-2xl p-5 space-y-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between border-b pb-2 border-gray-200/50">
+                  <span className="text-xs font-black text-orange-500">CARD {card.number}</span>
+                  <span className="text-[10px] font-bold text-gray-400">Position {idx + 1}</span>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Card Title</label>
+                  <input
+                    type="text"
+                    value={card.title}
+                    onChange={(e) => {
+                      const newCards = [...cards];
+                      newCards[idx] = { ...card, title: e.target.value };
+                      setCards(newCards);
+                    }}
+                    placeholder="e.g. Gaming Gear"
+                    className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                  />
+                </div>
+
+                {/* Subtitle */}
+                <div>
+                  <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Card Subtitle / Offer Text</label>
+                  <input
+                    type="text"
+                    value={card.subtitle}
+                    onChange={(e) => {
+                      const newCards = [...cards];
+                      newCards[idx] = { ...card, subtitle: e.target.value };
+                      setCards(newCards);
+                    }}
+                    placeholder="e.g. Up to 35% OFF"
+                    className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                  />
+                </div>
+
+                {/* Target Type: Category or Subcategory */}
+                <div>
+                  <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Target Type</label>
+                  <select
+                    value={card.type || "category"}
+                    onChange={(e) => {
+                      const newCards = [...cards];
+                      newCards[idx] = { ...card, type: e.target.value, slug: "" };
+                      setCards(newCards);
+                    }}
+                    className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                  >
+                    <option value="category">Category</option>
+                    <option value="subcategory">Subcategory</option>
+                  </select>
+                </div>
+
+                {/* Target Slug selection */}
+                <div>
+                  <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Target Selection</label>
+                  <select
+                    value={card.slug || ""}
+                    onChange={(e) => {
+                      const newSlug = e.target.value;
+                      const newCards = [...cards];
+                      
+                      let autoTitle = card.title;
+                      let autoImage = card.image;
+                      
+                      if (card.type === "subcategory") {
+                        const matchedSub = subCategories.find((sub: any) => sub.slug === newSlug);
+                        if (matchedSub) {
+                          autoTitle = matchedSub.title;
+                          const firstProd = products.find((p: any) => p.subcategory_id === matchedSub.id);
+                          if (firstProd && firstProd.main_image_url) {
+                            autoImage = firstProd.main_image_url;
+                          } else if (matchedSub.image_url) {
+                            autoImage = matchedSub.image_url;
+                          }
+                        }
+                      } else {
+                        const matchedCat = categories.find((cat: any) => cat.slug === newSlug);
+                        if (matchedCat) {
+                          autoTitle = matchedCat.title;
+                          const matchedSubIds = subCategories
+                            .filter((sub: any) => sub.category_id === matchedCat.id)
+                            .map((sub: any) => sub.id);
+                          const firstProd = products.find((p: any) => matchedSubIds.includes(p.subcategory_id));
+                          if (firstProd && firstProd.main_image_url) {
+                            autoImage = firstProd.main_image_url;
+                          } else if (matchedCat.image_url) {
+                            autoImage = matchedCat.image_url;
+                          }
+                        }
+                      }
+
+                      newCards[idx] = { ...card, slug: newSlug, title: autoTitle, image: autoImage };
+                      setCards(newCards);
+                    }}
+                    className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                  >
+                    <option value="">Select Target...</option>
+                    {card.type === "subcategory"
+                      ? subCategories.map((sub: any) => (
+                          <option key={sub.slug} value={sub.slug}>
+                            {sub.title}
+                          </option>
+                        ))
+                      : categories.map((cat: any) => (
+                          <option key={cat.slug} value={cat.slug}>
+                            {cat.title}
+                          </option>
+                        ))}
+                  </select>
+                </div>
+
+                {/* Discount Percentage */}
+                <div>
+                  <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Min Discount (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={card.discount || 0}
+                    onChange={(e) => {
+                      const newDiscount = Number(e.target.value);
+                      const newCards = [...cards];
+                      
+                      let autoSubtitle = card.subtitle;
+                      if (newDiscount > 0) {
+                        autoSubtitle = `${newDiscount}% OFF & More`;
+                      } else {
+                        autoSubtitle = "Special Drops";
+                      }
+
+                      newCards[idx] = { ...card, discount: newDiscount, subtitle: autoSubtitle };
+                      setCards(newCards);
+                    }}
+                    className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                  />
+                </div>
+
+                {/* Product Image Selection */}
+                <div>
+                  <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Featured Image</label>
+                  {(() => {
+                    const isPreset = ["/images/gamejoysticnew.png", "/images/headphonenew.png", "/images/iwatch.png", "/images/bspeaker.png"].includes(card.image);
+                    const isCategoryImg = matchedCategoryUrl && card.image === matchedCategoryUrl;
+                    const isProductImg = matchedProducts.some((p: any) => p.main_image_url === card.image);
+                    
+                    let selectValue = "custom";
+                    if (isPreset) {
+                      selectValue = card.image;
+                    } else if (isCategoryImg) {
+                      selectValue = "category-img";
+                    } else if (isProductImg) {
+                      selectValue = card.image;
+                    }
+
+                    return (
+                      <select
+                        value={selectValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const newCards = [...cards];
+                          if (val === "category-img") {
+                            newCards[idx] = { ...card, image: matchedCategoryUrl || "" };
+                          } else {
+                            newCards[idx] = { ...card, image: val === "custom" ? "" : val };
+                          }
+                          setCards(newCards);
+                        }}
+                        className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors mb-2"
+                      >
+                        <option value="/images/gamejoysticnew.png">Gamepad (Preset)</option>
+                        <option value="/images/headphonenew.png">Headphones (Preset)</option>
+                        <option value="/images/iwatch.png">Smartwatch (Preset)</option>
+                        <option value="/images/bspeaker.png">Speaker (Preset)</option>
+                        {matchedCategoryUrl && (
+                          <option value="category-img">Category / Subcategory Image</option>
+                        )}
+                        {matchedProducts.length > 0 && (
+                          <optgroup label="Corresponding Product Images">
+                            {matchedProducts.slice(0, 10).map((p: any) => (
+                              <option key={p.id} value={p.main_image_url}>
+                                Product: {p.title}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <option value="custom">Custom URL / Upload...</option>
+                      </select>
+                    );
+                  })()}
+                  {((!["/images/gamejoysticnew.png", "/images/headphonenew.png", "/images/iwatch.png", "/images/bspeaker.png"].includes(card.image) && card.image !== matchedCategoryUrl && !matchedProducts.some((p: any) => p.main_image_url === card.image)) || card.image === "") && (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={card.image || ""}
+                        onChange={(e) => {
+                          const newCards = [...cards];
+                          newCards[idx] = { ...card, image: e.target.value };
+                          setCards(newCards);
+                        }}
+                        placeholder="Enter image URL..."
+                        className="flex-1 text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                      />
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              const data = await uploadService.uploadImage(file);
+                              if (data && data.imageUrl) {
+                                const newCards = [...cards];
+                                newCards[idx] = { ...card, image: data.imageUrl };
+                                setCards(newCards);
+                                toast.success("Image uploaded successfully!");
+                              } else {
+                                toast.error("Failed to upload image. No URL returned.");
+                              }
+                            } catch (err: any) {
+                              toast.error(err?.response?.data?.message || "Failed to upload image");
+                            }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          className="h-full px-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-lg text-xs transition-colors whitespace-nowrap min-h-[34px] flex items-center justify-center border border-orange-500/10 cursor-pointer"
+                        >
+                          Upload
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ── Shipping & Delivery Configurations ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">

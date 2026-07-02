@@ -15,9 +15,10 @@ const startServer = async () => {
   try {
     await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
-    console.log('🟢 [DATABASE]: Unconditionally ensured delivery_boy_id and status type VARCHAR(50) exist in ReturnRequests table');
+    await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
+    console.log('🟢 [DATABASE]: Unconditionally ensured delivery_boy_id, status type VARCHAR(50), and fridaySaleConfig JSONB exist in the database');
   } catch (dbErr) {
-    console.log('ℹ️ [DATABASE]: Skipping unconditional ReturnRequests table alteration:', dbErr.message);
+    console.log('ℹ️ [DATABASE]: Skipping unconditional ReturnRequests/SiteSettings table alterations:', dbErr.message);
   }
 
   if (process.env.DB_SYNC === "true") {

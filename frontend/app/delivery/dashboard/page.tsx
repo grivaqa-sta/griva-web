@@ -261,14 +261,15 @@ export default function DeliveryDashboard() {
         return;
       }
       if (!res.ok) { 
-        setError("Something went wrong, try again."); 
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || "Failed to load assigned orders."); 
         setLoading(false); 
         return; 
       }
       const data = await res.json();
       setOrders(data.orders || []);
     } catch {
-      setError("Check your internet connection.");
+      setError("Unable to connect to server. Please check your internet connection.");
     } finally {
       setLoading(false);
     }
@@ -323,7 +324,7 @@ export default function DeliveryDashboard() {
       toast.success(`Return task marked as ${status.replace("_", " ")}!`);
       handleRefresh();
     } catch {
-      toast.error("Check your internet connection.");
+      toast.error("Unable to connect to server. Please check your internet connection.");
     } finally {
       setUpdatingReturnId(null);
     }
@@ -394,7 +395,7 @@ export default function DeliveryDashboard() {
         showToast(data.message || "Failed to update status.", "error");
       }
     } catch {
-      showToast("Check your internet connection.", "error");
+      showToast("Unable to connect to server. Please check your internet connection.", "error");
     } finally {
       setUpdatingId(null);
     }
@@ -463,7 +464,7 @@ export default function DeliveryDashboard() {
         setModalError(data.message || "Something went wrong.");
       }
     } catch {
-      setModalError("Check your internet connection.");
+      setModalError("Unable to connect to server. Please check your internet connection.");
     } finally {
       setModalLoading(false);
     }
@@ -488,7 +489,7 @@ export default function DeliveryDashboard() {
         setModalError(data.message || "Something went wrong.");
       }
     } catch {
-      setModalError("Check your internet connection.");
+      setModalError("Unable to connect to server. Please check your internet connection.");
     } finally {
       setModalLoading(false);
     }
@@ -517,7 +518,7 @@ export default function DeliveryDashboard() {
         setModalError(data.message || "Something went wrong.");
       }
     } catch {
-      setModalError("Check your internet connection.");
+      setModalError("Unable to connect to server. Please check your internet connection.");
     } finally {
       setModalLoading(false);
     }
@@ -792,7 +793,7 @@ export default function DeliveryDashboard() {
                           const isUpdating = updatingReturnId === req.id;
                           const custName = req.order?.customer_name || req.user?.name || "Customer";
                           const custPhone = req.order?.customer_phone || req.user?.phone || "";
-                          const refundVal = (req.quantity * parseFloat(req.orderItem?.price_at_purchase || "0")).toFixed(2);
+                          const refundVal = (req.quantity * parseFloat(parseTotal(req.orderItem?.price_at_purchase))).toFixed(2);
 
                           const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
                             approved_replacement: { label: "Replacement Swap", color: "text-blue-400", bg: "bg-blue-950/30 border-blue-900/50" },

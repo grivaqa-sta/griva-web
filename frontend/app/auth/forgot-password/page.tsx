@@ -45,10 +45,13 @@ export default function ForgotPasswordPage() {
         setStatus("error");
         setMessage("Something went wrong. Please try again.");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       setStatus("error");
       const errorMessage =
-        err instanceof Error ? err.message : "Unable to send reset link. Please try again.";
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Unable to send reset link. Please try again.";
       setMessage(errorMessage);
     }
   };

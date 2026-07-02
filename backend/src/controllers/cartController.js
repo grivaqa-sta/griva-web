@@ -418,13 +418,13 @@ exports.mergeCart = async (req, res) => {
       });
 
       if (dbItem) {
-        const mergedQty = Math.max(dbItem.quantity, Math.min(dbItem.quantity + qty, availableStock));
+        const mergedQty = Math.max(dbItem.quantity, Math.min(dbItem.quantity + qty, Math.min(availableStock, 10)));
         if (mergedQty !== dbItem.quantity) {
           dbItem.quantity = mergedQty;
           await dbItem.save();
         }
       } else {
-        const finalQty = Math.min(qty, availableStock);
+        const finalQty = Math.min(qty, Math.min(availableStock, 10));
         if (finalQty > 0) {
           await CartItem.create({
             cart_id: cart.id,

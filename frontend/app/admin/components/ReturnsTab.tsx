@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { getAllReturnRequestsApi, updateReturnRequestStatusApi, getDeliveryBoysApi } from "../../utils/api";
 import { useToast } from "@/app/context/ToastContext";
+import { useSocket } from "@/app/context/SocketContext";
 
 interface DeliveryBoy {
   id: number;
@@ -73,6 +74,7 @@ interface ReturnRequest {
 }
 
 export default function ReturnsTab() {
+  const { socket } = useSocket();
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,6 +106,23 @@ export default function ReturnsTab() {
   useEffect(() => {
     fetchReturnRequests();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdate = () => {
+      console.log("🔌 [Socket.IO Event]: return request/order updated. Refetching return requests...");
+      fetchReturnRequests();
+    };
+
+    socket.on("order-updated", handleUpdate);
+    socket.on("dashboard-metrics-updated", handleUpdate);
+
+    return () => {
+      socket.off("order-updated", handleUpdate);
+      socket.off("dashboard-metrics-updated", handleUpdate);
+    };
+  }, [socket]);
 
   useEffect(() => {
     const fetchDeliveryBoys = async () => {

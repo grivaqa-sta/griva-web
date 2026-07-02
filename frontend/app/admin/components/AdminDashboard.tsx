@@ -70,6 +70,7 @@ export default function AdminDashboard() {
   const [telegramLink, setTelegramLink] = useState<string>("");
   const [whatsappCommunityLink, setWhatsappCommunityLink] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [fridaySaleConfig, setFridaySaleConfig] = useState<any>(null);
 
   const [dateRangeOption, setDateRangeOption] = useState<string>("7days");
   const [customStartDate, setCustomStartDate] = useState<string>("");
@@ -143,6 +144,7 @@ export default function AdminDashboard() {
       setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 99);
       setTelegramLink(dbSettings.telegramLink || "");
       setWhatsappCommunityLink(dbSettings.whatsappCommunityLink || "");
+      setFridaySaleConfig(dbSettings.fridaySaleConfig || null);
       setSubscribersList(dbSubs);
       setOrdersList(dbOrders);
     } catch (err) {
@@ -279,6 +281,10 @@ export default function AdminDashboard() {
     setWhatsappCommunityLink(wa);
     await updateSettingsApi({ telegramLink: tg, whatsappCommunityLink: wa });
   };
+  const handleSaveFridaySaleConfig = async (config: any) => {
+    setFridaySaleConfig(config);
+    await updateSettingsApi({ fridaySaleConfig: config });
+  };
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault(); if (!broadcastSubject || !broadcastMessage) return;
@@ -369,6 +375,8 @@ export default function AdminDashboard() {
               setCustomStartDate={setCustomStartDate}
               customEndDate={customEndDate}
               setCustomEndDate={setCustomEndDate}
+              fridaySaleConfig={fridaySaleConfig}
+              onSaveFridaySaleConfig={handleSaveFridaySaleConfig}
             />
           )}
           {activeTab === "products" && (

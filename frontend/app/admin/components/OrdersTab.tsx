@@ -341,7 +341,11 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
       </div>
     `;
 
-    const generateInvoiceHtml = () => `
+    const generateInvoiceHtml = () => {
+      const grandTotalVal = Number(String(order.total_price).replace(/([$]|qar|[\s,])/gi, ""));
+      const grandTotal = isNaN(grandTotalVal) ? subtotal : grandTotalVal;
+      const deliveryFee = Math.max(0, grandTotal - subtotal);
+      return `
       <div class="slip-container invoice-slip">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif;">
           <div>
@@ -439,11 +443,11 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #555;">
               <span>Delivery Fee:</span>
-              <span>QAR 0.00</span>
+              <span>QAR ${deliveryFee.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; border-top: 1px solid #ccc; padding-top: 8px; color: #111;">
               <span>Grand Total:</span>
-              <span>QAR ${subtotal.toFixed(2)}</span>
+              <span>QAR ${grandTotal.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -453,7 +457,8 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           <p style="margin: 3px 0 0 0;">This is a computer-generated tax invoice. No physical signature is required.</p>
         </div>
       </div>
-    `;
+      `;
+    };
 
     if (type === 'packing') {
       return generatePackingSlipHtml();

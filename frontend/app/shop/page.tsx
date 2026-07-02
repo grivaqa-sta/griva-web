@@ -44,6 +44,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const [maxPrice, setMaxPrice] = useState<number>(1000000);
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("featured");
+  const [minDiscount, setMinDiscount] = useState<number>(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const searchParamsHook = useSearchParams();
@@ -75,6 +76,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     const ratingParam = searchParamsHook.get("rating") || "";
     const maxPriceParam = searchParamsHook.get("maxPrice") || "";
     const sortByParam = searchParamsHook.get("sortBy") || "featured";
+    const discountParam = searchParamsHook.get("minDiscount") || "";
 
     if (categoryParam) setSelectedCategory(categoryParam.toLowerCase());
     if (subParam) setSelectedSubCategory(subParam.toLowerCase());
@@ -85,6 +87,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     if (ratingParam) setMinRating(Number(ratingParam));
     if (maxPriceParam) setMaxPrice(Number(maxPriceParam));
     if (sortByParam) setSortBy(sortByParam);
+    if (discountParam) setMinDiscount(Number(discountParam));
 
     hasInitializedRef.current = true;
   }, [resolvedParams]);
@@ -99,6 +102,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     const ratingParam = searchParamsHook.get("rating") ? Number(searchParamsHook.get("rating")) : 0;
     const maxPriceParam = searchParamsHook.get("maxPrice") ? Number(searchParamsHook.get("maxPrice")) : 1000000;
     const sortByParam = searchParamsHook.get("sortBy") || "featured";
+    const discountParam = searchParamsHook.get("minDiscount") ? Number(searchParamsHook.get("minDiscount")) : 0;
 
     if (categoryParam.toLowerCase() !== selectedCategory) {
       setSelectedCategory(categoryParam.toLowerCase());
@@ -119,6 +123,9 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     if (sortByParam !== sortBy) {
       setSortBy(sortByParam);
     }
+    if (discountParam !== minDiscount) {
+      setMinDiscount(discountParam);
+    }
   }, [searchParamsHook]);
 
   // Sync state to URL params
@@ -132,11 +139,12 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     if (minRating > 0) params.set("rating", String(minRating));
     if (maxPrice < 1000000) params.set("maxPrice", String(maxPrice));
     if (sortBy !== "featured") params.set("sortBy", sortBy);
+    if (minDiscount > 0) params.set("minDiscount", String(minDiscount));
 
     const newQuery = params.toString();
     const newPath = `${pathname}${newQuery ? `?${newQuery}` : ""}`;
     window.history.replaceState(null, "", newPath);
-  }, [selectedCategory, selectedSubCategory, searchVal, minRating, maxPrice, sortBy, pathname]);
+  }, [selectedCategory, selectedSubCategory, searchVal, minRating, maxPrice, sortBy, minDiscount, pathname]);
 
   // Smooth scroll to products grid on filter changes
   useEffect(() => {
@@ -176,6 +184,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     setMaxPrice(1000000);
     setMinRating(0);
     setSortBy("featured");
+    setMinDiscount(0);
   };
 
   // Helper to clean up category titles that are in all caps (e.g. "FLOWERS & BOUQUETS")
@@ -295,6 +304,18 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
       result = result.filter((p) => p.rating >= minRating);
     }
 
+    // Discount Filter
+    if (minDiscount > 0) {
+      result = result.filter((p) => {
+        const pct = p.discount_percentage !== undefined && p.discount_percentage !== null
+          ? Number(p.discount_percentage)
+          : (p.old_price && Number(p.old_price) > Number(p.price))
+            ? Math.round(((Number(p.old_price) - Number(p.price)) / Number(p.old_price)) * 100)
+            : 0;
+        return pct >= minDiscount;
+      });
+    }
+
     // Sorting
     if (sortBy === "price-low-to-high") {
       result.sort((a, b) => Number(a.price) - Number(b.price));
@@ -305,7 +326,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
 
     return result;
-  }, [products, selectedCategory, selectedSubCategory, selectedCategorySubIds, activeSubCategories, minRating, sortBy, searchVal, maxPrice]);
+  }, [products, selectedCategory, selectedSubCategory, selectedCategorySubIds, activeSubCategories, minRating, sortBy, searchVal, maxPrice, minDiscount]);
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-16">
@@ -551,7 +572,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
             </div>
 
             {/* Active Filter Chips */}
-            {(selectedCategory || selectedSubCategory || minRating > 0 || maxPrice < 1000000 || searchVal) && (
+            {(selectedCategory || selectedSubCategory || minRating > 0 || maxPrice < 1000000 || searchVal || minDiscount > 0) && (
               <div className="flex flex-wrap gap-2 items-center py-2 animate-in fade-in duration-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Active Filters:</span>
                 
@@ -595,6 +616,15 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
                     Price: &le; QAR {maxPrice}
                     <button onClick={() => setMaxPrice(1000000)} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {minDiscount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-xs font-semibold text-orange-600">
+                    Min Discount: {minDiscount}%+ OFF
+                    <button onClick={() => setMinDiscount(0)} className="hover:text-orange-850 focus:outline-none ml-1 cursor-pointer">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </span>

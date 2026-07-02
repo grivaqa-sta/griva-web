@@ -6,6 +6,7 @@ import {
   TrendingDown, ShieldAlert, Package, Layers
 } from 'lucide-react';
 import { useToast } from '@/app/context/ToastContext';
+import { useSocket } from '@/app/context/SocketContext';
 import {
   DeepAnalyticsData,
   getDeepAnalyticsApi,
@@ -19,6 +20,7 @@ interface AnalyticsTabProps {
 
 export default function AnalyticsTab({ active }: AnalyticsTabProps) {
   const { toast } = useToast();
+  const { socket } = useSocket();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DeepAnalyticsData | null>(null);
 
@@ -86,6 +88,25 @@ export default function AnalyticsTab({ active }: AnalyticsTabProps) {
       fetchAnalytics();
     }
   }, [active, dateRangeOption, customStartDate, customEndDate]);
+
+  useEffect(() => {
+    if (!socket || !active) return;
+
+    const handleUpdate = () => {
+      console.log('🔌 [Socket.IO Event]: Refreshing AnalyticsTab...');
+      fetchAnalytics();
+    };
+
+    socket.on('new-order', handleUpdate);
+    socket.on('order-updated', handleUpdate);
+    socket.on('dashboard-metrics-updated', handleUpdate);
+
+    return () => {
+      socket.off('new-order', handleUpdate);
+      socket.off('order-updated', handleUpdate);
+      socket.off('dashboard-metrics-updated', handleUpdate);
+    };
+  }, [socket, active]);
 
   // Export handlers
   const handleExportCSV = async (type: 'orders' | 'customers' | 'inventory') => {

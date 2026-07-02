@@ -58,10 +58,18 @@ export default function RegisterPage() {
         login({ name: data.user?.name || name, email, role: data.user?.role || "customer" }, data.token);
         router.push("/");
       } else {
-        setError(data.message || "Registration failed. Please try again.");
+        let msg = data.message || "Registration failed. Please try again.";
+        if (msg.toLowerCase().includes("exist") || msg.toLowerCase().includes("conflict") || msg.toLowerCase().includes("registered")) {
+          msg = "This email is already registered. Please sign in or use a different email.";
+        }
+        setError(msg);
       }
-    } catch {
-      setError("Unable to connect to server. Please try again.");
+    } catch (err: any) {
+      let errMsg = err.response?.data?.message || err.response?.data?.error || "Unable to connect to server. Please try again.";
+      if (errMsg.toLowerCase().includes("exist") || errMsg.toLowerCase().includes("conflict") || errMsg.toLowerCase().includes("registered")) {
+        errMsg = "This email is already registered. Please sign in or use a different email.";
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

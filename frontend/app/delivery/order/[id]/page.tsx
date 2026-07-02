@@ -130,7 +130,7 @@ export default function DeliveryOrderDetailPage() {
           setError("Order not found or not assigned to you.");
         }
       } catch {
-        setError("Check your internet connection.");
+        setError("Unable to connect to server. Please check your internet connection.");
       } finally {
         setLoading(false);
       }
@@ -165,7 +165,7 @@ export default function DeliveryOrderDetailPage() {
         toast.error(data.message || "Failed to update status.");
       }
     } catch {
-      toast.error("Check your internet connection.");
+      toast.error("Unable to connect to server. Please check your internet connection.");
     } finally {
       setUpdating(false);
     }

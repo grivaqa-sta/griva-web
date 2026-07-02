@@ -29,17 +29,17 @@ const TEMPLATES = [
   {
     name: "🎉 20% Off Welcome Discount Offer",
     subject: "Welcome to GRIVA Store! Get 20% Off Your Next Order 🎉",
-    message: `Dear subscriber,\n\nThank you for joining the GRIVA newsletter! As a token of our appreciation, here is an exclusive 20% discount code for your next purchase.\n\nDiscount Code: GRIVA20\n\nShop our latest flagship laptops, smart devices, and high-end audio gear now at https://griva.qa!\n\nBest regards,\nThe GRIVA Team`
+    message: `Dear subscriber,\n\nThank you for joining the GRIVA newsletter! As a token of our appreciation, here is an exclusive 20% discount code for your next purchase.\n\nDiscount Code: GRIVA20\n\nShop our latest flagship laptops, smart drones, audio gear, and premium perfumes now at https://thegriva.com!\n\nBest regards,\nThe GRIVA Team`
   },
   {
     name: "🔥 New Flagship Arrival Announcement",
     subject: "🔥 Just Landed: The Newest Tech Flagships Are Now in Stock!",
-    message: `Hello Tech Enthusiast,\n\nWe are thrilled to announce that the latest high-performance flagship devices have just arrived at our store!\n\nCheck out the brand new arrivals:\n- Latest M3 Pro Laptops\n- Premium ANC Headphones\n- Smart Living Gadgets\n\nStock is limited! Order now with Same-Day Delivery in Doha.\n\nShop here: https://griva.qa/shop\n\nBest regards,\nThe GRIVA Team`
+    message: `Hello Tech Enthusiast,\n\nWe are thrilled to announce that the latest high-performance flagship devices have just arrived at our store!\n\nCheck out the brand new arrivals:\n- DJI Mini 4 Pro Drone Combo\n- Sony WH-1000XM5 ANC Headphones\n- Meta Quest 3 VR Headset\n- MacBook Air 15-inch M3 Chip\n\nStock is limited! Order now with Same-Day Delivery in Doha.\n\nShop here: https://thegriva.com/shop\n\nBest regards,\nThe GRIVA Team`
   },
   {
     name: "⚡ Weekend Flash Sale Alert",
     subject: "⚡ 48 Hours Only: GRIVA Weekend Flash Sale is Live!",
-    message: `Hi there,\n\nOur Weekend Flash Sale is officially LIVE! For the next 48 hours, enjoy up to 50% off on selected items across our store.\n\nNo discount codes needed – all price cuts are automatically applied at checkout. Free shipping on orders over QAR 99.\n\nDon't miss out:\n👉 Shop the sale: https://griva.qa/exclusive-offers\n\nBest regards,\nThe GRIVA Team`
+    message: `Hi there,\n\nOur Weekend Flash Sale is officially LIVE! For the next 48 hours, enjoy up to 50% off on selected items across our store.\n\nNo discount codes needed – all price cuts are automatically applied at checkout. Free shipping on orders over QAR 99.\n\nDon't miss out:\n👉 Shop the sale: https://thegriva.com/exclusive-offers\n\nBest regards,\nThe GRIVA Team`
   }
 ];
 

@@ -67,7 +67,7 @@ const sendAdminOrderNotification = async (order) => {
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
             <!-- Header -->
             <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
-              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+              <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
             </div>
             <!-- Body -->
             <div style="padding: 32px;">
@@ -147,7 +147,7 @@ const sendCustomerOrderConfirmation = async (
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
             <!-- Header -->
             <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
-              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+              <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
             </div>
             <!-- Body -->
             <div style="padding: 32px;">
@@ -232,7 +232,7 @@ const sendOutForDeliveryEmail = async (order) => {
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
             <!-- Header -->
             <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
-              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+              <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
             </div>
             <!-- Body -->
             <div style="padding: 32px;">
@@ -306,7 +306,7 @@ const sendOrderDeliveredEmail = async (order) => {
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
             <!-- Header -->
             <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
-              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+              <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
             </div>
             <!-- Body -->
             <div style="padding: 32px;">
@@ -413,7 +413,7 @@ const sendSubscriberWelcomeEmail = async (email) => {
       htmlContent: `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #ff6a00;">
-            <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
+            <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
           </div>
           <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome to the Family! 🎉</h2>
           <p style="color: #374151; font-size: 14px; line-height: 1.6;">Hello,</p>
@@ -498,7 +498,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
       htmlContent: `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #ff6a00;">
-            <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
+            <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
           </div>
           <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px; text-align: center;">Reset Your Password</h2>
           <p style="color: #374151; font-size: 14px; line-height: 1.6;">Hello ${name || "Customer"},</p>
@@ -552,7 +552,7 @@ const sendReturnRequestSubmittedEmail = async (request, user, orderNumber) => {
         <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
             <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
-              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+              <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
             </div>
             <div style="padding: 32px;">
               <div style="text-align: center; margin-bottom: 24px;">
@@ -617,7 +617,7 @@ const sendReturnRequestApprovedEmail = async (request, user, orderNumber, detail
         <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
             <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
-              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+              <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
             </div>
             <div style="padding: 32px;">
               <div style="text-align: center; margin-bottom: 24px;">
@@ -680,7 +680,7 @@ const sendReturnRequestRejectedEmail = async (request, user, orderNumber, reason
         <div style="background-color: #1a1a2e; padding: 40px 20px; width: 100%;">
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
             <div style="text-align: center; padding: 28px 32px 20px; border-bottom: 3px solid #ff6a00;">
-              <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
+              <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 14px; border-radius: 8px;" />
             </div>
             <div style="padding: 32px;">
               <div style="text-align: center; margin-bottom: 24px;">

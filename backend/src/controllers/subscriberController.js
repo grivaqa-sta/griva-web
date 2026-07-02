@@ -129,7 +129,7 @@ exports.broadcast = async (req, res, next) => {
     const formattedHtml = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #ff6a00;">
-          <img src="https://griva-web-chi.vercel.app/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
+          <img src="https://thegriva.com/images/logo-light.png" alt="GRIVA Logo" style="height: 35px; width: auto; background-color: #000; padding: 8px 12px; border-radius: 8px;" />
         </div>
         <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px;">${subject}</h2>
         <div style="color: #374151; font-size: 14px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 24px;">${message}</div>

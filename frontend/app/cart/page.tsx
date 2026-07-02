@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Truck, AlertTriangle } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import { motion, AnimatePresence } from "framer-motion";
@@ -134,7 +134,7 @@ export default function CartPage() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="h-9 w-9 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                    <span className="text-lg">🚚</span>
+                    <Truck className="h-5 w-5 text-orange-500" />
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-gray-900">
@@ -248,12 +248,15 @@ export default function CartPage() {
                         </div>
                         {/* HIGH-9: Stock error warning notice */}
                         {stockStatus[item.id] && !stockStatus[item.id].ok && (
-                          <div className="mt-1.5 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1 inline-block animate-fadeIn">
-                            {!stockStatus[item.id].active ? (
-                              "⚠️ This product is currently inactive / unavailable."
-                            ) : (
-                              `⚠️ Requested quantity exceeds stock. Only ${stockStatus[item.id].available} available.`
-                            )}
+                          <div className="mt-1.5 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1 inline-flex items-center gap-1.5 animate-fadeIn">
+                            <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                            <span>
+                              {!stockStatus[item.id].active ? (
+                                "This product is currently inactive / unavailable."
+                              ) : (
+                                `Requested quantity exceeds stock. Only ${stockStatus[item.id].available} available.`
+                              )}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -328,9 +331,7 @@ export default function CartPage() {
                     <span>Shipping Charge</span>
                     <span className="font-semibold">
                       {shippingCost === 0 ? (
-                        <span className="text-green-600">
-                          &minus; QAR {shippingConfig.shippingFee.toFixed(2)}
-                        </span>
+                        <span className="text-green-600 font-bold">Free</span>
                       ) : (
                         <span className="text-gray-900">QAR {shippingCost.toFixed(2)}</span>
                       )}
@@ -345,10 +346,10 @@ export default function CartPage() {
                 </div>
 
                 {/* Savings message */}
-                {state.totalOldPrice - state.totalPrice + (shippingCost === 0 ? shippingConfig.shippingFee : 0) > 0 && (
+                {state.totalOldPrice - state.totalPrice > 0 && (
                   <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 text-center">
                     <p className="text-xs font-bold text-green-700">
-                      🎉 You saved QAR {(state.totalOldPrice - state.totalPrice + (shippingCost === 0 ? shippingConfig.shippingFee : 0)).toFixed(2)} on this order
+                      You saved QAR {(state.totalOldPrice - state.totalPrice).toFixed(2)} on this order
                     </p>
                   </div>
                 )}

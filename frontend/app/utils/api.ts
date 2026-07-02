@@ -207,6 +207,7 @@ export interface GlobalSettings {
   supportEmail?: string;
   telegramLink?: string;
   whatsappCommunityLink?: string;
+  fridaySaleConfig?: any;
 }
 
 export async function getSettingsApi(): Promise<GlobalSettings> {

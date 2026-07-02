@@ -149,15 +149,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, [isLoggedIn]);
 
-  // Persist to localStorage (only if guest user)
+  // Persist to localStorage (only if guest user and auth loading is complete)
   useEffect(() => {
-    if (!hydrated || isLoggedIn) return;
+    if (!hydrated || userState.loading || isLoggedIn) return;
     localStorage.setItem("griva-cart", JSON.stringify(state.items));
-  }, [state.items, hydrated, isLoggedIn]);
+  }, [state.items, hydrated, isLoggedIn, userState.loading]);
 
   // Sync / merge cart when isLoggedIn state changes
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || userState.loading) return;
 
     const syncCartOnAuthChange = async () => {
       if (isLoggedIn) {
@@ -171,6 +171,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }
 
           if (Array.isArray(guestItems) && guestItems.length > 0) {
+            // Remove immediately to prevent concurrent triggers or page refresh races
+            localStorage.removeItem("griva-cart");
             console.log("Merging guest cart with database user cart...");
             const mergeResponse = await cartService.mergeCart(
               guestItems.map((item) => ({
@@ -184,7 +186,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
             );
             if (mergeResponse.success && mergeResponse.cart) {
               dispatch({ type: "SET_CART", payload: mergeResponse.cart.items });
-              localStorage.removeItem("griva-cart");
             }
           } else {
             console.log("Fetching database user cart...");
@@ -205,7 +206,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
 
     syncCartOnAuthChange();
-  }, [isLoggedIn, hydrated]);
+  }, [isLoggedIn, hydrated, userState.loading]);
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);

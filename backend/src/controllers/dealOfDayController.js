@@ -58,6 +58,12 @@ exports.getActiveDealOfDay = async (req, res) => {
     const deals = await DealOfDay.findAll({
       where: {
         isActive: true,
+        startDate: {
+          [Op.lte]: now,
+        },
+        endDate: {
+          [Op.gte]: now,
+        },
       },
       include: [
         {

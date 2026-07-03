@@ -222,10 +222,9 @@ function getDefaultDates() {
   const now = new Date();
 
   const start = new Date(now);
-  start.setHours(0, 0, 0, 0); // 12:00 AM today
+  start.setSeconds(0, 0); // round to minute
 
-  const end = new Date(now);
-  end.setDate(end.getDate() + 7);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
 
   return { defaultStart: toDatetimeLocal(start), defaultEnd: toDatetimeLocal(end) };
 }
@@ -249,12 +248,11 @@ function DealOfDaySection() {
 
   // Auto-compute end date: always 24 hours after startDate
   const computeEndFrom = (start: string): string => {
-    if (!start || start.length < 16) return start;
-    const [datePart, timePart] = start.split('T');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
-    const ms = new Date(year, month - 1, day, hours, minutes).getTime();
-    return toDatetimeLocal(new Date(ms + 24 * 60 * 60 * 1000));
+    if (!start) return '';
+    const parsed = new Date(start);
+    if (isNaN(parsed.getTime())) return start;
+    const end = new Date(parsed.getTime() + 24 * 60 * 60 * 1000);
+    return toDatetimeLocal(end);
   };
   const [endDate, setEndDate] = useState(() => computeEndFrom(defaultStart));
 

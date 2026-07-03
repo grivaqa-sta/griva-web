@@ -119,6 +119,16 @@ export const metadata: Metadata = {
   },
   // verification: Add your Google Search Console code here after setting up GSC
   // verification: { google: "YOUR_CODE_HERE" },
+  verification: {
+    // Facebook Domain Verification
+    other: {
+      "facebook-domain-verification": "bswovkme9kzzdihcncgswrer4oy3s0",
+    },
+  },
+  other: {
+    // Facebook Domain Verification meta tag
+    "facebook-domain-verification": "bswovkme9kzzdihcncgswrer4oy3s0",
+  },
   category: "electronics",
 };
 
@@ -159,6 +169,8 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Facebook Domain Verification */}
+        <meta name="facebook-domain-verification" content="bswovkme9kzzdihcncgswrer4oy3s0" />
       </head>
       <body className="min-h-full flex flex-col bg-white text-gray-900 font-sans" suppressHydrationWarning>
         {/* Google Tag Manager (noscript) */}

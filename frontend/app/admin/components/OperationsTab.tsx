@@ -38,6 +38,18 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   cancelled:        { label: "Cancelled",        color: "text-red-500",    bg: "bg-red-50 border-red-200",        icon: <CheckCircle className="h-3.5 w-3.5" /> },
 };
 
+// Allowed forward transitions per status
+const STATUS_FLOW: Record<string, string[]> = {
+  pending:          ['processing', 'cancelled'],
+  processing:       ['shipped', 'out_for_delivery', 'cancelled'],
+  assigned:         ['out_for_delivery', 'cancelled'],
+  out_for_delivery: ['delivered', 'cancelled'],
+  shipped:          ['delivered', 'cancelled'],
+  delivered:        [],
+  completed:        [],
+  cancelled:        [],
+};
+
 const timeSince = (dateStr: string) => {
   const secs = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (secs < 60) return "just now";
@@ -83,6 +95,19 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
   }).length;
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
+    // Guard: validate against STATUS_FLOW before sending to API
+    const order = ordersList.find(o => o.id === orderId);
+    if (order) {
+      const currentStatus = order.status === 'completed' ? 'delivered' : order.status;
+      const allowedTransitions = STATUS_FLOW[currentStatus] || [];
+      if (allowedTransitions.length === 0) {
+        return; // Terminal state — silently ignore
+      }
+      if (!allowedTransitions.includes(newStatus)) {
+        return; // Invalid transition — silently ignore (button won't show anyway)
+      }
+    }
+
     setUpdatingId(orderId);
     try {
       await updateOrderStatusApi(orderId, newStatus);
@@ -543,18 +568,19 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                                   <>
                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setActionMenuOpenId(null)} />
                                     <div className="absolute right-0 mt-1 bg-white border border-gray-150 rounded-xl shadow-lg z-50 py-1 overflow-hidden min-w-[140px] text-left">
-                                      {["pending", "processing", "out_for_delivery", "delivered", "cancelled"].map((statusOption) => (
+                                      {(STATUS_FLOW[order.status === 'completed' ? 'delivered' : order.status] || []).map((statusOption) => (
                                         <button
                                           key={statusOption}
                                           disabled={updatingId === order.id}
                                           onClick={() => handleStatusChange(order.id, statusOption)}
-                                          className={`w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-orange-50 hover:text-orange-500 capitalize transition-colors ${
-                                            order.status === statusOption ? "text-orange-500 font-bold" : "text-gray-700"
-                                          }`}
+                                          className="w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-orange-50 hover:text-orange-500 capitalize transition-colors text-gray-700"
                                         >
                                           {statusOption.replace(/_/g, " ")}
                                         </button>
                                       ))}
+                                      {(STATUS_FLOW[order.status === 'completed' ? 'delivered' : order.status] || []).length === 0 && (
+                                        <div className="px-3.5 py-2 text-xs text-gray-400 italic">No further transitions</div>
+                                      )}
                                     </div>
                                   </>
                                 )}
@@ -634,27 +660,25 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                                         <span>⚙️</span> Update Order Status
                                       </p>
                                       <div className="flex flex-wrap gap-1.5">
-                                        {["pending", "processing", "out_for_delivery", "delivered", "cancelled"].map((statusOption) => {
-                                          const isCurrent = order.status === statusOption;
-                                          const nextCfg = STATUS_CONFIG[statusOption === 'completed' ? 'delivered' : statusOption] || STATUS_CONFIG.pending;
+                                        {(STATUS_FLOW[order.status === 'completed' ? 'delivered' : order.status] || []).map((statusOption) => {
+                                          const nextCfg = STATUS_CONFIG[statusOption] || STATUS_CONFIG.pending;
                                           return (
                                             <button
                                               key={statusOption}
                                               disabled={updatingId === order.id}
                                               onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, statusOption); }}
-                                              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-black border transition-all cursor-pointer disabled:opacity-50 uppercase ${
-                                                isCurrent 
-                                                  ? "bg-orange-500 border-orange-500 text-white" 
-                                                  : `${nextCfg.bg} ${nextCfg.color} hover:opacity-80`
-                                              }`}
+                                              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-black border transition-all cursor-pointer disabled:opacity-50 uppercase ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
                                             >
-                                              {updatingId === order.id && isCurrent ? (
+                                              {updatingId === order.id ? (
                                                 <span className="h-2 w-2 border border-current border-t-transparent rounded-full animate-spin" />
                                               ) : nextCfg.icon}
                                               {statusOption.replace(/_/g, " ")}
                                             </button>
                                           );
                                         })}
+                                        {(STATUS_FLOW[order.status === 'completed' ? 'delivered' : order.status] || []).length === 0 && (
+                                          <span className="text-[9px] text-gray-400 italic font-semibold">Order complete — no further actions</span>
+                                        )}
                                       </div>
                                     </div>
 

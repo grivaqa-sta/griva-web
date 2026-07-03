@@ -5,6 +5,7 @@ import { useAdminSettings } from "@/app/context/AdminContext";
 import { useUser } from "@/app/context/UserContext";
 import { useSocket } from "@/app/context/SocketContext";
 import { useToast } from "@/app/context/ToastContext";
+import { useAdminTheme } from "@/app/admin/context/AdminThemeContext";
 import { CategoryItem, OfferCard, Product, SlideData } from "@/app/types/types";
 import { addSubscriberApi, AdminOrder, AnalyticsData, broadcastNewsletterApi, getAllOrdersApi, getAnalyticsApi, getSettingsApi, getSubscribersApi, SubscriberInfo, updateSettingsApi } from "@/app/utils/api";
 import { products as initialProducts, slide as initialSlides, offers as initialOffers, categories as initialCategories } from "@/app/data/data";
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
   const { role } = useUser();
   const { socket } = useSocket();
   const { toast } = useToast();
+  const { theme } = useAdminTheme();
 
   const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff", "feedback", "analytics", "returns"];
   const defaultTab = role === "staff" ? "operations" : "overview";
@@ -328,7 +330,7 @@ export default function AdminDashboard() {
   const unreviewedCount = ordersList.filter(o => o.status === "pending" && !(o as any).reviewed_at).length;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex font-sans antialiased selection:bg-orange-500 selection:text-white">
+    <div data-admin-theme={theme} className="min-h-screen flex font-sans antialiased selection:bg-orange-500 selection:text-white" style={{ backgroundColor: 'var(--admin-bg)', color: 'var(--admin-text)' }}>
 
       {/* ── Sidebar ── */}
       <AdminSidebar

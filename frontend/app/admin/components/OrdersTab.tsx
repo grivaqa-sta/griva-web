@@ -187,11 +187,34 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   };
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
+    // Guard: validate against STATUS_FLOW before sending to API
+    const order = ordersList.find(o => o.id === orderId);
+    if (order) {
+      const currentStatus = order.status === 'completed' ? 'delivered' : order.status;
+      const allowedTransitions = STATUS_FLOW[currentStatus] || [];
+      if (allowedTransitions.length === 0) {
+        toast.error(`Order is already ${currentStatus}. No further status changes allowed.`);
+        return;
+      }
+      if (!allowedTransitions.includes(newStatus)) {
+        toast.error(`Cannot change status from "${currentStatus}" to "${newStatus}". Allowed: ${allowedTransitions.join(', ')}.`);
+        return;
+      }
+    }
+
     setUpdatingId(orderId);
+    // Optimistic UI update
     setOrdersList(prev =>
       prev.map(o => o.id === orderId ? { ...o, status: newStatus, reviewed_at: o.reviewed_at || new Date().toISOString() } : o)
     );
-    await updateOrderStatusApi(orderId, newStatus);
+    const success = await updateOrderStatusApi(orderId, newStatus);
+    if (!success) {
+      // Revert optimistic update if API call failed
+      setOrdersList(prev =>
+        prev.map(o => o.id === orderId && order ? { ...o, status: order.status } : o)
+      );
+      toast.error('Failed to update order status. Please try again.');
+    }
     setUpdatingId(null);
   };
 

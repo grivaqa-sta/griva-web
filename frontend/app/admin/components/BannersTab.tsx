@@ -244,9 +244,25 @@ function DealOfDaySection() {
   const [successMsg, setSuccessMsg] = useState('');
 
   const [selectedProductId, setSelectedProductId] = useState<number | ''>('');
-  const { defaultStart, defaultEnd } = getDefaultDates();
+  const { defaultStart } = getDefaultDates();
   const [startDate, setStartDate] = useState(defaultStart);
-  const [endDate, setEndDate] = useState(defaultEnd);
+
+  // Auto-compute end date: always 24 hours after startDate
+  const computeEndFrom = (start: string): string => {
+    if (!start || start.length < 16) return start;
+    const [datePart, timePart] = start.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    const ms = new Date(year, month - 1, day, hours, minutes).getTime();
+    return toDatetimeLocal(new Date(ms + 24 * 60 * 60 * 1000));
+  };
+  const [endDate, setEndDate] = useState(() => computeEndFrom(defaultStart));
+
+  // Whenever startDate changes, auto-update endDate to +24h
+  useEffect(() => {
+    setEndDate(computeEndFrom(startDate));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate]);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -416,20 +432,23 @@ function DealOfDaySection() {
 
                   {/* Delete Confirmation Overlay */}
                   {confirmDeleteId === deal.id && (
-                    <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95 duration-200">
-                      <p className="text-xs font-bold text-gray-800 mb-3">Delete this deal?</p>
+                    <div className="absolute inset-0 bg-white z-10 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95 duration-200" style={{ backgroundColor: '#ffffff' }}>
+                      <p className="text-xs font-bold mb-1" style={{ color: '#111827' }}>Delete this deal?</p>
+                      <p className="text-[10px] mb-3" style={{ color: '#6b7280' }}>This action cannot be undone.</p>
                       <div className="flex gap-2 w-full">
                         <button
                           onClick={() => setConfirmDeleteId(null)}
                           disabled={deletingId === deal.id}
-                          className="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          className="flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          style={{ backgroundColor: '#f3f4f6', color: '#374151' }}
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleDeleteDeal(deal.id)}
                           disabled={deletingId === deal.id}
-                          className="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-1"
+                          className="flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-1"
+                          style={{ backgroundColor: '#ef4444', color: '#ffffff' }}
                         >
                           {deletingId === deal.id ? <Loader className="h-3 w-3 animate-spin" /> : 'Yes, Delete'}
                         </button>
@@ -581,7 +600,8 @@ function DealOfDaySection() {
                     type="datetime-local"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400"
+                    style={{ backgroundColor: '#ffffff', color: '#111827', colorScheme: 'light' }}
                   />
                 </div>
                 <div>
@@ -590,7 +610,8 @@ function DealOfDaySection() {
                     type="datetime-local"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400"
+                    style={{ backgroundColor: '#ffffff', color: '#111827', colorScheme: 'light' }}
                   />
                 </div>
 

@@ -333,7 +333,7 @@ export default function DeliveryOrderDetailPage() {
         </div>
 
         {/* Address Card */}
-        <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
+          <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Delivery Destination</h3>
             <button
@@ -345,9 +345,24 @@ export default function DeliveryOrderDetailPage() {
             </button>
           </div>
 
-          <div className="bg-[#0b0b0b]/80 border border-zinc-900 p-4 rounded-2xl flex items-start gap-2.5">
-            <MapPin size={16} className="text-[#FF6A00] shrink-0 mt-0.5" />
-            <p className="text-xs font-medium text-zinc-300 leading-relaxed">{fullAddress}</p>
+          <div className="bg-[#0b0b0b]/80 border border-zinc-900 p-4 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-2.5 flex-1">
+                <MapPin size={16} className="text-[#FF6A00] shrink-0 mt-0.5" />
+                <p className="text-xs font-medium text-zinc-300 leading-relaxed">{fullAddress}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              {order.latitude && order.longitude ? (
+                <span className="inline-flex items-center gap-1 text-[8px] font-black text-green-400 bg-green-950/30 border border-green-900/40 px-2 py-0.5 rounded-full">
+                  📍 GPS Locked — Precise coordinates saved
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 px-2 py-0.5 rounded-full">
+                  ✏️ Manually Typed — No GPS coordinates
+                </span>
+              )}
+            </div>
           </div>
 
           {order.delivery_notes && (
@@ -365,11 +380,15 @@ export default function DeliveryOrderDetailPage() {
             }
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-zinc-900 hover:bg-zinc-800 text-[#FF6A00] text-xs font-bold py-3.5 rounded-2xl transition-colors cursor-pointer border border-zinc-800 flex items-center justify-center gap-1.5"
+            className={`w-full text-xs font-bold py-3.5 rounded-2xl transition-colors cursor-pointer border flex items-center justify-center gap-1.5 ${
+              order.latitude && order.longitude
+                ? "bg-green-950/20 hover:bg-green-950/40 text-green-400 border-green-900/40"
+                : "bg-zinc-900 hover:bg-zinc-800 text-[#FF6A00] border-zinc-800"
+            }`}
             style={{ minHeight: "44px" }}
           >
             <Compass size={14} />
-            <span>Open Google Navigation</span>
+            <span>{order.latitude && order.longitude ? "Open GPS Navigation (Exact)" : "Open Google Navigation"}</span>
             <ExternalLink size={12} className="opacity-60" />
           </a>
         </div>

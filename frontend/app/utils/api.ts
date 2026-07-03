@@ -614,6 +614,8 @@ export interface AdminOrder {
   printed_at?: string;
   delivery_payment_method?: string;
   cash_reconciliation_status?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const MOCK_ORDERS: AdminOrder[] = [

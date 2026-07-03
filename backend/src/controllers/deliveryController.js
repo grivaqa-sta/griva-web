@@ -327,7 +327,7 @@ exports.getMyReturns = async (req, res, next) => {
         {
           model: Order,
           as: "order",
-          attributes: ["id", "order_number", "shipping_address", "customer_name", "customer_phone", "createdAt"],
+          attributes: ["id", "order_number", "shipping_address", "customer_name", "customer_phone", "latitude", "longitude", "createdAt"],
         },
         {
           model: OrderItem,

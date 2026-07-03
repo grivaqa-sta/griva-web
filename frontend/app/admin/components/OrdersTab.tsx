@@ -1508,9 +1508,31 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                 <div className="bg-white border border-orange-500/20 rounded-xl p-4 space-y-3">
                                   <div className="flex items-start gap-2.5">
                                     <MapPin className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" />
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                       <p className="text-[10px] text-gray-400 font-semibold uppercase">Shipping Address</p>
                                       <p className="text-xs font-bold text-gray-800 mt-0.5">{order.shipping_address}</p>
+                                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                        {(order as any).latitude && (order as any).longitude ? (
+                                          <>
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-black bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full">
+                                              📍 GPS Locked
+                                            </span>
+                                            <a
+                                              href={`https://www.google.com/maps/search/?api=1&query=${(order as any).latitude},${(order as any).longitude}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-600 hover:underline"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              🗺 Open Exact Map ↗
+                                            </a>
+                                          </>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-gray-100 border border-gray-200 text-gray-500 px-2 py-0.5 rounded-full">
+                                            ✏️ Manually Typed
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="flex items-start gap-2.5 pt-2 border-t border-orange-500/10">

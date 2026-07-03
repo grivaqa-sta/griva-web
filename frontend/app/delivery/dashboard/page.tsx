@@ -848,7 +848,14 @@ export default function DeliveryDashboard() {
                                   </div>
 
                                   <div className="bg-[#0c0c0c]/80 border border-zinc-900/80 rounded-2xl p-3.5 space-y-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
-                                    <p className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Pickup Location</p>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <p className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Pickup Location</p>
+                                      {req.order?.latitude && req.order?.longitude ? (
+                                        <span className="text-[8px] font-black text-green-400 bg-green-950/30 border border-green-900/40 px-1.5 py-0.5 rounded-full">📍 GPS</span>
+                                      ) : (
+                                        <span className="text-[8px] font-bold text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 px-1.5 py-0.5 rounded-full">✏️ Text</span>
+                                      )}
+                                    </div>
                                     <p className="text-xs font-semibold text-zinc-300 leading-relaxed flex items-start gap-1">
                                       <MapPin size={12} className="text-[#FF6A00] shrink-0 mt-0.5" />
                                       <span>
@@ -949,14 +956,20 @@ export default function DeliveryDashboard() {
                                     </button>
                                   )}
                                   <a
-                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(req.order?.shipping_address || "")}`}
+                                    href={
+                                      req.order?.latitude && req.order?.longitude
+                                        ? `https://www.google.com/maps/search/?api=1&query=${req.order.latitude},${req.order.longitude}`
+                                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((req.order?.shipping_address || "") + ", Qatar")}`
+                                    }
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 border border-zinc-800 transition-colors cursor-pointer"
+                                    className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold border border-zinc-800 transition-colors cursor-pointer"
                                     style={{ minHeight: "48px" }}
                                   >
-                                    <Map size={14} className="text-blue-400" />
-                                    <span>Open Map</span>
+                                    <Map size={14} className={req.order?.latitude && req.order?.longitude ? "text-green-400" : "text-blue-400"} />
+                                    <span className={req.order?.latitude && req.order?.longitude ? "text-green-300" : "text-zinc-300"}>
+                                      {req.order?.latitude && req.order?.longitude ? "📍 GPS Map" : "Open Map"}
+                                    </span>
                                   </a>
                                 </div>
 
@@ -1017,7 +1030,14 @@ export default function DeliveryDashboard() {
                           </div>
                           
                           <div className="bg-[#0c0c0c]/80 border border-zinc-900/80 rounded-2xl p-3.5 space-y-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
-                            <p className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Delivery Address</p>
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Delivery Address</p>
+                              {order.latitude && order.longitude ? (
+                                <span className="text-[8px] font-black text-green-400 bg-green-950/30 border border-green-900/40 px-1.5 py-0.5 rounded-full">📍 GPS</span>
+                              ) : (
+                                <span className="text-[8px] font-bold text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 px-1.5 py-0.5 rounded-full">✏️ Text</span>
+                              )}
+                            </div>
                             <p className="text-xs font-semibold text-zinc-300 leading-relaxed flex items-start gap-1">
                               <MapPin size={12} className="text-[#FF6A00] shrink-0 mt-0.5" />
                               <span>

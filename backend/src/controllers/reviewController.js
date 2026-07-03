@@ -11,7 +11,7 @@ exports.getReviewsByProduct = async (req, res, next) => {
         {
           model: User,
           as: "user",
-          attributes: ["id", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
       order: [["createdAt", "DESC"]],

@@ -306,22 +306,16 @@ export default function ProductPage({ params }: ProductPageProps) {
     return counts;
   }, [reviewsList]);
 
-  const formatAuthorName = (email?: string) => {
-    if (!email) return "Verified Customer";
-    const parts = email.split("@");
-    if (!parts[0]) return "Verified Customer";
-    return parts[0]
-      .split(/[\._-]/)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  const formatAuthorName = (name?: string) => {
+    if (!name || !name.trim()) return "Verified Customer";
+    return name.trim();
   };
 
-  const getInitials = (email?: string) => {
-    if (!email) return "VC";
-    const formatted = formatAuthorName(email);
-    const parts = formatted.split(" ");
+  const getInitials = (name?: string) => {
+    if (!name || !name.trim()) return "VC";
+    const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
-      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
     }
     return parts[0].substring(0, 2).toUpperCase();
   };
@@ -1128,8 +1122,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                               day: "numeric",
                             })
                           : "Recently";
-                        const authorName = formatAuthorName(review.user?.email);
-                        const initials = getInitials(review.user?.email);
+                        const authorName = formatAuthorName(review.user?.name);
+                        const initials = getInitials(review.user?.name);
 
                         return (
                           <div

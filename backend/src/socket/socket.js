@@ -80,13 +80,7 @@ const initSocket = (server) => {
         return next(new Error("Your account has been blocked. Please contact support."));
       }
 
-      // Verify role authorization (Admin, Staff, or Delivery role required)
-      const allowedRoles = ["admin", "staff", "delivery"];
-      if (!allowedRoles.includes(user.role)) {
-        return next(new Error("Access denied: Unauthorized role for operations dashboard"));
-      }
-
-      // Attach user details to socket
+      // Attach user details to socket (all authenticated roles are allowed to connect)
       socket.user = {
         id: user.id,
         role: user.role,

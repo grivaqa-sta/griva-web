@@ -189,6 +189,12 @@ exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
+    // Always return generic success to prevent user enumeration attacks
+    const genericResponse = {
+      success: true,
+      message: "If that email is registered, a password reset link has been sent.",
+    };
+
     const user = await User.findOne({
       where: {
         email: email.toLowerCase().trim(),
@@ -196,21 +202,24 @@ exports.forgotPassword = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found.",
-      });
+      return res.status(200).json(genericResponse);
     }
 
+    // Generate raw token (sent to user via email) and hashed token (stored in DB)
     const resetToken = crypto
       .randomBytes(32)
       .toString("hex");
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
     const resetPasswordExpire =
       Date.now() + 15 * 60 * 1000;
 
     await user.update({
-      resetPasswordToken: resetToken,
+      resetPasswordToken: hashedToken,
       resetPasswordExpire,
     });
     let resetUrl;
@@ -230,11 +239,7 @@ exports.forgotPassword = async (req, res, next) => {
       // We still return 200/success or return a warning in dev mode
     }
 
-    return res.status(200).json({
-      success: true,
-      message:
-        "Password reset link sent to email.",
-    });
+    return res.status(200).json(genericResponse);
   } catch (error) {
     next(error);
   }
@@ -246,10 +251,16 @@ exports.resetPassword = async (req, res, next) => {
     const { token } = req.params;
     const { password } = req.body;
 
+    // Hash the incoming token to compare against the stored hashed token
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
     const user = await User.scope("withPassword")
       .findOne({
         where: {
-          resetPasswordToken: token,
+          resetPasswordToken: hashedToken,
         },
       });
 

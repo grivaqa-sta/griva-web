@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
+const { authenticateJWT } = require("../middleware/auth");
 
-router.post("/image", upload.single("image"), (req, res) => {
+// Authentication required — prevents unauthenticated bots from spamming Cloudinary uploads
+router.post("/image", authenticateJWT, upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: "No image uploaded" });
   }

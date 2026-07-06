@@ -159,7 +159,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
           </h3>
 
           {/* Rating */}
-          <div className="flex items-center gap-1.5 flex-wrap min-h-[20px]">
+          <div className="flex items-center gap-1.5 flex-wrap min-h-[24px]">
             {(() => {
               const count = product.review_count ?? 0;
               if (count === 0) {
@@ -168,28 +168,15 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
                     New Arrival
                   </span>
                 );
-              } else if (count >= 1 && count <= 4) {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] font-medium text-gray-400">
-                      ({count})
-                    </span>
-                    <span className="text-[8px] font-bold text-blue-500 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 scale-90 origin-left">
-                      Early Reviews
-                    </span>
-                  </>
-                );
-              } else {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] font-medium text-gray-400">
-                      ({count})
-                    </span>
-                  </>
-                );
               }
+              return (
+                <>
+                  <Rating rating={product.rating} />
+                  <span className="text-[9px] font-medium text-gray-400">
+                    ({count})
+                  </span>
+                </>
+              );
             })()}
           </div>
 

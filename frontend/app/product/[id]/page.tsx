@@ -211,32 +211,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                         </span>
                       </>
                     );
-                  } else if (count >= 1 && count <= 4) {
-                    return (
-                      <>
-                        <div className="flex items-center gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-4 w-4 ${
-                                i < Math.round(product.rating)
-                                  ? "fill-orange-400 text-orange-400"
-                                  : "text-gray-200"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span 
-                          onClick={() => setActiveTab("reviews")}
-                          className="text-xs font-semibold text-gray-500 hover:underline cursor-pointer"
-                        >
-                          {count} {count === 1 ? "Review" : "Reviews"}
-                        </span>
-                        <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
-                          Early Reviews
-                        </span>
-                      </>
-                    );
                   } else {
                     return (
                       <>
@@ -256,7 +230,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                           onClick={() => setActiveTab("reviews")}
                           className="text-xs font-semibold text-gray-500 hover:underline cursor-pointer"
                         >
-                          {count} Reviews
+                          {count} {count === 1 ? "Review" : "Reviews"}
                         </span>
                       </>
                     );

@@ -122,7 +122,7 @@ export default function TrendingProductCard({
             {product.title}
           </h3>
           {/* Rating */}
-          <div className="flex items-center gap-1.5 flex-wrap min-h-[20px] mt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap min-h-[24px] mt-0.5">
             {(() => {
               const count = product.review_count ?? 0;
               if (count === 0) {
@@ -131,26 +131,15 @@ export default function TrendingProductCard({
                     New Arrival
                   </span>
                 );
-              } else if (count >= 1 && count <= 4) {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] text-gray-400">
-                      ({count})
-                    </span>
-                    <span className="text-[8px] font-bold text-blue-500 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 scale-90 origin-left">
-                      Early Reviews
-                    </span>
-                  </>
-                );
-              } else {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] text-gray-400">({count})</span>
-                  </>
-                );
               }
+              return (
+                <>
+                  <Rating rating={product.rating} />
+                  <span className="text-[9px] text-gray-400">
+                    ({count})
+                  </span>
+                </>
+              );
             })()}
           </div>
           <div className="flex items-end justify-between mt-1">
@@ -250,7 +239,7 @@ export default function TrendingProductCard({
             </h3>
             <div className="flex items-center justify-between mt-1">
               <div className="flex flex-col leading-tight">
-                <div className="flex items-center gap-1.5 flex-wrap mb-0.5 min-h-[20px]">
+                <div className="flex items-center gap-1.5 flex-wrap mb-0.5 min-h-[24px]">
                   {(() => {
                     const count = product.review_count ?? 0;
                     if (count === 0) {
@@ -259,26 +248,15 @@ export default function TrendingProductCard({
                           New Arrival
                         </span>
                       );
-                    } else if (count >= 1 && count <= 4) {
-                      return (
-                        <>
-                          <Rating rating={product.rating} />
-                          <span className="text-[10px] text-gray-400">
-                            ({count})
-                          </span>
-                          <span className="text-[8px] font-bold text-blue-500 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 scale-90 origin-left">
-                            Early Reviews
-                          </span>
-                        </>
-                      );
-                    } else {
-                      return (
-                        <>
-                          <Rating rating={product.rating} />
-                          <span className="text-[10px] text-gray-400">({count})</span>
-                        </>
-                      );
                     }
+                    return (
+                      <>
+                        <Rating rating={product.rating} />
+                        <span className="text-[10px] text-gray-400">
+                          ({count})
+                        </span>
+                      </>
+                    );
                   })()}
                 </div>
                 <span className="text-base font-bold text-orange-500">

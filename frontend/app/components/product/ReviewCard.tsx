@@ -35,7 +35,7 @@ export default function ReviewCard({ review }: ReviewCardProps) {
           {[...Array(5)].map((_, idx) => (
             <Star
               key={idx}
-              className={`h-4. w-4. ${
+              className={`h-3.5 w-3.5 ${
                 idx < review.rating
                   ? "fill-orange-400 text-orange-400"
                   : "text-gray-200"

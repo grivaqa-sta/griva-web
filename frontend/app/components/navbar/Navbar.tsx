@@ -163,7 +163,7 @@ export default function Navbar() {
               <div className="relative">
                 <ShoppingCart size={18} className="text-black group-hover:text-orange-500 transition-colors" />
                 {cartState.totalItems > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-4. w-4. items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white px-1">
+                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white px-1">
                     {cartState.totalItems}
                   </span>
                 )}

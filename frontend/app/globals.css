@@ -3,7 +3,17 @@
 @theme {
   --color-brand-orange: #f97316;
   --color-brand-orange-dark: #ea580c;
-  --font-body: var(--font-geist-sans), sans-serif;
+  --color-orange-55: #fff5eb;
+  --color-orange-550: #f26000;
+  --color-orange-650: #dd4b00;
+  --color-red-55: #fff0f1;
+  --color-red-550: #e02424;
+  --color-red-650: #c01e1e;
+  --color-slate-650: #3f4e60;
+  --color-blue-650: #2054d4;
+  --color-gray-650: #434e5a;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   @keyframes marquee {
     0% {
@@ -17,6 +27,10 @@
 }
 
 @layer base {
+  html, body, button, input, select, textarea, span, p, a, div, h1, h2, h3, h4, h5, h6 {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  }
+
   html {
     scroll-behavior: smooth;
   }
@@ -93,3 +107,35 @@
   display: inline-block;
   animation: priceShake 0.6s ease-out forwards;
 }
+
+.apple-font {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+}
+
+/* Enforce Apple Font & UPPERCASE for headings globally */
+h1, h2, h3, h4, h5, h6 {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Custom Spacing & Sizing Utilities (fixing non-standard Tailwind values) */
+.h-4\.5 { height: 1.125rem !important; }
+.w-4\.5 { width: 1.125rem !important; }
+.p-4\.5 { padding: 1.125rem !important; }
+.gap-4\.5 { gap: 1.125rem !important; }
+.h-9\.5 { height: 2.375rem !important; }
+.w-9\.5 { width: 2.375rem !important; }

@@ -650,29 +650,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                         </span>
                       </>
                     );
-                  } else if (count >= 1 && count <= 4) {
-                    return (
-                      <>
-                        <div 
-                          onClick={handleScrollToReviews}
-                          className="flex items-center gap-0.5 cursor-pointer"
-                        >
-                          {renderStars(averageRating, "h-4 w-4")}
-                        </div>
-                        <span 
-                          onClick={handleScrollToReviews}
-                          className="text-xs font-semibold text-gray-500 hover:underline cursor-pointer"
-                        >
-                          {count} {count === 1 ? "Review" : "Reviews"}
-                        </span>
-                        <span 
-                          onClick={handleScrollToReviews}
-                          className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 cursor-pointer"
-                        >
-                          Early Reviews
-                        </span>
-                      </>
-                    );
                   } else {
                     return (
                       <>
@@ -686,7 +663,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                           onClick={handleScrollToReviews}
                           className="text-xs font-semibold text-gray-500 hover:underline cursor-pointer"
                         >
-                          {count} Reviews
+                          {count} {count === 1 ? "Review" : "Reviews"}
                         </span>
                       </>
                     );

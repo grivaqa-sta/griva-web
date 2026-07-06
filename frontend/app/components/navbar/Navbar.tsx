@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Menu,
   ShoppingCart,
@@ -11,6 +11,7 @@ import {
   Home,
   LayoutGrid,
   Package,
+  ArrowLeft,
 } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
 import { useSearch } from "@/app/context/SearchContext";
@@ -20,11 +21,14 @@ import SearchDropdown from "./SearchDropdown";
 import MobileMenu from "./MobileMenu";
 import MobileCategoryDrawer from "./MobileCategoryDrawer";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAdminSettings } from "@/app/context/AdminContext";
 
 
 export default function Navbar() {
-  const scrolled = useScrolled(10);
+  const scrolled = useScrolled(20);
   const pathname = usePathname();
+  const router = useRouter();
+  const { announcementBarEnabled } = useAdminSettings();
 
   const { state: cartState, openDrawer } = useCart();
   const { searchQuery, setSearchQuery, filters, setFilters } = useSearch();
@@ -38,19 +42,41 @@ export default function Navbar() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Close search dropdown on click outside and set mounted state
   useEffect(() => {
     setMounted(true);
+    setIsMobile(window.innerWidth < 640);
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+
+    const handleBypassEvent = () => {
+      setComingSoonVisible(true);
+    };
+    window.addEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+
     function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (target instanceof Element && !target.closest(".search-container")) {
         setSearchFocused(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -61,15 +87,22 @@ export default function Navbar() {
     }));
   };
 
+  if (!comingSoonVisible) return null;
   if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) return null;
 
   return (
     <div>
-      <div aria-hidden="true" className="h-19 sm:h-20" />
+      <div
+        aria-hidden="true"
+        className={announcementBarEnabled ? "h-[92px] sm:h-[120px]" : "h-[64px] sm:h-[80px]"}
+      />
       <header
-        className={`fixed left-0 right-0 top-7 sm:top-10 w-full border-b border-gray-100 bg-white transition-shadow duration-300 sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
+        className={`fixed left-0 right-0 ${announcementBarEnabled ? "top-7 sm:top-10" : "top-0"
+          } w-full border-b border-gray-100 bg-white transition-all transition-shadow duration-300 ease-in-out sm:px-6 lg:px-8 xl:px-10 ${mobileMenuOpen ? "z-10001" : "z-40"
           } ${scrolled ? "py-2 sm:shadow-md shadow-none" : "py-2"}`}
-
+        style={{
+          transform: "translateY(0)"
+        }}
       >
         {/* Desktop and Tablet Navbar Content (Visible on screens >= 640px) */}
         <div className="hidden sm:flex mx-auto h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4 w-full">
@@ -79,7 +112,7 @@ export default function Navbar() {
           </Link>
 
           {/* Search Bar - Desktop */}
-          <div ref={searchRef} className="hidden lg:relative lg:flex flex-1 max-w-2xl items-center justify-center">
+          <div ref={searchRef} className="hidden lg:relative lg:flex flex-1 max-w-2xl items-center justify-center search-container">
             <div className="flex h-10 w-full overflow-hidden rounded-md border border-orange-500 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
               {/* Input */}
               <div className="flex flex-1 items-center px-3 gap-2">
@@ -130,7 +163,7 @@ export default function Navbar() {
               <div className="relative">
                 <ShoppingCart size={18} className="text-black group-hover:text-orange-500 transition-colors" />
                 {cartState.totalItems > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-4. w-4. items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white px-1">
+                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white px-1">
                     {cartState.totalItems}
                   </span>
                 )}
@@ -152,7 +185,9 @@ export default function Navbar() {
                   <User size={18} className="text-black group-hover:text-orange-500 transition-colors" />
                 </div>
                 <div className="text-left leading-tight">
-                  <p className="text-[10px] text-gray-400">{isCustomerLoggedIn ? "Account" : "Welcome"}</p>
+                  {isCustomerLoggedIn && (
+                    <p className="text-[10px] text-gray-400">Welcome</p>
+                  )}
                   <p className="text-xs font-bold text-black group-hover:text-orange-500 transition-colors truncate max-w-28">
                     {isCustomerLoggedIn ? userState.user?.name : "Sign In"}
                   </p>
@@ -258,13 +293,23 @@ export default function Navbar() {
         {/* Mobile Navbar Content (Visible on screens < 640px, rendered client-side only to prevent hydration errors) */}
         {mounted && (
           <div className="flex sm:hidden flex-row items-center justify-between gap-3 px-4 py-2 w-full">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain" />
-            </Link>
+            {/* Logo or Back Button */}
+            {pathname === "/" ? (
+              <Link href="/" className="flex items-center gap-2 shrink-0">
+                <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain" />
+              </Link>
+            ) : (
+              <button
+                onClick={() => router.back()}
+                className="flex items-center justify-center p-1 text-gray-700 hover:text-orange-500 transition-colors shrink-0 cursor-pointer"
+                aria-label="Go Back"
+              >
+                <ArrowLeft size={24} className="stroke-[2.5]" />
+              </button>
+            )}
 
             {/* Search Input Box */}
-            <div className="flex-1 min-w-0 pb-0.5">
+            <div className="flex-1 min-w-0 pb-0.5 search-container relative">
               <div className="flex overflow-hidden rounded-[5px] border border-gray-200 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
                 <div className="flex flex-1 items-center px-3 gap-1.5 h-8">
                   <Search size={14} className="text-gray-400 shrink-0" />
@@ -273,6 +318,7 @@ export default function Navbar() {
                     placeholder="Search for products, brands and more..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
                     className="w-full border-none bg-transparent text-[11px] text-black outline-none placeholder:text-gray-400"
                   />
                   {searchQuery && (
@@ -291,6 +337,11 @@ export default function Navbar() {
                   <Search size={12} />
                 </Link>
               </div>
+              <AnimatePresence>
+                {searchFocused && (
+                  <SearchDropdown onClose={() => setSearchFocused(false)} />
+                )}
+              </AnimatePresence>
             </div>
           </div>
         )}
@@ -303,42 +354,44 @@ export default function Navbar() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="border-t border-gray-100 px-4 py-2 lg:hidden overflow-hidden"
+              className="border-t border-gray-100 px-4 py-2 lg:hidden overflow-hidden search-container"
             >
-              <div className="flex overflow-hidden rounded-md border border-orange-500 shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
-                <input
-                  type="text"
-                  placeholder="Search for products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 text-sm outline-none bg-white text-black"
-                  autoFocus
-                />
-                <Link
-                  href={`/shop?search=${encodeURIComponent(searchQuery)}`}
-                  onClick={() => setMobileSearchOpen(false)}
-                  className="bg-orange-500 flex items-center justify-center px-4 text-white hover:bg-orange-600 transition-colors"
-                >
-                  <Search size={18} />
-                </Link>
+              <div className="relative">
+                <div className="flex overflow-hidden rounded-md border border-orange-500 shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
+                  <input
+                    type="text"
+                    placeholder="Search for products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    className="w-full px-4 py-2 text-sm outline-none bg-white text-black"
+                    autoFocus
+                  />
+                  <Link
+                    href={`/shop?search=${encodeURIComponent(searchQuery)}`}
+                    onClick={() => {
+                      setMobileSearchOpen(false);
+                      setSearchFocused(false);
+                    }}
+                    className="bg-orange-500 flex items-center justify-center px-4 text-white hover:bg-orange-600 transition-colors"
+                  >
+                    <Search size={18} />
+                  </Link>
+                </div>
+                <AnimatePresence>
+                  {searchFocused && (
+                    <SearchDropdown onClose={() => setSearchFocused(false)} />
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Mobile Navigation Drawer */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <MobileMenu
-              isOpen={mobileMenuOpen}
-              onClose={() => setMobileMenuOpen(false)}
-            />
-          )}
-        </AnimatePresence>
       </header>
 
       {/* Fixed Bottom Navigation Bar (Mobile Only, rendered client-side only to prevent hydration errors) */}
-      {mounted && (
+      {mounted && !pathname.startsWith("/product/") && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:hidden pb-safe">
           <div className="flex h-16 items-center justify-around px-2">
             {/* Home */}
@@ -360,21 +413,24 @@ export default function Navbar() {
               <span className="text-[10px] mt-1 font-medium tracking-tight">Categories</span>
             </button>
 
-            {/* Cart */}
-            <button
-              onClick={openDrawer}
-              className="relative flex flex-col items-center justify-center w-14 h-full text-gray-600 hover:text-orange-500 transition-colors cursor-pointer"
-            >
-              <div className="relative">
-                <ShoppingCart size={20} />
-                {cartState.totalItems > 0 && (
-                  <span className="absolute -top-1 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white leading-none">
-                    {cartState.totalItems}
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] mt-1 font-medium tracking-tight">Cart</span>
-            </button>
+            {/* Floating Circular Cart Button */}
+            <div className="flex items-center justify-center w-14 h-full relative">
+              <button
+                onClick={openDrawer}
+                className="absolute -top-4 flex items-center justify-center h-12 w-12 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 active:scale-95 transition-transform cursor-pointer border-2 border-white"
+                aria-label="Open Cart"
+              >
+                <div className="relative">
+                  <ShoppingCart size={18} className="stroke-[2.5]" />
+                  {cartState.totalItems > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] font-bold text-white leading-none border border-orange-500">
+                      {cartState.totalItems}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <span className="text-[10px] absolute bottom-1 font-medium tracking-tight text-gray-500">Cart</span>
+            </div>
 
             {/* Account / User */}
             <Link
@@ -399,6 +455,16 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Mobile Navigation Drawer */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <MobileMenu
+            isOpen={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Mobile Category Drawer */}
       <MobileCategoryDrawer

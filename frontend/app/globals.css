@@ -130,4 +130,12 @@ h1, h2, h3, h4, h5, h6 {
 .no-scrollbar {
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;  /* Firefox */
-}
+}
+
+/* Custom Spacing & Sizing Utilities (fixing non-standard Tailwind values) */
+.h-4\.5 { height: 1.125rem !important; }
+.w-4\.5 { width: 1.125rem !important; }
+.p-4\.5 { padding: 1.125rem !important; }
+.gap-4\.5 { gap: 1.125rem !important; }
+.h-9\.5 { height: 2.375rem !important; }
+.w-9\.5 { width: 2.375rem !important; }

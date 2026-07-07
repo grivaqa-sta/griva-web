@@ -6,9 +6,9 @@ import {
   Printer, Download
 } from 'lucide-react';
 import { useToast } from '@/app/context/ToastContext';
-import { AdminOrder, updateOrderStatusApi, downloadOrdersExportApi, bulkPrintOrdersApi } from '../../utils/api';
+import { AdminOrder, updateOrderStatusApi, downloadOrdersExportApi, bulkPrintOrdersApi, reconcileCashPaymentApi } from '../../utils/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 interface OrdersTabProps {
   ordersList: AdminOrder[];
@@ -32,16 +32,16 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 
 const STATUS_FLOW: Record<string, string[]> = {
   pending:          ['processing', 'cancelled'],
-  processing:       ['shipped', 'delivered', 'cancelled'],
-  assigned:         ['out_for_delivery', 'delivered', 'cancelled'],
+  processing:       ['shipped', 'cancelled'],
+  assigned:         ['out_for_delivery', 'cancelled'],
   out_for_delivery: ['delivered', 'cancelled'],
   shipped:          ['delivered', 'cancelled'],
   delivered:        [],
   completed:        [],
   cancelled:        [],
-  attempted:        ['processing', 'delivered', 'cancelled'],
+  attempted:        ['processing', 'cancelled'],
   rescheduled:      ['delivered', 'cancelled'],
-  failed:           ['processing', 'delivered', 'cancelled'],
+  failed:           ['processing', 'cancelled'],
 };
 
 interface DeliveryBoy {
@@ -57,12 +57,16 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const statusParam = searchParams?.get('status');
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>(statusParam || 'all');
   const [deliverySlots, setDeliverySlots] = useState<any[]>([]);
   const [filterSlot, setFilterSlot] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDateRange, setFilterDateRange] = useState('all');
   const [filterPrintStatus, setFilterPrintStatus] = useState<string>('all');
+  const [openDateSelect, setOpenDateSelect] = useState(false);
+  const [openPrintSelect, setOpenPrintSelect] = useState(false);
+  const [openSlotSelect, setOpenSlotSelect] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportStartDate, setExportStartDate] = useState('');
   const [exportEndDate, setExportEndDate] = useState('');
@@ -71,6 +75,8 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('xlsx');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [openPrintMenuId, setOpenPrintMenuId] = useState<number | null>(null);
+  const [isBulkPrintModalOpen, setIsBulkPrintModalOpen] = useState(false);
 
   useEffect(() => {
     if (statusParam) {
@@ -84,6 +90,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [assigningId, setAssigningId] = useState<number | null>(null);
   const [openDriverSelectId, setOpenDriverSelectId] = useState<number | null>(null);
   const [openReassignSelectId, setOpenReassignSelectId] = useState<number | null>(null);
+  const [dropdownDir, setDropdownDir] = useState<'bottom' | 'top'>('bottom');
 
   // FEATURE: Delivery Attempt Management — needs attention state
   interface NeedsAttentionOrder {
@@ -181,12 +188,58 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   };
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
+    // Guard: validate against STATUS_FLOW before sending to API
+    const order = ordersList.find(o => o.id === orderId);
+    if (order) {
+      const currentStatus = order.status === 'completed' ? 'delivered' : order.status;
+      const allowedTransitions = STATUS_FLOW[currentStatus] || [];
+      if (allowedTransitions.length === 0) {
+        toast.error(`Order is already ${currentStatus}. No further status changes allowed.`);
+        return;
+      }
+      if (!allowedTransitions.includes(newStatus)) {
+        toast.error(`Cannot change status from "${currentStatus}" to "${newStatus}". Allowed: ${allowedTransitions.join(', ')}.`);
+        return;
+      }
+    }
+
     setUpdatingId(orderId);
+    setUpdatingStatus(newStatus);
+    // Optimistic UI update
     setOrdersList(prev =>
       prev.map(o => o.id === orderId ? { ...o, status: newStatus, reviewed_at: o.reviewed_at || new Date().toISOString() } : o)
     );
-    await updateOrderStatusApi(orderId, newStatus);
+    const success = await updateOrderStatusApi(orderId, newStatus);
+    if (!success) {
+      // Revert optimistic update if API call failed
+      setOrdersList(prev =>
+        prev.map(o => o.id === orderId && order ? { ...o, status: order.status } : o)
+      );
+      toast.error('Failed to update order status. Please try again.');
+    }
     setUpdatingId(null);
+    setUpdatingStatus(null);
+  };
+
+  const [reconcilingId, setReconcilingId] = useState<number | null>(null);
+
+  const handleReconcileCash = async (orderId: number) => {
+    setReconcilingId(orderId);
+    try {
+      const success = await reconcileCashPaymentApi(orderId);
+      if (success) {
+        setOrdersList(prev =>
+          prev.map(o => o.id === orderId ? { ...o, cash_reconciliation_status: 'reconciled' } : o)
+        );
+        toast.success("Cash payment reconciled and confirmed successfully.");
+      } else {
+        toast.error("Failed to reconcile cash payment.");
+      }
+    } catch {
+      toast.error("An error occurred during cash reconciliation.");
+    } finally {
+      setReconcilingId(null);
+    }
   };
 
   // FEATURE: Delivery Attempt Management — reopen order
@@ -219,16 +272,234 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     }
   };
 
-  const printOrderSlip = (order: AdminOrder) => {
-    const itemsHtml = (order.items || []).map(item => `
-      <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 8px 0; font-size: 14px;">${item.quantity} x ${item.product?.title || `Product #${item.product_id}`}</td>
-        <td style="padding: 8px 0; text-align: right; font-size: 14px; font-weight: bold;">
-          QAR ${(Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}
-        </td>
-      </tr>
-    `).join('');
+  const generateOrderSlipContent = (order: AdminOrder, type: 'packing' | 'invoice' | 'both') => {
+    const formatQatarPhone = (phone: string | undefined | null) => {
+      if (!phone) return 'N/A';
+      const clean = phone.replace(/[\s\-\(\)\+]/g, '');
+      if (clean.startsWith('974')) {
+        return `+974 ${clean.substring(3)}`;
+      }
+      return `+974 ${clean}`;
+    };
 
+    const orderNumber = order.order_number || `ORD-${String(order.id).padStart(4, '0')}`;
+    const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    const deliverySlotName = (order as any).deliverySlot?.name || deliverySlots.find(s => Number(s.id) === Number(order.delivery_slot_id))?.name || "None";
+
+    const subtotal = (order.items || []).reduce((acc, item) => {
+      const rawPrice = Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, ""));
+      return acc + (isNaN(rawPrice) ? 0 : rawPrice) * item.quantity;
+    }, 0);
+
+    const generatePackingSlipHtml = () => `
+      <div class="slip-container packing-slip">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+          <div>
+            <img src="${window.location.origin}/images/logo-dark.png" alt="GRIVA" style="height: 30px; width: auto; object-fit: contain; display: block; margin-bottom: 4px;" />
+            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #666; display: block; margin-top: 2px; font-family: sans-serif;">Packing & Fulfillment Checklist</span>
+          </div>
+          <div style="text-align: right; font-family: sans-serif;">
+            <div style="font-size: 12px; font-weight: bold; color: #333;">ORDER CHECKLIST</div>
+            <div style="font-size: 10px; color: #777; margin-top: 2px;">Please verify items before packing</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #eee; font-family: sans-serif;">
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #777; font-weight: bold; margin-bottom: 5px;">Order Details</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Order Number:</strong> ${orderNumber}</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Order Date:</strong> ${orderDate}</div>
+            <div style="font-size: 13px;"><strong style="color: #111;">Delivery Slot:</strong> <span style="background: #fff; padding: 2px 6px; border: 1px solid #ddd; border-radius: 4px; font-weight: bold; color: #f54900;">${deliverySlotName}</span></div>
+          </div>
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #777; font-weight: bold; margin-bottom: 5px;">Deliver To</div>
+            <div style="font-size: 13px; font-weight: bold; color: #111; margin-bottom: 3px;">${order.customer_name || 'N/A'}</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Phone:</strong> ${formatQatarPhone(order.customer_phone)}</div>
+            <div style="font-size: 13px; margin-bottom: 3px;"><strong style="color: #111;">Email:</strong> ${order.user?.email || (order as any).customer_email || 'N/A'}</div>
+            <div style="font-size: 13px;"><strong style="color: #111;">Address:</strong> ${order.shipping_address}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px; font-family: sans-serif;">
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background: #111; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                <th style="padding: 10px; text-align: center; width: 60px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; border: 1px solid #eaeaea;">Packed</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #eaeaea;">Item Description</th>
+                <th style="padding: 10px; text-align: center; width: 80px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; border: 1px solid #eaeaea;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(order.items || []).map((item, idx) => {
+                const title = item.product?.title || `Product #${item.product_id}`;
+                let attrsDesc = "";
+                if (item.selected_attributes && Object.keys(item.selected_attributes).length > 0) {
+                  attrsDesc = Object.entries(item.selected_attributes).map(([k, v]) => `${k}: ${v}`).join(", ");
+                } else {
+                  const parts = [];
+                  if (item.selected_color) parts.push(`Color: ${item.selected_color}`);
+                  if (item.selected_storage) parts.push(`Storage: ${item.selected_storage}`);
+                  attrsDesc = parts.join(", ");
+                }
+                const displayTitle = attrsDesc ? `${title} (${attrsDesc})` : title;
+                return `
+                  <tr style="border-bottom: 1px solid #eaeaea; font-size: 13px;">
+                    <td style="padding: 12px; text-align: center; font-size: 18px; color: #bbb; font-weight: normal; border: 1px solid #eaeaea;">☐</td>
+                    <td style="padding: 12px; font-weight: bold; color: #222; border: 1px solid #eaeaea;">${displayTitle}</td>
+                    <td style="padding: 12px; text-align: center; font-weight: 900; font-size: 14px; color: #111; background: #fcfcfc; border: 1px solid #eaeaea;">${item.quantity}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${order.delivery_notes ? `
+          <div style="margin-bottom: 20px; border: 1px solid #f54900; background: #fffaf8; padding: 15px; border-radius: 12px; font-family: sans-serif;">
+            <div style="font-size: 11px; text-transform: uppercase; color: #f54900; font-weight: 900; margin-bottom: 5px; letter-spacing: 0.5px;">⚠️ Customer Instructions / Delivery Notes</div>
+            <div style="font-size: 13px; color: #333; font-weight: bold; line-height: 1.5;">${order.delivery_notes}</div>
+          </div>
+        ` : ''}
+
+        <div style="border-top: 1px dashed #ccc; padding-top: 15px; text-align: center; color: #777; font-size: 11px; font-family: sans-serif;">
+          <span>Thank you for shopping with Griva. Packing slip contains NO price info. Detailed invoice is packed inside.</span>
+        </div>
+      </div>
+    `;
+
+    const generateInvoiceHtml = () => {
+      const grandTotalVal = Number(String(order.total_price).replace(/([$]|qar|[\s,])/gi, ""));
+      const grandTotal = isNaN(grandTotalVal) ? subtotal : grandTotalVal;
+      const deliveryFee = Math.max(0, grandTotal - subtotal);
+      return `
+      <div class="slip-container invoice-slip">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif;">
+          <div>
+            <img src="${window.location.origin}/images/logo-dark.png" alt="GRIVA" style="height: 35px; width: auto; object-fit: contain; display: block; margin-bottom: 4px;" />
+            <span style="font-size: 10px; color: #999; display: block; margin-top: 1px;">State of Qatar | support@thegriva.com</span>
+          </div>
+          <div style="text-align: right;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #111; letter-spacing: 1px;">TAX INVOICE</h2>
+            <div style="font-size: 12px; font-weight: bold; color: #444; margin-top: 5px;">Invoice No: GRV-INV-${order.id}</div>
+            <div style="font-size: 11px; color: #777; margin-top: 2px;">Date: ${orderDate}</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 25px; font-family: sans-serif;">
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 6px; letter-spacing: 0.5px;">Sold By</div>
+            <div style="font-size: 13px; font-weight: bold; color: #111;">GRIVA</div>
+            <div style="font-size: 12px; color: #555; line-height: 1.5; margin-top: 3px;">
+              Commercial Registration: #129481A<br/>
+              State of Qatar<br/>
+              WhatsApp Support: ${formatQatarPhone('50921122')}
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 6px; letter-spacing: 0.5px;">Deliver To / Bill To</div>
+            <div style="font-size: 13px; font-weight: bold; color: #111;">${order.customer_name || 'N/A'}</div>
+            <div style="font-size: 12px; color: #555; line-height: 1.5; margin-top: 3px;">
+              <strong>Phone:</strong> ${formatQatarPhone(order.customer_phone)}<br/>
+              <strong>Email:</strong> ${order.user?.email || (order as any).customer_email || 'N/A'}<br/>
+              <strong>Address:</strong> ${order.shipping_address}<br/>
+              <strong>Delivery Slot:</strong> ${deliverySlotName}
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #fdfdfd; border: 1px solid #eaeaea; border-radius: 12px; padding: 15px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-family: sans-serif;">
+          <div>
+            <span style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; display: block;">Payment Method</span>
+            <span style="font-size: 13px; font-weight: bold; color: #111; display: block; margin-top: 2px;">${(order as any).delivery_payment_method || 'Cash on Delivery (COD)'}</span>
+          </div>
+          <div>
+            <span style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: bold; display: block;">Payment Status</span>
+            <span style="font-size: 13px; font-weight: bold; color: ${order.status === 'delivered' || order.status === 'completed' ? '#16a34a' : '#ea580c'}; display: block; margin-top: 2px;">
+              ${order.status === 'delivered' || order.status === 'completed' ? 'Paid' : 'Unpaid (COD)'}
+            </span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 25px; font-family: sans-serif;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd; font-size: 10px; text-transform: uppercase; color: #555; letter-spacing: 0.5px;">
+                <th style="padding: 10px; text-align: left; width: 40px; border: 1px solid #eee;">S.No</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #eee;">Item Description</th>
+                <th style="padding: 10px; text-align: center; width: 60px; border: 1px solid #eee;">Qty</th>
+                <th style="padding: 10px; text-align: right; width: 100px; border: 1px solid #eee;">Unit Price</th>
+                <th style="padding: 10px; text-align: right; width: 120px; border: 1px solid #eee;">Total Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(order.items || []).map((item, idx) => {
+                const rawPrice = Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, ""));
+                const unitPrice = isNaN(rawPrice) ? 0 : rawPrice;
+                const totalItemPrice = unitPrice * item.quantity;
+                const title = item.product?.title || `Product #${item.product_id}`;
+                let attrsDesc = "";
+                if (item.selected_attributes && Object.keys(item.selected_attributes).length > 0) {
+                  attrsDesc = Object.entries(item.selected_attributes).map(([k, v]) => `${k}: ${v}`).join(", ");
+                } else {
+                  const parts = [];
+                  if (item.selected_color) parts.push(`Color: ${item.selected_color}`);
+                  if (item.selected_storage) parts.push(`Storage: ${item.selected_storage}`);
+                  attrsDesc = parts.join(", ");
+                }
+                const displayTitle = attrsDesc ? `${title} (${attrsDesc})` : title;
+                return `
+                  <tr style="border-bottom: 1px solid #eaeaea; font-size: 13px; color: #333;">
+                    <td style="padding: 12px 10px; color: #777; border: 1px solid #eee;">${idx + 1}</td>
+                    <td style="padding: 12px 10px; font-weight: bold; color: #111; border: 1px solid #eee;">${displayTitle}</td>
+                    <td style="padding: 12px 10px; text-align: center; border: 1px solid #eee;">${item.quantity}</td>
+                    <td style="padding: 12px 10px; text-align: right; border: 1px solid #eee;">QAR ${unitPrice.toFixed(2)}</td>
+                    <td style="padding: 12px 10px; text-align: right; font-weight: bold; color: #111; border: 1px solid #eee;">QAR ${totalItemPrice.toFixed(2)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px; font-family: sans-serif;">
+          <div style="width: 250px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; color: #555;">
+              <span>Subtotal:</span>
+              <span>QAR ${subtotal.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #555;">
+              <span>Delivery Fee:</span>
+              <span>QAR ${deliveryFee.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; border-top: 1px solid #ccc; padding-top: 8px; color: #111;">
+              <span>Grand Total:</span>
+              <span>QAR ${grandTotal.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px dashed #ccc; padding-top: 15px; text-align: center; color: #777; font-size: 11px; font-family: sans-serif;">
+          <p style="margin: 0; font-weight: bold; color: #333;">Thank you for shopping with Griva!</p>
+          <p style="margin: 3px 0 0 0;">This is a computer-generated tax invoice. No physical signature is required.</p>
+        </div>
+      </div>
+      `;
+    };
+
+    if (type === 'packing') {
+      return generatePackingSlipHtml();
+    } else if (type === 'invoice') {
+      return generateInvoiceHtml();
+    } else {
+      return `
+        ${generatePackingSlipHtml()}
+        <div class="page-break"></div>
+        ${generateInvoiceHtml()}
+      `;
+    }
+  };
+
+  const printOrderSlip = (order: AdminOrder, type: 'packing' | 'invoice' | 'both' = 'both') => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast.warning("Please allow popups in your browser to print orders.");
@@ -236,7 +507,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     }
 
     const orderNumber = order.order_number || `ORD-${String(order.id).padStart(4, '0')}`;
-    const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    const contentHtml = generateOrderSlipContent(order, type);
 
     const html = `
       <html>
@@ -244,98 +515,31 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           <title>Print Order ${orderNumber}</title>
           <style>
             body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+              margin: 10px;
               color: #333;
               line-height: 1.4;
             }
-            .header {
-              text-align: center;
-              margin-bottom: 20px;
+            .slip-container {
+              padding: 10px;
             }
-            .header h1 {
-              margin: 0;
-              font-size: 24px;
-              letter-spacing: 2px;
-            }
-            .section {
-              margin-bottom: 15px;
-              padding-bottom: 10px;
-              border-bottom: 1px dashed #ccc;
-            }
-            .section-title {
-              font-size: 12px;
-              text-transform: uppercase;
-              color: #777;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .info-row {
-              margin-bottom: 4px;
-              font-size: 14px;
-            }
-            .info-label {
-              font-weight: bold;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 15px 0;
-            }
-            .total-row {
-              font-size: 16px;
-              font-weight: bold;
-              display: flex;
-              justify-content: space-between;
-              margin-top: 10px;
+            @media print {
+              .page-break {
+                page-break-after: always;
+                break-after: page;
+                clear: both;
+                display: block;
+                height: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>GRIVA</h1>
-            <p style="font-size: 12px; margin: 5px 0 0 0; color: #666;">Order Print Slip</p>
-          </div>
-
-          <div class="section">
-            <div class="info-row"><span class="info-label">Order Number:</span> ${orderNumber}</div>
-            <div class="info-row"><span class="info-label">Date:</span> ${orderDate}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Customer Details</div>
-            <div class="info-row"><span class="info-label">Name:</span> ${order.customer_name || 'N/A'}</div>
-            <div class="info-row"><span class="info-label">Phone:</span> ${order.customer_phone || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Delivery Details</div>
-            <div class="info-row"><span class="info-label">Address:</span> ${order.shipping_address}</div>
-            <div class="info-row"><span class="info-label">Delivery Slot:</span> ${(order as any).deliverySlot?.name || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Products</div>
-            <table>
-              <tbody>
-                ${itemsHtml}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="section" style="border-bottom: none;">
-            <div class="total-row">
-              <span>Total Items:</span>
-              <span>${(order.items || []).reduce((acc, item) => acc + item.quantity, 0)}</span>
-            </div>
-            <div class="total-row" style="margin-top: 5px; font-size: 18px;">
-              <span>Total Amount:</span>
-              <span>${order.total_price || '—'}</span>
-            </div>
-            <div class="info-row" style="margin-top: 15px;"><span class="info-label">Order Status:</span> <span style="text-transform: capitalize;">${order.status}</span></div>
-            ${order.delivery_notes ? `<div class="info-row" style="margin-top: 10px;"><span class="info-label">Notes:</span> ${order.delivery_notes}</div>` : ''}
-          </div>
-
+          ${contentHtml}
           <script>
             window.onload = function() {
               window.print();
@@ -351,7 +555,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     printWindow.document.close();
   };
 
-  const handlePrintNewOrders = async () => {
+  const handlePrintNewOrders = async (type: 'packing' | 'invoice' | 'both' = 'both') => {
     const unprintedOrders = ordersList.filter(o => !(o as any).is_printed);
     if (unprintedOrders.length === 0) {
       setToastMsg('No new unprinted orders to print.');
@@ -365,63 +569,13 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
       return;
     }
 
-    const slipsHtml = unprintedOrders.map(order => {
-      const orderNumber = order.order_number || `ORD-${String(order.id).padStart(4, '0')}`;
-      const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
-      const itemsHtml = (order.items || []).map(item => `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 8px 0; font-size: 14px;">${item.quantity} x ${item.product?.title || `Product #${item.product_id}`}</td>
-          <td style="padding: 8px 0; text-align: right; font-size: 14px; font-weight: bold;">
-            QAR ${(Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}
-          </td>
-        </tr>
-      `).join('');
-
+    const slipsHtml = unprintedOrders.map((order, orderIdx) => {
+      const content = generateOrderSlipContent(order, type);
+      const isLast = orderIdx === unprintedOrders.length - 1;
       return `
-        <div class="order-slip">
-          <div class="header">
-            <h1>GRIVA</h1>
-            <p style="font-size: 12px; margin: 5px 0 0 0; color: #666;">Order Print Slip</p>
-          </div>
-
-          <div class="section">
-            <div class="info-row"><span class="info-label">Order Number:</span> ${orderNumber}</div>
-            <div class="info-row"><span class="info-label">Date:</span> ${orderDate}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Customer Details</div>
-            <div class="info-row"><span class="info-label">Name:</span> ${order.customer_name || 'N/A'}</div>
-            <div class="info-row"><span class="info-label">Phone:</span> ${order.customer_phone || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Delivery Details</div>
-            <div class="info-row"><span class="info-label">Address:</span> ${order.shipping_address}</div>
-            <div class="info-row"><span class="info-label">Delivery Slot:</span> ${(order as any).deliverySlot?.name || 'N/A'}</div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Products</div>
-            <table>
-              <tbody>
-                ${itemsHtml}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="section" style="border-bottom: none;">
-            <div class="total-row">
-              <span>Total Items:</span>
-              <span>${(order.items || []).reduce((acc, item) => acc + item.quantity, 0)}</span>
-            </div>
-            <div class="total-row" style="margin-top: 5px; font-size: 18px;">
-              <span>Total Amount:</span>
-              <span>${order.total_price || '—'}</span>
-            </div>
-            <div class="info-row" style="margin-top: 15px;"><span class="info-label">Order Status:</span> <span style="text-transform: capitalize;">${order.status}</span></div>
-            ${order.delivery_notes ? `<div class="info-row" style="margin-top: 10px;"><span class="info-label">Notes:</span> ${order.delivery_notes}</div>` : ''}
-          </div>
+        <div class="order-slip-wrapper">
+          ${content}
+          ${!isLast ? '<div class="page-break"></div>' : ''}
         </div>
       `;
     }).join('');
@@ -432,68 +586,25 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           <title>Print Bulk Orders</title>
           <style>
             body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+              margin: 10px;
               color: #333;
               line-height: 1.4;
             }
-            .order-slip {
-              page-break-after: always;
-              border-bottom: 2px solid #333;
-              padding-bottom: 30px;
-              margin-bottom: 30px;
-            }
-            .order-slip:last-child {
-              page-break-after: avoid;
-              border-bottom: none;
-              padding-bottom: 0;
-              margin-bottom: 0;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 20px;
-            }
-            .header h1 {
-              margin: 0;
-              font-size: 24px;
-              letter-spacing: 2px;
-            }
-            .section {
-              margin-bottom: 15px;
-              padding-bottom: 10px;
-              border-bottom: 1px dashed #ccc;
-            }
-            .section-title {
-              font-size: 12px;
-              text-transform: uppercase;
-              color: #777;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .info-row {
-              margin-bottom: 4px;
-              font-size: 14px;
-            }
-            .info-label {
-              font-weight: bold;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 15px 0;
-            }
-            .total-row {
-              font-size: 16px;
-              font-weight: bold;
-              display: flex;
-              justify-content: space-between;
-              margin-top: 10px;
+            .order-slip-wrapper {
+              padding: 10px;
             }
             @media print {
-              .order-slip {
-                border-bottom: none;
-                padding-bottom: 0;
-                margin-bottom: 0;
+              .page-break {
+                page-break-after: always;
+                break-after: page;
+                clear: both;
+                display: block;
+                height: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
               }
             }
           </style>
@@ -670,6 +781,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                   <div><span className="text-gray-400 font-semibold">Phone:</span> <span className="font-bold text-gray-800">{order.customer_phone || 'N/A'}</span></div>
                   <div><span className="text-gray-400 font-semibold">Driver:</span> <span className="font-bold text-gray-800">{order.deliveryBoy?.name || 'Unassigned'}</span></div>
                   <div><span className="text-gray-400 font-semibold">Attempts:</span> <span className="font-bold text-gray-800">{order.delivery_attempts}</span></div>
+                  <div><span className="text-gray-400 font-semibold">Amount:</span> <span className="font-bold text-gray-800">QAR {parseFloat(String(order.total_price).replace(/([$]|qar|[\s,])/gi, "") || "0").toFixed(2)}</span></div>
                 </div>
 
                 {order.attempt_notes && (
@@ -731,7 +843,17 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setOpenReassignSelectId(openReassignSelectId === order.id ? null : order.id);
+                          const isCurrentlyOpen = openReassignSelectId === order.id;
+                          if (!isCurrentlyOpen) {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            if (spaceBelow < 220 && rect.top > 220) {
+                              setDropdownDir('top');
+                            } else {
+                              setDropdownDir('bottom');
+                            }
+                          }
+                          setOpenReassignSelectId(isCurrentlyOpen ? null : order.id);
                         }}
                         className="text-[10px] font-bold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2 flex items-center justify-between gap-1.5 outline-none hover:border-orange-500/40 transition-all cursor-pointer min-w-[150px]"
                       >
@@ -753,7 +875,11 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                               setOpenReassignSelectId(null);
                             }}
                           />
-                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto min-w-[180px]">
+                          <div className={`absolute left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in duration-150 max-h-48 overflow-y-auto min-w-[180px] ${
+                            dropdownDir === 'top'
+                              ? "bottom-full mb-1 slide-in-from-bottom-2"
+                              : "top-full mt-1 slide-in-from-top-2"
+                          }`}>
                             <button
                               type="button"
                               onClick={() => {
@@ -820,14 +946,14 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
       )}
 
       {/* Order Operations Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-orange-500/30 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4.5 rounded-2xl border border-orange-500/30 shadow-xs">
         <div>
           <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">Order Operations</h3>
           <p className="text-[10px] text-gray-400 mt-0.5">Manage packing slips, batch printing, and flexible data exports.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={handlePrintNewOrders}
+            onClick={() => setIsBulkPrintModalOpen(true)}
             className="flex items-center gap-2 px-4.5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-xs font-bold shadow-md hover:opacity-90 transition-all cursor-pointer active:scale-95 flex items-center justify-center"
           >
             <Printer className="h-4 w-4" />
@@ -851,10 +977,10 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
         </div>
       </div>
 
-      {/* Search and Filters Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-2xl border border-orange-500/30 shadow-xs">
+      {/* Search and Dropdowns Filter Grid */}
+      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-2xl border border-orange-500/30 shadow-xs">
         {/* Unified Search Input */}
-        <div className="md:col-span-2 relative">
+        <div className="flex-1 min-w-[250px] relative">
           <input
             type="text"
             placeholder="Search by Order Number, Customer Name, Phone Number..."
@@ -873,155 +999,215 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
         </div>
 
         {/* Date Range Dropdown */}
-        <select
-          value={filterDateRange}
-          onChange={(e) => setFilterDateRange(e.target.value)}
-          className="text-xs font-bold text-gray-750 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl px-3 py-2.5 outline-none cursor-pointer focus:bg-white transition-all shadow-xs"
-        >
-          <option value="all">📅 All Time</option>
-          <option value="today">📅 Today</option>
-          <option value="yesterday">📅 Yesterday</option>
-          <option value="week">📅 Last 7 Days</option>
-        </select>
-
-        {/* Print Status Dropdown */}
-        <select
-          value={filterPrintStatus}
-          onChange={(e) => setFilterPrintStatus(e.target.value)}
-          className="text-xs font-bold text-gray-750 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl px-3 py-2.5 outline-none cursor-pointer focus:bg-white transition-all shadow-xs"
-        >
-          <option value="all">🖨️ All Print Statuses</option>
-          <option value="printed">🖨️ Printed Orders</option>
-          <option value="unprinted">🖨️ Unprinted Orders</option>
-        </select>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-xl border border-orange-500/30">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* All Tab */}
-          <div>
-            <button
-              onClick={() => setFilterStatus('all')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                filterStatus === 'all'
-                  ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/30'
-                  : 'bg-white text-gray-500 border-orange-500/20 hover:border-orange-500/50'
-              }`}
-            >
-              <span>All</span>
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${filterStatus === 'all' ? 'bg-white/20' : 'bg-gray-100'}`}>
-                {counts['all']}
-              </span>
-            </button>
-          </div>
-
-          {/* Action Required Group */}
-          <div className="flex flex-wrap items-center gap-2 bg-orange-50/45 p-3.5 pt-4 rounded-xl border border-orange-100 relative">
-            <span className="absolute -top-2 left-3 bg-white px-1.5 text-[8px] font-black text-orange-650 tracking-wider uppercase border border-orange-100 rounded-sm">
-              ⚠️ Action Required
+        <div className="relative z-[47]">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenDateSelect(!openDateSelect);
+              setOpenPrintSelect(false);
+              setOpenSlotSelect(false);
+            }}
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl text-xs font-bold text-gray-750 cursor-pointer min-w-[140px] text-left"
+          >
+            <span>
+              {filterDateRange === "all" && "📅 All Time"}
+              {filterDateRange === "today" && "📅 Today"}
+              {filterDateRange === "yesterday" && "📅 Yesterday"}
+              {filterDateRange === "week" && "📅 Last 7 Days"}
             </span>
-            {(['new', 'pending', 'processing', 'assigned', 'out_for_delivery']).map((status) => {
-              const cfg = STATUS_CONFIG[status];
-              const isActive = filterStatus === status;
-              
-              let activeClass = 'bg-orange-500 text-white border-orange-500 shadow-orange-500/30';
-              let inactiveClass = 'bg-white text-gray-500 border-orange-500/20 hover:border-orange-500/50';
-              if (status === 'new') {
-                activeClass = 'bg-red-600 text-white border-red-600 shadow-sm shadow-red-500/30';
-                inactiveClass = 'bg-white text-red-650 border-red-200 hover:border-red-400';
-              } else if (status === 'pending') {
-                activeClass = 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/30';
-                inactiveClass = 'bg-white text-orange-650 border-orange-200 hover:border-orange-400';
-              } else if (status === 'processing') {
-                activeClass = 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/30';
-                inactiveClass = 'bg-white text-amber-650 border-amber-200 hover:border-amber-400';
-              } else if (status === 'assigned') {
-                activeClass = 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/30';
-                inactiveClass = 'bg-white text-blue-650 border-blue-200 hover:border-blue-400';
-              } else if (status === 'out_for_delivery') {
-                activeClass = 'bg-orange-600 text-white border-orange-600 shadow-sm shadow-orange-550/30';
-                inactiveClass = 'bg-white text-orange-700 border-orange-200 hover:border-orange-400';
-              }
+            <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openDateSelect ? "rotate-180 text-orange-500" : ""}`} />
+          </button>
 
-              return (
+          {openDateSelect && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenDateSelect(false)} />
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 min-w-[140px]">
                 <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                    isActive ? activeClass : inactiveClass
-                  }`}
+                  type="button"
+                  onClick={() => { setFilterDateRange("all"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "all" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
                 >
-                  {cfg?.icon}
-                  <span className="capitalize">{status === 'new' ? 'New' : status.replace(/_/g, ' ')}</span>
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-gray-100'}`}>
-                    {counts[status]}
-                  </span>
+                  📅 All Time
                 </button>
-              );
-            })}
-          </div>
-
-          {/* Completed Group */}
-          <div className="flex flex-wrap items-center gap-2 bg-gray-50 p-3.5 pt-4 rounded-xl border border-gray-200 relative">
-            <span className="absolute -top-2 left-3 bg-white px-1.5 text-[8px] font-black text-gray-500 tracking-wider uppercase border border-gray-200 rounded-sm">
-              ✅ Completed
-            </span>
-            {(['shipped', 'delivered', 'cancelled']).map((status) => {
-              const cfg = STATUS_CONFIG[status];
-              const isActive = filterStatus === status;
-              
-              let activeClass = 'bg-gray-500 text-white border-gray-500 shadow-gray-500/30';
-              let inactiveClass = 'bg-white text-gray-500 border-gray-200 hover:border-gray-400';
-              if (status === 'shipped') {
-                activeClass = 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/30';
-                inactiveClass = 'bg-white text-indigo-650 border-indigo-200 hover:border-indigo-400';
-              } else if (status === 'delivered') {
-                activeClass = 'bg-green-600 text-white border-green-600 shadow-sm shadow-green-500/30';
-                inactiveClass = 'bg-white text-green-650 border-green-200 hover:border-green-400';
-              } else if (status === 'cancelled') {
-                activeClass = 'bg-gray-600 text-white border-gray-600 shadow-sm shadow-gray-550/30';
-                inactiveClass = 'bg-white text-gray-500 border-gray-200 hover:border-gray-450';
-              }
-
-              return (
                 <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                    isActive ? activeClass : inactiveClass
-                  }`}
+                  type="button"
+                  onClick={() => { setFilterDateRange("today"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "today" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
                 >
-                  {cfg?.icon}
-                  <span className="capitalize">{status}</span>
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-gray-100'}`}>
-                    {counts[status]}
-                  </span>
+                  📅 Today
                 </button>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  onClick={() => { setFilterDateRange("yesterday"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "yesterday" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  📅 Yesterday
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFilterDateRange("week"); setOpenDateSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterDateRange === "week" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  📅 Last 7 Days
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
-        <select
-          value={filterSlot}
-          onChange={(e) => setFilterSlot(e.target.value)}
-          className="text-xs font-bold text-gray-750 bg-white border border-orange-500/20 rounded-lg px-3 py-2.5 outline-none hover:border-orange-500/40 cursor-pointer md:ml-auto"
+        {/* Print Status Dropdown */}
+        <div className="relative z-[46]">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenPrintSelect(!openPrintSelect);
+              setOpenDateSelect(false);
+              setOpenSlotSelect(false);
+            }}
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl text-xs font-bold text-gray-750 cursor-pointer min-w-[160px] text-left"
+          >
+            <span>
+              {filterPrintStatus === "all" && "🖨️ All Print Statuses"}
+              {filterPrintStatus === "printed" && "🖨️ Printed Orders"}
+              {filterPrintStatus === "unprinted" && "🖨️ Unprinted Orders"}
+            </span>
+            <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openPrintSelect ? "rotate-180 text-orange-500" : ""}`} />
+          </button>
+
+          {openPrintSelect && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenPrintSelect(false)} />
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 min-w-[160px]">
+                <button
+                  type="button"
+                  onClick={() => { setFilterPrintStatus("all"); setOpenPrintSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterPrintStatus === "all" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  🖨️ All Print Statuses
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFilterPrintStatus("printed"); setOpenPrintSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterPrintStatus === "printed" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  🖨️ Printed Orders
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFilterPrintStatus("unprinted"); setOpenPrintSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterPrintStatus === "unprinted" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  🖨️ Unprinted Orders
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Delivery Slot Dropdown */}
+        <div className="relative z-[45]">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenSlotSelect(!openSlotSelect);
+              setOpenDateSelect(false);
+              setOpenPrintSelect(false);
+            }}
+            className="flex items-center justify-between gap-1.5 px-3 py-2.5 bg-gray-50 border border-orange-500/10 hover:border-orange-500/30 rounded-xl text-xs font-bold text-gray-750 cursor-pointer min-w-[170px] text-left"
+          >
+            <span>
+              {filterSlot === "all"
+                ? "🚚 All Delivery Slots"
+                : `🚚 ` + (deliverySlots.find((s) => String(s.id) === filterSlot)?.name || "Delivery Slot")}
+            </span>
+            <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${openSlotSelect ? "rotate-180 text-orange-500" : ""}`} />
+          </button>
+
+          {openSlotSelect && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenSlotSelect(false)} />
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto min-w-[170px]">
+                <button
+                  type="button"
+                  onClick={() => { setFilterSlot("all"); setOpenSlotSelect(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterSlot === "all" ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                >
+                  All Delivery Slots
+                </button>
+                {deliverySlots.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => { setFilterSlot(String(s.id)); setOpenSlotSelect(false); }}
+                    className={`w-full text-left px-3 py-2 text-xs font-semibold ${filterSlot === String(s.id) ? "text-orange-500 bg-orange-50/50 font-bold" : "text-gray-700 hover:bg-orange-50 hover:text-orange-500"}`}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Sleek Horizontal Status Tabs Strip */}
+      <div className="flex items-center gap-1 bg-white border-b border-orange-500/20 px-2 overflow-x-auto whitespace-nowrap scrollbar-none py-1 select-none">
+        {/* All Tab */}
+        <button
+          onClick={() => setFilterStatus('all')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all relative border-b-2 cursor-pointer ${
+            filterStatus === 'all'
+              ? 'text-orange-500 border-orange-500 font-extrabold'
+              : 'text-gray-500 border-transparent hover:text-gray-800'
+          }`}
         >
-          <option value="all">All Delivery Slots</option>
-          {deliverySlots.map(s => (
-            <option key={s.id} value={String(s.id)}>{s.name}</option>
-          ))}
-        </select>
+          <span>All</span>
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+            filterStatus === 'all' ? 'bg-orange-500/10 text-orange-600 font-black' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {counts['all']}
+          </span>
+        </button>
+
+        {/* Dynamic status tabs */}
+        {(['new', 'pending', 'processing', 'assigned', 'out_for_delivery', 'shipped', 'delivered', 'cancelled']).map((status) => {
+          const cfg = STATUS_CONFIG[status];
+          const isActive = filterStatus === status;
+          const label = status === 'new' ? 'New' : status.replace(/_/g, ' ');
+
+          return (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all relative border-b-2 cursor-pointer capitalize ${
+                isActive
+                  ? 'text-orange-500 border-orange-500 font-extrabold'
+                  : 'text-gray-500 border-transparent hover:text-gray-800'
+              }`}
+            >
+              {cfg?.icon && (
+                <span className="shrink-0">
+                  {cfg.icon}
+                </span>
+              )}
+              <span>{label}</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                isActive ? 'bg-orange-500/10 text-orange-600 font-black' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {counts[status]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Orders Table */}
       <div className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[750px]">
+          <table className="w-full text-left border-collapse min-w-[1250px]">
             <thead>
-              <tr className="border-b border-orange-500/20 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50">
-                <th className="p-4">Order</th>
+              <tr className="border-b border-orange-500/20 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 whitespace-nowrap">
+                <th className="p-4 pl-5 sticky left-0 bg-gray-50 z-20 min-w-[210px]">Order</th>
                 <th className="p-4">Customer</th>
                 <th className="p-4">Items</th>
                 <th className="p-4">Delivery Slot</th>
@@ -1050,10 +1236,10 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                   return (
                     <React.Fragment key={order.id}>
                       <tr
-                        className={`hover:bg-orange-500/3 transition-colors cursor-pointer group ${
+                        className={`transition-colors cursor-pointer group whitespace-nowrap ${
                           order.status === 'pending' && !(order as any).reviewed_at
-                            ? 'border-l-4 border-l-amber-500 bg-amber-500/5'
-                            : ''
+                            ? 'bg-[#fdf8ee] hover:bg-[#fbf1dc]'
+                            : 'bg-white hover:bg-[#fff9f3]'
                         }`}
                         onClick={() => {
                           const isUnreviewed = order.status === 'pending' && !(order as any).reviewed_at;
@@ -1071,9 +1257,16 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                           setExpandedOrderId(isExpanded ? null : order.id);
                         }}
                       >
-                        {/* Order ID */}
-                        <td className="p-4">
-                          <div className="flex items-center gap-2 flex-wrap max-w-[150px]">
+                        {/* Order ID (Sticky Left) */}
+
+                        <td
+                          className={`p-4 sticky left-0 z-10 transition-colors ${
+                            order.status === 'pending' && !(order as any).reviewed_at
+                              ? 'bg-[#fdf8ee] group-hover:bg-[#fbf1dc] border-l-4 border-l-amber-500 pl-4'
+                              : 'bg-white group-hover:bg-[#fff9f3] pl-5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 flex-wrap min-w-[210px]">
                             <div className="flex items-center gap-1">
                               <Hash className="h-3 w-3 text-orange-400" />
                               <span className="text-xs font-black text-gray-800">
@@ -1157,30 +1350,97 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                   onClick={() => handleStatusChange(order.id, nextStatus)}
                                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer disabled:opacity-50 ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
                                 >
-                                  {updatingId === order.id ? (
+                                  {updatingId === order.id && updatingStatus === nextStatus ? (
                                     <span className="h-2.5 w-2.5 border border-current border-t-transparent rounded-full animate-spin" />
                                   ) : nextCfg.icon}
                                   Mark {nextCfg.label}
                                 </button>
                               );
                             })}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                printOrderSlip(order);
-                                bulkPrintOrdersApi([order.id]).then(success => {
-                                  if (success) {
-                                    setOrdersList(prev =>
-                                      prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
-                                    );
-                                  }
-                                });
-                              }}
-                              title="Print Order Slip"
-                              className="p-1.5 rounded-lg text-orange-500 hover:text-orange-600 hover:bg-orange-55 border border-orange-500/20 cursor-pointer"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenPrintMenuId(openPrintMenuId === order.id ? null : order.id);
+                                }}
+                                title="Print Options"
+                                className={`p-1.5 rounded-lg border cursor-pointer transition-all ${
+                                  openPrintMenuId === order.id
+                                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                                    : "text-orange-500 hover:bg-orange-50 hover:text-orange-600 border-orange-500/20"
+                                }`}
+                              >
+                                <Printer className="h-3.5 w-3.5" />
+                              </button>
+
+                              {openPrintMenuId === order.id && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-40 bg-transparent cursor-default"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPrintMenuId(null);
+                                    }}
+                                  />
+                                  <div className="absolute right-0 mt-1 bg-white border border-gray-150 rounded-xl shadow-xl z-50 py-1.5 min-w-[170px] text-left animate-in fade-in slide-in-from-top-2 duration-150">
+                                    <div className="px-3 py-1 text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 mb-1">
+                                      Select Print Format
+                                    </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        printOrderSlip(order, 'packing');
+                                        bulkPrintOrdersApi([order.id]).then(success => {
+                                          if (success) {
+                                            setOrdersList(prev =>
+                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                            );
+                                          }
+                                        });
+                                        setOpenPrintMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-orange-55 hover:text-orange-600 transition-colors flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
+                                    >
+                                      📦 Packing Slip (No Price)
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        printOrderSlip(order, 'invoice');
+                                        bulkPrintOrdersApi([order.id]).then(success => {
+                                          if (success) {
+                                            setOrdersList(prev =>
+                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                            );
+                                          }
+                                        });
+                                        setOpenPrintMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-orange-55 hover:text-orange-600 transition-colors flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
+                                    >
+                                      📄 Tax Invoice (Detailed)
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        printOrderSlip(order, 'both');
+                                        bulkPrintOrdersApi([order.id]).then(success => {
+                                          if (success) {
+                                            setOrdersList(prev =>
+                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                            );
+                                          }
+                                        });
+                                        setOpenPrintMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-xs font-black text-orange-650 hover:bg-orange-55 transition-colors flex items-center gap-1.5 border-t border-gray-100 mt-1 pt-2 cursor-pointer bg-transparent"
+                                    >
+                                      📑 Twin Pack (Both Slips)
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                             <button
                               onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer border border-orange-500/20"
@@ -1194,7 +1454,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                       {/* Expanded Order Details */}
                       {isExpanded && (
                         <tr className="bg-orange-500/3">
-                          <td colSpan={9} className="px-4 pb-4">
+                          <td colSpan={9} className="px-4 pb-4 whitespace-normal">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                               {/* Items */}
                               <div className="space-y-2">
@@ -1212,6 +1472,30 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <p className="text-xs font-bold text-gray-800 truncate">{item.product?.title || `Product #${item.product_id}`}</p>
+                                      {((item.selected_attributes && Object.keys(item.selected_attributes).length > 0) || item.selected_color || item.selected_storage) && (
+                                        <div className="flex flex-wrap gap-1.5 mt-0.5 mb-1">
+                                          {item.selected_attributes && Object.keys(item.selected_attributes).length > 0 ? (
+                                            Object.entries(item.selected_attributes).map(([k, v]) => (
+                                              <span key={k} className="inline-block text-[8px] bg-orange-50/70 border border-orange-100 text-orange-600 px-1 py-0.5 rounded font-bold">
+                                                {k}: {v}
+                                              </span>
+                                            ))
+                                          ) : (
+                                            <>
+                                              {item.selected_color && (
+                                                <span className="inline-block text-[8px] bg-orange-50/70 border border-orange-100 text-orange-600 px-1 py-0.5 rounded font-bold">
+                                                  Color: {item.selected_color}
+                                                </span>
+                                              )}
+                                              {item.selected_storage && (
+                                                <span className="inline-block text-[8px] bg-orange-50/70 border border-orange-100 text-orange-600 px-1 py-0.5 rounded font-bold">
+                                                  Storage: {item.selected_storage}
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
                                       <p className="text-[10px] text-gray-400">Qty: {item.quantity} × QAR {Number(String(item.price_at_purchase).replace(/([$]|qar|[\s,])/gi, "")).toFixed(2)}</p>
                                     </div>
                                     <span className="text-xs font-black text-gray-800 shrink-0">
@@ -1227,9 +1511,31 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                 <div className="bg-white border border-orange-500/20 rounded-xl p-4 space-y-3">
                                   <div className="flex items-start gap-2.5">
                                     <MapPin className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" />
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                       <p className="text-[10px] text-gray-400 font-semibold uppercase">Shipping Address</p>
                                       <p className="text-xs font-bold text-gray-800 mt-0.5">{order.shipping_address}</p>
+                                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                        {(order as any).latitude && (order as any).longitude ? (
+                                          <>
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-black bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full">
+                                              📍 GPS Locked
+                                            </span>
+                                            <a
+                                              href={`https://www.google.com/maps/search/?api=1&query=${(order as any).latitude},${(order as any).longitude}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-600 hover:underline"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              🗺 Open Exact Map ↗
+                                            </a>
+                                          </>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-gray-100 border border-gray-200 text-gray-500 px-2 py-0.5 rounded-full">
+                                            ✏️ Manually Typed
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="flex items-start gap-2.5 pt-2 border-t border-orange-500/10">
@@ -1257,6 +1563,45 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                       </p>
                                     </div>
                                   </div>
+                                  {(order as any).delivery_payment_method && (
+                                    <div className="flex flex-col gap-3 pt-2 border-t border-orange-500/10">
+                                      <div className="flex items-start gap-2.5">
+                                        <span className="text-xs mt-0.5 shrink-0">💳</span>
+                                        <div>
+                                          <p className="text-[10px] text-gray-400 font-semibold uppercase">Payment Collected At Delivery</p>
+                                          <p className="text-xs font-black text-green-700 mt-0.5">
+                                            {(order as any).delivery_payment_method}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {(order as any).delivery_payment_method === "Cash" && (
+                                        <div className="bg-zinc-50 border border-zinc-150 rounded-xl p-3 space-y-2 mt-1">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase">Cash Reconciliation</span>
+                                            {(order as any).cash_reconciliation_status === "reconciled" ? (
+                                              <span className="text-[9px] font-black text-green-700 bg-green-50 border border-green-250 px-2.5 py-0.5 rounded-lg">
+                                                Reconciled
+                                              </span>
+                                            ) : (
+                                              <span className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-250 px-2.5 py-0.5 rounded-lg animate-pulse">
+                                                Awaiting Submission
+                                              </span>
+                                            )}
+                                          </div>
+                                          {(order as any).cash_reconciliation_status !== "reconciled" && (
+                                            <button
+                                              onClick={() => handleReconcileCash(order.id)}
+                                              disabled={reconcilingId === order.id}
+                                              className="w-full text-center text-[10px] font-extrabold py-2 px-3 bg-gradient-to-r from-green-600 to-green-700 hover:brightness-110 active:scale-[0.99] disabled:opacity-50 text-white rounded-lg transition-all cursor-pointer shadow-sm"
+                                            >
+                                              {reconcilingId === order.id ? "Reconciling..." : "💵 Confirm Cash Received"}
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                   {/* Print Slip Section */}
                                   <div className="pt-3 border-t border-orange-500/10 flex flex-wrap items-center justify-between gap-2">
                                     <div>
@@ -1271,24 +1616,85 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                         )}
                                       </p>
                                     </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        printOrderSlip(order);
-                                        bulkPrintOrdersApi([order.id]).then(success => {
-                                          if (success) {
-                                            setOrdersList(prev =>
-                                              prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
-                                            );
-                                          }
-                                        });
-                                      }}
-                                      className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-[10px] font-bold text-white rounded-lg shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer h-[32px]"
-                                    >
-                                      <Printer size={12} />
-                                      Print Order Slip
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          printOrderSlip(order, 'packing');
+                                          bulkPrintOrdersApi([order.id]).then(success => {
+                                            if (success) {
+                                              setOrdersList(prev =>
+                                                prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                              );
+                                            }
+                                          });
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-white border border-orange-500/20 hover:border-orange-500 text-orange-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer h-[32px]"
+                                      >
+                                        📦 Packing Slip
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          printOrderSlip(order, 'invoice');
+                                          bulkPrintOrdersApi([order.id]).then(success => {
+                                            if (success) {
+                                              setOrdersList(prev =>
+                                                prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                              );
+                                            }
+                                          });
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-white border border-orange-500/20 hover:border-orange-500 text-orange-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer h-[32px]"
+                                      >
+                                        📄 Tax Invoice
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          printOrderSlip(order, 'both');
+                                          bulkPrintOrdersApi([order.id]).then(success => {
+                                            if (success) {
+                                              setOrdersList(prev =>
+                                                prev.map(o => o.id === order.id ? { ...o, is_printed: true, printed_at: new Date().toISOString() } : o)
+                                              );
+                                            }
+                                          });
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-[10px] font-black shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer h-[32px]"
+                                      >
+                                        📑 Twin Pack (Both)
+                                      </button>
+                                    </div>
                                   </div>
+
+                                  {/* Mobile-Friendly Status Actions */}
+                                  {nextStatuses.length > 0 && (
+                                    <div className="pt-3 border-t border-orange-500/10">
+                                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                        <span>⚙️</span> Update Order Status
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {nextStatuses.map((nextStatus) => {
+                                          const nextCfg = STATUS_CONFIG[nextStatus];
+                                          return (
+                                            <button
+                                              key={nextStatus}
+                                              disabled={updatingId === order.id}
+                                              onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, nextStatus); }}
+                                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer disabled:opacity-50 ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
+                                            >
+                                              {updatingId === order.id && updatingStatus === nextStatus ? (
+                                                <span className="h-2.5 w-2.5 border border-current border-t-transparent rounded-full animate-spin" />
+                                              ) : nextCfg.icon}
+                                              Mark {nextCfg.label}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+
                                   {/* FEATURE: Delivery Boy System — Assign Driver */}
                                  <div className="pt-3 border-t border-orange-500/10">
                                    {(order as any).delivery_boy_id ? (
@@ -1316,7 +1722,17 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                                type="button"
                                                onClick={(e) => {
                                                  e.stopPropagation();
-                                                 setOpenDriverSelectId(openDriverSelectId === order.id ? null : order.id);
+                                                 const isCurrentlyOpen = openDriverSelectId === order.id;
+                                                 if (!isCurrentlyOpen) {
+                                                   const rect = e.currentTarget.getBoundingClientRect();
+                                                   const spaceBelow = window.innerHeight - rect.bottom;
+                                                   if (spaceBelow < 220 && rect.top > 220) {
+                                                     setDropdownDir('top');
+                                                   } else {
+                                                     setDropdownDir('bottom');
+                                                   }
+                                                 }
+                                                 setOpenDriverSelectId(isCurrentlyOpen ? null : order.id);
                                                }}
                                                className="w-full flex items-center justify-between text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none hover:border-orange-500/40 transition-all cursor-pointer text-left h-[38px]"
                                              >
@@ -1339,7 +1755,11 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                                      setOpenDriverSelectId(null);
                                                    }}
                                                  />
-                                                 <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto">
+                                                 <div className={`absolute left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in duration-150 max-h-48 overflow-y-auto ${
+                                                    dropdownDir === 'top'
+                                                      ? "bottom-full mb-1 slide-in-from-bottom-2"
+                                                      : "top-full mt-1 slide-in-from-top-2"
+                                                  }`}>
                                                    <button
                                                      type="button"
                                                      onClick={() => {
@@ -1534,6 +1954,68 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Print Selection Modal */}
+      {isBulkPrintModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setIsBulkPrintModalOpen(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" />
+          <div className="relative bg-white rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center space-y-1.5">
+              <div className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center mx-auto">
+                <Printer className="h-5 w-5 text-orange-500" />
+              </div>
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                Batch Printing System
+              </h3>
+              <p className="text-[11px] text-gray-400 font-semibold">
+                Select output format for {ordersList.filter(o => !(o as any).is_printed).length} new unprinted orders.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  handlePrintNewOrders('packing');
+                  setIsBulkPrintModalOpen(false);
+                }}
+                className="w-full py-3 px-4 rounded-xl border border-gray-200 hover:border-orange-500 hover:bg-orange-50/10 text-left font-bold text-xs text-gray-700 transition-all flex items-center justify-between cursor-pointer bg-white"
+              >
+                <span>📦 Packing Slips Only</span>
+                <span className="text-[10px] font-normal text-gray-400">No prices</span>
+              </button>
+              <button
+                onClick={() => {
+                  handlePrintNewOrders('invoice');
+                  setIsBulkPrintModalOpen(false);
+                }}
+                className="w-full py-3 px-4 rounded-xl border border-gray-200 hover:border-orange-500 hover:bg-orange-50/10 text-left font-bold text-xs text-gray-700 transition-all flex items-center justify-between cursor-pointer bg-white"
+              >
+                <span>📄 Tax Invoices Only</span>
+                <span className="text-[10px] font-normal text-gray-400">With prices & totals</span>
+              </button>
+              <button
+                onClick={() => {
+                  handlePrintNewOrders('both');
+                  setIsBulkPrintModalOpen(false);
+                }}
+                className="w-full py-3.5 px-4 rounded-xl border border-orange-200 bg-orange-50/20 hover:bg-orange-50/40 text-left font-black text-xs text-orange-700 transition-all flex items-center justify-between cursor-pointer"
+              >
+                <span>📑 Twin Packs (Slips + Invoices)</span>
+                <span className="text-[10px] font-bold text-orange-500">2 pages per order</span>
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsBulkPrintModalOpen(false)}
+                className="flex-1 py-2.5 bg-gray-50 border border-gray-250 text-xs font-bold rounded-xl text-gray-700 hover:bg-gray-100 transition-all cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

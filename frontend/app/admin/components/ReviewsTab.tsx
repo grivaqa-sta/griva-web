@@ -44,7 +44,7 @@ interface DeliveryReviewOrder {
 }
 
 export default function ReviewsTab() {
-  const { toast } = useToast();
+  const { toast, confirm } = useToast();
   const [activeSubTab, setActiveSubTab] = useState<"products" | "delivery">("products");
   const [productReviews, setProductReviews] = useState<ProductReview[]>([]);
   const [deliveryReviews, setDeliveryReviews] = useState<DeliveryReviewOrder[]>([]);
@@ -79,7 +79,11 @@ export default function ReviewsTab() {
   }, [activeSubTab]);
 
   const handleDeleteReview = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this product review?")) return;
+    const isConfirmed = await confirm(
+      "Are you sure you want to delete this product review?",
+      "Delete Product Review"
+    );
+    if (!isConfirmed) return;
 
     try {
       const success = await deleteReviewApi(id);

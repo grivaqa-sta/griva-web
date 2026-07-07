@@ -65,21 +65,21 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
 
   return (
     <motion.div
-      whileHover={isDesktop ? { y: -5 } : {}}
+      whileHover={isDesktop ? { y: -2 } : {}}
       transition={{ duration: 0.25, ease: "easeOut" }}
       className="group relative flex flex-col overflow-hidden bg-white p-2 transition-all duration-300
-        rounded-none sm:rounded-[24px] sm:p-4
-        border-1 border-gray-200 sm:border sm:border-[#ECECEC]
-        shadow-none sm:shadow-[0_4px_16px_rgba(0,0,0,0.18)]"
+        rounded-none sm:p-4
+        border border-gray-200 sm:border sm:border-[#ECECEC]
+        shadow-sm sm:shadow-sm"
       onMouseEnter={(e) => {
         if (!isDesktop) return;
-        e.currentTarget.style.borderColor = "#FF6A0055";
-        e.currentTarget.style.boxShadow = "0 18px 40px rgba(255,106,0,0.14)";
+        e.currentTarget.style.borderColor = "#FF6A0033";
+        e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.06)";
       }}
       onMouseLeave={(e) => {
         if (!isDesktop) return;
-        e.currentTarget.style.borderColor = "#ECECEC";
-        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.18)";
+        e.currentTarget.style.borderColor = "";
+        e.currentTarget.style.boxShadow = "";
       }}
     >
       {/* ── Heart — absolute top right ── */}
@@ -101,7 +101,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
 
         {/* ── Image ── */}
         <div
-          className="relative flex h-[130px] items-center justify-center overflow-hidden rounded-none p-3 sm:h-[210px] sm:rounded-[18px] sm:p-6"
+          className="relative flex h-[130px] items-center justify-center overflow-hidden rounded-none p-3 sm:h-[210px] sm:p-6"
         >
 
           {(product.discount_percentage ?? 0) > 0 && (

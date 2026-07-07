@@ -1,9 +1,12 @@
 import { api } from "../lib/axios";
 import { CategoryRequest } from "../types/types";
+import { queryClient } from "../utils/cache";
 
 export const categoryService = {
   createCategory: async (data: CategoryRequest) => {
     const response = await api.post("/categories", data);
+    queryClient.invalidate("categories");
+    queryClient.invalidate("products");
     return response.data;
   },
 
@@ -27,11 +30,15 @@ export const categoryService = {
     data: Partial<CategoryRequest>
   ) => {
     const response = await api.put(`/categories/${id}`, data);
+    queryClient.invalidate("categories");
+    queryClient.invalidate("products");
     return response.data;
   },
 
   deleteCategory: async (id: number) => {
     const response = await api.delete(`/categories/${id}`);
+    queryClient.invalidate("categories");
+    queryClient.invalidate("products");
     return response.data;
   },
 

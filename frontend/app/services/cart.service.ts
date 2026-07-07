@@ -7,9 +7,12 @@ export interface ApiCartItem {
   image: string;
   price: string;
   priceNumber: number;
+  oldPriceNumber: number;
   quantity: number;
   selectedColor?: string;
   selectedStorage?: string;
+  variantId?: number;
+  selectedAttributes?: Record<string, string>;
   category: string;
 }
 
@@ -37,13 +40,17 @@ export const cartService = {
     productId: number,
     selectedColor?: string,
     selectedStorage?: string,
-    quantity?: number
+    quantity?: number,
+    variantId?: number,
+    selectedAttributes?: Record<string, string>
   ): Promise<CartApiResponse> => {
     const response = await api.post("/cart/items", {
       product_id: productId,
       selected_color: selectedColor || null,
       selected_storage: selectedStorage || null,
       quantity: quantity || 1,
+      variant_id: variantId || null,
+      selected_attributes: selectedAttributes || {},
     });
     return response.data;
   },
@@ -71,6 +78,8 @@ export const cartService = {
       quantity: number;
       selectedColor?: string;
       selectedStorage?: string;
+      variantId?: number;
+      selectedAttributes?: Record<string, string>;
     }>
   ): Promise<CartApiResponse> => {
     const response = await api.post("/cart/merge", { items });

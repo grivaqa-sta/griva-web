@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import ProductBannersSection from './ProductBannersSection';
 import DiscoverMoreSection from './DiscoverMoreSection';
+import ProductPromoBannersSection from './ProductPromoBannersSection';
 import { productService } from '@/app/services/product.service';
 import { uploadService } from '@/app/services/upload.service';
 import dealOfDayService from '@/app/services/dealOfDay.service';
@@ -61,7 +62,7 @@ function MobileBannersSection() {
       await productService.updateBannerStatus(
         product.id,
         true,
-        product.href || `/product/${product.id}`,
+        product.href || `/product/${product.slug}`,
         newUrl,
         product.banner_background_color,
         product.tags || []
@@ -85,7 +86,7 @@ function MobileBannersSection() {
       await productService.updateBannerStatus(
         product.id,
         true,
-        product.href || `/product/${product.id}`,
+        product.href || `/product/${product.slug}`,
         '',
         product.banner_background_color,
         product.tags || []
@@ -103,7 +104,7 @@ function MobileBannersSection() {
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20 flex justify-between items-center">
         <div>
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">B. Mobile View Homepage Banners</h4>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Mobile View Homepage Banners</h4>
           <p className="text-[10px] text-gray-400 mt-1">Upload mobile-specific promo images for each active hero banner product.</p>
         </div>
         <button
@@ -185,7 +186,7 @@ function MobileBannersSection() {
                       {mobileSrc ? mobileSrc.split('/').pop() : 'No mobile image uploaded'}
                     </div>
                     <div className="text-[10px] text-gray-500 bg-gray-50 px-2 py-1.5 rounded border border-gray-100 truncate">
-                      {product.href || `/product/${product.id}`}
+                      {product.href || `/product/${product.slug}`}
                     </div>
                   </div>
 
@@ -221,10 +222,9 @@ function getDefaultDates() {
   const now = new Date();
 
   const start = new Date(now);
-  start.setHours(0, 0, 0, 0); // 12:00 AM today
+  start.setSeconds(0, 0); // round to minute
 
-  const end = new Date(now);
-  end.setDate(end.getDate() + 7);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
 
   return { defaultStart: toDatetimeLocal(start), defaultEnd: toDatetimeLocal(end) };
 }
@@ -243,9 +243,24 @@ function DealOfDaySection() {
   const [successMsg, setSuccessMsg] = useState('');
 
   const [selectedProductId, setSelectedProductId] = useState<number | ''>('');
-  const { defaultStart, defaultEnd } = getDefaultDates();
+  const { defaultStart } = getDefaultDates();
   const [startDate, setStartDate] = useState(defaultStart);
-  const [endDate, setEndDate] = useState(defaultEnd);
+
+  // Auto-compute end date: always 24 hours after startDate
+  const computeEndFrom = (start: string): string => {
+    if (!start) return '';
+    const parsed = new Date(start);
+    if (isNaN(parsed.getTime())) return start;
+    const end = new Date(parsed.getTime() + 24 * 60 * 60 * 1000);
+    return toDatetimeLocal(end);
+  };
+  const [endDate, setEndDate] = useState(() => computeEndFrom(defaultStart));
+
+  // Whenever startDate changes, auto-update endDate to +24h
+  useEffect(() => {
+    setEndDate(computeEndFrom(startDate));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate]);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -385,7 +400,7 @@ function DealOfDaySection() {
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20 flex justify-between items-center">
         <div>
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">C. Deal of the Day ({deals.length}/4)</h4>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Deal of the Day ({deals.length}/4)</h4>
           <p className="text-[10px] text-gray-400 mt-1">Manage up to 4 deal of the day promotions on the homepage.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -415,20 +430,23 @@ function DealOfDaySection() {
 
                   {/* Delete Confirmation Overlay */}
                   {confirmDeleteId === deal.id && (
-                    <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95 duration-200">
-                      <p className="text-xs font-bold text-gray-800 mb-3">Delete this deal?</p>
+                    <div className="absolute inset-0 bg-white z-10 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95 duration-200" style={{ backgroundColor: '#ffffff' }}>
+                      <p className="text-xs font-bold mb-1" style={{ color: '#111827' }}>Delete this deal?</p>
+                      <p className="text-[10px] mb-3" style={{ color: '#6b7280' }}>This action cannot be undone.</p>
                       <div className="flex gap-2 w-full">
                         <button
                           onClick={() => setConfirmDeleteId(null)}
                           disabled={deletingId === deal.id}
-                          className="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          className="flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          style={{ backgroundColor: '#f3f4f6', color: '#374151' }}
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleDeleteDeal(deal.id)}
                           disabled={deletingId === deal.id}
-                          className="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-1"
+                          className="flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-1"
+                          style={{ backgroundColor: '#ef4444', color: '#ffffff' }}
                         >
                           {deletingId === deal.id ? <Loader className="h-3 w-3 animate-spin" /> : 'Yes, Delete'}
                         </button>
@@ -580,7 +598,8 @@ function DealOfDaySection() {
                     type="datetime-local"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400"
+                    style={{ backgroundColor: '#ffffff', color: '#111827', colorScheme: 'light' }}
                   />
                 </div>
                 <div>
@@ -589,7 +608,8 @@ function DealOfDaySection() {
                     type="datetime-local"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400"
+                    style={{ backgroundColor: '#ffffff', color: '#111827', colorScheme: 'light' }}
                   />
                 </div>
 
@@ -660,108 +680,11 @@ export default function BannersTab(props: BannersTabProps) {
       {/* Section C: Deal of the Day */}
       <DealOfDaySection />
 
-      {/* Section D: Category Hero Banners — NEW PREMIUM FEATURE */}
-      <div className="space-y-4">
-        <div className="pb-3 border-b border-orange-500/20">
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">E. Category Hero Banner Images</h4>
-          <p className="text-[10px] text-gray-400 mt-1">Upload or change the full-width hero banner image shown at the top of each category page. Supports JPEG, PNG, WebP.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {CATEGORY_SLUGS.map((cat) => {
-            const currentBanner = categoryBanners[cat.slug];
-            const isUploading = uploadingSlug === cat.slug;
-            const isSuccess = uploadSuccess === cat.slug;
-
-            return (
-              <div key={cat.slug} className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-sm">
-                {/* Banner preview */}
-                <div className="relative h-32 bg-gray-100 overflow-hidden">
-                  {currentBanner ? (
-                    <img
-                      src={currentBanner.startsWith('/') ? currentBanner : `http://localhost:8080${currentBanner}`}
-                      alt={cat.label}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <ImageIcon className="h-10 w-10" />
-                    </div>
-                  )}
-                  {/* Dark overlay with category label */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-3">
-                    <span className="text-xs font-bold text-white">{cat.label}</span>
-                  </div>
-                  {/* Success flash */}
-                  {isSuccess && (
-                    <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                      <div className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
-                        <Check className="h-3.5 w-3.5" /> Updated!
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Upload controls */}
-                <div className="p-4 space-y-3">
-                  {/* File upload button */}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={(el) => { fileInputRefs.current[cat.slug] = el; }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleCategoryBannerUpload(cat.slug, file);
-                    }}
-                  />
-                  <button
-                    onClick={() => fileInputRefs.current[cat.slug]?.click()}
-                    disabled={isUploading}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                  >
-                    {isUploading ? (
-                      <><Loader className="h-3.5 w-3.5 animate-spin" /> Uploading...</>
-                    ) : (
-                      <><Upload className="h-3.5 w-3.5" /> Upload New Banner Image</>
-                    )}
-                  </button>
-
-                  {/* Or paste URL */}
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="Or paste image URL..."
-                      className="flex-1 text-[10px] border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-400"
-                      onBlur={(e) => {
-                        if (e.target.value.startsWith('http')) {
-                          handleCategoryBannerURLSave(cat.slug, e.target.value);
-                        }
-                      }}
-                    />
-                    <button
-                      className="px-3 bg-gray-50 border border-gray-200 text-[10px] font-bold text-gray-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
-                      onClick={() => {
-                        const input = fileInputRefs.current[cat.slug]?.previousElementSibling as HTMLInputElement;
-                        // handled via onBlur
-                      }}
-                    >
-                      Set URL
-                    </button>
-                  </div>
-
-                  <p className="text-[9px] text-gray-400 text-center">
-                    Recommended: 1400×420px, JPEG/WebP. Max 5MB.
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Section F: Discover More Banners */}
+       {/* Section E: Discover More Banners */}
       <DiscoverMoreSection />
+
+      {/* Section D: Product Promo Banners */}
+      <ProductPromoBannersSection />
 
     </div>
   );

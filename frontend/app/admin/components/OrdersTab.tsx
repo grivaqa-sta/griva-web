@@ -209,16 +209,21 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     setOrdersList(prev =>
       prev.map(o => o.id === orderId ? { ...o, status: newStatus, reviewed_at: o.reviewed_at || new Date().toISOString() } : o)
     );
-    const success = await updateOrderStatusApi(orderId, newStatus);
-    if (!success) {
+    try {
+      const success = await updateOrderStatusApi(orderId, newStatus);
+      if (!success) {
+        throw new Error('Failed to update order status.');
+      }
+    } catch (err: any) {
       // Revert optimistic update if API call failed
       setOrdersList(prev =>
         prev.map(o => o.id === orderId && order ? { ...o, status: order.status } : o)
       );
-      toast.error('Failed to update order status. Please try again.');
+      toast.error(err.message || 'Failed to update order status. Please try again.');
+    } finally {
+      setUpdatingId(null);
+      setUpdatingStatus(null);
     }
-    setUpdatingId(null);
-    setUpdatingStatus(null);
   };
 
   const [reconcilingId, setReconcilingId] = useState<number | null>(null);

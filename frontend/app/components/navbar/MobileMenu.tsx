@@ -54,9 +54,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         style={{ zIndex: 100000 }}
       >
         <div className="flex items-center justify-between border-b pb-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            GR<span className="text-orange-500">i</span>VA Menu
-          </h2>
+          <Link href="/" onClick={onClose} className="flex items-center shrink-0">
+            <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain" />
+          </Link>
           <button
             onClick={onClose}
             className="rounded-lg p-2 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition"

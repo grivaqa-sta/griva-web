@@ -57,6 +57,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const statusParam = searchParams?.get('status');
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>(statusParam || 'all');
   const [deliverySlots, setDeliverySlots] = useState<any[]>([]);
   const [filterSlot, setFilterSlot] = useState<string>('all');
@@ -203,6 +204,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
     }
 
     setUpdatingId(orderId);
+    setUpdatingStatus(newStatus);
     // Optimistic UI update
     setOrdersList(prev =>
       prev.map(o => o.id === orderId ? { ...o, status: newStatus, reviewed_at: o.reviewed_at || new Date().toISOString() } : o)
@@ -216,6 +218,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
       toast.error('Failed to update order status. Please try again.');
     }
     setUpdatingId(null);
+    setUpdatingStatus(null);
   };
 
   const [reconcilingId, setReconcilingId] = useState<number | null>(null);
@@ -1347,7 +1350,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                   onClick={() => handleStatusChange(order.id, nextStatus)}
                                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer disabled:opacity-50 ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
                                 >
-                                  {updatingId === order.id ? (
+                                  {updatingId === order.id && updatingStatus === nextStatus ? (
                                     <span className="h-2.5 w-2.5 border border-current border-t-transparent rounded-full animate-spin" />
                                   ) : nextCfg.icon}
                                   Mark {nextCfg.label}
@@ -1681,7 +1684,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                               onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, nextStatus); }}
                                               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer disabled:opacity-50 ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
                                             >
-                                              {updatingId === order.id ? (
+                                              {updatingId === order.id && updatingStatus === nextStatus ? (
                                                 <span className="h-2.5 w-2.5 border border-current border-t-transparent rounded-full animate-spin" />
                                               ) : nextCfg.icon}
                                               Mark {nextCfg.label}

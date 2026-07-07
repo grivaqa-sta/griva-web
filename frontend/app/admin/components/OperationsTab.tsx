@@ -65,6 +65,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 export default function OperationsTab({ ordersList, setOrdersList, setActiveTab }: OperationsTabProps) {
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [actionMenuOpenId, setActionMenuOpenId] = useState<number | null>(null);
   const [deliverySlots, setDeliverySlots] = useState<any[]>([]);
 
@@ -109,6 +110,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
     }
 
     setUpdatingId(orderId);
+    setUpdatingStatus(newStatus);
     try {
       await updateOrderStatusApi(orderId, newStatus);
       setOrdersList(prev =>
@@ -118,6 +120,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
       console.error(e);
     }
     setUpdatingId(null);
+    setUpdatingStatus(null);
     setActionMenuOpenId(null);
   };
 
@@ -669,7 +672,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                                               onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, statusOption); }}
                                               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-black border transition-all cursor-pointer disabled:opacity-50 uppercase ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
                                             >
-                                              {updatingId === order.id ? (
+                                              {updatingId === order.id && updatingStatus === statusOption ? (
                                                 <span className="h-2 w-2 border border-current border-t-transparent rounded-full animate-spin" />
                                               ) : nextCfg.icon}
                                               {statusOption.replace(/_/g, " ")}

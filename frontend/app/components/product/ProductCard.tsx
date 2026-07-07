@@ -67,7 +67,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
     <motion.div
       whileHover={isDesktop ? { y: -2 } : {}}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="group relative flex flex-col overflow-hidden bg-white p-2 transition-all duration-300
+      className="group relative flex flex-col h-full overflow-hidden bg-white p-2 transition-all duration-300
         rounded-none sm:p-4
         border border-gray-200 sm:border sm:border-[#ECECEC]
         shadow-sm sm:shadow-sm"
@@ -97,7 +97,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
         </motion.div>
       </button>
 
-      <Link href={`/product/${product.id}`} className="flex flex-col">
+      <Link href={`/product/${product.id}`} className="flex flex-col flex-1">
 
         {/* ── Image ── */}
         <div
@@ -139,7 +139,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
         </div>
 
         {/* ── Content ── */}
-        <div className="mt-2 flex flex-col gap-1 sm:mt-3 sm:gap-1.5">
+        <div className="mt-2 flex flex-col gap-1 sm:mt-3 sm:gap-1.5 flex-grow">
 
           {/* Brand — below image, above title */}
           {product.brand && product.brand.trim() !== "" && (
@@ -181,7 +181,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
           </div>
 
           {/* Price */}
-          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-auto pt-1">
             <span className="flex items-baseline gap-0.5 leading-none">
               <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 sm:text-[10px]">
                 QAR

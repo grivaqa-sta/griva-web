@@ -20,6 +20,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { AdminOrder, updateOrderStatusApi } from "../../utils/api";
+import { useToast } from "@/app/context/ToastContext";
 
 interface OperationsTabProps {
   ordersList: AdminOrder[];
@@ -63,6 +64,7 @@ const timeSince = (dateStr: string) => {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function OperationsTab({ ordersList, setOrdersList, setActiveTab }: OperationsTabProps) {
+  const { toast } = useToast();
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
@@ -116,12 +118,14 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
       setOrdersList(prev =>
         prev.map(o => o.id === orderId ? { ...o, status: newStatus, reviewed_at: new Date().toISOString() } : o)
       );
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(e.message || "Failed to update order status.");
+    } finally {
+      setUpdatingId(null);
+      setUpdatingStatus(null);
+      setActionMenuOpenId(null);
     }
-    setUpdatingId(null);
-    setUpdatingStatus(null);
-    setActionMenuOpenId(null);
   };
 
   const markAsReviewed = async (orderId: number) => {

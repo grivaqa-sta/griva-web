@@ -41,6 +41,7 @@ async function safeFetch<T>(
   options: RequestInit,
   fallbackValue: T
 ): Promise<T> {
+  const isWriteRequest = options.method && ["POST", "PUT", "PATCH", "DELETE"].includes(options.method.toUpperCase());
   try {
     const headers: Record<string, string> = {};
     const authHeaders = getAuthHeaders();
@@ -63,17 +64,26 @@ async function safeFetch<T>(
     if (!res.ok) {
       const errorText = await res.text();
       console.warn(`[API Warning]: Request to ${endpoint} failed: ${res.status}. Using fallback.`);
+      let errMsg = "API Request Failed";
       try {
         const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.error || "API Request Failed");
+        errMsg = errorJson.error || errMsg;
       } catch {
-        throw new Error(errorText || "API Request Failed");
+        errMsg = errorText || errMsg;
       }
+      const apiErr = new Error(errMsg);
+      if (isWriteRequest) {
+        (apiErr as any).isApiError = true;
+      }
+      throw apiErr;
     }
 
     const data = await res.json();
     return processCloudinaryUrls(data) as T;
   } catch (error: any) {
+    if (error.isApiError) {
+      throw error;
+    }
     console.error(`🔴 [API CLIENT ERROR]: Failed reaching ${endpoint}:`, error.message);
     console.warn(`🛡️ [API CLIENT FALLBACK]: Falling back to local state mock data.`);
     return fallbackValue;

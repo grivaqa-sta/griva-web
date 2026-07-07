@@ -1286,21 +1286,167 @@ exports.exportOrders = async (req, res, next) => {
       "Created Date": formatExcelDate(o.createdAt),
     }));
 
-    const XLSX = require("xlsx");
+    const ExcelJS = require("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Orders");
+
+    // Define columns
+    worksheet.columns = [
+      { header: "Order Number", key: "orderNumber" },
+      { header: "Order Date", key: "orderDate" },
+      { header: "Customer Name", key: "customerName" },
+      { header: "Customer Email", key: "customerEmail" },
+      { header: "Phone Number", key: "phoneNumber" },
+      { header: "Status", key: "status" },
+      { header: "Payment Method", key: "paymentMethod" },
+      { header: "Payment Status", key: "paymentStatus" },
+      { header: "Total Amount", key: "totalAmount" },
+      { header: "Delivery Slot", key: "deliverySlot" },
+      { header: "Address", key: "address" },
+      { header: "City", key: "city" },
+      { header: "Delivery Notes", key: "deliveryNotes" },
+      { header: "Is Printed", key: "isPrinted" },
+      { header: "Printed At", key: "printedAt" },
+      { header: "Items Ordered", key: "itemsOrdered" }
+    ];
+
+    // Add rows
+    orders.forEach((o) => {
+      const rawPrice = o.getDataValue("total_price");
+      const orderTotal = typeof rawPrice === "string" 
+        ? parseFloat(rawPrice.replace(/([$]|qar|[\s,])/gi, "")) 
+        : parseFloat(rawPrice) || 0;
+
+      worksheet.addRow({
+        orderNumber: o.order_number || `ORD-${String(o.id).padStart(4, "0")}`,
+        orderDate: formatExcelDate(o.createdAt),
+        customerName: o.customer_name || o.user?.name || "Guest",
+        customerEmail: o.customer_email || o.user?.email || "N/A",
+        phoneNumber: o.customer_phone || "N/A",
+        status: (o.status || "N/A").toUpperCase(),
+        paymentMethod: o.payment_method || "COD",
+        paymentStatus: (o.payment_status || "unpaid").toUpperCase(),
+        totalAmount: orderTotal,
+        deliverySlot: o.deliverySlot ? o.deliverySlot.name : "N/A",
+        address: o.shipping_address || "N/A",
+        city: o.city || "N/A",
+        deliveryNotes: o.delivery_notes || "",
+        isPrinted: o.is_printed ? "Yes" : "No",
+        printedAt: o.printed_at ? formatExcelDate(o.printed_at) : "N/A",
+        itemsOrdered: o.items && o.items.length > 0
+          ? o.items.map((item) => `${item.product ? item.product.title : "Unknown Product"} (x${item.quantity})`).join(", ")
+          : "N/A"
+      });
+    });
+
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 28;
+    headerRow.eachCell((cell) => {
+      cell.font = {
+        name: "Segoe UI",
+        family: 4,
+        size: 11,
+        bold: true,
+        color: { argb: "FFFFFFFF" }
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF97316" } // Griva brand orange
+      };
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: "center",
+        wrapText: true
+      };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FFC2410C" } },
+        bottom: { style: "medium", color: { argb: "FFC2410C" } },
+        left: { style: "thin", color: { argb: "FFC2410C" } },
+        right: { style: "thin", color: { argb: "FFC2410C" } }
+      };
+    });
+
+    // Style data rows
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header
+      row.height = 22;
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.font = {
+          name: "Segoe UI",
+          size: 10,
+          color: { argb: "FF374151" } // gray-700
+        };
+        
+        // Alignment
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: [1, 2, 6, 7, 8, 10, 14, 15].includes(colNumber) ? "center" : [9].includes(colNumber) ? "right" : "left",
+          wrapText: colNumber === 16 || colNumber === 11 // wrap items and address
+        };
+        
+        // Borders
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE5E7EB" } }, // light gray
+          bottom: { style: "thin", color: { argb: "FFE5E7EB" } },
+          left: { style: "thin", color: { argb: "FFE5E7EB" } },
+          right: { style: "thin", color: { argb: "FFE5E7EB" } }
+        };
+
+        // Number format for Total Amount
+        if (colNumber === 9) {
+          cell.numFmt = '"QAR " #,##0.00';
+        }
+
+        // Alternating row background for readability
+        if (rowNumber % 2 === 0) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFDF8F6" } // light orange-gray tint
+          };
+        }
+      });
+    });
+
+    // Auto-fit columns
+    worksheet.columns.forEach((column, colNumber) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        let valStr = "";
+        if (cell.value !== null && cell.value !== undefined) {
+          if (typeof cell.value === "object" && cell.value.text) {
+            valStr = cell.value.text.toString();
+          } else if (cell.numFmt && typeof cell.value === "number") {
+            valStr = `QAR ${cell.value.toFixed(2)}`;
+          } else {
+            valStr = cell.value.toString();
+          }
+        }
+        const columnLength = valStr.length;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      // Specific overrides for wrapText columns
+      if (colNumber === 16) {
+        column.width = 45; // Items Ordered
+      } else if (colNumber === 11) {
+        column.width = 35; // Address
+      } else {
+        column.width = Math.min(Math.max(maxLength + 4, 12), 45);
+      }
+    });
+
     if (format === "csv") {
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const csvContent = XLSX.utils.sheet_to_csv(worksheet);
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", `attachment; filename=orders_export_${Date.now()}.csv`);
-      return res.send(csvContent);
+      await workbook.csv.write(res);
     } else {
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-      const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", `attachment; filename=orders_export_${Date.now()}.xlsx`);
-      return res.send(buffer);
+      await workbook.xlsx.write(res);
     }
   } catch (error) {
     next(error);

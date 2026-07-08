@@ -2,6 +2,7 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
 const DealOfDay = require("./DealOfDay");
 const DiscoverMore = require("./DiscoverMore");
+const ProductPromoBanner = require("./ProductPromoBanner");
 
 const Product = sequelize.define(
   "Product",
@@ -34,7 +35,7 @@ const Product = sequelize.define(
     },
 
     short_description: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true,
     },
 
@@ -95,6 +96,11 @@ const Product = sequelize.define(
     },
 
     variants: {
+      type: DataTypes.JSONB,
+      defaultValue: [],
+    },
+
+    attributes: {
       type: DataTypes.JSONB,
       defaultValue: [],
     },
@@ -177,6 +183,29 @@ const Product = sequelize.define(
   {
     tableName: "products",
     timestamps: true,
+    indexes: [
+      {
+        fields: ["is_active", "is_featured"],
+      },
+      {
+        fields: ["is_active", "is_best_seller"],
+      },
+      {
+        fields: ["is_active", "is_trending"],
+      },
+      {
+        fields: ["is_active", "is_new"],
+      },
+      {
+        fields: ["is_active", "deal_of_day"],
+      },
+      {
+        fields: ["is_active", "is_banner"],
+      },
+      {
+        fields: ["subcategory_id"],
+      },
+    ],
   },
 );
 
@@ -185,21 +214,27 @@ Product.associate = (models) => {
     foreignKey: "subcategory_id",
     as: "subcategory",
   });
+
+  Product.hasOne(models.DealOfDay, {
+    foreignKey: "productId",
+    as: "dealOfDay",
+  });
+
+  Product.hasMany(models.DiscoverMore, {
+    foreignKey: "productId",
+    as: "discoverMoreBanners",
+  });
+
+  Product.hasOne(models.ProductPromoBanner, {
+    foreignKey: "productId",
+    as: "promoBanner",
+  });
+
+  Product.hasMany(models.ProductVariant, {
+    foreignKey: "product_id",
+    as: "productVariants",
+    onDelete: "CASCADE",
+  });
 };
-
-Product.hasOne(DealOfDay, {
-  foreignKey: "productId",
-  as: "dealOfDay",
-});
-
-DealOfDay.belongsTo(Product, {
-  foreignKey: "productId",
-  as: "product",
-});
-
-Product.hasMany(DiscoverMore, {
-  foreignKey: "productId",
-  as: "discoverMoreBanners",
-});
 
 module.exports = Product;

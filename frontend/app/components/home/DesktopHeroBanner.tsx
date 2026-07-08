@@ -138,7 +138,7 @@ export default function DesktopHeroBanner() {
                                     <h1 className="max-w-xl text-2xl font-black text-white sm:text-2xl lg:text-3xl tracking-wide">
                                         {currentSlide.title}
                                     </h1>
-                                    <p className="max-w-lg text-sm text-gray-300 sm:text-sm lg:text-sm mt-2 lg:mt-0 first-letter:uppercase lowercase">
+                                    <p className="max-w-lg text-sm text-gray-300 mt-2 lg:mt-3 line-clamp-2 leading-relaxed">
                                         {currentSlide.subtitle}
                                     </p>
                                     <div className="flex items-end gap-2 lg:gap-3 justify-center lg:justify-start">

@@ -40,13 +40,13 @@ function OfferCards({ offer }: { offer: OfferCard }) {
       </div>
 
       {/* Product Image */}
-      <div className="relative z-10 flex items-end justify-center pb-3">
+      <div className="relative z-10 flex items-end justify-center pb-3 px-4">
         <Image
           src={offer.image}
           alt={offer.title}
           width={200}
           height={200}
-          className="w-[110px] md:w-[150px] h-auto object-contain transition-all duration-700 ease-out"
+          className="w-auto h-[90px] md:h-[120px] max-w-[130px] md:max-w-[175px] object-contain transition-all duration-700 ease-out group-hover:scale-105"
         />
       </div>
 

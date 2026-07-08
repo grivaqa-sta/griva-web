@@ -13,12 +13,13 @@ const startServer = async () => {
 
   // Run critical migrations unconditionally regardless of DB_SYNC
   try {
+    await sequelize.query('ALTER TABLE "products" ALTER COLUMN "short_description" TYPE TEXT;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
-    console.log('🟢 [DATABASE]: Unconditionally ensured delivery_boy_id, status type VARCHAR(50), and fridaySaleConfig JSONB exist in the database');
+    console.log('🟢 [DATABASE]: Unconditionally ensured products short_description type TEXT, delivery_boy_id, status type VARCHAR(50), and fridaySaleConfig JSONB exist in the database');
   } catch (dbErr) {
-    console.log('ℹ️ [DATABASE]: Skipping unconditional ReturnRequests/SiteSettings table alterations:', dbErr.message);
+    console.log('ℹ️ [DATABASE]: Skipping unconditional ReturnRequests/SiteSettings/products table alterations:', dbErr.message);
   }
 
   if (process.env.DB_SYNC === "true") {

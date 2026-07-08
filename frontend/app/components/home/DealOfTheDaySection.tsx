@@ -56,17 +56,33 @@ export default function DealOfTheDaySection() {
     setCurrent((c) => (c + 1) % slides.length);
   };
 
+  const [imageIndex, setImageIndex] = useState<number>(0);
+
   useEffect(() => {
+    setImageIndex(0);
     setActiveImage(null);
   }, [current]);
 
   useEffect(() => {
+    if (slides.length === 0 || !slide) return;
+    const images = [slide.mainImage, ...slide.thumbs];
+    if (images.length <= 1) return;
+
+    const imgTimer = setInterval(() => {
+      setImageIndex((prev) => (prev + 1) % images.length);
+    }, 2500);
+
+    return () => clearInterval(imgTimer);
+  }, [current, slide?.mainImage, slide?.thumbs]);
+
+  useEffect(() => {
     if (isPaused || slides.length <= 1) return;
-    const timer = setInterval(() => { next(); }, 3000);
+    const timer = setInterval(() => { next(); }, 7500); // 7.5 seconds allows multiple image cycles
     return () => clearInterval(timer);
   }, [isPaused, current, slides.length]);
 
-  const displayImage = activeImage || slide?.mainImage;
+  const allImages = slide ? [slide.mainImage, ...slide.thumbs] : [];
+  const displayImage = activeImage || allImages[imageIndex] || "/placeholder.png";
 
   const handleAddToCart = () => {
     if (!slide) return;
@@ -204,7 +220,7 @@ export default function DealOfTheDaySection() {
                   {slide.thumbs && slide.thumbs.length > 0 && slide.thumbs.slice(0, 3).map((image: any, index: number) => (
                     <div
                       key={index}
-                      onClick={(e) => { e.stopPropagation(); setActiveImage(image); }}
+                      onClick={(e) => { e.stopPropagation(); setActiveImage(image); const idx = allImages.indexOf(image); if (idx !== -1) { setImageIndex(idx); } }}
                       className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border bg-white transition-all overflow-hidden"
                       style={{
                         borderColor: displayImage === image ? "#FF6A00" : "#f3f4f6",
@@ -233,14 +249,25 @@ export default function DealOfTheDaySection() {
                 </div>
 
                 {/* Main image */}
-                <div className="relative mx-auto flex h-[220px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50/50 p-4 pointer-events-none lg:mx-0 lg:h-[240px] lg:w-[240px]">
-                  <Image
-                    src={displayImage}
-                    alt={slide.title}
-                    fill
-                    sizes="(max-width: 768px) 220px, 300px"
-                    className="object-contain p-4 transition-all duration-300"
-                  />
+                <div className="relative mx-auto h-[220px] w-[220px] shrink-0 overflow-hidden rounded-xl bg-gray-50/50 pointer-events-none lg:mx-0 lg:h-[240px] lg:w-[240px]">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={displayImage}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.35 }}
+                      className="absolute inset-0 p-4"
+                    >
+                      <Image
+                        src={displayImage}
+                        alt={slide.title}
+                        fill
+                        sizes="(max-width: 768px) 220px, 300px"
+                        className="object-contain p-4"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               </div>
 

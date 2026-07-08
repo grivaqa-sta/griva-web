@@ -33,6 +33,8 @@ interface OrderItem {
   id: number;
   quantity: number;
   price_at_purchase: string;
+  image_snapshot?: string;
+  sku?: string;
   product?: {
     id: number;
     title: string;
@@ -404,19 +406,19 @@ export default function DeliveryOrderDetailPage() {
                   <div 
                     className="h-12 w-12 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
                     onClick={() => {
-                      if (item.product?.main_image_url) {
-                        setSelectedImagePreview(item.product.main_image_url);
+                      if (item.product?.main_image_url || item.image_snapshot) {
+                        setSelectedImagePreview(item.product?.main_image_url || item.image_snapshot || null);
                       }
                     }}
                   >
-                    {item.product?.main_image_url ? (
-                      <img src={item.product.main_image_url} alt={item.product.title} className="h-full w-full object-cover" />
+                    {(item.product?.main_image_url || item.image_snapshot) ? (
+                      <img src={item.product?.main_image_url || item.image_snapshot} alt={item.product?.title || `Product #${item.id}`} className="h-full w-full object-cover" />
                     ) : (
                       <Package size={20} className="text-zinc-600" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{item.product?.title || `Product #${item.id}`}</p>
+                    <p className="text-xs font-bold text-white truncate">{item.product?.title || (item.sku ? `Product (${item.sku})` : `Product #${item.id}`)}</p>
                     <p className="text-[10px] text-zinc-500">
                       Quantity: {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
                     </p>
@@ -431,6 +433,8 @@ export default function DeliveryOrderDetailPage() {
                   const imgs: string[] = [];
                   if (item.product?.main_image_url) {
                     imgs.push(item.product.main_image_url);
+                  } else if (item.image_snapshot) {
+                    imgs.push(item.image_snapshot);
                   }
                   if (item.product?.gallery_images && Array.isArray(item.product.gallery_images)) {
                     item.product.gallery_images.forEach((img: any) => {

@@ -371,6 +371,7 @@ export interface DealProduct {
   rating?: number;
   short_description?: string;
   description?: string;
+  stock?: number;
 }
 
 export interface Deal {

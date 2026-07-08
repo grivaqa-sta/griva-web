@@ -20,6 +20,7 @@ export default function TrendingProductCard({
   if (!product) return null;
 
   const isWishlisted = isInWishlist(product.id);
+  const isOutOfStock = product.stock === undefined || product.stock === null || product.stock <= 0;
 
   const formatPrice = (price?: string | number) => {
     if (!price) return null;
@@ -153,20 +154,26 @@ export default function TrendingProductCard({
                 </span>
               )}
             </div>
-            <button
-              onClick={handleAddToCart}
-              className="flex items-center justify-center rounded-lg bg-orange-500 p-2 text-white active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
-              aria-label="Add to cart"
-            >
-              <ShoppingCart size={13} strokeWidth={2.2} />
-            </button>
+            {isOutOfStock ? (
+              <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-200">
+                SOLD OUT
+              </span>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                className="flex items-center justify-center rounded-lg bg-orange-500 p-2 text-white active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
+                aria-label="Add to cart"
+              >
+                <ShoppingCart size={13} strokeWidth={2.2} />
+              </button>
+            )}
           </div>
         </div>
       </Link>
 
       {/* ── DESKTOP CARD: original design unchanged ── */}
       <motion.div
-        whileHover={{ y: -4 }}
+        whileHover={!isOutOfStock ? { y: -4 } : {}}
         transition={{ duration: 0.2 }}
         className="hidden sm:block w-full"
       >
@@ -268,13 +275,19 @@ export default function TrendingProductCard({
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleAddToCart}
-                className="flex items-center justify-center rounded-lg bg-orange-500 p-2.5 text-white hover:bg-orange-600 active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
-                aria-label="Add to cart"
-              >
-                <ShoppingCart size={14} strokeWidth={2.2} />
-              </button>
+              {isOutOfStock ? (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-200">
+                  SOLD OUT
+                </span>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  className="flex items-center justify-center rounded-lg bg-orange-500 p-2.5 text-white hover:bg-orange-600 active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
+                  aria-label="Add to cart"
+                >
+                  <ShoppingCart size={14} strokeWidth={2.2} />
+                </button>
+              )}
             </div>
           </div>
         </Link>

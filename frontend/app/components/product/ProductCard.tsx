@@ -28,6 +28,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
   if (!product) return null;
 
   const isWishlisted = isInWishlist(product.id);
+  const isOutOfStock = product.stock === undefined || product.stock === null || product.stock <= 0;
 
   const formatPrice = (price?: string | number) => {
     if (!price) return null;
@@ -65,19 +66,19 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
 
   return (
     <motion.div
-      whileHover={isDesktop ? { y: -2 } : {}}
+      whileHover={isDesktop && !isOutOfStock ? { y: -2 } : {}}
       transition={{ duration: 0.25, ease: "easeOut" }}
       className="group relative flex flex-col h-full overflow-hidden bg-white p-2 transition-all duration-300
         rounded-none sm:p-4
         border border-gray-200 sm:border sm:border-[#ECECEC]
         shadow-sm sm:shadow-sm"
       onMouseEnter={(e) => {
-        if (!isDesktop) return;
+        if (!isDesktop || isOutOfStock) return;
         e.currentTarget.style.borderColor = "#FF6A0033";
         e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.06)";
       }}
       onMouseLeave={(e) => {
-        if (!isDesktop) return;
+        if (!isDesktop || isOutOfStock) return;
         e.currentTarget.style.borderColor = "";
         e.currentTarget.style.boxShadow = "";
       }}
@@ -204,42 +205,53 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
 
       {/* ── Desktop Buttons ── */}
       <div className="mt-3 hidden grid-cols-2 gap-2.5 sm:grid">
-        <button
-          onClick={handleAddToCart}
-          className="flex h-11 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-all duration-300"
-          style={{ borderColor: "#ECECEC", color: INK, backgroundColor: "transparent" }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = ORANGE;
-            e.currentTarget.style.borderColor = ORANGE;
-            e.currentTarget.style.color = "#fff";
-            e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.borderColor = "#ECECEC";
-            e.currentTarget.style.color = INK;
-            e.currentTarget.style.boxShadow = "none";
-          }}
-        >
-          Add to Cart
-        </button>
-
-        <Link href={`/product/${product.id}`} className="w-full">
+        {isOutOfStock ? (
           <button
-            className="flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300"
-            style={{ backgroundColor: INK, boxShadow: "0 10px 20px rgba(13,13,13,0.2)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = ORANGE;
-              e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = INK;
-              e.currentTarget.style.boxShadow = "0 10px 20px rgba(13,13,13,0.2)";
-            }}
+            disabled
+            className="col-span-2 flex h-11 w-full items-center justify-center rounded-[10px] bg-gray-100 text-xs font-bold uppercase text-gray-400 cursor-not-allowed border border-gray-200"
           >
-            Buy Now
+            Out of Stock
           </button>
-        </Link>
+        ) : (
+          <>
+            <button
+              onClick={handleAddToCart}
+              className="flex h-11 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-all duration-300"
+              style={{ borderColor: "#ECECEC", color: INK, backgroundColor: "transparent" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = ORANGE;
+                e.currentTarget.style.borderColor = ORANGE;
+                e.currentTarget.style.color = "#fff";
+                e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.borderColor = "#ECECEC";
+                e.currentTarget.style.color = INK;
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              Add to Cart
+            </button>
+
+            <Link href={`/product/${product.id}`} className="w-full">
+              <button
+                className="flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300"
+                style={{ backgroundColor: INK, boxShadow: "0 10px 20px rgba(13,13,13,0.2)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = ORANGE;
+                  e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = INK;
+                  e.currentTarget.style.boxShadow = "0 10px 20px rgba(13,13,13,0.2)";
+                }}
+              >
+                Buy Now
+              </button>
+            </Link>
+          </>
+        )}
       </div>
     </motion.div>
   );

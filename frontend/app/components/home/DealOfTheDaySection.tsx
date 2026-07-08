@@ -205,10 +205,10 @@ export default function DealOfTheDaySection() {
                     <div
                       key={index}
                       onClick={(e) => { e.stopPropagation(); setActiveImage(image); }}
-                      className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-all"
+                      className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border bg-white transition-all overflow-hidden"
                       style={{
                         borderColor: displayImage === image ? "#FF6A00" : "#f3f4f6",
-                        backgroundColor: displayImage === image ? "#FF6A0010" : "#f9fafb",
+                        backgroundColor: displayImage === image ? "#FF6A0010" : "#ffffff",
                       }}
                       onMouseEnter={(e) => {
                         if (displayImage !== image)
@@ -219,7 +219,15 @@ export default function DealOfTheDaySection() {
                           e.currentTarget.style.borderColor = "#f3f4f6";
                       }}
                     >
-                      <Image src={image} alt="thumb" width={36} height={36} className="object-contain" style={{ width: "auto", height: "auto" }} />
+                      <div className="relative h-10 w-10">
+                        <Image
+                          src={image}
+                          alt="thumb"
+                          fill
+                          sizes="40px"
+                          className="object-contain p-0.5"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

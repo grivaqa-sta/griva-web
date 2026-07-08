@@ -1467,16 +1467,16 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                 {(order.items || []).map((item) => (
                                   <div key={item.id} className="flex items-center gap-3 bg-white border border-orange-500/20 rounded-xl p-3">
                                     <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                                      {item.product?.main_image_url && (
+                                      {(item.product?.main_image_url || item.image_snapshot) && (
                                         <img
-                                          src={item.product.main_image_url}
-                                          alt={item.product.title}
+                                          src={item.product?.main_image_url || item.image_snapshot}
+                                          alt={item.product?.title || `Product #${item.product_id}`}
                                           className="h-full w-full object-cover"
                                         />
                                       )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-xs font-bold text-gray-800 truncate">{item.product?.title || `Product #${item.product_id}`}</p>
+                                      <p className="text-xs font-bold text-gray-800 truncate">{item.product?.title || (item.sku ? `Product (${item.sku})` : `Product #${item.product_id}`)}</p>
                                       {((item.selected_attributes && Object.keys(item.selected_attributes).length > 0) || item.selected_color || item.selected_storage) && (
                                         <div className="flex flex-wrap gap-1.5 mt-0.5 mb-1">
                                           {item.selected_attributes && Object.keys(item.selected_attributes).length > 0 ? (

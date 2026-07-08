@@ -598,6 +598,8 @@ export interface OrderItem {
   product_id: number;
   quantity: number;
   price_at_purchase: number;
+  image_snapshot?: string;
+  sku?: string;
   product?: { id: number; title: string; main_image_url: string };
   selected_attributes?: Record<string, string>;
   selected_color?: string;

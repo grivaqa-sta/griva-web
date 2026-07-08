@@ -50,6 +50,8 @@ interface OrderItem {
   id: number;
   quantity: number;
   price_at_purchase: string;
+  image_snapshot?: string;
+  sku?: string;
   product?: {
     id: number;
     title: string;
@@ -887,12 +889,12 @@ export default function DeliveryDashboard() {
                                     <div className="flex items-center gap-2 max-w-[75%]">
                                       <div className="h-8 w-8 rounded-lg overflow-hidden border border-zinc-900 flex items-center justify-center bg-zinc-950 shrink-0">
                                         <img
-                                          src={req.orderItem?.product?.main_image_url || "/images/placeholder.jpg"}
+                                          src={req.orderItem?.product?.main_image_url || req.orderItem?.image_snapshot || "/images/placeholder.jpg"}
                                           alt={req.orderItem?.product?.title || "Product"}
                                           className="object-contain max-h-full max-w-full"
                                         />
                                       </div>
-                                      <span className="truncate">{req.orderItem?.product?.title || "Product"}</span>
+                                      <span className="truncate">{req.orderItem?.product?.title || (req.orderItem?.sku ? `Product (${req.orderItem.sku})` : "Product")}</span>
                                     </div>
                                     <span className="text-[10px] font-bold text-zinc-500 shrink-0">
                                       {req.quantity} units

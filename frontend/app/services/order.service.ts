@@ -51,6 +51,8 @@ export interface MyOrderItem {
   variant_id?: number;
   selected_attributes?: Record<string, string>;
   price_at_purchase: string | number;
+  image_snapshot?: string;
+  sku?: string;
   product?: {
     id: number;
     title: string;
@@ -199,6 +201,8 @@ export interface ReturnRequest {
     selected_color?: string;
     selected_storage?: string;
     price_at_purchase?: number | string;
+    image_snapshot?: string;
+    sku?: string;
     product?: {
       id: number;
       title: string;

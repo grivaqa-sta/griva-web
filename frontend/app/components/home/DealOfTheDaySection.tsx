@@ -34,12 +34,13 @@ export default function DealOfTheDaySection() {
       description: p?.short_description || p?.description || "Incredible savings on this exclusive deal.",
       badge: "DEAL OF THE DAY",
       hot: true,
-      endDate: deal.endDate
+      endDate: deal.endDate,
+      stock: p ? p.stock : 0
     };
   });
 
   const [current, setCurrent] = useState<number>(0);
-  const [activeImage, setActiveImage] = useState<string | StaticImageData | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
 
@@ -83,6 +84,7 @@ export default function DealOfTheDaySection() {
 
   const allImages = slide ? [slide.mainImage, ...slide.thumbs] : [];
   const displayImage = activeImage || allImages[imageIndex] || "/placeholder.png";
+  const displayImageKey = typeof displayImage === "string" ? displayImage : (displayImage as any)?.src || "";
 
   const handleAddToCart = () => {
     if (!slide) return;
@@ -252,7 +254,7 @@ export default function DealOfTheDaySection() {
                 <div className="relative mx-auto h-[220px] w-[220px] shrink-0 overflow-hidden rounded-xl bg-gray-50/50 pointer-events-none lg:mx-0 lg:h-[240px] lg:w-[240px]">
                   <AnimatePresence mode="wait">
                     <motion.div
-                      key={displayImage}
+                      key={displayImageKey}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -277,14 +279,19 @@ export default function DealOfTheDaySection() {
                   <div className="flex items-center gap-2">
                     <span
                       className="rounded px-2 py-0.5 text-[9px] font-bold uppercase text-white bg-orange-600"
-                      
                     >
                       {slide.badge}
                     </span>
-                    {slide.hot && (
-                      <span className="animate-pulse rounded bg-red-700 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
-                        HOT
+                    {(slide.stock ?? 0) <= 0 ? (
+                      <span className="rounded bg-gray-500 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
+                        SOLD OUT
                       </span>
+                    ) : (
+                      slide.hot && (
+                        <span className="animate-pulse rounded bg-red-700 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
+                          HOT
+                        </span>
+                      )
                     )}
                   </div>
                   <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -306,18 +313,29 @@ export default function DealOfTheDaySection() {
                 </div>
 
                 <div className="z-10 mt-2 flex w-full gap-2 lg:w-[360px]">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px] hover:bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition bg-orange-600"
-                  >
-                    <ShoppingCart size={14} /> Add To Cart
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleBuyNow(); }}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px]  text-xs font-bold uppercase text-white shadow-md shadow-gray-900/20 transition bg-black hover:bg-[#222]"
-                  >
-                    Buy Now
-                  </button>
+                  {(slide.stock ?? 0) <= 0 ? (
+                    <button
+                      disabled
+                      className="flex h-11 w-full items-center justify-center rounded-[5px] bg-gray-100 text-xs font-bold uppercase text-gray-400 cursor-not-allowed border border-gray-200"
+                    >
+                      Out of Stock
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
+                        className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px] hover:bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition bg-orange-600"
+                      >
+                        <ShoppingCart size={14} /> Add To Cart
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleBuyNow(); }}
+                        className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px]  text-xs font-bold uppercase text-white shadow-md shadow-gray-900/20 transition bg-black hover:bg-[#222]"
+                      >
+                        Buy Now
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>

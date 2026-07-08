@@ -402,8 +402,12 @@ exports.updateProduct = async (req, res) => {
     await product.update(req.body);
 
     const ProductVariant = require("../models/ProductVariant");
-    const { variants } = req.body;
-    if (Array.isArray(variants)) {
+    const { variants, attributes } = req.body;
+    
+    // Check if the updated product is variant-based (has non-empty attributes)
+    const hasAttributes = (attributes && attributes.length > 0) || (product.attributes && product.attributes.length > 0);
+
+    if (hasAttributes && Array.isArray(variants)) {
       const existingVariants = await ProductVariant.findAll({
         where: { product_id: product.id }
       });
@@ -450,6 +454,9 @@ exports.updateProduct = async (req, res) => {
       }) || 0;
       product.stock = totalStock;
       await product.save();
+    } else if (!hasAttributes) {
+      // Simple product: delete any variants that might exist in the db to prevent leftover state
+      await ProductVariant.destroy({ where: { product_id: product.id } });
     }
 
     cache.clear(); // Clear cache on update

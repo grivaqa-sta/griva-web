@@ -8,11 +8,30 @@ import { AnimatePresence, motion, Variants } from "framer-motion";
 import { useBannerProducts, useGlobalSettings } from "@/app/hooks/useHomeData";
 import { BannerProduct, HeroSlide } from "@/app/types/types";
 
+function getCleanBadge(p: BannerProduct): string {
+    if (p.tags && p.tags.length > 0) {
+        const firstTag = p.tags[0];
+        if (typeof firstTag === "string" && firstTag.trim()) {
+            const tagParts = firstTag.split(",").map(t => t.trim()).filter(Boolean);
+            if (tagParts.length > 0) {
+                const candidate = tagParts[0];
+                if (candidate.length < 15) {
+                    return candidate;
+                }
+            }
+        }
+    }
+    if (p.is_featured) return "Featured";
+    if (p.is_best_seller) return "Best Seller";
+    if (p.is_trending) return "Trending";
+    return "Sale";
+}
+
 function mapProductToSlide(p: BannerProduct): HeroSlide {
     return {
         title: p.title,
         subtitle: p.short_description ?? "",
-        badge: p.tags?.[0] ?? "Sale",
+        badge: getCleanBadge(p),
         image: p.main_image_url,
         price: p.price,
         old_price: p.old_price,

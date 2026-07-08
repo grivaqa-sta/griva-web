@@ -84,6 +84,7 @@ export default function DealOfTheDaySection() {
 
   const allImages = slide ? [slide.mainImage, ...slide.thumbs] : [];
   const displayImage = activeImage || allImages[imageIndex] || "/placeholder.png";
+  const displayImageKey = typeof displayImage === "string" ? displayImage : (displayImage as any)?.src || "";
 
   const handleAddToCart = () => {
     if (!slide) return;
@@ -253,7 +254,7 @@ export default function DealOfTheDaySection() {
                 <div className="relative mx-auto h-[220px] w-[220px] shrink-0 overflow-hidden rounded-xl bg-gray-50/50 pointer-events-none lg:mx-0 lg:h-[240px] lg:w-[240px]">
                   <AnimatePresence mode="wait">
                     <motion.div
-                      key={displayImage}
+                      key={displayImageKey}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}

@@ -30,7 +30,7 @@ export default function WishlistPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-6 sm:border-0 sm:divide-none">
               <AnimatePresence>
                 {items.map((item) => {
                   // Map WishlistItem to ApiProduct type to feed into ProductCard
@@ -42,6 +42,7 @@ export default function WishlistPage() {
                     old_price: item.oldPrice ? item.oldPrice.replace(/[^\d.]/g, "") : undefined,
                     rating: item.rating,
                     brand: item.category,
+                    stock: item.stock ?? 0,
                   } as unknown as ApiProduct;
 
                   return (

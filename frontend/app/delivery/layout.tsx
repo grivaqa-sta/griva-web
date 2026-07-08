@@ -179,6 +179,7 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
             background-color: #ffffff !important;
             color: #18181b !important;
             border-color: #e4e4e7 !important;
+            box-shadow: none !important;
           }
 
           .delivery-light-theme input::placeholder,
@@ -205,6 +206,18 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
           /* Skyline and other SVGs */
           .delivery-light-theme svg.text-zinc-800 {
             color: #d4d4d8 !important;
+          }
+
+          /* Accessibility text/icon contrast improvements */
+          .delivery-light-theme .text-blue-400 {
+            color: #2563eb !important;
+          }
+          .delivery-light-theme .text-green-400 {
+            color: #16a34a !important;
+          }
+          .delivery-light-theme .text-yellow-400,
+          .delivery-light-theme .text-yellow-500 {
+            color: #ca8a04 !important;
           }
         `}</style>
       )}

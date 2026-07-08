@@ -574,12 +574,12 @@ const faqData: FAQItem[] = [
   {
     question: "What is your return policy?",
     answer:
-      "We offer a 7-day return policy from the date of delivery. If you return a product within these 7 days, the refund amount will be credited to your GriVA wallet as store credit. You can use this wallet credit for future purchases on our store. Please note that we do not offer cash refunds.",
+      "We offer a 7-day return policy from the date of delivery. If you return a product within these 7 days, the refund amount will be credited to your GRIVA wallet as store credit. You can exchange damaged or defective items; if the item is out of stock, you will receive a full refund. Please note that we do not offer cash refunds.",
   },
   {
     question: "What should I do if my product is damaged or defective?",
     answer:
-      "If you receive a damaged, defective, or incorrect product, you are eligible for an immediate exchange. We will arrange a courier to collect the damaged item and deliver a brand-new replacement of the same product at no extra cost to you. Please report any damaged items to our customer support within 24 hours of delivery.",
+      "If you receive a damaged, defective, or incorrect product, you are eligible for an exchange. We will arrange a courier to collect the damaged item and deliver a brand-new replacement at no extra cost to you. If the item is out of stock, you will receive a full refund to your GRIVA wallet. Please report any damaged items to our customer support within 24 hours of delivery.",
   },
   {
     question: "How long does shipping take and what are the rates?",
@@ -589,7 +589,7 @@ const faqData: FAQItem[] = [
   {
     question: "How can I track my order?",
     answer:
-      "Once your order is processed, you will receive order status notifications via SMS or WhatsApp. You can also view live delivery tracking details directly from your GriVA account dashboard.",
+      "Once your order is processed, you will receive order status notifications via SMS or WhatsApp. You can also view live delivery tracking details directly from your GRIVA account dashboard.",
   },
   {
     question: "Can I modify or cancel my order?",

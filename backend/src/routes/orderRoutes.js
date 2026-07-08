@@ -56,6 +56,9 @@ router.get("/", authenticateJWT, isAdminOrStaff, orderController.getAllOrders);
 // Maps to: GET /api/orders/analytics (Fetches dynamic storefront sales metrics)
 router.get("/analytics", authenticateJWT, isAdmin, orderController.getAnalytics);
 
+// Maps to: GET /api/orders/deep-analytics (Fetches deep business analytics report)
+router.get("/deep-analytics", authenticateJWT, isAdmin, orderController.getDeepAnalytics);
+
 // FEATURE: Delivery Attempt Management — needs-attention must be before :id routes
 router.get("/needs-attention", authenticateJWT, isAdminOrStaff, getNeedsAttention);
 
@@ -71,6 +74,9 @@ router.patch("/:id/status", authenticateJWT, isAdminOrStaff, orderController.upd
 // Maps to: PATCH /api/orders/:id/review (Mark an order as reviewed/viewed)
 router.patch("/:id/review", authenticateJWT, isAdminOrStaff, orderController.reviewOrder);
 
+// Maps to: PATCH /api/orders/:id/reconcile-cash
+router.patch("/:id/reconcile-cash", authenticateJWT, isAdminOrStaff, orderController.reconcileCashPayment);
+
 // ─────────────────────────────────────────────────────────
 // FEATURE: Delivery Boy System (Admin / Staff routes)
 // ─────────────────────────────────────────────────────────
@@ -83,6 +89,9 @@ router.get("/admin/delivery-boys", authenticateJWT, isAdminOrStaff, orderControl
 
 // Maps to: POST /api/orders/admin/delivery-boys (Admin creates a delivery boy account)
 router.post("/admin/delivery-boys", authenticateJWT, isAdmin, orderController.createDeliveryBoy);
+
+// Maps to: PATCH /api/orders/admin/delivery-boys/:id/reset-password (Admin resets driver password)
+router.patch("/admin/delivery-boys/:id/reset-password", authenticateJWT, isAdmin, orderController.resetDeliveryBoyPassword);
 
 // FEATURE: Delivery Attempt Management — admin reopens cancelled/attempted/failed orders
 router.patch("/:id/reopen", authenticateJWT, isAdminOrStaff, reopenOrder);

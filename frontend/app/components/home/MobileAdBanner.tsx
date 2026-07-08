@@ -67,7 +67,7 @@ function MobileAdBanner() {
     rawSrc.startsWith("http") || rawSrc.startsWith("/")
       ? rawSrc
       : `http://localhost:8080${rawSrc}`;
-  const href = product.href || `/product/${product.id}`;
+  const href = product.href || `/product/${product.slug}`;
 
   return (
     <div
@@ -119,7 +119,7 @@ function MobileAdBanner() {
 // ─── Mobile Section Wrapper ────────────────────────────────────────────────
 export default function MobileHeroBanner() {
   return (
-    <div className="block lg:hidden px-4 py-2">
+    <div className="block lg:hidden px-4 mt-3 pb-2">
       <MobileAdBanner />
     </div>
   );

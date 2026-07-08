@@ -1,25 +1,19 @@
 const { Client } = require('pg');
-
-const passwords = ['', 'admin', 'admin123', '123456', '1234', 'postgres', 'root', 'password', 'grivadb', 'Griva123!', 'GrivaPassword123!'];
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, './.env') });
 
 async function test() {
-  for (const pw of passwords) {
-    const client = new Client({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: pw,
-      port: 5432,
-    });
-    try {
-      await client.connect();
-      console.log(`SUCCESS WITH PASSWORD: "${pw}"`);
-      await client.end();
-      return;
-    } catch (err) {
-      console.log(`Failed with password: "${pw}": ${err.message}`);
-    }
+  console.log("Testing connection to:", process.env.DATABASE_URL);
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  try {
+    await client.connect();
+    console.log("SUCCESSFULLY CONNECTED TO NEON DB!");
+    await client.end();
+  } catch (err) {
+    console.error("ERROR:", err.message);
   }
 }
-
 test();

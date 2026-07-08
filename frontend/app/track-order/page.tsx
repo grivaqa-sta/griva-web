@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { orderService, TrackedOrder } from "@/app/services/order.service";
 import SectionHeading from "@/app/components/common/SectionHeading";
+import { io } from "socket.io-client";
 import {
   Search,
   Package,
@@ -51,6 +52,43 @@ function TrackOrderContent() {
     }
   }, [initialOrder, initialPhone]);
 
+  // Connect to Socket.IO for real-time tracking updates
+  useEffect(() => {
+    if (!order) return;
+
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8080";
+    console.log(`🔌 [Socket.IO Track-Order]: Connecting to ${socketUrl}...`);
+
+    const socket = io(socketUrl, {
+      transports: ["polling", "websocket"],
+      reconnection: true,
+    });
+
+    socket.on("connect", () => {
+      console.log(`🔌 [Socket.IO Track-Order]: Connected, subscribing to order ID ${order.id}`);
+      socket.emit("join-order-tracking", order.id);
+    });
+
+    socket.on("order-status-updated", (data: { orderId: number; status: string }) => {
+      console.log("🔌 [Socket.IO Track-Order]: Status updated event received:", data);
+      if (data.orderId === order.id) {
+        setOrder((prev) => {
+          if (!prev) return null;
+          return { ...prev, status: data.status };
+        });
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔌 [Socket.IO Track-Order]: Disconnected.");
+    });
+
+    return () => {
+      console.log("🔌 [Socket.IO Track-Order]: Disconnecting...");
+      socket.disconnect();
+    };
+  }, [order?.id]);
+
   const handleSearch = async (targetOrder = orderNumber, targetPhone = phone) => {
     if (!targetOrder.trim() || !targetPhone.trim()) {
       setError("Please fill in both fields.");
@@ -76,6 +114,26 @@ function TrackOrderContent() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "delivered":
+      case "completed":
+        return "text-green-700 bg-green-50 border border-green-200";
+      case "cancelled":
+      case "failed":
+        return "text-red-700 bg-red-50 border border-red-200";
+      case "out_for_delivery":
+      case "shipped":
+        return "text-blue-700 bg-blue-50 border border-blue-200";
+      case "processing":
+      case "assigned":
+        return "text-indigo-700 bg-indigo-50 border border-indigo-200";
+      case "pending":
+      default:
+        return "text-orange-700 bg-orange-50 border border-orange-200";
     }
   };
 
@@ -106,6 +164,11 @@ function TrackOrderContent() {
 
   const currentStep = order ? getMilestoneIndex(order.status) : 0;
   const isCancelled = order?.status === "cancelled";
+  const isDelivered = order?.status === "delivered" || order?.status === "completed";
+
+  const activeColorClass = isDelivered ? "bg-green-500 border-green-500" : "bg-orange-500 border-orange-500";
+  const activeShadowClass = isDelivered ? "shadow-green-500/20" : "shadow-orange-500/20";
+  const progressLineColor = isDelivered ? "bg-green-500" : "bg-orange-500";
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-8">
@@ -230,7 +293,7 @@ function TrackOrderContent() {
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4">
                 <div>
-                  <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${getStatusColor(order.status)}`}>
                     {order.status.replace("_", " ")}
                   </span>
                   <h3 className="text-xl font-black text-gray-900 mt-2">
@@ -258,7 +321,7 @@ function TrackOrderContent() {
                     {/* Progress line for desktop */}
                     <div className="absolute hidden md:block left-0 right-0 h-1 bg-gray-100 top-1/2 -translate-y-1/2 z-0" />
                     <div
-                      className="absolute hidden md:block left-0 h-1 bg-orange-500 top-1/2 -translate-y-1/2 transition-all duration-500 z-0"
+                      className={`absolute hidden md:block left-0 h-1 ${progressLineColor} top-1/2 -translate-y-1/2 transition-all duration-500 z-0`}
                       style={{ width: `${(currentStep / 3) * 100}%` }}
                     />
 
@@ -270,14 +333,14 @@ function TrackOrderContent() {
                           <div
                             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                               active
-                                ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/20"
+                                ? `${activeColorClass} text-white shadow-md ${activeShadowClass}`
                                 : "bg-white border-gray-200 text-gray-300"
                             }`}
                           >
                             <Icon className="h-5 w-5" />
                           </div>
                           <div className="md:text-center text-left">
-                            <p className={`text-xs font-bold ${active ? "text-gray-900" : "text-gray-400"}`}>
+                            <p className={`text-xs font-bold ${active ? (isDelivered && idx === 3 ? "text-green-600 font-extrabold" : "text-gray-900") : "text-gray-400"}`}>
                               {m.label}
                             </p>
                             <p className="text-[10px] text-gray-400 font-semibold">{m.desc}</p>
@@ -371,7 +434,7 @@ function TrackOrderContent() {
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-bold text-orange-500">
-                          QAR {(parseFloat(item.price_at_purchase as string) * item.quantity).toFixed(2)}
+                          QAR {(parseFloat(String(item.price_at_purchase || "0").replace(/([$]|qar|[\s,])/gi, "")) * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>

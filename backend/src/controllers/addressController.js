@@ -1,12 +1,33 @@
 const Address = require("../models/Address");
 
 /**
+ * Whitelist of fields a user is allowed to set on an address.
+ * Prevents mass-assignment of internal fields like userId or id.
+ */
+const ALLOWED_ADDRESS_FIELDS = [
+  "label", "fullName", "mobile", "area", "street",
+  "building_number", "villa_apartment", "floor", "landmark",
+  "zone", "city", "country", "isDefault", "latitude", "longitude",
+];
+
+const pickAllowedFields = (body) => {
+  const sanitized = {};
+  for (const key of ALLOWED_ADDRESS_FIELDS) {
+    if (body[key] !== undefined) {
+      sanitized[key] = body[key];
+    }
+  }
+  return sanitized;
+};
+
+/**
  * Create Address
  */
 exports.createAddress = async (req, res) => {
   try {
+    const safeFields = pickAllowedFields(req.body);
     const address = await Address.create({
-      ...req.body,
+      ...safeFields,
       userId: req.user.id,
     });
 
@@ -106,7 +127,7 @@ exports.updateAddress = async (req, res) => {
       });
     }
 
-    await address.update(req.body);
+    await address.update(pickAllowedFields(req.body));
 
     res.status(200).json({
       success: true,

@@ -44,10 +44,11 @@ const sequelize = new Sequelize(connectionString, {
   dialect: "postgres",
   logging: process.env.NODE_ENV === "development" ? console.log : false,
   dialectOptions: {
-    ssl: process.env.NODE_ENV === "production" ? {
+    ssl: (process.env.NODE_ENV === "production" || connectionString.includes("neon.tech") || connectionString.includes("sslmode=require")) ? {
       require: true,
-      rejectUnauthorized: false, // Prevents Azure handshake failure
+      rejectUnauthorized: false, // Prevents cloud/Azure handshake failure
     } : false, // Disable SSL locally unless required
+    connectTimeout: 10000, // 10 seconds timeout to prevent infinite hang on unreachable DB
   },
   pool: {
     max: 10,         // HikariCP's maximumPoolSize equivalent (Azure B1ms friendly)

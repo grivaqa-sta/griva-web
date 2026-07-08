@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { Category, SubCategory } from "@/app/types/types";
-import { categoryService } from "@/app/services/category.service";
+import { useCategoriesWithSubcategories } from "@/app/hooks/useCategories";
+import { useAdminSettings } from "@/app/context/AdminContext";
 
 interface CategoryWithSubcategories extends Category {
   subcategories: SubCategory[];
@@ -13,46 +14,72 @@ interface CategoryWithSubcategories extends Category {
 
 export default function SubNavbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [navLinks, setNavLinks] = useState<CategoryWithSubcategories[]>([]);
   const pathname = usePathname();
+  const { categories: rawCategories } = useCategoriesWithSubcategories();
+  const navLinks = rawCategories.filter((cat) => cat.is_active);
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
+  const [visible, setVisible] = useState(true);
+  const { announcementBarEnabled } = useAdminSettings();
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await categoryService.getCategoriesWithSubcategories();
-        const raw: CategoryWithSubcategories[] =
-          Array.isArray(res) ? res :
-            Array.isArray(res?.data) ? res.data :
-              Array.isArray(res?.categories) ? res.categories :
-                [];
-        setNavLinks(raw.filter((cat) => cat.is_active));
-      } catch (err) {
-        console.error("Failed to load categories:", err);
-        try {
-          const fallbackRes = await categoryService.getCategories();
-          const raw: Category[] =
-            Array.isArray(fallbackRes) ? fallbackRes :
-              Array.isArray(fallbackRes?.data) ? fallbackRes.data :
-                Array.isArray(fallbackRes?.categories) ? fallbackRes.categories :
-                  [];
-          setNavLinks(
-            raw.filter((cat) => cat.is_active)
-               .map((cat) => ({ ...cat, subcategories: [] }))
-          );
-        } catch (fallbackErr) {
-          console.error("Fallback fetch also failed:", fallbackErr);
-        }
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Keep visible at the top of the page
+      if (currentScrollY <= 50) {
+        setVisible(true);
+        lastScrollY = currentScrollY;
+        return;
       }
+
+      // Avoid bouncing effect at the bottom of the page on iOS
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (currentScrollY >= maxScroll) {
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      if (currentScrollY > lastScrollY) {
+        // Scrolling down
+        setVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up
+        setVisible(true);
+      }
+
+      lastScrollY = currentScrollY;
     };
-    fetchCategories();
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+
+    const handleBypassEvent = () => {
+      setComingSoonVisible(true);
+    };
+    window.addEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+    return () => {
+      window.removeEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+    };
+  }, []);
+
+  if (!comingSoonVisible) return null;
 
   return (
     <>
-      {/* Inject keyframe animation + Sen font */}
+      {/* Inject keyframe animation + Apple font */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sen:wght@400;700&display=swap');
-
         /*
           Rows sit flush against each other (no gap, no per-row border).
           Rounding only applies to the outer 4 corners of the whole
@@ -76,15 +103,23 @@ export default function SubNavbar() {
         }
 
         .subnav-link {
-          font-family: 'Sen', sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
         .subnav-dropdown-panel {
-          font-family: 'Sen', sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
       `}</style>
 
-      <div className="hidden lg:block w-full border-y border-gray-200 bg-white px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div
+        className="hidden lg:block fixed left-0 right-0 z-30 border-y border-gray-200 bg-white px-4 sm:px-6 lg:px-8 xl:px-10 transition-all duration-300 ease-in-out"
+        style={{
+          top: announcementBarEnabled ? "120px" : "80px",
+          transform: visible ? "translateY(0)" : "translateY(-60px)",
+          opacity: visible ? 1 : 0,
+          pointerEvents: visible ? "auto" : "none"
+        }}
+      >
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-center px-4 sm:px-6 lg:px-8">
 
           <nav className="flex items-center gap-1">
@@ -107,7 +142,7 @@ export default function SubNavbar() {
                   {/* Nav trigger link */}
                   <Link
                     href={link.href}
-                    className={`subnav-link relative flex items-center gap-1 px-3 text-[13px] font-semibold transition-colors duration-200 whitespace-nowrap
+                    className={`subnav-link relative flex items-center gap-1 px-3 text-[13px] font-semibold uppercase tracking-wider transition-colors duration-200 whitespace-nowrap
                       ${isActive ? "text-orange-500" : "text-black hover:text-orange-500"}`}
                   >
                     {isActive && (
@@ -144,7 +179,7 @@ export default function SubNavbar() {
                           <Link
                             key={item.id}
                             href={item.href}
-                            className={`subnav-dropdown-row flex items-center gap-2 bg-white px-4 py-[9px] text-[13px] text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors
+                            className={`subnav-dropdown-row flex items-center gap-2 bg-white px-4 py-[9px] text-[13px] font-semibold uppercase text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors
                               ${isWide ? "w-1/2" : "w-full"}`}
                             style={{ animationDelay: `${idx * 100}ms` }}
                           >
@@ -162,6 +197,8 @@ export default function SubNavbar() {
 
         </div>
       </div>
+      {/* Desktop placeholder to preserve layout space (since SubNavbar is fixed) */}
+      <div className="hidden lg:block h-14" aria-hidden="true" />
     </>
   );
 }

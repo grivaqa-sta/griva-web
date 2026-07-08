@@ -176,6 +176,35 @@ const Order = sequelize.define(
       allowNull: true,
       unique: true,
     },
+    delivery_payment_method: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 8),
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(11, 8),
+      allowNull: true,
+    },
+    cash_reconciliation_status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "not_applicable",
+    },
+    delivery_rating: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 1,
+        max: 5,
+      },
+    },
+    delivery_comment: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     timestamps: true,

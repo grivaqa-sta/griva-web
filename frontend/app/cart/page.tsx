@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Truck, AlertTriangle } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import { motion, AnimatePresence } from "framer-motion";
@@ -67,9 +67,16 @@ export default function CartPage() {
             const data = await res.json();
             const product = data.data;
             if (product) {
+              let availableStock = product.stock;
+              if (item.variantId && Array.isArray(product.productVariants)) {
+                const v = product.productVariants.find((x: any) => x.id === item.variantId);
+                if (v) {
+                  availableStock = v.stock;
+                }
+              }
               statusMap[item.id] = {
-                available: product.stock,
-                ok: item.quantity <= product.stock && product.is_active,
+                available: availableStock,
+                ok: item.quantity <= availableStock && product.is_active,
                 active: product.is_active,
                 title: product.title,
               };
@@ -127,7 +134,7 @@ export default function CartPage() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="h-9 w-9 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                    <span className="text-lg">🚚</span>
+                    <Truck className="h-5 w-5 text-orange-500" />
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-gray-900">
@@ -211,32 +218,45 @@ export default function CartPage() {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <Link href={`/product/${item.productId}`} className="truncate text-sm font-semibold text-gray-900 hover:text-orange-500 block transition">
+                        <Link href={`/product/${item.slug || item.productId}`} className="truncate text-sm font-semibold text-gray-900 hover:text-orange-500 block transition">
                           {item.title}
                         </Link>
                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
                           {item.category}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {item.selectedColor && (
-                            <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
-                              Color: {item.selectedColor}
-                            </span>
-                          )}
-                          {item.selectedStorage && (
-                            <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
-                              Storage: {item.selectedStorage}
-                            </span>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 ? (
+                            Object.entries(item.selectedAttributes).map(([key, val]) => (
+                              <span key={key} className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
+                                {key}: {val}
+                              </span>
+                            ))
+                          ) : (
+                            <>
+                              {item.selectedColor && (
+                                <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
+                                  Color: {item.selectedColor}
+                                </span>
+                              )}
+                              {item.selectedStorage && (
+                                <span className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
+                                  Storage: {item.selectedStorage}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                         {/* HIGH-9: Stock error warning notice */}
                         {stockStatus[item.id] && !stockStatus[item.id].ok && (
-                          <div className="mt-1.5 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1 inline-block animate-fadeIn">
-                            {!stockStatus[item.id].active ? (
-                              "⚠️ This product is currently inactive / unavailable."
-                            ) : (
-                              `⚠️ Requested quantity exceeds stock. Only ${stockStatus[item.id].available} available.`
-                            )}
+                          <div className="mt-1.5 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1 inline-flex items-center gap-1.5 animate-fadeIn">
+                            <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                            <span>
+                              {!stockStatus[item.id].active ? (
+                                "This product is currently inactive / unavailable."
+                              ) : (
+                                `Requested quantity exceeds stock. Only ${stockStatus[item.id].available} available.`
+                              )}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -292,27 +312,47 @@ export default function CartPage() {
                 </h3>
 
                 <div className="space-y-4 text-sm">
+                  {/* Price (count of items) */}
                   <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
-                    <span className="font-semibold text-gray-900">QAR {state.totalPrice.toFixed(2)}</span>
+                    <span>Price ({state.totalItems} item{state.totalItems !== 1 ? "s" : ""})</span>
+                    <span className="font-semibold text-gray-900">QAR {state.totalOldPrice.toFixed(2)}</span>
                   </div>
 
+                  {/* Discount */}
                   <div className="flex justify-between text-gray-600">
-                    <span>Shipping Estimate</span>
-                    <span className="font-semibold text-gray-900">
+                    <span>Discount</span>
+                    <span className="font-semibold text-green-600">
+                      &minus; QAR {(state.totalOldPrice - state.totalPrice).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Shipping Charge */}
+                  <div className="flex justify-between text-gray-600">
+                    <span>Shipping Charge</span>
+                    <span className="font-semibold">
                       {shippingCost === 0 ? (
-                        <span className="text-green-600">Free</span>
+                        <span className="text-green-600 font-bold">Free</span>
                       ) : (
-                        `QAR ${shippingCost.toFixed(2)}`
+                        <span className="text-gray-900">QAR {shippingCost.toFixed(2)}</span>
                       )}
                     </span>
                   </div>
 
+                  {/* Total Amount */}
                   <div className="border-t pt-4 flex justify-between text-base font-bold text-gray-900">
-                    <span>Order Total</span>
+                    <span>Total Amount</span>
                     <span className="text-orange-500">QAR {orderTotal.toFixed(2)}</span>
                   </div>
                 </div>
+
+                {/* Savings message */}
+                {state.totalOldPrice - state.totalPrice > 0 && (
+                  <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 text-center">
+                    <p className="text-xs font-bold text-green-700">
+                      You saved QAR {(state.totalOldPrice - state.totalPrice).toFixed(2)} on this order
+                    </p>
+                  </div>
+                )}
 
                 {/* HIGH-9: Disable Proceed to Checkout if stock errors exist */}
                 {hasCartErrors ? (

@@ -32,26 +32,42 @@ const getFormattedCart = async (userId) => {
           },
         ],
       },
+      {
+        model: require("../models/ProductVariant"),
+        as: "variant",
+      }
     ],
     order: [["createdAt", "ASC"]],
   });
 
   const formattedItems = items.map((item) => {
     const p = item.product;
-    const priceStr = p ? p.price : "QAR 0.00";
-    const priceNumber = p ? parseFloat(priceStr.replace(/([$]|qar|[\s,])/gi, "")) : 0;
+    const v = item.variant;
+    
+    // Support Variant Price override
+    const priceStr = v && v.price ? `QAR ${parseFloat(v.price).toFixed(2)}` : (p ? p.price : "QAR 0.00");
+    const priceNumber = parseFloat(priceStr.replace(/([$]|qar|[\s,])/gi, "")) || 0;
+    const oldPriceNumber = p && p.old_price ? parseFloat(String(p.old_price).replace(/([$]|qar|[\s,])/gi, "")) : priceNumber;
+
+    // Support Variant Image override
+    const image = v && Array.isArray(v.images) && v.images.length > 0 ? v.images[0] : (p ? p.main_image_url : "");
 
     return {
       id: item.id,
       productId: item.product_id,
+      variantId: item.variant_id || undefined,
       title: p ? p.title : "Unknown Product",
-      image: p ? p.main_image_url : "",
+      image: image,
       price: priceStr,
       priceNumber: priceNumber,
+      oldPriceNumber: oldPriceNumber,
       quantity: item.quantity,
-      selectedColor: item.selected_color,
-      selectedStorage: item.selected_storage,
+      selectedColor: item.selected_color || (item.selected_attributes ? item.selected_attributes.Color : undefined),
+      selectedStorage: item.selected_storage || (item.selected_attributes ? (item.selected_attributes.Storage || item.selected_attributes.Size) : undefined),
+      selectedAttributes: item.selected_attributes || {},
+      sku: v && v.sku ? v.sku : (p ? p.sku : ""),
       category: p && p.subcategory && p.subcategory.category ? p.subcategory.category.title : "Gadgets",
+      slug: p ? p.slug : "",
     };
   });
 
@@ -93,7 +109,7 @@ exports.getCart = async (req, res) => {
  */
 exports.addItem = async (req, res) => {
   try {
-    const { product_id, selected_color, selected_storage, quantity } = req.body;
+    const { product_id, variant_id, selected_attributes, selected_color, selected_storage, quantity } = req.body;
     const qty = parseInt(quantity) || 1;
 
     // MED-1: Limit per-item quantity to 10
@@ -120,6 +136,24 @@ exports.addItem = async (req, res) => {
       });
     }
 
+    // Resolve variant stock and price override
+    let availableStock = product.stock;
+    let variantPrice = product.price;
+    if (variant_id) {
+      const ProductVariant = require("../models/ProductVariant");
+      const variant = await ProductVariant.findByPk(variant_id);
+      if (!variant) {
+        return res.status(404).json({
+          success: false,
+          message: "Product variant not found.",
+        });
+      }
+      availableStock = variant.stock;
+      if (variant.price) {
+        variantPrice = `QAR ${parseFloat(variant.price).toFixed(2)}`;
+      }
+    }
+
     let [cart] = await Cart.findOrCreate({
       where: { user_id: req.user.id },
       defaults: { user_id: req.user.id },
@@ -130,8 +164,9 @@ exports.addItem = async (req, res) => {
       where: {
         cart_id: cart.id,
         product_id,
-        selected_color: selected_color || null,
-        selected_storage: selected_storage || null,
+        variant_id: variant_id || null,
+        selected_color: selected_color || (selected_attributes ? selected_attributes.Color : null) || null,
+        selected_storage: selected_storage || (selected_attributes ? (selected_attributes.Storage || selected_attributes.Size) : null) || null,
       },
     });
 
@@ -146,10 +181,10 @@ exports.addItem = async (req, res) => {
     }
 
     // Validate inventory stock level
-    if (newQty > product.stock) {
+    if (newQty > availableStock) {
       return res.status(400).json({
         success: false,
-        message: `Cannot add more items. Only ${product.stock} left in stock.`,
+        message: `Cannot add more items. Only ${availableStock} left in stock.`,
       });
     }
 
@@ -160,10 +195,12 @@ exports.addItem = async (req, res) => {
       await CartItem.create({
         cart_id: cart.id,
         product_id,
-        selected_color: selected_color || null,
-        selected_storage: selected_storage || null,
+        variant_id: variant_id || null,
+        selected_attributes: selected_attributes || {},
+        selected_color: selected_color || (selected_attributes ? selected_attributes.Color : null) || null,
+        selected_storage: selected_storage || (selected_attributes ? (selected_attributes.Storage || selected_attributes.Size) : null) || null,
         quantity: qty,
-        price_snapshot: product.price,
+        price_snapshot: variantPrice,
       });
     }
 
@@ -212,6 +249,10 @@ exports.updateItemQty = async (req, res) => {
           model: Product,
           as: "product",
         },
+        {
+          model: require("../models/ProductVariant"),
+          as: "variant",
+        }
       ],
     });
 
@@ -222,10 +263,11 @@ exports.updateItemQty = async (req, res) => {
       });
     }
 
-    if (qty > item.product.stock) {
+    const availableStock = item.variant ? item.variant.stock : item.product.stock;
+    if (qty > availableStock) {
       return res.status(400).json({
         success: false,
-        message: `Requested quantity exceeds available stock. Only ${item.product.stock} available.`,
+        message: `Requested quantity exceeds available stock. Only ${availableStock} available.`,
       });
     }
 
@@ -341,40 +383,58 @@ exports.mergeCart = async (req, res) => {
 
     for (const guestItem of items) {
       const pId = parseInt(guestItem.productId);
+      const vId = guestItem.variantId ? parseInt(guestItem.variantId) : null;
       const qty = parseInt(guestItem.quantity) || 1;
-      const color = guestItem.selectedColor || null;
-      const storage = guestItem.selectedStorage || null;
+      const attrs = guestItem.selectedAttributes || {};
+      const color = guestItem.selectedColor || attrs.Color || null;
+      const storage = guestItem.selectedStorage || attrs.Storage || attrs.Size || null;
 
       if (!pId || qty <= 0) continue;
 
       const product = await Product.findByPk(pId);
       if (!product) continue;
 
+      let availableStock = product.stock;
+      let variantPrice = product.price;
+      if (vId) {
+        const ProductVariant = require("../models/ProductVariant");
+        const variant = await ProductVariant.findByPk(vId);
+        if (variant) {
+          availableStock = variant.stock;
+          if (variant.price) {
+            variantPrice = `QAR ${parseFloat(variant.price).toFixed(2)}`;
+          }
+        }
+      }
+
       let dbItem = await CartItem.findOne({
         where: {
           cart_id: cart.id,
           product_id: pId,
+          variant_id: vId || null,
           selected_color: color,
           selected_storage: storage,
         },
       });
 
       if (dbItem) {
-        const mergedQty = Math.max(dbItem.quantity, Math.min(dbItem.quantity + qty, product.stock));
+        const mergedQty = Math.max(dbItem.quantity, Math.min(dbItem.quantity + qty, Math.min(availableStock, 10)));
         if (mergedQty !== dbItem.quantity) {
           dbItem.quantity = mergedQty;
           await dbItem.save();
         }
       } else {
-        const finalQty = Math.min(qty, product.stock);
+        const finalQty = Math.min(qty, Math.min(availableStock, 10));
         if (finalQty > 0) {
           await CartItem.create({
             cart_id: cart.id,
             product_id: pId,
+            variant_id: vId || null,
+            selected_attributes: attrs,
             selected_color: color,
             selected_storage: storage,
             quantity: finalQty,
-            price_snapshot: product.price,
+            price_snapshot: variantPrice,
           });
         }
       }

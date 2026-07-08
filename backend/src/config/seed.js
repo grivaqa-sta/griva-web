@@ -800,6 +800,71 @@ const seedDatabase = async () => {
       console.log("ℹ️ [SEED]: Orders already exist. Skipping.");
     }
 
+    // Run legacy variants migration to populate attributes and product_variants tables
+    console.log("⏳ [SEED]: Running legacy variants migration...");
+    const migrateSeedLegacy = async () => {
+      const Product = require("./Product");
+      const ProductVariant = require("./ProductVariant");
+
+      const products = await Product.findAll();
+      for (const p of products) {
+        const legacyVariants = p.variants;
+        const dynamicAttrs = p.attributes;
+
+        if (Array.isArray(legacyVariants) && legacyVariants.length > 0 && (!Array.isArray(dynamicAttrs) || dynamicAttrs.length === 0)) {
+          const attrMap = {};
+          legacyVariants.forEach(v => {
+            Object.keys(v).forEach(k => {
+              const normalizedKey = k.charAt(0).toUpperCase() + k.slice(1);
+              if (!attrMap[normalizedKey]) {
+                attrMap[normalizedKey] = new Set();
+              }
+              if (v[k]) {
+                attrMap[normalizedKey].add(v[k]);
+              }
+            });
+          });
+
+          const attributes = Object.keys(attrMap).map(name => ({
+            name,
+            values: Array.from(attrMap[name])
+          }));
+
+          p.attributes = attributes;
+          await p.save();
+
+          const baseStock = p.stock || 0;
+          const variantStock = Math.max(1, Math.floor(baseStock / legacyVariants.length));
+
+          for (const v of legacyVariants) {
+            const combination = {};
+            Object.keys(v).forEach(k => {
+              const normalizedKey = k.charAt(0).toUpperCase() + k.slice(1);
+              combination[normalizedKey] = v[k];
+            });
+
+            const existingVariant = await ProductVariant.findOne({
+              where: {
+                product_id: p.id,
+                combination
+              }
+            });
+
+            if (!existingVariant) {
+              const subSku = p.sku ? `${p.sku}-${Object.values(combination).map(val => String(val).toUpperCase().replace(/[^A-Z0-9]/g, '')).join('-')}` : null;
+              await ProductVariant.create({
+                product_id: p.id,
+                combination,
+                stock: variantStock,
+                sku: subSku
+              });
+            }
+          }
+        }
+      }
+    };
+    await migrateSeedLegacy();
+
     console.log("🟢 [SEED]: Seeding complete! Database is production-ready.");
     process.exit(0);
   } catch (error) {

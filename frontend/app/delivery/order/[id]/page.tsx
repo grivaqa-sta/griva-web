@@ -38,6 +38,7 @@ interface OrderItem {
     title: string;
     main_image_url?: string;
     price?: string;
+    gallery_images?: string[];
   };
 }
 
@@ -57,6 +58,9 @@ interface DeliveryOrder {
   assigned_at?: string;
   items?: OrderItem[];
   user?: { id: number; name: string; email: string };
+  delivery_payment_method?: string;
+  latitude?: number;
+  longitude?: number;
 }
 export default function DeliveryOrderDetailPage() {
   const router = useRouter();
@@ -72,6 +76,8 @@ export default function DeliveryOrderDetailPage() {
   const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [deliveryPaymentMethod, setDeliveryPaymentMethod] = useState<string>("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -101,7 +107,7 @@ export default function DeliveryOrderDetailPage() {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${API_BASE}/delivery/my-orders`, {
+        const res = await fetch(`${API_BASE}/delivery/orders/${orderId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.status === 401 || res.status === 403) {
@@ -109,19 +115,22 @@ export default function DeliveryOrderDetailPage() {
           return;
         }
         if (!res.ok) { 
-          setError("Something went wrong, try again."); 
+          if (res.status === 404) {
+            setError("Order not found or not assigned to you.");
+          } else {
+            setError("Something went wrong, try again."); 
+          }
           setLoading(false); 
           return; 
         }
         const data = await res.json();
-        const found = (data.orders || []).find((o: DeliveryOrder) => String(o.id) === orderId);
-        if (!found) { 
-          setError("Order not found or not assigned to you."); 
-        } else { 
-          setOrder(found); 
+        if (data.success && data.order) {
+          setOrder(data.order);
+        } else {
+          setError("Order not found or not assigned to you.");
         }
       } catch {
-        setError("Check your internet connection.");
+        setError("Unable to connect to server. Please check your internet connection.");
       } finally {
         setLoading(false);
       }
@@ -129,7 +138,7 @@ export default function DeliveryOrderDetailPage() {
     fetchOrder();
   }, [token, orderId, router]);
 
-  const handleStatusUpdate = async (newStatus: string) => {
+  const handleStatusUpdate = async (newStatus: string, deliveryPaymentMethod?: string) => {
     if (!token || !order) return;
     setUpdating(true);
     try {
@@ -139,17 +148,24 @@ export default function DeliveryOrderDetailPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ 
+          status: newStatus,
+          delivery_payment_method: deliveryPaymentMethod
+        }),
       });
       if (res.ok) {
-        setOrder((prev) => prev ? { ...prev, status: newStatus } : prev);
+        setOrder((prev) => prev ? { 
+          ...prev, 
+          status: newStatus,
+          delivery_payment_method: deliveryPaymentMethod || prev.delivery_payment_method
+        } : prev);
         toast.success(`Status: ${newStatus.replace(/_/g, ' ').toUpperCase()}`);
       } else {
         const data = await res.json();
         toast.error(data.message || "Failed to update status.");
       }
     } catch {
-      toast.error("Check your internet connection.");
+      toast.error("Unable to connect to server. Please check your internet connection.");
     } finally {
       setUpdating(false);
     }
@@ -164,8 +180,10 @@ export default function DeliveryOrderDetailPage() {
       setTimeout(() => setCopied(false), 2000);
     });
   };
-  const parseTotal = (tp: string) => {
-    const num = parseFloat(String(tp).replace(/[$,]/g, ""));
+  const parseTotal = (tp: any) => {
+    if (!tp) return "0.00";
+    const cleaned = String(tp).replace(/([$]|qar|[\s,])/gi, "");
+    const num = parseFloat(cleaned);
     return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
@@ -253,6 +271,15 @@ export default function DeliveryOrderDetailPage() {
               {order.status.replace(/_/g, ' ')}
             </span>
           </div>
+
+          {order.delivery_payment_method && (
+            <div className="flex items-center justify-between text-xs text-zinc-400 border-t border-zinc-900 pt-3">
+              <span className="font-semibold">Collected Via:</span>
+              <span className="font-bold text-green-400 uppercase tracking-wide bg-green-950/20 px-2 py-0.5 rounded-lg border border-green-900/30">
+                {order.delivery_payment_method}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Customer Information Section */}
@@ -306,7 +333,7 @@ export default function DeliveryOrderDetailPage() {
         </div>
 
         {/* Address Card */}
-        <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
+          <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Delivery Destination</h3>
             <button
@@ -318,9 +345,24 @@ export default function DeliveryOrderDetailPage() {
             </button>
           </div>
 
-          <div className="bg-[#0b0b0b]/80 border border-zinc-900 p-4 rounded-2xl flex items-start gap-2.5">
-            <MapPin size={16} className="text-[#FF6A00] shrink-0 mt-0.5" />
-            <p className="text-xs font-medium text-zinc-300 leading-relaxed">{fullAddress}</p>
+          <div className="bg-[#0b0b0b]/80 border border-zinc-900 p-4 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-2.5 flex-1">
+                <MapPin size={16} className="text-[#FF6A00] shrink-0 mt-0.5" />
+                <p className="text-xs font-medium text-zinc-300 leading-relaxed">{fullAddress}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              {order.latitude && order.longitude ? (
+                <span className="inline-flex items-center gap-1 text-[8px] font-black text-green-400 bg-green-950/30 border border-green-900/40 px-2 py-0.5 rounded-full">
+                  📍 GPS Locked — Precise coordinates saved
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 px-2 py-0.5 rounded-full">
+                  ✏️ Manually Typed — No GPS coordinates
+                </span>
+              )}
+            </div>
           </div>
 
           {order.delivery_notes && (
@@ -331,14 +373,22 @@ export default function DeliveryOrderDetailPage() {
           )}
 
           <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress + ", Qatar")}`}
+            href={
+              order.latitude && order.longitude
+                ? `https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress + ", Qatar")}`
+            }
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-zinc-900 hover:bg-zinc-800 text-[#FF6A00] text-xs font-bold py-3.5 rounded-2xl transition-colors cursor-pointer border border-zinc-800 flex items-center justify-center gap-1.5"
+            className={`w-full text-xs font-bold py-3.5 rounded-2xl transition-colors cursor-pointer border flex items-center justify-center gap-1.5 ${
+              order.latitude && order.longitude
+                ? "bg-green-950/20 hover:bg-green-950/40 text-green-400 border-green-900/40"
+                : "bg-zinc-900 hover:bg-zinc-800 text-[#FF6A00] border-zinc-800"
+            }`}
             style={{ minHeight: "44px" }}
           >
             <Compass size={14} />
-            <span>Open Google Navigation</span>
+            <span>{order.latitude && order.longitude ? "Open GPS Navigation (Exact)" : "Open Google Navigation"}</span>
             <ExternalLink size={12} className="opacity-60" />
           </a>
         </div>
@@ -367,10 +417,12 @@ export default function DeliveryOrderDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-white truncate">{item.product?.title || `Product #${item.id}`}</p>
-                    <p className="text-[10px] text-zinc-500">Quantity check: {item.quantity}</p>
+                    <p className="text-[10px] text-zinc-500">
+                      Quantity: {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
+                    </p>
                   </div>
                   <span className="text-xs font-bold text-zinc-300 shrink-0">
-                    QAR {(parseFloat(String(item.price_at_purchase).replace(/[$,]/g, "")) * item.quantity).toFixed(2)}
+                    QAR {(parseFloat(parseTotal(item.price_at_purchase || item.product?.price || "0")) * item.quantity).toFixed(2)}
                   </span>
                 </div>
 
@@ -440,7 +492,10 @@ export default function DeliveryOrderDetailPage() {
         
         {order.status === "out_for_delivery" && (
           <button
-            onClick={() => handleStatusUpdate("delivered")}
+            onClick={() => {
+              setDeliveryPaymentMethod(""); // reset
+              setShowPaymentModal(true);
+            }}
             disabled={updating}
             className="w-full bg-gradient-to-r from-[#FF6A00] to-[#E04F00] hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-sm font-bold py-4 rounded-2xl transition-all cursor-pointer shadow-[0_4px_16px_rgba(255,106,0,0.2)]"
             style={{ minHeight: "48px" }}
@@ -455,12 +510,109 @@ export default function DeliveryOrderDetailPage() {
           </div>
         )}
 
-        {["attempted", "rescheduled", "failed"].includes(order.status) && (
-          <div className="w-full text-center text-zinc-400 text-xs font-bold py-3.5 bg-zinc-950 border border-zinc-900 rounded-2xl uppercase tracking-wider">
-            {order.status} — Checked by Admin
+        {(order.status === "attempted" || order.status === "rescheduled") && (
+          <button
+            onClick={() => handleStatusUpdate("out_for_delivery")}
+            disabled={updating}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-white text-sm font-bold py-4 rounded-2xl transition-all cursor-pointer shadow-[0_4px_16px_rgba(37,99,235,0.2)]"
+            style={{ minHeight: "48px" }}
+          >
+            {updating ? "Updating..." : "🚀 Retry Delivery"}
+          </button>
+        )}
+
+        {order.status === "failed" && (
+          <div className="w-full text-center text-zinc-400 text-xs font-bold py-3.5 bg-[#0a0a0a] border border-zinc-900 rounded-2xl uppercase tracking-wider">
+            failed — Checked by Admin
           </div>
         )}
       </div>
+
+      {/* Payment Selection Modal */}
+      <AnimatePresence>
+        {showPaymentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-[#0b0b0b] border border-zinc-900 w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="text-center space-y-1.5 pt-2">
+                <h3 className="text-lg font-black text-white">Payment Received</h3>
+                <p className="text-xs text-zinc-400">
+                  Select how payment was received in Qatar before completing delivery.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { id: "Cash", label: "Cash (QAR)", desc: "Physical cash collected at doorstep" },
+                  { id: "Card", label: "Card on Delivery (POS)", desc: "Card reader machine swipe/tap" },
+                  { id: "Bank Transfer", label: "Bank Transfer / QPay", desc: "Digital transfer or QPay online" },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setDeliveryPaymentMethod(option.id)}
+                    className={`w-full text-left p-4 rounded-2xl border transition-all flex flex-col gap-1 cursor-pointer ${
+                      deliveryPaymentMethod === option.id
+                        ? "bg-[#FF6A00]/10 border-[#FF6A00]"
+                        : "bg-zinc-950/40 border-zinc-900 hover:border-zinc-800"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">{option.label}</span>
+                      <div
+                        className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center transition-all ${
+                          deliveryPaymentMethod === option.id
+                            ? "border-[#FF6A00] bg-[#FF6A00]"
+                            : "border-zinc-800"
+                        }`}
+                      >
+                        {deliveryPaymentMethod === option.id && (
+                          <div className="h-2 w-2 rounded-full bg-white animate-scaleIn" />
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-medium">{option.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 py-3.5 bg-zinc-900 border border-zinc-800 text-xs font-bold rounded-2xl hover:bg-zinc-850 active:scale-95 transition-all text-zinc-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    handleStatusUpdate("delivered", deliveryPaymentMethod);
+                    setShowPaymentModal(false);
+                  }}
+                  disabled={!deliveryPaymentMethod}
+                  className="flex-1 py-3.5 bg-[#FF6A00] hover:brightness-110 active:scale-95 disabled:opacity-50 text-white text-xs font-bold rounded-2xl transition-all shadow-[0_2px_10px_rgba(255,106,0,0.2)]"
+                >
+                  Confirm Delivery
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Lightbox Image Preview Modal */}
       <AnimatePresence>

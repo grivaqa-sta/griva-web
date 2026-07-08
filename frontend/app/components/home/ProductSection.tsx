@@ -31,17 +31,26 @@ export default function ProductSection() {
 
   return (
     <section className="w-full py-8">
-      <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         {/* Mobile heading */}
-        <div className="mb-6 sm:hidden px-4">
-          <h2 className="text-[22px] font-bold tracking-tight text-[#0D0D0D]">
-            Best Selling <span className="text-orange-500">Products</span>
-          </h2>
-          <p className="mt-1 text-sm text-gray-400">
-            Top rated gear loved by our customers
-          </p>
-          <div className="mt-2 h-[3px] w-10 rounded-full bg-orange-500" />
+        <div className="flex items-start justify-between mb-6 sm:hidden gap-3">
+          <div>
+            <h2 className="text-[18px] xs:text-[20px] font-bold tracking-tight text-[#0D0D0D]">
+              Best Selling <span className="text-orange-500">Products</span>
+            </h2>
+            <p className="mt-1 text-[11px] text-gray-400">
+              Top rated gear loved by our customers
+            </p>
+            <div className="mt-2 h-[3px] w-10 rounded-full bg-orange-500" />
+          </div>
+          <Link
+            href="/shop"
+            className="flex items-center gap-0.5 text-[10px] font-extrabold text-[#F54900] hover:text-orange-600 transition-colors mt-1 shrink-0 bg-orange-50/70 border border-orange-100/40 px-2.5 py-1 rounded-full hover:bg-orange-100/50 active:scale-95 transition-all"
+          >
+            <span>View All</span>
+            <ArrowRight size={10} strokeWidth={2.5} />
+          </Link>
         </div>
 
         {/* Desktop heading */}
@@ -64,7 +73,7 @@ export default function ProductSection() {
         </div>
 
         <ScrollReveal>
-          <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200  sm:gap-4 sm:border-0 sm:divide-none lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200 border border-gray-200 sm:gap-4 sm:border-0 sm:divide-none lg:grid-cols-4 lg:gap-6">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />

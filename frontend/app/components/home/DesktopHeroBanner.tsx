@@ -3,45 +3,51 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ShieldCheck, Star, Truck } from "lucide-react";
+import { ArrowRight, Wallet, Star, Truck } from "lucide-react";
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import { productService } from "@/app/services/product.service";
+import { useBannerProducts, useGlobalSettings } from "@/app/hooks/useHomeData";
 import { BannerProduct, HeroSlide } from "@/app/types/types";
+
+function getCleanBadge(p: BannerProduct): string {
+    if (p.tags && p.tags.length > 0) {
+        const firstTag = p.tags[0];
+        if (typeof firstTag === "string" && firstTag.trim()) {
+            const tagParts = firstTag.split(",").map(t => t.trim()).filter(Boolean);
+            if (tagParts.length > 0) {
+                const candidate = tagParts[0];
+                if (candidate.length < 15) {
+                    return candidate;
+                }
+            }
+        }
+    }
+    if (p.is_featured) return "Featured";
+    if (p.is_best_seller) return "Best Seller";
+    if (p.is_trending) return "Trending";
+    return "Sale";
+}
 
 function mapProductToSlide(p: BannerProduct): HeroSlide {
     return {
         title: p.title,
         subtitle: p.short_description ?? "",
-        badge: p.tags?.[0] ?? "Sale",
+        badge: getCleanBadge(p),
         image: p.main_image_url,
         price: p.price,
         old_price: p.old_price,
-        href: p.href ?? `/product/${p.id}`,
+        href: p.href ?? `/product/${p.slug}`,
         bg: p.banner_background_color ?? "#1a1a2e",
         mobile_ad_banner:p.mobile_ad_banner,
     };
 }
 
 export default function DesktopHeroBanner() {
-    const [slides, setSlides] = useState<HeroSlide[]>([]);
+    const { bannerProducts } = useBannerProducts();
+    const { settings } = useGlobalSettings();
+    const slides: HeroSlide[] = bannerProducts.map(mapProductToSlide);
     const [current, setCurrent] = useState(0);
+    const freeShippingThreshold = settings?.freeShippingThreshold ?? 99;
     const busyRef = useRef(false);
-
-    useEffect(() => {
-        productService
-            .getBannerProducts()
-            .then((res: BannerProduct[] | { data: BannerProduct[] }) => {
-                const products: BannerProduct[] = Array.isArray(res)
-                    ? res
-                    : Array.isArray((res as { data: BannerProduct[] }).data)
-                    ? (res as { data: BannerProduct[] }).data
-                    : [];
-                setSlides(products.map(mapProductToSlide));
-            })
-            .catch((err: Error) => {
-                console.error("Error fetching banners:", err);
-            });
-    }, []);
 
     useEffect(() => {
         if (slides.length === 0) return;
@@ -171,14 +177,14 @@ export default function DesktopHeroBanner() {
                             <Truck className="text-orange-400" size={20} />
                             <div>
                                 <h4 className="text-sm font-bold text-white">Free Shipping</h4>
-                                <p className="text-xs text-gray-400">On all orders</p>
+                                <p className="text-xs text-gray-400">On orders over QAR {freeShippingThreshold}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <ShieldCheck className="text-orange-400" size={20} />
+                            <Wallet className="text-orange-400" size={20} />
                             <div>
-                                <h4 className="text-sm font-bold text-white">Secure Payment</h4>
-                                <p className="text-xs text-gray-400">100% protected</p>
+                                <h4 className="text-sm font-bold text-white">Cash on Delivery</h4>
+                                <p className="text-xs text-gray-400">Pay upon delivery</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">

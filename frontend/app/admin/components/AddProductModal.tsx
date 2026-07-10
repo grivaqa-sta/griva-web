@@ -1425,7 +1425,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                                             <input
                                               type="number"
                                               step="0.01"
-                                              placeholder="Override"
+                                              placeholder={formData.price ? String(formData.price) : "Override"}
                                               value={v.price || ""}
                                               onChange={(e) => updateVariantField(globalIdx, "price", e.target.value ? parseFloat(e.target.value) : "")}
                                               className="border border-gray-200 bg-white rounded-lg px-2.5 py-1 text-xs focus:border-orange-500 outline-none w-full text-center font-semibold text-gray-700"
@@ -1438,7 +1438,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                                             <input
                                               type="number"
                                               step="0.01"
-                                              placeholder="Override"
+                                              placeholder={formData.old_price ? String(formData.old_price) : "Override"}
                                               value={v.old_price || ""}
                                               onChange={(e) => updateVariantField(globalIdx, "old_price", e.target.value ? parseFloat(e.target.value) : "")}
                                               className="border border-gray-200 bg-white rounded-lg px-2.5 py-1 text-xs focus:border-orange-500 outline-none w-full text-center font-semibold text-gray-700"
@@ -1648,7 +1648,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                                                   <input
                                                     type="number"
                                                     step="0.01"
-                                                    placeholder="Override"
+                                                    placeholder={formData.price ? String(formData.price) : "Override"}
                                                     value={v.price || ""}
                                                     onChange={(e) => updateVariantField(globalIdx, "price", e.target.value ? parseFloat(e.target.value) : "")}
                                                     className="border border-gray-200 bg-white rounded-lg px-2.5 py-1 text-xs focus:border-orange-500 outline-none w-full text-center font-semibold text-gray-700"
@@ -1661,7 +1661,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                                                   <input
                                                     type="number"
                                                     step="0.01"
-                                                    placeholder="Override"
+                                                    placeholder={formData.old_price ? String(formData.old_price) : "Override"}
                                                     value={v.old_price || ""}
                                                     onChange={(e) => updateVariantField(globalIdx, "old_price", e.target.value ? parseFloat(e.target.value) : "")}
                                                     className="border border-gray-200 bg-white rounded-lg px-2.5 py-1 text-xs focus:border-orange-500 outline-none w-full text-center font-semibold text-gray-700"
@@ -1785,7 +1785,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                                               <input
                                                 type="number"
                                                 step="0.01"
-                                                placeholder="Override"
+                                                placeholder={formData.price ? String(formData.price) : "Override"}
                                                 value={v.price || ""}
                                                 onChange={(e) => updateVariantField(globalIdx, "price", e.target.value ? parseFloat(e.target.value) : "")}
                                                 className="border border-gray-200 bg-white rounded-lg px-2.5 py-1 text-xs focus:border-orange-500 outline-none w-full text-center font-semibold text-gray-700"
@@ -1798,7 +1798,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                                               <input
                                                 type="number"
                                                 step="0.01"
-                                                placeholder="Override"
+                                                placeholder={formData.old_price ? String(formData.old_price) : "Override"}
                                                 value={v.old_price || ""}
                                                 onChange={(e) => updateVariantField(globalIdx, "old_price", e.target.value ? parseFloat(e.target.value) : "")}
                                                 className="border border-gray-200 bg-white rounded-lg px-2.5 py-1 text-xs focus:border-orange-500 outline-none w-full text-center font-semibold text-gray-700"

@@ -109,18 +109,35 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (
-      error.response?.status === 403 &&
-      error.response?.data?.message?.toLowerCase().includes("blocked")
-    ) {
+    if (error.response?.status === 403) {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("griva_user_token");
-        localStorage.removeItem("griva_user");
+        const msg = error.response?.data?.message?.toLowerCase() || "";
+        const isBlocked = msg.includes("blocked");
+        const isInvalidOrExpired = msg.includes("invalid") || msg.includes("expired") || msg.includes("token");
 
-        const event = new CustomEvent("griva-user-blocked", {
-          detail: { message: error.response.data.message },
-        });
-        window.dispatchEvent(event);
+        if (isBlocked) {
+          localStorage.removeItem("griva_user_token");
+          localStorage.removeItem("griva_user");
+
+          const event = new CustomEvent("griva-user-blocked", {
+            detail: { message: error.response.data.message },
+          });
+          window.dispatchEvent(event);
+        } else if (isInvalidOrExpired) {
+          const pathname = window.location.pathname;
+          if (pathname.startsWith("/admin")) {
+            localStorage.removeItem("griva_admin_token");
+            localStorage.removeItem("griva_admin_user");
+            localStorage.removeItem("griva_staff_token");
+            localStorage.removeItem("griva_staff_user");
+          } else if (pathname.startsWith("/delivery")) {
+            localStorage.removeItem("griva_delivery_token");
+          } else {
+            localStorage.removeItem("griva_user_token");
+            localStorage.removeItem("griva_user");
+          }
+          window.dispatchEvent(new CustomEvent("griva-auth-expired"));
+        }
       }
     }
     return Promise.reject(error);

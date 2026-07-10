@@ -251,9 +251,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setShowBlockModal(true);
       logout();
     };
+    const handleAuthExpired = () => {
+      logout();
+    };
     window.addEventListener("griva-user-blocked", handleBlocked);
+    window.addEventListener("griva-auth-expired", handleAuthExpired);
     return () => {
       window.removeEventListener("griva-user-blocked", handleBlocked);
+      window.removeEventListener("griva-auth-expired", handleAuthExpired);
     };
   }, []);
 

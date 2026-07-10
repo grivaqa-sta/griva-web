@@ -3,7 +3,7 @@
   "short_name": "GRIVA",
   "description": "Qatar's #1 online electronics store. Shop premium tech, gadgets, and luxury gifts.",
   "start_url": "/",
-  "display": "browser",
+  "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#f97316",
   "icons": [

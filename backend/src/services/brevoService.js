@@ -213,6 +213,9 @@ const sendCustomerOrderConfirmation = async (
 
 const sendOutForDeliveryEmail = async (order) => {
   try {
+    const frontendUrl = process.env.FRONTEND_URL || "https://thegriva.com";
+    const trackUrl = `${frontendUrl}/track-order?order=${encodeURIComponent(order.order_number || "")}&phone=${encodeURIComponent(order.customer_phone || "")}`;
+
     const sendSmtpEmail = {
       sender: {
         email: process.env.SENDER_EMAIL,
@@ -262,7 +265,7 @@ const sendOutForDeliveryEmail = async (order) => {
               </div>
               <!-- CTA Button -->
               <div style="text-align: center; margin: 30px 0 10px;">
-                <a href="${process.env.FRONTEND_URL || 'https://thegriva.com'}" 
+                <a href="${trackUrl}" 
                    style="background-color: #ff6a00; color: #ffffff; padding: 13px 32px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; letter-spacing: 0.3px;">Track Your Order</a>
               </div>
               <p style="color: #374151; font-size: 14px; line-height: 1.7; text-align: center; margin-top: 24px;">Thank you for choosing <strong>GRIVA</strong>! 🖤</p>

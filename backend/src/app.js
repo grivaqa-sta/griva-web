@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
+const helmet = require("helmet");
 const { apiLimiter } = require("./middleware/rateLimit");
 
 // Initialize Database Models and Associations
@@ -9,22 +10,68 @@ require("./models");
 
 const app = express();
 
+// Secure HTTP response headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled on API layer to allow flexibility on separate SPA/client apps
+}));
+
 // Apply Global Middlewares
-const allowedOrigins = [
-  "http://localhost:3000",       // Next.js dev server
-  "http://localhost:8080",       // Backend self (Postman/Thunder)
-  "https://griva.qa",            // Production domain
-  "https://www.griva.qa",        // Production with www
-  "https://thegriva.com",        // New Production domain
-  "https://www.thegriva.com",    // New Production domain with www
-  "https://griva-web.vercel.app", // Vercel preview URL
-];
+const getAllowedOrigins = () => {
+  if (process.env.ALLOWED_ORIGINS) {
+    const customOrigins = process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()).filter(Boolean);
+    console.log("✅ [CORS] Allowed Origins (from Environment):", customOrigins);
+    return customOrigins;
+  }
+
+  const origins = [
+    // Local Development
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8080",
+    
+    // Production - GriVA Domains
+    "https://griva.qa",
+    "https://www.griva.qa",
+    "https://thegriva.com",
+    "https://www.thegriva.com",
+    
+    // Vercel Preview & Production
+    "https://griva-web-chi.vercel.app",
+    "https://griva-276jdc4qt-griva.vercel.app",
+    "https://griva-web-git-main-griva.vercel.app",
+
+    "https://griva-backend-kprt.onrender.com",
+  ];
+
+  // Add Render Backend URL if it exists and is not empty
+  if (process.env.RENDER_BACKEND_URL && process.env.RENDER_BACKEND_URL.trim()) {
+    origins.push(process.env.RENDER_BACKEND_URL.trim());
+  }
+
+  console.log("✅ [CORS] Allowed Origins (default):", origins);
+  return origins;
+};
+
+const allowedOrigins = getAllowedOrigins();
+
 app.use(cors({
   origin: (origin, callback) => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🔍 [CORS DEBUG] Incoming origin: "${origin}"`);
+    }
+    
     // Allow requests with no origin (Postman, curl, mobile apps)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    // Check if origin is in allowedOrigins
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`❌ [CORS BLOCKED] Origin: ${origin}`);
       callback(new Error(`CORS policy blocked origin: ${origin}`));
     }
   },
@@ -57,6 +104,7 @@ app.get("/health", (req, res) => {
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const returnRoutes = require("./routes/returnRoutes");
 const settingRoutes = require("./routes/settingRoutes");
 const subscriberRoutes = require("./routes/subscriberRoutes");
 const flashSaleRoutes = require("./routes/flashSaleRoutes");
@@ -70,16 +118,19 @@ const deliveryRoutes = require("./routes/deliveryRoutes"); // FEATURE: Delivery 
 const customerRoutes = require("./routes/customerRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const deliveryAttemptRoutes = require("./routes/deliveryAttemptRoutes");
-const uploadRoutes = require("./routes/uploadRoutes"); //IMAGE UPLOAD
+const uploadRoutes = require("./routes/uploadRoutes"); // IMAGE UPLOAD
 const deliverySlotRoutes = require("./routes/deliverySlotRoutes");
 const dealOfDayRoutes = require("./routes/dealOfDayRoutes");
 // const testShippedEmailRoutes = require("./routes/testShippedEmailRoutes");
 const discoverMoreRoutes = require("./routes/discoverMoreRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
+const productPromoBannerRoutes = require("./routes/productPromoBannerRoutes");
 
 // Mount API Routers
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/returns", returnRoutes);
 app.use("/api/settings", settingRoutes);
 app.use("/api/subscribers", subscriberRoutes);
 app.use("/api/flash-sales", flashSaleRoutes);
@@ -94,11 +145,13 @@ app.use("/api/admin/customers", customerRoutes);
 app.use("/api/admin/staff", staffRoutes);
 app.use("/api/delivery", deliveryAttemptRoutes); // FEATURE: Delivery Attempt Management
 // app.use("/api/test-email", testEmailRoutes);
-app.use("/api/uploads", uploadRoutes); //IMAGE UPLOAD
+app.use("/api/uploads", uploadRoutes); // IMAGE UPLOAD
 app.use("/api/delivery-slots", deliverySlotRoutes);
 app.use("/api/deal-of-day", dealOfDayRoutes);
 app.use("/api/discover-more", discoverMoreRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
+app.use("/api/product-promo-banners", productPromoBannerRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

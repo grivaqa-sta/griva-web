@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAdminSettings } from "../../context/AdminContext";
 import { getSettingsApi } from "../../utils/api";
+import { useScrolled } from "../../hooks/useScrolled";
 import {
   Truck,
   Zap,
@@ -56,12 +57,31 @@ export default function AnnouncementBar() {
   const [shoppersCount, setShoppersCount] = useState<number | null>(null);
   const [trend, setTrend] = useState<"up" | "down" | "neutral">("neutral");
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
+  const [comingSoonVisible, setComingSoonVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   const { announcementBarEnabled } = useAdminSettings();
   const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
+    setIsMobile(window.innerWidth < 640);
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+
+    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
+    if (isComingSoonActive) {
+      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
+      setComingSoonVisible(hasBypassStorage);
+    } else {
+      setComingSoonVisible(true);
+    }
+
+    const handleBypassEvent = () => {
+      setComingSoonVisible(true);
+    };
+    window.addEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+
     const initial = SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
     setShoppersCount(initial);
 
@@ -93,10 +113,14 @@ export default function AnnouncementBar() {
       });
     }, 2500);
 
-    return () => clearInterval(timer);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+      clearInterval(timer);
+    };
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted || !comingSoonVisible) return null;
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/delivery")) {
     return null;
@@ -114,8 +138,10 @@ export default function AnnouncementBar() {
   return (
     <div
       suppressHydrationWarning
-      className="sticky top-0 z-[9999] bg-orange-600 flex h-7 w-full select-none items-center text-white  md:h-10"
-     
+      className="fixed top-0 left-0 right-0 z-[9999] bg-orange-600 flex h-7 w-full select-none items-center text-white sm:h-10 transition-transform duration-300 ease-in-out"
+      style={{
+        transform: "translateY(0)"
+      }}
     >
       <div className="mx-auto flex h-full w-full  items-center justify-between">
 

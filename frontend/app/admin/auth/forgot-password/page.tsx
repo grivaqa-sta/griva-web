@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -9,6 +9,8 @@ import {
   ArrowLeft,
   Send,
   CheckCircle2,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { authService } from "@/app/services/auth.service";
 import { ForgotPasswordResponse } from "@/app/types/types";
@@ -20,6 +22,18 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    const saved = localStorage.getItem("griva_admin_theme") as "light" | "dark" | null;
+    if (saved) setTheme(saved);
+  }, []);
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("griva_admin_theme", next);
+  };
+  const isDark = theme === "dark";
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,30 +58,54 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 font-sans antialiased selection:bg-orange-500 selection:text-white">
+    <div
+      data-admin-theme={theme}
+      className="min-h-screen flex items-center justify-center px-4 font-sans antialiased selection:bg-orange-500 selection:text-white"
+      style={{ backgroundColor: 'var(--admin-bg)' }}
+    >
       {/* Background Glow */}
       <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
 
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 p-2 rounded-xl transition-all cursor-pointer active:scale-95"
+        style={{
+          backgroundColor: 'var(--admin-surface)',
+          border: '1px solid var(--admin-border)',
+          color: 'var(--admin-text-dim)',
+        }}
+      >
+        {isDark ? <Sun size={18} className="text-orange-500" /> : <Moon size={18} className="text-orange-500" />}
+      </button>
+
       <div className="relative w-full max-w-md">
-        <div className="bg-white border border-orange-500/30 rounded-2xl p-8 shadow-2xl shadow-orange-500/5">
+        <div
+          className="rounded-2xl p-8 shadow-2xl"
+          style={{
+            backgroundColor: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border-accent)',
+            boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)' : '0 25px 50px -12px rgba(249, 115, 22, 0.05)',
+          }}
+        >
 
           {/* Header */}
           <div className="flex flex-col items-center mb-8">
             <div className="h-12 w-12 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/40 mb-4">
-              <Sparkles className="h-6 w-6 text-gray-900" />
+              <Sparkles className="h-6 w-6 text-white" />
             </div>
 
-            <img src="/images/logo-dark.png" alt="Griva Logo" className="h-8 w-auto object-contain mb-1" />
+            <img src={isDark ? "/images/logo-light.png" : "/images/logo-dark.png"} alt="Griva Logo" className="h-8 w-auto object-contain mb-1" />
 
-            <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-1">
+            <p className="text-[10px] font-bold tracking-widest uppercase mt-1" style={{ color: 'var(--admin-text-faint)' }}>
               Password Recovery
             </p>
           </div>
 
           {/* Description */}
           <div className="mb-6 text-center">
-            <p className="text-sm text-gray-500 leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--admin-text-dim)' }}>
               Enter your email address and we'll send you
               a password reset link.
             </p>
@@ -95,12 +133,12 @@ export default function ForgotPasswordPage() {
             className="space-y-5"
           >
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--admin-text-dim)' }}>
                 Email Address
               </label>
 
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--admin-text-faint)' }} />
 
                 <input
                   type="email"
@@ -110,7 +148,12 @@ export default function ForgotPasswordPage() {
                   onChange={(e) =>
                     setEmail(e.target.value)
                   }
-                  className="w-full bg-white border border-orange-500/30 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-colors focus:border-orange-500"
+                  style={{
+                    backgroundColor: 'var(--admin-input-bg)',
+                    border: '1px solid var(--admin-border-accent)',
+                    color: 'var(--admin-input-text)',
+                  }}
                 />
               </div>
             </div>
@@ -136,7 +179,8 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => router.push("/admin/auth/login")}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-gray-500 hover:text-orange-500 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold hover:text-orange-500 transition-colors cursor-pointer"
+              style={{ color: 'var(--admin-text-dim)' }}
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Login

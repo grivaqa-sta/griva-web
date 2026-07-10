@@ -206,9 +206,12 @@ exports.getCustomerById = async (req, res, next) => {
       customerSegment = "Repeat Customer";
     }
 
-    // Home and Office addresses
-    const homeAddress = user.addresses ? user.addresses.find(a => a.label === "home") || null : null;
-    const officeAddress = user.addresses ? user.addresses.find(a => a.label === "office") || null : null;
+    // Home and Office addresses (prefer the default one within each label group)
+    const homeAddresses = user.addresses ? user.addresses.filter(a => a.label === "home") : [];
+    const officeAddresses = user.addresses ? user.addresses.filter(a => a.label === "office") : [];
+
+    const homeAddress = homeAddresses.find(a => a.isDefault) || homeAddresses[0] || null;
+    const officeAddress = officeAddresses.find(a => a.isDefault) || officeAddresses[0] || null;
 
     // Latest 10 orders
     const recentOrders = await Order.findAll({
@@ -473,6 +476,16 @@ exports.exportCustomers = async (req, res, next) => {
     const includeRegistered = !segment || segment === "all" || segment === "registered";
     const includeGuest = !segment || segment === "all" || segment === "guest";
 
+    const formatWorldTime = (dateVal) => {
+      if (!dateVal) return "N/A";
+      try {
+        const d = new Date(dateVal);
+        return d.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+      } catch (err) {
+        return "N/A";
+      }
+    };
+
     if (includeRegistered) {
       // Fetch registered customers
       let userQuery = `
@@ -506,8 +519,8 @@ exports.exportCustomers = async (req, res, next) => {
           "Phone": u.phone || "N/A",
           "Email": u.email,
           "Total Orders": parseInt(u.totalOrders, 10) || 0,
-          "Last Order Date": u.lastOrderDate ? new Date(u.lastOrderDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A",
-          "Registration Date": new Date(u.registrationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          "Last Order Date": formatWorldTime(u.lastOrderDate),
+          "Registration Date": formatWorldTime(u.registrationDate),
           "Type": "Registered"
         });
       });
@@ -547,8 +560,8 @@ exports.exportCustomers = async (req, res, next) => {
           "Phone": g.phone || "N/A",
           "Email": g.email,
           "Total Orders": parseInt(g.totalOrders, 10) || 0,
-          "Last Order Date": g.lastOrderDate ? new Date(g.lastOrderDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A",
-          "Registration Date": new Date(g.registrationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          "Last Order Date": formatWorldTime(g.lastOrderDate),
+          "Registration Date": formatWorldTime(g.registrationDate),
           "Type": "Guest"
         });
       });
@@ -557,21 +570,114 @@ exports.exportCustomers = async (req, res, next) => {
     // Sort by registration date descending
     exportData.sort((a, b) => new Date(b["Registration Date"]).getTime() - new Date(a["Registration Date"]).getTime());
 
-    const XLSX = require("xlsx");
+    const ExcelJS = require("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Customers");
+
+    // Define columns
+    worksheet.columns = [
+      { header: "Customer Name", key: "customerName" },
+      { header: "Phone", key: "phone" },
+      { header: "Email", key: "email" },
+      { header: "Total Orders", key: "totalOrders" },
+      { header: "Last Order Date", key: "lastOrderDate" },
+      { header: "Registration Date", key: "registrationDate" },
+      { header: "Type", key: "type" }
+    ];
+
+    // Add rows
+    exportData.forEach((u) => {
+      worksheet.addRow({
+        customerName: u["Customer Name"],
+        phone: u["Phone"],
+        email: u["Email"],
+        totalOrders: u["Total Orders"],
+        lastOrderDate: u["Last Order Date"],
+        registrationDate: u["Registration Date"],
+        type: u["Type"]
+      });
+    });
+
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 28;
+    headerRow.eachCell((cell) => {
+      cell.font = {
+        name: "Segoe UI",
+        family: 4,
+        size: 11,
+        bold: true,
+        color: { argb: "FFFFFFFF" }
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF97316" } // Orange brand color
+      };
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: "center",
+        wrapText: true
+      };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FFC2410C" } },
+        bottom: { style: "medium", color: { argb: "FFC2410C" } },
+        left: { style: "thin", color: { argb: "FFC2410C" } },
+        right: { style: "thin", color: { argb: "FFC2410C" } }
+      };
+    });
+
+    // Style data rows
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header
+      row.height = 22;
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.font = {
+          name: "Segoe UI",
+          size: 10,
+          color: { argb: "FF374151" } // gray-700
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: [2, 4, 5, 6, 7].includes(colNumber) ? "center" : "left"
+        };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE5E7EB" } }, // light gray
+          bottom: { style: "thin", color: { argb: "FFE5E7EB" } },
+          left: { style: "thin", color: { argb: "FFE5E7EB" } },
+          right: { style: "thin", color: { argb: "FFE5E7EB" } }
+        };
+        // Alternating row background for readability
+        if (rowNumber % 2 === 0) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFDF8F6" } // light orange-gray tint
+          };
+        }
+      });
+    });
+
+    // Auto-fit columns
+    worksheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const columnLength = cell.value ? cell.value.toString().length : 0;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      column.width = Math.min(Math.max(maxLength + 4, 12), 45);
+    });
+
     if (format === "csv") {
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const csvContent = XLSX.utils.sheet_to_csv(worksheet);
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", `attachment; filename=customers_export_${Date.now()}.csv`);
-      return res.send(csvContent);
+      await workbook.csv.write(res);
     } else {
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
-      const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", `attachment; filename=customers_export_${Date.now()}.xlsx`);
-      return res.send(buffer);
+      await workbook.xlsx.write(res);
     }
   } catch (error) {
     next(error);

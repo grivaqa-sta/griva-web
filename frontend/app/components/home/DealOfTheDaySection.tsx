@@ -9,40 +9,13 @@ import Rating from "../rating/Rating";
 import { useCountdown } from "@/app/hooks/useCountdown";
 import { useCart } from "@/app/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
-import dealOfDayService from "@/app/services/dealOfDay.service";
-import { Deal } from "@/app/types/types";
+import { useDealOfDay } from "@/app/hooks/useHomeData";
 
 export default function DealOfTheDaySection() {
   const { addToCart } = useCart();
   const router = useRouter();
 
-  const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDeal = async () => {
-      try {
-        const res = await dealOfDayService.getActiveDeal();
-        if (res?.success && res?.data) {
-          const data = Array.isArray(res.data) ? res.data : [res.data];
-          const now = new Date();
-          const validDeals = data.filter((deal: Deal) => {
-            const start = new Date(deal.startDate);
-            const end = new Date(deal.endDate);
-            return now >= start && now <= end;
-          });
-          setActiveDeals(validDeals);
-        } else {
-          setActiveDeals([]);
-        }
-      } catch (err) {
-        console.error("Error fetching deal of day", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDeal();
-  }, []);
+  const { deals: activeDeals, loading } = useDealOfDay();
 
   const slides = activeDeals.map(deal => {
     const p = deal.product;
@@ -50,6 +23,7 @@ export default function DealOfTheDaySection() {
     return {
       id: p?.id || deal.id,
       dealId: deal.id,
+      slug: p?.slug || "",
       title: deal.title || p?.title || "Deal of the Day",
       mainImage: mainImg ? (mainImg.startsWith('http') || mainImg.startsWith('/') ? mainImg : `http://localhost:8080${mainImg}`) : "/placeholder.png",
       thumbs: Array.isArray(p?.gallery_images) ? p.gallery_images.map((img: string) => img.startsWith('http') || img.startsWith('/') ? img : `http://localhost:8080${img}`) : [],
@@ -60,17 +34,18 @@ export default function DealOfTheDaySection() {
       description: p?.short_description || p?.description || "Incredible savings on this exclusive deal.",
       badge: "DEAL OF THE DAY",
       hot: true,
-      endDate: deal.endDate
+      endDate: deal.endDate,
+      stock: p ? p.stock : 0
     };
   });
 
   const [current, setCurrent] = useState<number>(0);
-  const [activeImage, setActiveImage] = useState<string | StaticImageData | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
 
   const slide = slides[current];
-  const { hours, mins, secs } = useCountdown(slide?.endDate || new Date().toISOString());
+  const { hours, mins, secs } = useCountdown(slide?.endDate);
 
   const prev = (): void => {
     setDirection("prev");
@@ -82,17 +57,34 @@ export default function DealOfTheDaySection() {
     setCurrent((c) => (c + 1) % slides.length);
   };
 
+  const [imageIndex, setImageIndex] = useState<number>(0);
+
   useEffect(() => {
+    setImageIndex(0);
     setActiveImage(null);
   }, [current]);
 
   useEffect(() => {
+    if (slides.length === 0 || !slide) return;
+    const images = [slide.mainImage, ...slide.thumbs];
+    if (images.length <= 1) return;
+
+    const imgTimer = setInterval(() => {
+      setImageIndex((prev) => (prev + 1) % images.length);
+    }, 2500);
+
+    return () => clearInterval(imgTimer);
+  }, [current, slide?.mainImage, slide?.thumbs]);
+
+  useEffect(() => {
     if (isPaused || slides.length <= 1) return;
-    const timer = setInterval(() => { next(); }, 5000);
+    const timer = setInterval(() => { next(); }, 7500); // 7.5 seconds allows multiple image cycles
     return () => clearInterval(timer);
   }, [isPaused, current, slides.length]);
 
-  const displayImage = activeImage || slide?.mainImage;
+  const allImages = slide ? [slide.mainImage, ...slide.thumbs] : [];
+  const displayImage = activeImage || allImages[imageIndex] || "/placeholder.png";
+  const displayImageKey = typeof displayImage === "string" ? displayImage : (displayImage as any)?.src || "";
 
   const handleAddToCart = () => {
     if (!slide) return;
@@ -102,6 +94,7 @@ export default function DealOfTheDaySection() {
       image: slide.mainImage,
       price: slide.price,
       category: slide.category,
+      slug: slide.slug,
     });
   };
 
@@ -113,6 +106,7 @@ export default function DealOfTheDaySection() {
       image: slide.mainImage,
       price: slide.price,
       category: slide.category,
+      slug: slide.slug,
     });
     router.push("/checkout");
   };
@@ -164,7 +158,7 @@ export default function DealOfTheDaySection() {
 
         {/* ── PRODUCT CARD ── */}
         <div
-          className="relative overflow-hidden rounded-[5px] border border-gray-100 bg-white shadow-sm touch-pan-y"
+          className="relative overflow-hidden rounded-[10px] border border-gray-100 bg-white shadow-sm touch-pan-y"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={() => setIsPaused(true)}
@@ -228,11 +222,11 @@ export default function DealOfTheDaySection() {
                   {slide.thumbs && slide.thumbs.length > 0 && slide.thumbs.slice(0, 3).map((image: any, index: number) => (
                     <div
                       key={index}
-                      onClick={(e) => { e.stopPropagation(); setActiveImage(image); }}
-                      className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-all"
+                      onClick={(e) => { e.stopPropagation(); setActiveImage(image); const idx = allImages.indexOf(image); if (idx !== -1) { setImageIndex(idx); } }}
+                      className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border bg-white transition-all overflow-hidden"
                       style={{
                         borderColor: displayImage === image ? "#FF6A00" : "#f3f4f6",
-                        backgroundColor: displayImage === image ? "#FF6A0010" : "#f9fafb",
+                        backgroundColor: displayImage === image ? "#FF6A0010" : "#ffffff",
                       }}
                       onMouseEnter={(e) => {
                         if (displayImage !== image)
@@ -243,20 +237,39 @@ export default function DealOfTheDaySection() {
                           e.currentTarget.style.borderColor = "#f3f4f6";
                       }}
                     >
-                      <Image src={image} alt="thumb" width={36} height={36} className="object-contain" style={{ width: "auto", height: "auto" }} />
+                      <div className="relative h-10 w-10">
+                        <Image
+                          src={image}
+                          alt="thumb"
+                          fill
+                          sizes="40px"
+                          className="object-contain p-0.5"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Main image */}
-                <div className="relative mx-auto flex h-[220px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50/50 p-4 pointer-events-none lg:mx-0 lg:h-[240px] lg:w-[240px]">
-                  <Image
-                    src={displayImage}
-                    alt={slide.title}
-                    fill
-                    sizes="(max-width: 768px) 220px, 300px"
-                    className="object-contain p-4 transition-all duration-300"
-                  />
+                <div className="relative mx-auto h-[220px] w-[220px] shrink-0 overflow-hidden rounded-xl bg-gray-50/50 pointer-events-none lg:mx-0 lg:h-[240px] lg:w-[240px]">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={displayImageKey}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.35 }}
+                      className="absolute inset-0 p-4"
+                    >
+                      <Image
+                        src={displayImage}
+                        alt={slide.title}
+                        fill
+                        sizes="(max-width: 768px) 220px, 300px"
+                        className="object-contain p-4"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -266,21 +279,26 @@ export default function DealOfTheDaySection() {
                   <div className="flex items-center gap-2">
                     <span
                       className="rounded px-2 py-0.5 text-[9px] font-bold uppercase text-white bg-orange-600"
-                      
                     >
                       {slide.badge}
                     </span>
-                    {slide.hot && (
-                      <span className="animate-pulse rounded bg-red-700 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
-                        HOT
+                    {(slide.stock ?? 0) <= 0 ? (
+                      <span className="rounded bg-gray-500 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
+                        SOLD OUT
                       </span>
+                    ) : (
+                      slide.hot && (
+                        <span className="animate-pulse rounded bg-red-700 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
+                          HOT
+                        </span>
+                      )
                     )}
                   </div>
                   <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                     {slide.category}
                   </p>
                   <h3 className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors hover:text-orange-500 line-clamp-1 lg:line-clamp-2">
-                    <Link href={`/product/${slide.id}`}>{slide.title}</Link>
+                    <Link href={`/product/${slide.slug}`}>{slide.title}</Link>
                   </h3>
                   <div className="mt-2">
                     <Rating rating={slide.rating} />
@@ -295,18 +313,29 @@ export default function DealOfTheDaySection() {
                 </div>
 
                 <div className="z-10 mt-2 flex w-full gap-2 lg:w-[360px]">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px] hover:bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition bg-orange-600"
-                  >
-                    <ShoppingCart size={14} /> Add To Cart
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleBuyNow(); }}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px]  text-xs font-bold uppercase text-white shadow-md shadow-gray-900/20 transition bg-black hover:bg-[#222]"
-                  >
-                    Buy Now
-                  </button>
+                  {(slide.stock ?? 0) <= 0 ? (
+                    <button
+                      disabled
+                      className="flex h-11 w-full items-center justify-center rounded-[5px] bg-gray-100 text-xs font-bold uppercase text-gray-400 cursor-not-allowed border border-gray-200"
+                    >
+                      Out of Stock
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
+                        className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px] hover:bg-orange-500 text-xs font-bold uppercase text-white shadow-md shadow-orange-500/20 transition bg-orange-600"
+                      >
+                        <ShoppingCart size={14} /> Add To Cart
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleBuyNow(); }}
+                        className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[5px]  text-xs font-bold uppercase text-white shadow-md shadow-gray-900/20 transition bg-black hover:bg-[#222]"
+                      >
+                        Buy Now
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>

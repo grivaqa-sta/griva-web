@@ -1,8 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdminSettings } from "@/app/context/AdminContext";
 import { useUser } from "@/app/context/UserContext";
+import { useSocket } from "@/app/context/SocketContext";
+import { useToast } from "@/app/context/ToastContext";
+import { useAdminTheme } from "@/app/admin/context/AdminThemeContext";
 import { CategoryItem, OfferCard, Product, SlideData } from "@/app/types/types";
 import { addSubscriberApi, AdminOrder, AnalyticsData, broadcastNewsletterApi, getAllOrdersApi, getAnalyticsApi, getSettingsApi, getSubscribersApi, SubscriberInfo, updateSettingsApi } from "@/app/utils/api";
 import { products as initialProducts, slide as initialSlides, offers as initialOffers, categories as initialCategories } from "@/app/data/data";
@@ -20,8 +23,11 @@ import AddProductModal from "./AddProductModal";
 import DeliveryTab from "./DeliveryTab";
 import CustomersTab from "./CustomersTab";
 import StaffTab from "./StaffTab";
+import ReviewsTab from "./ReviewsTab";
+import AnalyticsTab from "./AnalyticsTab";
+import ReturnsTab from "./ReturnsTab";
 
-export type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff";
+export type TabType = "overview" | "operations" | "products" | "banners" | "subscribers" | "orders" | "categories" | "subcategories" | "delivery" | "customers" | "staff" | "feedback" | "analytics" | "returns";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -41,8 +47,11 @@ export default function AdminDashboard() {
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get("tab") as TabType | null;
   const { role } = useUser();
+  const { socket } = useSocket();
+  const { toast } = useToast();
+  const { theme } = useAdminTheme();
 
-  const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff"];
+  const validTabs: TabType[] = ["overview", "operations", "products", "banners", "subscribers", "orders", "categories", "subcategories", "delivery", "customers", "staff", "feedback", "analytics", "returns"];
   const defaultTab = role === "staff" ? "operations" : "overview";
   const activeTab = tabParam && validTabs.includes(tabParam) ? tabParam : defaultTab;
 
@@ -60,6 +69,10 @@ export default function AdminDashboard() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [shippingFee, setShippingFee] = useState<number>(10);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
+  const [telegramLink, setTelegramLink] = useState<string>("");
+  const [whatsappCommunityLink, setWhatsappCommunityLink] = useState<string>("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [fridaySaleConfig, setFridaySaleConfig] = useState<any>(null);
 
   const [dateRangeOption, setDateRangeOption] = useState<string>("7days");
   const [customStartDate, setCustomStartDate] = useState<string>("");
@@ -114,12 +127,15 @@ export default function AdminDashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const [newSubEmail, setNewSubEmail] = useState("");
+  const [broadcastSubject, setBroadcastSubject] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastTarget, setBroadcastTarget] = useState("all");
+  const [broadcastTargetEmail, setBroadcastTargetEmail] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState<"idle" | "sending" | "sent">("idle");
 
-  // ── Data load (Static Settings, Subs, Orders) ──────────────────────────────
-  useEffect(() => {
-    async function load() {
+  // ── Centralized Data fetch/reload helpers ──────────────────────────────
+  const loadInitialData = useCallback(async () => {
+    try {
       const [dbSettings, dbSubs, dbOrders] = await Promise.all([
         getSettingsApi(), getSubscribersApi(), getAllOrdersApi(),
       ]);
@@ -128,31 +144,121 @@ export default function AdminDashboard() {
       setMidnightSaleEnabled(dbSettings.midnightSaleEnabled);
       setShippingFee(dbSettings.shippingFee !== undefined ? Number(dbSettings.shippingFee) : 10);
       setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 99);
+      setTelegramLink(dbSettings.telegramLink || "");
+      setWhatsappCommunityLink(dbSettings.whatsappCommunityLink || "");
+      setFridaySaleConfig(dbSettings.fridaySaleConfig || null);
       setSubscribersList(dbSubs);
       setOrdersList(dbOrders);
+    } catch (err) {
+      console.error("Failed to load initial dashboard data:", err);
     }
-    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadAnalytics = useCallback(async () => {
+    if (dateRangeOption === "custom" && (!customStartDate || !customEndDate)) {
+      return;
+    }
+    setAnalyticsLoading(true);
+    try {
+      const { startDate, endDate } = getRangeDates(dateRangeOption, customStartDate, customEndDate);
+      const dbAnalytics = await getAnalyticsApi(startDate, endDate);
+      setAnalytics(dbAnalytics);
+    } catch (err) {
+      console.error("Failed to load analytics dynamic metrics:", err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [dateRangeOption, customStartDate, customEndDate]);
+
+  // ── Data load (Static Settings, Subs, Orders) ──────────────────────────────
+  useEffect(() => {
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Dynamic Analytics load (triggers on date changes) ──────────────────────
   useEffect(() => {
-    async function loadAnalytics() {
-      if (dateRangeOption === "custom" && (!customStartDate || !customEndDate)) {
-        return;
-      }
-      setAnalyticsLoading(true);
-      try {
-        const { startDate, endDate } = getRangeDates(dateRangeOption, customStartDate, customEndDate);
-        const dbAnalytics = await getAnalyticsApi(startDate, endDate);
-        setAnalytics(dbAnalytics);
-      } catch (err) {
-        console.error("Failed to load analytics dynamic metrics:", err);
-      } finally {
-        setAnalyticsLoading(false);
-      }
-    }
     loadAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRangeOption, customStartDate, customEndDate]);
+
+  // ── Socket.IO Real-time Events Listener ────────────────────────────────────
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewOrder = () => {
+      console.log("🔌 [Socket.IO Event]: new-order received. Refetching...");
+      toast.success("🔔 New order placed! Refreshing dashboard...");
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handleOrderStatusUpdated = (data: { orderId: number, status: string } | null) => {
+      console.log("🔌 [Socket.IO Event]: order-status-updated received. Refetching...", data);
+      if (data) {
+        toast.info(`📦 Order #${data.orderId} status updated to: ${data.status.replace(/_/g, ' ').toUpperCase()}`);
+      } else {
+        toast.info("📦 Order status updated!");
+      }
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handleOrderUpdated = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Event]: order-updated received. Refetching...", data);
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handleDriverAssigned = (data: { orderId: number } | null) => {
+      console.log("🔌 [Socket.IO Event]: driver-assigned received. Refetching...", data);
+      if (data) {
+        toast.success(`🚚 Driver assigned to order #${data.orderId}`);
+      }
+      loadInitialData();
+      loadAnalytics();
+    };
+
+    const handlePrintStatusUpdated = (data: { orderIds: number[] } | null) => {
+      console.log("🔌 [Socket.IO Event]: print-status-updated received. Refetching...", data);
+      toast.success("🖨️ Order print status updated!");
+      loadInitialData();
+    };
+
+    const handleDashboardMetricsUpdated = () => {
+      console.log("🔌 [Socket.IO Event]: dashboard-metrics-updated received. Refetching...");
+      loadAnalytics();
+    };
+
+    const handleNewSubscriber = (data: { email: string, country: string } | null) => {
+      console.log("🔌 [Socket.IO Event]: new-subscriber received. Refetching...", data);
+      if (data) {
+        toast.success(`🔔 New subscriber joined: ${data.email} (${data.country})`);
+      } else {
+        toast.success("🔔 New subscriber registered!");
+      }
+      loadInitialData();
+    };
+
+    socket.on("new-order", handleNewOrder);
+    socket.on("order-status-updated", handleOrderStatusUpdated);
+    socket.on("order-updated", handleOrderUpdated);
+    socket.on("driver-assigned", handleDriverAssigned);
+    socket.on("print-status-updated", handlePrintStatusUpdated);
+    socket.on("dashboard-metrics-updated", handleDashboardMetricsUpdated);
+    socket.on("new-subscriber", handleNewSubscriber);
+
+    return () => {
+      socket.off("new-order", handleNewOrder);
+      socket.off("order-status-updated", handleOrderStatusUpdated);
+      socket.off("order-updated", handleOrderUpdated);
+      socket.off("driver-assigned", handleDriverAssigned);
+      socket.off("print-status-updated", handlePrintStatusUpdated);
+      socket.off("dashboard-metrics-updated", handleDashboardMetricsUpdated);
+      socket.off("new-subscriber", handleNewSubscriber);
+    };
+  }, [socket, loadInitialData, loadAnalytics, toast]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleToggleAnnouncement = async () => {
@@ -172,14 +278,30 @@ export default function AdminDashboard() {
     setFreeShippingThreshold(threshold);
     await updateSettingsApi({ shippingFee: fee, freeShippingThreshold: threshold });
   };
+  const handleSaveExclusiveLinks = async (tg: string, wa: string) => {
+    setTelegramLink(tg);
+    setWhatsappCommunityLink(wa);
+    await updateSettingsApi({ telegramLink: tg, whatsappCommunityLink: wa });
+  };
+  const handleSaveFridaySaleConfig = async (config: any) => {
+    setFridaySaleConfig(config);
+    await updateSettingsApi({ fridaySaleConfig: config });
+  };
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!broadcastMessage) return;
+    e.preventDefault(); if (!broadcastSubject || !broadcastMessage) return;
+    if (broadcastTarget === "individual" && !broadcastTargetEmail) return;
     setBroadcastStatus("sending");
-    const res = await broadcastNewsletterApi(broadcastMessage);
+    const res = await broadcastNewsletterApi(broadcastSubject, broadcastMessage, broadcastTarget, broadcastTargetEmail);
     if (res) {
       setBroadcastStatus("sent");
-      setTimeout(() => { setBroadcastStatus("idle"); setBroadcastMessage(""); }, 3000);
+      setTimeout(() => {
+        setBroadcastStatus("idle");
+        setBroadcastSubject("");
+        setBroadcastMessage("");
+        setBroadcastTarget("all");
+        setBroadcastTargetEmail("");
+      }, 3000);
     } else setBroadcastStatus("idle");
   };
 
@@ -192,8 +314,14 @@ export default function AdminDashboard() {
 
   const handleAddSubscriber = async (e: React.FormEvent) => {
     e.preventDefault(); if (!newSubEmail) return;
-    const s = await addSubscriberApi(newSubEmail);
-    if (s) { setSubscribersList((prev) => [s, ...prev]); setNewSubEmail(""); }
+    try {
+      const s = await addSubscriberApi(newSubEmail);
+      setSubscribersList((prev) => [s, ...prev]);
+      setNewSubEmail("");
+      toast.success("Subscriber added successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add subscriber.");
+    }
   };
 
 
@@ -202,19 +330,25 @@ export default function AdminDashboard() {
   const unreviewedCount = ordersList.filter(o => o.status === "pending" && !(o as any).reviewed_at).length;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex font-sans antialiased selection:bg-orange-500 selection:text-white">
+    <div data-admin-theme={theme} className="min-h-screen flex font-sans antialiased selection:bg-orange-500 selection:text-white" style={{ backgroundColor: 'var(--admin-bg)', color: 'var(--admin-text)' }}>
 
       {/* ── Sidebar ── */}
-      <AdminSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} unreviewedCount={unreviewedCount} />
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={handleSetActiveTab}
+        unreviewedCount={unreviewedCount}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       {/* ── Main ── */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
 
         {/* ── Header ── */}
-        <AdminHeader activeTab={activeTab} />
+        <AdminHeader activeTab={activeTab} onMenuClick={() => setSidebarOpen(true)} />
 
         {/* ── Tab Content ── */}
-        <div className="p-6 max-w-7xl w-full mx-auto flex-1">
+        <div className="p-4 md:p-6 max-w-7xl w-full mx-auto flex-1">
           {activeTab === "operations" && (
             <OperationsTab ordersList={ordersList} setOrdersList={setOrdersList} setActiveTab={handleSetActiveTab} />
           )}
@@ -234,12 +368,17 @@ export default function AdminDashboard() {
               shippingFee={shippingFee}
               freeShippingThreshold={freeShippingThreshold}
               onSaveShippingConfig={handleSaveShippingConfig}
+              telegramLink={telegramLink}
+              whatsappCommunityLink={whatsappCommunityLink}
+              onSaveExclusiveLinks={handleSaveExclusiveLinks}
               dateRangeOption={dateRangeOption}
               setDateRangeOption={setDateRangeOption}
               customStartDate={customStartDate}
               setCustomStartDate={setCustomStartDate}
               customEndDate={customEndDate}
               setCustomEndDate={setCustomEndDate}
+              fridaySaleConfig={fridaySaleConfig}
+              onSaveFridaySaleConfig={handleSaveFridaySaleConfig}
             />
           )}
           {activeTab === "products" && (
@@ -259,7 +398,10 @@ export default function AdminDashboard() {
             <SubscribersTab
               subscribersList={subscribersList}
               newSubEmail={newSubEmail} setNewSubEmail={setNewSubEmail}
+              broadcastSubject={broadcastSubject} setBroadcastSubject={setBroadcastSubject}
               broadcastMessage={broadcastMessage} setBroadcastMessage={setBroadcastMessage}
+              broadcastTarget={broadcastTarget} setBroadcastTarget={setBroadcastTarget}
+              broadcastTargetEmail={broadcastTargetEmail} setBroadcastTargetEmail={setBroadcastTargetEmail}
               broadcastStatus={broadcastStatus} handleSendBroadcast={handleSendBroadcast}
               handleAddSubscriber={handleAddSubscriber}
             />
@@ -275,6 +417,15 @@ export default function AdminDashboard() {
           )}
           {activeTab === "customers" && (
             <CustomersTab />
+          )}
+          {activeTab === "feedback" && (
+            <ReviewsTab />
+          )}
+          {activeTab === "returns" && (
+            <ReturnsTab />
+          )}
+          {activeTab === "analytics" && role !== "staff" && (
+            <AnalyticsTab active={activeTab === "analytics"} />
           )}
         </div>
       </main>

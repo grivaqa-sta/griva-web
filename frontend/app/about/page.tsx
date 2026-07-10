@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 import {
   ShieldCheck,
   Truck,
@@ -145,6 +146,13 @@ function TimelineStep({
 export default function AboutPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white">
+      <title>About Us — GRIVA Qatar | Premium Tech, Electronics & Lifestyle Brand</title>
+      <meta name="description" content="Learn about GRIVA, Qatar's leading online tech boutique. Discover our dedication to 100% authentic devices, express delivery across Doha, and COD options." />
+      <link rel="canonical" href="https://thegriva.com/about" />
+      <BreadcrumbSchema items={[
+        { name: "Home", path: "/" },
+        { name: "About Us", path: "/about" }
+      ]} />
       {/* ──────── hero section ──────── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#0c0c0c] via-[#121212] to-[#0c0c0c] py-20 sm:py-28">
         {/* brand pattern watermark */}
@@ -272,7 +280,7 @@ export default function AboutPage() {
               </h2>
 
               <p className="mt-6 text-xs sm:text-sm leading-relaxed text-gray-500">
-                Founded in Doha, Qatar, GriVA began with a simple vision: to bridge the gap between premium global electronics and the local Qatari community. We curate high-fidelity audio equipment, gaming accessories, and smart devices, verifying the authenticity and build quality of every single item.
+                Founded in Doha, Qatar, GRIVA began with a simple vision: to bridge the gap between premium global electronics and the local Qatari community. We curate high-fidelity audio equipment, gaming accessories, and smart devices, verifying the authenticity and build quality of every single item.
               </p>
               <p className="mt-4 text-xs sm:text-sm leading-relaxed text-gray-500">
                 By eliminating long overseas shipping times and offering direct Cash on Delivery with local support, we provide Qatar&apos;s tech enthusiasts with a reliable local shopping destination.
@@ -333,7 +341,7 @@ export default function AboutPage() {
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto mb-14 max-w-2xl text-center">
             <span className="text-xs font-extrabold uppercase tracking-[0.25em] text-[#FF6A00]">
-              Why GriVA
+              Why GRIVA
             </span>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
               Built for Qatar.{" "}
@@ -439,7 +447,7 @@ export default function AboutPage() {
               <TimelineStep
                 year="'24"
                 title="The Spark"
-                description="GriVA was founded in Doha with the mission of establishing a reliable, direct source of premium authentic gadgets for Qatar's local market."
+                description="GRIVA was founded in Doha with the mission of establishing a reliable, direct source of premium authentic gadgets for Qatar's local market."
                 index={0}
               />
               <TimelineStep

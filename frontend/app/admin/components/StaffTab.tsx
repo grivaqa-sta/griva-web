@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { UserPlus, Mail, Shield, User, Key, Users, RefreshCw, Edit2, Lock, Ban, CheckCircle, XCircle } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 interface StaffMember {
   id: number;

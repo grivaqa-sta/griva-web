@@ -26,8 +26,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const toggleCategory = (title: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -42,7 +40,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         animate={{ opacity: 0.5 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-[10000] bg-black"
+        className="fixed inset-0 bg-black"
+        style={{ zIndex: 99999 }}
       />
 
       {/* Drawer */}
@@ -51,12 +50,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         animate={{ x: 0 }}
         exit={{ x: "-100%" }}
         transition={{ type: "tween", duration: 0.3 }}
-        className="fixed inset-y-0 left-0 z-[10001] flex w-full max-w-xs flex-col bg-white p-6 shadow-2xl overflow-y-auto"
+        className="fixed inset-y-0 left-0 flex w-full max-w-xs flex-col bg-white p-6 shadow-2xl overflow-y-auto"
+        style={{ zIndex: 100000 }}
       >
         <div className="flex items-center justify-between border-b pb-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            GR<span className="text-orange-500">i</span>VA Menu
-          </h2>
+          <Link href="/" onClick={onClose} className="flex items-center shrink-0">
+            <img src="/images/logo-dark.png" alt="Griva Logo" className="h-6 w-auto object-contain" />
+          </Link>
           <button
             onClick={onClose}
             className="rounded-lg p-2 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition"

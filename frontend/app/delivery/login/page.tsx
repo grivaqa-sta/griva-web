@@ -20,40 +20,7 @@ export default function DeliveryLoginPage() {
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  const [showForgot, setShowForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotSuccess, setForgotSuccess] = useState("");
-  const [forgotError, setForgotError] = useState("");
-  const [forgotLoading, setForgotLoading] = useState(false);
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotError("");
-    setForgotSuccess("");
-    setForgotLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setForgotError(data.message || "Failed to generate link.");
-        setForgotLoading(false);
-        return;
-      }
-
-      const data = await res.json();
-      setForgotSuccess(data.resetUrl || "Reset link generated.");
-    } catch {
-      setForgotError("Check your internet connection.");
-    } finally {
-      setForgotLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -95,14 +62,18 @@ export default function DeliveryLoginPage() {
       });
 
       if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          setError("Invalid email or password.");
-        } else if (res.status >= 500) {
-          setError("Something went wrong, try again.");
-        } else {
+        let errorMsg = "Login failed.";
+        try {
           const data = await res.json();
-          setError(data.message || "Login failed.");
+          errorMsg = data.message || data.error || errorMsg;
+        } catch {
+          if (res.status === 401 || res.status === 403) {
+            errorMsg = "Invalid email or password.";
+          } else {
+            errorMsg = "Something went wrong, try again.";
+          }
         }
+        setError(errorMsg);
         setLoading(false);
         return;
       }
@@ -118,7 +89,7 @@ export default function DeliveryLoginPage() {
       localStorage.setItem("griva_delivery_token", data.token);
       router.replace("/delivery/dashboard");
     } catch {
-      setError("Check your internet connection.");
+      setError("Unable to connect to server. Please check your internet connection.");
       setLoading(false);
     }
   };
@@ -163,8 +134,7 @@ export default function DeliveryLoginPage() {
         transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
         className="w-full bg-[#0a0a0a]/80 backdrop-blur-xl rounded-3xl border border-zinc-900 p-6 space-y-6 shadow-2xl relative z-10 before:absolute before:inset-0 before:rounded-3xl before:bg-gradient-to-b before:from-white/[0.03] before:to-transparent before:pointer-events-none"
       >
-        {!showForgot ? (
-          <>
+        <>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold tracking-tight text-white">Welcome Back</h2>
               <div className="flex items-center justify-center gap-1.5 text-xs">
@@ -230,8 +200,8 @@ export default function DeliveryLoginPage() {
                 </div>
               </div>
 
-              {/* Checkbox and Link */}
-              <div className="flex items-center justify-between text-xs pt-1">
+              {/* Remember me checkbox */}
+              <div className="flex items-center text-xs pt-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -241,16 +211,6 @@ export default function DeliveryLoginPage() {
                   />
                   <span className="text-zinc-400 font-semibold">Remember me</span>
                 </label>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setShowForgot(true);
-                    setError("");
-                  }}
-                  className="text-[#FF6A00] hover:underline font-bold transition-all bg-transparent border-none cursor-pointer"
-                >
-                  Forgot password?
-                </button>
               </div>
 
               {/* Login button */}
@@ -265,79 +225,6 @@ export default function DeliveryLoginPage() {
               </button>
             </form>
           </>
-        ) : (
-          <>
-            <div className="text-center space-y-1">
-              <h2 className="text-xl font-bold tracking-tight text-white">Reset Password</h2>
-              <p className="text-xs text-zinc-500 font-semibold">
-                Enter your email to receive a password reset link
-              </p>
-            </div>
-
-            {forgotError && (
-              <div className="bg-red-950/40 border border-red-900/60 text-red-400 text-xs font-bold px-4 py-3 rounded-2xl flex items-center gap-2 justify-center">
-                <ShieldAlert size={14} className="shrink-0" />
-                <span>{forgotError}</span>
-              </div>
-            )}
-
-            {forgotSuccess && (
-              <div className="bg-green-950/40 border border-green-900/60 text-green-400 text-xs font-bold px-4 py-3 rounded-2xl space-y-2">
-                <p>✅ Password reset link generated:</p>
-                <a 
-                  href={forgotSuccess} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="block underline break-all text-xs text-[#FF6A00] hover:brightness-110"
-                >
-                  {forgotSuccess}
-                </a>
-              </div>
-            )}
-
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase ml-1">
-                  Email Address
-                </label>
-                <div className="relative group">
-                  <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#FF6A00] transition-colors" />
-                  <input
-                    type="email"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="driver@thegriva.com"
-                    required
-                    className="w-full bg-zinc-950 border border-zinc-900 hover:border-zinc-800 focus:border-[#FF6A00]/80 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-white placeholder:text-zinc-600 focus:outline-none transition-all duration-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={forgotLoading}
-                className="w-full bg-gradient-to-r from-[#FF6A00] to-[#E04F00] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 text-white text-sm font-bold py-4 rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(255,106,0,0.25)]"
-                style={{ minHeight: "48px" }}
-              >
-                <span>{forgotLoading ? "Requesting..." : "Send Reset Link"}</span>
-                {!forgotLoading && <ArrowRight size={16} />}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForgot(false);
-                  setForgotSuccess("");
-                  setForgotError("");
-                  setForgotEmail("");
-                }}
-                className="w-full bg-transparent text-zinc-400 hover:text-white text-xs font-bold py-2 cursor-pointer transition-colors"
-              >
-                Back to Login
-              </button>
-            </form>
-          </>
-        )}
       </motion.div>
 
       {/* Skyline vector illustration with orange light trails */}

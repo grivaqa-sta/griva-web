@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/config/seed.js"
+    "seed": "node src/config/seed.js",
+    "clean": "node src/config/clean.js"
   },
   "keywords": [
     "nodejs",
@@ -24,8 +25,10 @@
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
@@ -34,6 +37,7 @@
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.3",
     "sharp": "^0.33.5",
+    "socket.io": "^4.8.3",
     "uuid": "^14.0.0",
     "xlsx": "^0.18.5"
   },

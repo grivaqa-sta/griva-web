@@ -1,7 +1,8 @@
 import { Product, SlideData, OfferCard, CategoryItem } from "../types/types";
 import { products as mockProducts, slide as mockSlides, offers as mockOffers, categories as mockCategories } from "../data/data";
+import { processCloudinaryUrls } from "./image";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 // Helper to retrieve auth headers
 function getAuthHeaders(): HeadersInit {
@@ -40,6 +41,7 @@ async function safeFetch<T>(
   options: RequestInit,
   fallbackValue: T
 ): Promise<T> {
+  const isWriteRequest = options.method && ["POST", "PUT", "PATCH", "DELETE"].includes(options.method.toUpperCase());
   try {
     const headers: Record<string, string> = {};
     const authHeaders = getAuthHeaders();
@@ -62,16 +64,26 @@ async function safeFetch<T>(
     if (!res.ok) {
       const errorText = await res.text();
       console.warn(`[API Warning]: Request to ${endpoint} failed: ${res.status}. Using fallback.`);
+      let errMsg = "API Request Failed";
       try {
         const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.error || "API Request Failed");
+        errMsg = errorJson.error || errMsg;
       } catch {
-        throw new Error(errorText || "API Request Failed");
+        errMsg = errorText || errMsg;
       }
+      const apiErr = new Error(errMsg);
+      if (isWriteRequest) {
+        (apiErr as any).isApiError = true;
+      }
+      throw apiErr;
     }
 
-    return (await res.json()) as T;
+    const data = await res.json();
+    return processCloudinaryUrls(data) as T;
   } catch (error: any) {
+    if (error.isApiError) {
+      throw error;
+    }
     console.error(`🔴 [API CLIENT ERROR]: Failed reaching ${endpoint}:`, error.message);
     console.warn(`🛡️ [API CLIENT FALLBACK]: Falling back to local state mock data.`);
     return fallbackValue;
@@ -98,6 +110,8 @@ export async function getProductsApi(): Promise<Product[]> {
   // Format backend fields back to frontend structure
   return productList.map((p: any) => ({
     id: p.id,
+    slug: p.slug || "",
+    isTrending: p.is_trending || p.is_best_seller || false,
     category: p.category?.title || "Gadgets",
     title: p.title,
     price: `QAR ${parseFloat(p.price.toString().replace(/([$]|qar|[\s,])/gi, "")).toFixed(2)}`,
@@ -201,6 +215,9 @@ export interface GlobalSettings {
   freeShippingThreshold?: number;
   whatsappNumber?: string;
   supportEmail?: string;
+  telegramLink?: string;
+  whatsappCommunityLink?: string;
+  fridaySaleConfig?: any;
 }
 
 export async function getSettingsApi(): Promise<GlobalSettings> {
@@ -324,39 +341,58 @@ export async function getSubscribersApi(): Promise<SubscriberInfo[]> {
   return res.subscribers;
 }
 
-export async function addSubscriberApi(email: string): Promise<SubscriberInfo | null> {
-  const res = await safeFetch<any>(
-    "/subscribers",
-    {
-      method: "POST",
-      body: JSON.stringify({ email, country: "Qatar" }),
-    },
-    null
-  );
-
-  if (res && res.subscriber) {
-    const s = res.subscriber;
-    return {
-      email: s.email,
-      joinedDate: new Date(s.createdAt || Date.now()).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric"
-      }),
-      country: s.country || "Qatar",
-    };
+export async function addSubscriberApi(email: string): Promise<SubscriberInfo> {
+  const headers: Record<string, string> = {};
+  const token = typeof window !== "undefined" ? localStorage.getItem("griva_auth_token") : null;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
-  return null;
+  headers["Content-Type"] = "application/json";
+
+  const res = await fetch(`${API_BASE_URL}/subscribers`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email, country: "Qatar" }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    let errMsg = "API Request Failed";
+    try {
+      const errJson = JSON.parse(errText);
+      errMsg = errJson.error || errMsg;
+    } catch (_) {
+      errMsg = errText || errMsg;
+    }
+    throw new Error(errMsg);
+  }
+
+  const data = await res.json();
+  const s = data.subscriber;
+  return {
+    email: s.email,
+    joinedDate: new Date(s.createdAt || Date.now()).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    }),
+    country: s.country || "Qatar",
+  };
 }
 
-export async function broadcastNewsletterApi(message: string): Promise<{ recipientCount: number }> {
+export async function broadcastNewsletterApi(
+  subject: string,
+  message: string,
+  target: string = "all",
+  targetEmail?: string
+): Promise<{ recipientCount: number }> {
   return await safeFetch<{ recipientCount: number }>(
     "/subscribers/broadcast",
     {
       method: "POST",
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ subject, message, target, targetEmail }),
     },
-    { recipientCount: 3 }
+    { recipientCount: 0 }
   );
 }
 
@@ -429,12 +465,145 @@ export async function getAnalyticsApi(startDate?: string, endDate?: string): Pro
   return res.analytics;
 }
 
+export interface DeepAnalyticsData {
+  totalRevenue: number;
+  grossRevenue: number;
+  totalOrders: number;
+  netOrders: number;
+  averageOrderValue: number;
+  medianOrderValue: number;
+  highestSingleOrder: number;
+  fulfillmentRate: number;
+  cancellationRate: number;
+  orderStatusCounts: Record<string, number>;
+  paymentMethodRevenue: {
+    COD: number;
+    Card: number;
+    Online: number;
+    Other: number;
+  };
+  salesOverTime: { date: string; sales: number }[];
+  salesByCategory: { category: string; sales: number; qty: number; avgPrice: number }[];
+  bestSellers: { id: number; title: string; image: string; qty: number; revenue: number; avgPrice: number }[];
+  bestCustomers: { name: string; email: string; phone: string; orderCount: number; spent: number; lastOrderDate: string; aov: number }[];
+  deliverySlotCounts: Record<string, number>;
+  hourlyHeatmap: number[];
+  dayOfWeekVolume: number[];
+  inventory: {
+    totalSKUs: number;
+    outOfStockCount: number;
+    lowStockCount: number;
+    totalInventoryValue: number;
+  };
+  customerAcquisition: { month: string; count: number }[];
+  repeatCustomerRate: number;
+  avgDeliveryTimeHours: number;
+  deliverySuccessRate: number;
+}
+
+export async function getDeepAnalyticsApi(startDate?: string, endDate?: string): Promise<DeepAnalyticsData> {
+  const defaultAnalytics: DeepAnalyticsData = {
+    totalRevenue: 28450.00,
+    grossRevenue: 32150.00,
+    totalOrders: 28,
+    netOrders: 24,
+    averageOrderValue: 1185.42,
+    medianOrderValue: 799.00,
+    highestSingleOrder: 4599.00,
+    fulfillmentRate: 85.71,
+    cancellationRate: 10.71,
+    orderStatusCounts: {
+      pending: 2,
+      processing: 1,
+      assigned: 1,
+      out_for_delivery: 0,
+      delivered: 24,
+      completed: 0,
+      cancelled: 3,
+      failed: 0,
+      returned: 0,
+      attempted: 0,
+      rescheduled: 0,
+    },
+    paymentMethodRevenue: {
+      COD: 18500.00,
+      Card: 4950.00,
+      Online: 5000.00,
+      Other: 0.00,
+    },
+    salesOverTime: [
+      { date: "Jun 24", sales: 1200.00 },
+      { date: "Jun 25", sales: 3450.00 },
+      { date: "Jun 26", sales: 2200.00 },
+      { date: "Jun 27", sales: 5600.00 },
+      { date: "Jun 28", sales: 1500.00 },
+      { date: "Jun 29", sales: 4800.00 },
+      { date: "Jun 30", sales: 9700.00 },
+    ],
+    salesByCategory: [
+      { category: "Gadgets", sales: 12450.00, qty: 15, avgPrice: 830.00 },
+      { category: "Laptops", sales: 9800.00, qty: 3, avgPrice: 3266.67 },
+      { category: "Headphones", sales: 3200.00, qty: 8, avgPrice: 400.00 },
+      { category: "Gaming", sales: 3000.00, qty: 5, avgPrice: 600.00 },
+    ],
+    bestSellers: [
+      { id: 1, title: "DJI Mini 4 Pro Drone", image: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?q=80&w=800", qty: 6, revenue: 4559.94, avgPrice: 759.99 },
+      { id: 2, title: "Meta Quest 3 VR Headset", image: "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?q=80&w=800", qty: 4, revenue: 1996.00, avgPrice: 499.00 },
+    ],
+    bestCustomers: [
+      { name: "Jassim Al Thani", email: "jassim.althani@gmail.com", phone: "+974 5551 2345", orderCount: 5, spent: 8950.00, lastOrderDate: new Date().toISOString(), aov: 1790.00 },
+      { name: "Fatima Al Mansouri", email: "fatima.almansouri@yahoo.com", phone: "+974 6667 8901", orderCount: 3, spent: 4200.00, lastOrderDate: new Date().toISOString(), aov: 1400.00 },
+    ],
+    deliverySlotCounts: {
+      "09:00 AM - 12:00 PM": 12,
+      "01:00 PM - 04:00 PM": 8,
+      "05:00 PM - 08:00 PM": 4,
+    },
+    hourlyHeatmap: [0, 0, 0, 0, 0, 0, 1, 2, 4, 3, 5, 2, 6, 8, 4, 3, 2, 5, 7, 9, 4, 2, 1, 0],
+    dayOfWeekVolume: [2, 5, 4, 6, 3, 5, 3],
+    inventory: {
+      totalSKUs: 45,
+      outOfStockCount: 3,
+      lowStockCount: 7,
+      totalInventoryValue: 125400.00,
+    },
+    customerAcquisition: [
+      { month: "Jan 2026", count: 12 },
+      { month: "Feb 2026", count: 18 },
+      { month: "Mar 2026", count: 24 },
+      { month: "Apr 2026", count: 32 },
+      { month: "May 2026", count: 41 },
+      { month: "Jun 2026", count: 55 },
+    ],
+    repeatCustomerRate: 35.5,
+    avgDeliveryTimeHours: 4.2,
+    deliverySuccessRate: 98.2,
+  };
+
+  const query = new URLSearchParams();
+  if (startDate) query.append("startDate", startDate);
+  if (endDate) query.append("endDate", endDate);
+  const queryString = query.toString() ? `?${query.toString()}` : "";
+
+  const res = await safeFetch<{ analytics: DeepAnalyticsData }>(
+    `/orders/deep-analytics${queryString}`,
+    { method: "GET" },
+    { analytics: defaultAnalytics }
+  );
+  return res.analytics;
+}
+
 export interface OrderItem {
   id: number;
   product_id: number;
   quantity: number;
   price_at_purchase: number;
+  image_snapshot?: string;
+  sku?: string;
   product?: { id: number; title: string; main_image_url: string };
+  selected_attributes?: Record<string, string>;
+  selected_color?: string;
+  selected_storage?: string;
 }
 
 export interface AdminOrder {
@@ -455,6 +624,10 @@ export interface AdminOrder {
   delivery_slot_id?: number;
   is_printed?: boolean;
   printed_at?: string;
+  delivery_payment_method?: string;
+  cash_reconciliation_status?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const MOCK_ORDERS: AdminOrder[] = [
@@ -479,6 +652,17 @@ export async function updateOrderStatusApi(id: number, status: string): Promise<
     {
       method: "PATCH",
       body: JSON.stringify({ status }),
+    },
+    { success: true }
+  );
+  return !!res;
+}
+
+export async function reconcileCashPaymentApi(id: number): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/orders/${id}/reconcile-cash`,
+    {
+      method: "PATCH",
     },
     { success: true }
   );
@@ -752,6 +936,68 @@ export async function bulkPrintOrdersApi(orderIds: number[]): Promise<boolean> {
     { success: true }
   );
   return !!res;
+}
+
+export async function getDeliveryReviewsApi(): Promise<any[]> {
+  const res = await safeFetch<{ reviews: any[] }>(
+    "/reviews/delivery",
+    { method: "GET" },
+    { reviews: [] }
+  );
+  return res.reviews || [];
+}
+
+export async function getProductReviewsApi(): Promise<any[]> {
+  const res = await safeFetch<{ reviews: any[] }>(
+    "/reviews",
+    { method: "GET" },
+    { reviews: [] }
+  );
+  return res.reviews || [];
+}
+
+export async function deleteReviewApi(id: number): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/reviews/${id}`,
+    { method: "DELETE" },
+    { success: false }
+  );
+  return !!res;
+}
+
+export async function getAllReturnRequestsApi(): Promise<any[]> {
+  const res = await safeFetch<{ success: boolean; returnRequests: any[] }>(
+    "/returns",
+    { method: "GET" },
+    { success: true, returnRequests: [] }
+  );
+  return res.returnRequests || [];
+}
+
+export async function updateReturnRequestStatusApi(
+  id: number,
+  status: "approved_replacement" | "approved_refund" | "rejected" | string,
+  admin_notes?: string,
+  deliveryBoyId?: number
+): Promise<boolean> {
+  const res = await safeFetch<any>(
+    `/returns/${id}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status, admin_notes, deliveryBoyId }),
+    },
+    { success: false }
+  );
+  return !!res;
+}
+
+export async function getDeliveryBoysApi(): Promise<any[]> {
+  const res = await safeFetch<{ success: boolean; deliveryBoys: any[] }>(
+    "/orders/admin/delivery-boys",
+    { method: "GET" },
+    { success: true, deliveryBoys: [] }
+  );
+  return res.deliveryBoys || [];
 }
 
 

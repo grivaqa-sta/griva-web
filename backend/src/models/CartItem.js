@@ -10,6 +10,7 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
 const Cart = require("./Cart");
 const Product = require("./Product");
+const ProductVariant = require("./ProductVariant");
 
 const CartItem = sequelize.define(
   "CartItem",
@@ -43,6 +44,20 @@ const CartItem = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    variant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: ProductVariant,
+        key: "id",
+      },
+      onDelete: "CASCADE",
+    },
+    selected_attributes: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+      allowNull: true,
+    },
     quantity: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -71,7 +86,7 @@ const CartItem = sequelize.define(
     indexes: [
       {
         unique: true,
-        fields: ["cart_id", "product_id", "selected_color", "selected_storage"],
+        fields: ["cart_id", "product_id", "selected_color", "selected_storage", "variant_id"],
         name: "cart_item_variant_unique",
       },
     ],
@@ -83,5 +98,8 @@ Cart.hasMany(CartItem, { foreignKey: "cart_id", as: "items", onDelete: "CASCADE"
 
 CartItem.belongsTo(Product, { foreignKey: "product_id", as: "product" });
 Product.hasMany(CartItem, { foreignKey: "product_id", as: "cartItems", onDelete: "CASCADE" });
+
+CartItem.belongsTo(ProductVariant, { foreignKey: "variant_id", as: "variant" });
+ProductVariant.hasMany(CartItem, { foreignKey: "variant_id", as: "cartItems", onDelete: "CASCADE" });
 
 module.exports = CartItem;

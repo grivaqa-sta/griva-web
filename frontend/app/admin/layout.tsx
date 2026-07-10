@@ -3,6 +3,8 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
+import { AdminThemeProvider } from "@/app/admin/context/AdminThemeContext";
+import "./admin-theme.css";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -43,19 +45,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (authState === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-500 text-sm animate-pulse">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: 'var(--admin-bg, #ffffff)' }}>
+        <p className="text-sm animate-pulse" style={{ color: 'var(--admin-text-dim, #6b7280)' }}>Loading...</p>
       </div>
     );
   }
 
   if (authState === "denied") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="bg-white border border-red-200 rounded-xl shadow-sm p-8 max-w-sm w-full text-center">
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: 'var(--admin-bg, #ffffff)' }}>
+        <div className="border border-red-200 rounded-xl shadow-sm p-8 max-w-sm w-full text-center" style={{ backgroundColor: 'var(--admin-surface, #ffffff)' }}>
           <div className="text-4xl mb-4">🚫</div>
           <h1 className="text-xl font-semibold text-red-600 mb-2">Access Denied</h1>
-          <p className="text-gray-500 text-sm mb-6">
+          <p className="text-sm mb-6" style={{ color: 'var(--admin-text-dim, #6b7280)' }}>
             You don't have permission to view this page. Admin credentials are required.
           </p>
           <button
@@ -69,5 +71,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <AdminThemeProvider>
+      {children}
+    </AdminThemeProvider>
+  );
 }

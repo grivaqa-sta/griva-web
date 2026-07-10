@@ -11,6 +11,7 @@ export type ProfileData = {
   name: string;
   email: string;
   role: string;
+  phone?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -50,7 +51,7 @@ interface UserState {
 
 interface UserContextType {
   state: UserState;
-  login: (user: User, token: string) => void;
+  login: (user: User, token: string) => void | Promise<void>;
   logout: () => void;
   getUserProfile: () => Promise<ProfileData>;
   addAddress: (address: Address) => void;
@@ -187,15 +188,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, [getUserProfile, isAdminPath]);
 
-  const login = (user: User, token: string) => {
+  const login = async (user: User, token: string) => {
     const role = user.role || "customer";
-    setState((prev) => ({ 
-      ...prev, 
-      isLoggedIn: true, 
-      user, 
-      role,
-      token
-    }));
     if (role === "admin") {
       localStorage.setItem("griva_admin_token", token);
       localStorage.setItem("griva_admin_user", JSON.stringify(user));
@@ -207,6 +201,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } else {
       localStorage.setItem("griva_user_token", token);
       localStorage.setItem("griva_user", JSON.stringify(user));
+    }
+
+    setState((prev) => ({ 
+      ...prev, 
+      isLoggedIn: true, 
+      user, 
+      role,
+      token
+    }));
+
+    try {
+      await getUserProfile();
+    } catch (error) {
+      console.error("Error fetching profile on login:", error);
     }
   };
 
@@ -243,9 +251,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setShowBlockModal(true);
       logout();
     };
+    const handleAuthExpired = () => {
+      logout();
+    };
     window.addEventListener("griva-user-blocked", handleBlocked);
+    window.addEventListener("griva-auth-expired", handleAuthExpired);
     return () => {
       window.removeEventListener("griva-user-blocked", handleBlocked);
+      window.removeEventListener("griva-auth-expired", handleAuthExpired);
     };
   }, []);
 

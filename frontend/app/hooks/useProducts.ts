@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { ApiProduct } from "@/app/types/types";
 import { productService } from "@/app/services/product.service";
+import { useQuery } from "../utils/cache";
 
 // ─────────────────────────────────────────────────────────
 // Shared return type
@@ -26,8 +26,6 @@ export interface UseProductResult {
 // ─────────────────────────────────────────────────────────
 function extractProducts(res: any): ApiProduct[] {
   if (!res) return [];
-  // productService returns response.data from axios
-  // Backend shape: { success: true, data: [...] } or { success: true, count: N, data: [...] }
   if (Array.isArray(res)) return res;
   if (Array.isArray(res.data)) return res.data;
   return [];
@@ -47,182 +45,94 @@ export function useAllProducts(params?: {
   minPrice?: number;
   maxPrice?: number;
 }): UseProductsResult {
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const cacheKey = `products_all_${JSON.stringify(params || {})}`;
+  const { data, loading, error, refetch } = useQuery<ApiProduct[]>(
+    cacheKey,
+    async () => {
       const res = await productService.getProducts(params);
-      setProducts(extractProducts(res));
-    } catch (err: any) {
-      console.error("[useAllProducts] Error:", err);
-      setError(err?.message || "Failed to load products");
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [JSON.stringify(params)]);
+      return extractProducts(res);
+    },
+    [JSON.stringify(params)]
+  );
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { products, loading, error, refetch: fetch };
+  return { products: data || [], loading, error, refetch };
 }
 
 // ─────────────────────────────────────────────────────────
 // GET /api/products/best-sellers
 // ─────────────────────────────────────────────────────────
 export function useBestSellerProducts(): UseProductsResult {
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data, loading, error, refetch } = useQuery<ApiProduct[]>(
+    "products_best_sellers",
+    async () => {
       const res = await productService.getBestSellerProducts();
-      setProducts(extractProducts(res));
-    } catch (err: any) {
-      console.error("[useBestSellerProducts] Error:", err);
-      setError(err?.message || "Failed to load best sellers");
-      setProducts([]);
-    } finally {
-      setLoading(false);
+      return extractProducts(res);
     }
-  }, []);
+  );
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { products, loading, error, refetch: fetch };
+  return { products: data || [], loading, error, refetch };
 }
 
 // ─────────────────────────────────────────────────────────
 // GET /api/products/featured
 // ─────────────────────────────────────────────────────────
 export function useFeaturedProducts(): UseProductsResult {
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data, loading, error, refetch } = useQuery<ApiProduct[]>(
+    "products_featured",
+    async () => {
       const res = await productService.getFeaturedProducts();
-      setProducts(extractProducts(res));
-    } catch (err: any) {
-      console.error("[useFeaturedProducts] Error:", err);
-      setError(err?.message || "Failed to load featured products");
-      setProducts([]);
-    } finally {
-      setLoading(false);
+      return extractProducts(res);
     }
-  }, []);
+  );
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { products, loading, error, refetch: fetch };
+  return { products: data || [], loading, error, refetch };
 }
 
 // ─────────────────────────────────────────────────────────
 // GET /api/products/trending
 // ─────────────────────────────────────────────────────────
 export function useTrendingProducts(): UseProductsResult {
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data, loading, error, refetch } = useQuery<ApiProduct[]>(
+    "products_trending",
+    async () => {
       const res = await productService.getTrendingProducts();
-      setProducts(extractProducts(res));
-    } catch (err: any) {
-      console.error("[useTrendingProducts] Error:", err);
-      setError(err?.message || "Failed to load trending products");
-      setProducts([]);
-    } finally {
-      setLoading(false);
+      return extractProducts(res);
     }
-  }, []);
+  );
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { products, loading, error, refetch: fetch };
+  return { products: data || [], loading, error, refetch };
 }
 
 // ─────────────────────────────────────────────────────────
 // GET /api/products/new-arrivals
 // ─────────────────────────────────────────────────────────
 export function useNewArrivalProducts(): UseProductsResult {
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data, loading, error, refetch } = useQuery<ApiProduct[]>(
+    "products_new_arrivals",
+    async () => {
       const res = await productService.getNewArrivalProducts();
-      setProducts(extractProducts(res));
-    } catch (err: any) {
-      console.error("[useNewArrivalProducts] Error:", err);
-      setError(err?.message || "Failed to load new arrivals");
-      setProducts([]);
-    } finally {
-      setLoading(false);
+      return extractProducts(res);
     }
-  }, []);
+  );
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { products, loading, error, refetch: fetch };
+  return { products: data || [], loading, error, refetch };
 }
 
 // ─────────────────────────────────────────────────────────
 // GET /api/products/:id — single product
 // ─────────────────────────────────────────────────────────
-export function useProduct(id: number | null): UseProductResult {
-  const [product, setProduct] = useState<ApiProduct | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
+export function useProduct(id: number | string | null): UseProductResult {
+  const cacheKey = id ? `product_single_${id}` : "product_single_null";
+  const { data, loading, error, refetch } = useQuery<ApiProduct | null>(
+    cacheKey,
+    async () => {
+      if (!id) return null;
       const res = await productService.getProduct(id);
-      setProduct(extractProduct(res));
-    } catch (err: any) {
-      console.error("[useProduct] Error:", err);
-      setError(err?.message || "Product not found");
-      setProduct(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+      return extractProduct(res);
+    },
+    [id]
+  );
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { product, loading, error, refetch: fetch };
+  const isActualLoading = id ? loading : false;
+  return { product: data, loading: isActualLoading, error, refetch };
 }

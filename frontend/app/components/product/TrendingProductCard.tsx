@@ -20,6 +20,7 @@ export default function TrendingProductCard({
   if (!product) return null;
 
   const isWishlisted = isInWishlist(product.id);
+  const isOutOfStock = product.stock === undefined || product.stock === null || product.stock <= 0;
 
   const formatPrice = (price?: string | number) => {
     if (!price) return null;
@@ -122,7 +123,7 @@ export default function TrendingProductCard({
             {product.title}
           </h3>
           {/* Rating */}
-          <div className="flex items-center gap-1.5 flex-wrap min-h-[20px] mt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap min-h-[24px] mt-0.5">
             {(() => {
               const count = product.review_count ?? 0;
               if (count === 0) {
@@ -131,26 +132,15 @@ export default function TrendingProductCard({
                     New Arrival
                   </span>
                 );
-              } else if (count >= 1 && count <= 4) {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] text-gray-400">
-                      ({count})
-                    </span>
-                    <span className="text-[8px] font-bold text-blue-500 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 scale-90 origin-left">
-                      Early Reviews
-                    </span>
-                  </>
-                );
-              } else {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] text-gray-400">({count})</span>
-                  </>
-                );
               }
+              return (
+                <>
+                  <Rating rating={product.rating} />
+                  <span className="text-[9px] text-gray-400">
+                    ({count})
+                  </span>
+                </>
+              );
             })()}
           </div>
           <div className="flex items-end justify-between mt-1">
@@ -164,20 +154,26 @@ export default function TrendingProductCard({
                 </span>
               )}
             </div>
-            <button
-              onClick={handleAddToCart}
-              className="flex items-center justify-center rounded-lg bg-orange-500 p-2 text-white active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
-              aria-label="Add to cart"
-            >
-              <ShoppingCart size={13} strokeWidth={2.2} />
-            </button>
+            {isOutOfStock ? (
+              <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-200">
+                SOLD OUT
+              </span>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                className="flex items-center justify-center rounded-lg bg-orange-500 p-2 text-white active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
+                aria-label="Add to cart"
+              >
+                <ShoppingCart size={13} strokeWidth={2.2} />
+              </button>
+            )}
           </div>
         </div>
       </Link>
 
       {/* ── DESKTOP CARD: original design unchanged ── */}
       <motion.div
-        whileHover={{ y: -4 }}
+        whileHover={!isOutOfStock ? { y: -4 } : {}}
         transition={{ duration: 0.2 }}
         className="hidden sm:block w-full"
       >
@@ -250,7 +246,7 @@ export default function TrendingProductCard({
             </h3>
             <div className="flex items-center justify-between mt-1">
               <div className="flex flex-col leading-tight">
-                <div className="flex items-center gap-1.5 flex-wrap mb-0.5 min-h-[20px]">
+                <div className="flex items-center gap-1.5 flex-wrap mb-0.5 min-h-[24px]">
                   {(() => {
                     const count = product.review_count ?? 0;
                     if (count === 0) {
@@ -259,26 +255,15 @@ export default function TrendingProductCard({
                           New Arrival
                         </span>
                       );
-                    } else if (count >= 1 && count <= 4) {
-                      return (
-                        <>
-                          <Rating rating={product.rating} />
-                          <span className="text-[10px] text-gray-400">
-                            ({count})
-                          </span>
-                          <span className="text-[8px] font-bold text-blue-500 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 scale-90 origin-left">
-                            Early Reviews
-                          </span>
-                        </>
-                      );
-                    } else {
-                      return (
-                        <>
-                          <Rating rating={product.rating} />
-                          <span className="text-[10px] text-gray-400">({count})</span>
-                        </>
-                      );
                     }
+                    return (
+                      <>
+                        <Rating rating={product.rating} />
+                        <span className="text-[10px] text-gray-400">
+                          ({count})
+                        </span>
+                      </>
+                    );
                   })()}
                 </div>
                 <span className="text-base font-bold text-orange-500">
@@ -290,13 +275,19 @@ export default function TrendingProductCard({
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleAddToCart}
-                className="flex items-center justify-center rounded-lg bg-orange-500 p-2.5 text-white hover:bg-orange-600 active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
-                aria-label="Add to cart"
-              >
-                <ShoppingCart size={14} strokeWidth={2.2} />
-              </button>
+              {isOutOfStock ? (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-200">
+                  SOLD OUT
+                </span>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  className="flex items-center justify-center rounded-lg bg-orange-500 p-2.5 text-white hover:bg-orange-600 active:scale-95 transition-all duration-150 cursor-pointer shadow-sm shrink-0"
+                  aria-label="Add to cart"
+                >
+                  <ShoppingCart size={14} strokeWidth={2.2} />
+                </button>
+              )}
             </div>
           </div>
         </Link>

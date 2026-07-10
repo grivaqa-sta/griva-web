@@ -28,6 +28,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
   if (!product) return null;
 
   const isWishlisted = isInWishlist(product.id);
+  const isOutOfStock = product.stock === undefined || product.stock === null || product.stock <= 0;
 
   const formatPrice = (price?: string | number) => {
     if (!price) return null;
@@ -65,21 +66,21 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
 
   return (
     <motion.div
-      whileHover={isDesktop ? { y: -5 } : {}}
+      whileHover={isDesktop && !isOutOfStock ? { y: -2 } : {}}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="group relative flex flex-col overflow-hidden bg-white p-2 transition-all duration-300
-        rounded-none sm:rounded-[24px] sm:p-4
-        border-1 border-gray-200 sm:border sm:border-[#ECECEC]
-        shadow-none sm:shadow-[0_4px_16px_rgba(0,0,0,0.18)]"
+      className="group relative flex flex-col h-full overflow-hidden bg-white p-2 transition-all duration-300
+        rounded-none sm:p-4
+        border border-gray-200 sm:border sm:border-[#ECECEC]
+        shadow-sm sm:shadow-sm"
       onMouseEnter={(e) => {
-        if (!isDesktop) return;
-        e.currentTarget.style.borderColor = "#FF6A0055";
-        e.currentTarget.style.boxShadow = "0 18px 40px rgba(255,106,0,0.14)";
+        if (!isDesktop || isOutOfStock) return;
+        e.currentTarget.style.borderColor = "#FF6A0033";
+        e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.06)";
       }}
       onMouseLeave={(e) => {
-        if (!isDesktop) return;
-        e.currentTarget.style.borderColor = "#ECECEC";
-        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.18)";
+        if (!isDesktop || isOutOfStock) return;
+        e.currentTarget.style.borderColor = "";
+        e.currentTarget.style.boxShadow = "";
       }}
     >
       {/* ── Heart — absolute top right ── */}
@@ -97,11 +98,11 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
         </motion.div>
       </button>
 
-      <Link href={`/product/${product.id}`} className="flex flex-col">
+      <Link href={`/product/${product.id}`} className="flex flex-col flex-1">
 
         {/* ── Image ── */}
         <div
-          className="relative flex h-[130px] items-center justify-center overflow-hidden rounded-none p-3 sm:h-[210px] sm:rounded-[18px] sm:p-6"
+          className="relative flex h-[130px] items-center justify-center overflow-hidden rounded-none p-3 sm:h-[210px] sm:p-6"
         >
 
           {(product.discount_percentage ?? 0) > 0 && (
@@ -139,7 +140,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
         </div>
 
         {/* ── Content ── */}
-        <div className="mt-2 flex flex-col gap-1 sm:mt-3 sm:gap-1.5">
+        <div className="mt-2 flex flex-col gap-1 sm:mt-3 sm:gap-1.5 flex-grow">
 
           {/* Brand — below image, above title */}
           {product.brand && product.brand.trim() !== "" && (
@@ -159,7 +160,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
           </h3>
 
           {/* Rating */}
-          <div className="flex items-center gap-1.5 flex-wrap min-h-[20px]">
+          <div className="flex items-center gap-1.5 flex-wrap min-h-[24px]">
             {(() => {
               const count = product.review_count ?? 0;
               if (count === 0) {
@@ -168,33 +169,20 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
                     New Arrival
                   </span>
                 );
-              } else if (count >= 1 && count <= 4) {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] font-medium text-gray-400">
-                      ({count})
-                    </span>
-                    <span className="text-[8px] font-bold text-blue-500 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 scale-90 origin-left">
-                      Early Reviews
-                    </span>
-                  </>
-                );
-              } else {
-                return (
-                  <>
-                    <Rating rating={product.rating} />
-                    <span className="text-[9px] font-medium text-gray-400">
-                      ({count})
-                    </span>
-                  </>
-                );
               }
+              return (
+                <>
+                  <Rating rating={product.rating} />
+                  <span className="text-[9px] font-medium text-gray-400">
+                    ({count})
+                  </span>
+                </>
+              );
             })()}
           </div>
 
           {/* Price */}
-          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-auto pt-1">
             <span className="flex items-baseline gap-0.5 leading-none">
               <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 sm:text-[10px]">
                 QAR
@@ -217,42 +205,53 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
 
       {/* ── Desktop Buttons ── */}
       <div className="mt-3 hidden grid-cols-2 gap-2.5 sm:grid">
-        <button
-          onClick={handleAddToCart}
-          className="flex h-11 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-all duration-300"
-          style={{ borderColor: "#ECECEC", color: INK, backgroundColor: "transparent" }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = ORANGE;
-            e.currentTarget.style.borderColor = ORANGE;
-            e.currentTarget.style.color = "#fff";
-            e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.borderColor = "#ECECEC";
-            e.currentTarget.style.color = INK;
-            e.currentTarget.style.boxShadow = "none";
-          }}
-        >
-          Add to Cart
-        </button>
-
-        <Link href={`/product/${product.id}`} className="w-full">
+        {isOutOfStock ? (
           <button
-            className="flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300"
-            style={{ backgroundColor: INK, boxShadow: "0 10px 20px rgba(13,13,13,0.2)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = ORANGE;
-              e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = INK;
-              e.currentTarget.style.boxShadow = "0 10px 20px rgba(13,13,13,0.2)";
-            }}
+            disabled
+            className="col-span-2 flex h-11 w-full items-center justify-center rounded-[10px] bg-gray-100 text-xs font-bold uppercase text-gray-400 cursor-not-allowed border border-gray-200"
           >
-            Buy Now
+            Out of Stock
           </button>
-        </Link>
+        ) : (
+          <>
+            <button
+              onClick={handleAddToCart}
+              className="flex h-11 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-all duration-300"
+              style={{ borderColor: "#ECECEC", color: INK, backgroundColor: "transparent" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = ORANGE;
+                e.currentTarget.style.borderColor = ORANGE;
+                e.currentTarget.style.color = "#fff";
+                e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.borderColor = "#ECECEC";
+                e.currentTarget.style.color = INK;
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              Add to Cart
+            </button>
+
+            <Link href={`/product/${product.id}`} className="w-full">
+              <button
+                className="flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300"
+                style={{ backgroundColor: INK, boxShadow: "0 10px 20px rgba(13,13,13,0.2)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = ORANGE;
+                  e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = INK;
+                  e.currentTarget.style.boxShadow = "0 10px 20px rgba(13,13,13,0.2)";
+                }}
+              >
+                Buy Now
+              </button>
+            </Link>
+          </>
+        )}
       </div>
     </motion.div>
   );

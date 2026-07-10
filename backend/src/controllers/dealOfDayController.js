@@ -1,7 +1,6 @@
 const { Op } = require("sequelize");
 
-const DealOfDay = require("../models/DealOfDay");
-const Product = require("../models/Product");
+const { DealOfDay, Product } = require("../models");
 
 /**
  * Create Deal Of Day
@@ -59,6 +58,12 @@ exports.getActiveDealOfDay = async (req, res) => {
     const deals = await DealOfDay.findAll({
       where: {
         isActive: true,
+        startDate: {
+          [Op.lte]: now,
+        },
+        endDate: {
+          [Op.gte]: now,
+        },
       },
       include: [
         {

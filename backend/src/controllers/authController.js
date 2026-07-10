@@ -3,6 +3,7 @@ const Order = require("../models/Order");
 const { Op } = require("sequelize");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { sendPasswordResetEmail } = require("../services/brevoService");
 
 /**
  * Generate JWT Token
@@ -188,6 +189,12 @@ exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
+    // Always return generic success to prevent user enumeration attacks
+    const genericResponse = {
+      success: true,
+      message: "If that email is registered, a password reset link has been sent.",
+    };
+
     const user = await User.findOne({
       where: {
         email: email.toLowerCase().trim(),
@@ -195,38 +202,44 @@ exports.forgotPassword = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found.",
-      });
+      return res.status(200).json(genericResponse);
     }
 
+    // Generate raw token (sent to user via email) and hashed token (stored in DB)
     const resetToken = crypto
       .randomBytes(32)
       .toString("hex");
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
     const resetPasswordExpire =
       Date.now() + 15 * 60 * 1000;
 
     await user.update({
-      resetPasswordToken: resetToken,
+      resetPasswordToken: hashedToken,
       resetPasswordExpire,
     });
     let resetUrl;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     if(user.role === "customer"){
-        resetUrl =`${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
+        resetUrl =`${frontendUrl}/auth/reset-password/${resetToken}`;
     }else{
-        resetUrl =`${process.env.FRONTEND_URL}/admin/auth/reset-password/${resetToken}`;
+        resetUrl =`${frontendUrl}/admin/auth/reset-password/${resetToken}`;
     }
     
     console.log("Reset URL:", resetUrl);
 
-    return res.status(200).json({
-      success: true,
-      message:
-        "Password reset link generated.",
-      resetUrl,
-    });
+    try {
+      await sendPasswordResetEmail(user.email, user.name, resetUrl);
+    } catch (emailErr) {
+      console.error("Failed to send password reset email:", emailErr.message);
+      // We still return 200/success or return a warning in dev mode
+    }
+
+    return res.status(200).json(genericResponse);
   } catch (error) {
     next(error);
   }
@@ -238,10 +251,16 @@ exports.resetPassword = async (req, res, next) => {
     const { token } = req.params;
     const { password } = req.body;
 
+    // Hash the incoming token to compare against the stored hashed token
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
     const user = await User.scope("withPassword")
       .findOne({
         where: {
-          resetPasswordToken: token,
+          resetPasswordToken: hashedToken,
         },
       });
 
@@ -262,6 +281,14 @@ exports.resetPassword = async (req, res, next) => {
       });
     }
 
+    const isSamePassword = await user.comparePassword(password);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be the same as your current password.",
+      });
+    }
+
     user.password = password;
 
     user.resetPasswordToken = null;
@@ -273,6 +300,42 @@ exports.resetPassword = async (req, res, next) => {
       success: true,
       message:
         "Password updated successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update Logged In User Profile
+ * PUT /api/auth/profile
+ */
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const { name, phone } = req.body;
+    
+    if (name !== undefined) {
+      user.name = name;
+    }
+    if (phone !== undefined) {
+      user.phone = phone;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      user,
     });
   } catch (error) {
     next(error);

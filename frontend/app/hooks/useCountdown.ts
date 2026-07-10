@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CountdownTime } from "@/app/types/types";
 
-export function useCountdown(target: number | string): CountdownTime {
+export function useCountdown(target?: number | string | null): CountdownTime {
   const [time, setTime] = useState<CountdownTime>({
     hours: typeof target === "number" ? target : 0,
     mins: 0,
@@ -11,6 +11,11 @@ export function useCountdown(target: number | string): CountdownTime {
   });
 
   useEffect(() => {
+    if (!target) {
+      setTime({ hours: 0, mins: 0, secs: 0 });
+      return;
+    }
+
     let initialHours = typeof target === "number" ? target : 0;
     let initialMins = 0;
     let initialSecs = 0;

@@ -57,6 +57,8 @@ export interface AddressRequest {
   city?: string;
   country?: string;
   isDefault?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Address {
@@ -77,6 +79,8 @@ export interface Address {
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -132,9 +136,13 @@ export interface SubCategory {
 // Product Types
 // ─────────────────────────────────────────────────────────
 export interface ApiProductVariant {
-  color: string;
-  size: string;
-};
+  combination: Record<string, string>;
+  stock: number;
+  sku?: string;
+  price?: string | number;
+  old_price?: string | number;
+  images?: string[];
+}
 
 export interface ProductSpecification {
   name: string;
@@ -156,6 +164,7 @@ export interface ProductRequest {
   main_image_url: string;
   gallery_images?: string[];
   variants?: ApiProductVariant[];
+  attributes?: { name: string; values: string[] }[];
   specifications?: ProductSpecification[];
   tags?: string[];
   is_featured?: boolean;
@@ -186,6 +195,8 @@ export interface ApiProduct {
   main_image_url: string;
   gallery_images?: string[];
   variants?: { color?: string; size?: string }[];
+  attributes?: { name: string; values: string[] }[];
+  productVariants?: DynamicProductVariant[];
   specifications?: { name: string; value: string }[];
   tags?: string[];
   rating: number;
@@ -239,9 +250,59 @@ export interface HeroSlide {
   mobile_ad_banner: string;
 }
 
+
+// ─────────────────────────────────────────────────────────
+// Product Banner Types
+// ─────────────────────────────────────────────────────────
+export interface ProductBannerProduct {
+  id: number;
+  title: string;
+  slug: string;
+  main_image_url: string;
+  price: number;
+}
+
+export interface ProductBanner {
+  id: number;
+  productId: number;
+  title: string;
+  subtitle?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  product?: ProductBannerProduct;
+}
+
+export interface ProductBannerRequest {
+  productId: number;
+  title: string;
+  subtitle?: string;
+  isActive?: boolean;
+}
+
+export interface ProductBannerUpdateRequest {
+  productId?: number;
+  title?: string;
+  subtitle?: string;
+  isActive?: boolean;
+}
+
+
 // ─────────────────────────────────────────────────────────
 // Core Product Types
 // ─────────────────────────────────────────────────────────
+
+export interface DynamicProductVariant {
+  id: number;
+  product_id: number;
+  combination: Record<string, string>;
+  stock: number;
+  sku?: string;
+  price?: string;
+  images?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface ProductVariant {
   label: string;
@@ -271,6 +332,8 @@ export interface Review {
 
 export interface Product {
   id: number;
+  slug?: string;
+  isTrending?: boolean;
   category: string;
   title: string;
   image: string | StaticImageData;
@@ -297,6 +360,7 @@ export interface Product {
 export interface DealProduct {
   id: number;
   title: string;
+  slug?: string;
   main_image_url?: string;
   gallery_images?: string[];
   price?: string | number;
@@ -307,6 +371,7 @@ export interface DealProduct {
   rating?: number;
   short_description?: string;
   description?: string;
+  stock?: number;
 }
 
 export interface Deal {
@@ -355,10 +420,15 @@ export interface CartItem {
   image: string | StaticImageData;
   price: string;
   priceNumber: number;
+  oldPriceNumber: number;
   quantity: number;
   selectedColor?: string;
   selectedStorage?: string;
+  variantId?: number;
+  selectedAttributes?: Record<string, string>;
   category: string;
+  slug?: string;
+  sku?: string;
 }
 
 export type CartAction =
@@ -372,6 +442,7 @@ export interface CartState {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
+  totalOldPrice: number;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -386,6 +457,8 @@ export interface WishlistItem {
   oldPrice?: string;
   rating: number;
   category: string;
+  stock?: number;
+  slug?: string;
 }
 
 // ─────────────────────────────────────────────────────────

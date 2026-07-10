@@ -8,11 +8,20 @@ const { authenticateJWT, isAdmin } = require("../middleware/auth");
 // GET  /api/delivery/my-orders  — Today's assigned orders
 router.get("/my-orders", authenticateDelivery, deliveryController.getMyOrders);
 
+// GET  /api/delivery/orders/:id  — Specific order details
+router.get("/orders/:id", authenticateDelivery, deliveryController.getOrderDetails);
+
 // PATCH /api/delivery/orders/:id/status  — Update order status (assigned → out_for_delivery → delivered)
 router.patch("/orders/:id/status", authenticateDelivery, deliveryController.updateMyOrderStatus);
 
 // GET  /api/delivery/history  — Last 7 days completed deliveries
 router.get("/history", authenticateDelivery, deliveryController.getMyDeliveryHistory);
+
+// GET  /api/delivery/my-returns  — Assigned return/pickup tasks
+router.get("/my-returns", authenticateDelivery, deliveryController.getMyReturns);
+
+// PATCH /api/delivery/returns/:id/status  — Update return task status (completed_replacement or completed_refund)
+router.patch("/returns/:id/status", authenticateDelivery, deliveryController.updateReturnStatus);
 
 // ─────────────────────────────────────────────────────────
 // DRIVER NOTIFICATIONS

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
 import { useCart } from "@/app/context/CartContext";
 import { addressService } from "@/app/services/address.service";
 import { orderService } from "@/app/services/order.service";
+import { cartService } from "@/app/services/cart.service";
 import { Address, CartState } from "@/app/types/types";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import {
@@ -24,10 +25,13 @@ import {
   ChevronRight,
   Trash2,
   Clock,
+  Tag,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { getSettingsApi, getDeliverySlotsApi } from "@/app/utils/api";
+import { useToast } from "@/app/context/ToastContext";
 
 // ─────────────────────────────────────────────────────────
 // Types
@@ -43,6 +47,7 @@ interface CheckoutForm {
   phone: string;
   email: string;
   area: string;
+  zone: string;
   street: string;
   buildingNumber: string;
   villaApartment: string;
@@ -50,13 +55,16 @@ interface CheckoutForm {
   landmark: string;
   deliveryNotes: string;
   deliverySlotId: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const INITIAL_FORM: CheckoutForm = {
   fullName: "",
-  phone: "+974",
+  phone: "",
   email: "",
   area: "",
+  zone: "",
   street: "",
   buildingNumber: "",
   villaApartment: "",
@@ -64,6 +72,20 @@ const INITIAL_FORM: CheckoutForm = {
   landmark: "",
   deliveryNotes: "",
   deliverySlotId: "",
+  latitude: undefined,
+  longitude: undefined,
+};
+
+const extractQatarLocalNumber = (phoneStr: string): string => {
+  if (!phoneStr) return "";
+  const cleaned = phoneStr.replace(/\D/g, ""); // only digits
+  if (cleaned.startsWith("00974")) {
+    return cleaned.slice(5).slice(0, 8);
+  }
+  if (cleaned.startsWith("974")) {
+    return cleaned.slice(3).slice(0, 8);
+  }
+  return cleaned.slice(0, 8);
 };
 
 // ─────────────────────────────────────────────────────────
@@ -73,15 +95,120 @@ export default function CheckoutPage() {
   const { state: userState, isAuthenticated, isCustomer } = useUser();
   const { state: cartState, dispatch: cartDispatch } = useCart();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const [mounted, setMounted] = useState(false);
+  const [isBuyNow, setIsBuyNow] = useState(false);
+  const [buyNowItem, setBuyNowItem] = useState<any | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const isSubmitRef = useRef(false);
   const [orderError, setOrderError] = useState("");
-  const [stockErrors, setStockErrors] = useState<Record<number, { title: string; availableStock: number }>>({});
+  const [stockErrors, setStockErrors] = useState<Record<string | number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
+  const hasShownStockToastRef = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    const buyNowParam = params.get("buyNow") === "true";
+    if (buyNowParam) {
+      setIsBuyNow(true);
+      const stored = sessionStorage.getItem("griva-buynow-item");
+      if (stored) {
+        try {
+          const item = JSON.parse(stored);
+          const fullItem = {
+            id: Date.now(),
+            productId: item.productId,
+            title: item.title,
+            image: item.image,
+            price: item.price,
+            priceNumber: item.priceNumber,
+            oldPriceNumber: item.oldPriceNumber || item.priceNumber,
+            quantity: item.quantity,
+            category: item.category,
+            selectedColor: item.selectedColor,
+            selectedStorage: item.selectedStorage,
+            slug: item.slug,
+          };
+          setBuyNowItem(fullItem);
+          setSelectedItemIds(new Set([fullItem.id]));
+        } catch (err) {
+          console.error("Failed to parse buyNowItem:", err);
+        }
+      }
+    }
+  }, []);
+
+  // Initialize selectedItemIds with all cart items (only if not Buy Now mode)
+  useEffect(() => {
+    if (!isBuyNow && cartState.items.length > 0) {
+      setSelectedItemIds((prev) => {
+        const next = new Set(prev);
+        cartState.items.forEach((item) => {
+          next.add(item.id);
+        });
+        return next;
+      });
+    }
+  }, [cartState.items, isBuyNow]);
+
+  const toggleItemSelection = (id: number) => {
+    if (isBuyNow) return;
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectedItems = useMemo(() => {
+    return isBuyNow && buyNowItem
+      ? [buyNowItem]
+      : cartState.items.filter((item) => selectedItemIds.has(item.id));
+  }, [isBuyNow, buyNowItem, cartState.items, selectedItemIds]);
+
+  const selectedTotalPrice = useMemo(() => {
+    return selectedItems.reduce(
+      (sum, item) => sum + item.priceNumber * item.quantity,
+      0
+    );
+  }, [selectedItems]);
+
+  const selectedTotalOldPrice = useMemo(() => {
+    return selectedItems.reduce(
+      (sum, item) => sum + (item.oldPriceNumber || item.priceNumber) * item.quantity,
+      0
+    );
+  }, [selectedItems]);
+
+  const selectedTotalItems = useMemo(() => {
+    return selectedItems.reduce((sum, item) => sum + item.quantity, 0);
+  }, [selectedItems]);
+
+  const effectiveCartState = useMemo(() => {
+    return {
+      items: selectedItems,
+      totalItems: selectedTotalItems,
+      totalPrice: selectedTotalPrice,
+      totalOldPrice: selectedTotalOldPrice,
+    };
+  }, [selectedItems, selectedTotalItems, selectedTotalPrice, selectedTotalOldPrice]);
 
   // Frozen cart state to prevent UI reset during order placement transitions
   const [frozenCart, setFrozenCart] = useState<CartState | null>(null);
-  const activeCart = frozenCart || cartState;
+  const activeCart: CartState = frozenCart || {
+    items: isBuyNow && buyNowItem ? [buyNowItem] : cartState.items,
+    totalItems: selectedTotalItems,
+    totalPrice: selectedTotalPrice,
+    totalOldPrice: selectedTotalOldPrice,
+  };
 
   // Form state
   const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM);
@@ -93,8 +220,97 @@ export default function CheckoutPage() {
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [useNewAddress, setUseNewAddress] = useState(false);
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const [checkoutToken, setCheckoutToken] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationSuccess, setLocationSuccess] = useState(false);
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocating(true);
+    setLocationSuccess(false);
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 0
+    };
+
+    const successCallback = async (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      setForm((prev) => ({ ...prev, latitude, longitude }));
+      
+      try {
+        // Fetch reverse geocoding from OpenStreetMap Nominatim with an explicit User-Agent as required by their policy
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              "Accept-Language": "en",
+              "User-Agent": "GrivaEcommerce/1.0"
+            }
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const addr = data.address || {};
+          const streetName = addr.road || addr.suburb || addr.neighbourhood || "";
+          const areaName = addr.quarter || addr.suburb || addr.city_district || addr.town || addr.city || "";
+          const zoneNum = addr.postcode || "";
+          
+          setForm((prev) => ({
+            ...prev,
+            area: areaName || prev.area,
+            street: streetName || prev.street,
+            zone: zoneNum.match(/^\d+$/) ? zoneNum : prev.zone,
+          }));
+          setLocationSuccess(true);
+          toast.success("Location coordinates and address details retrieved successfully!");
+        } else {
+          setLocationSuccess(true);
+          toast.success("Location coordinates saved!");
+        }
+      } catch (err) {
+        console.error("Reverse geocoding error:", err);
+        setLocationSuccess(true);
+        toast.success("Location coordinates saved!");
+      } finally {
+        setLocating(false);
+      }
+    };
+
+    const errorCallback = (error: GeolocationPositionError) => {
+      // If high accuracy failed/timed out, try fallback with low accuracy
+      if (options.enableHighAccuracy && (error.code === 3 || error.code === 2)) {
+        console.log("High accuracy geolocation failed/timeout. Retrying with low accuracy...");
+        options.enableHighAccuracy = false;
+        options.timeout = 10000;
+        navigator.geolocation.getCurrentPosition(successCallback, finalErrorCallback, options);
+      } else {
+        finalErrorCallback(error);
+      }
+    };
+
+    const finalErrorCallback = (error: GeolocationPositionError) => {
+      setLocating(false);
+      console.error("Geolocation error:", error);
+      if (error.code === 1) {
+        toast.error(
+          "Location permission is blocked! Please click the 'Not Secure' / Info icon (or Lock icon) in your browser address bar next to localhost:3000, then toggle Location access to ALLOW."
+        );
+      } else if (error.code === 3) {
+        toast.error("Location request timed out. Please try again or type your address manually.");
+      } else {
+        toast.error("Unable to retrieve your location. Please check your browser/device settings or type your address manually.");
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
+  };
 
   useEffect(() => {
     // Generate checkout token on cart change
@@ -102,7 +318,7 @@ export default function CheckoutPage() {
       ? window.crypto.randomUUID() 
       : Math.random().toString(36).substring(2) + Date.now().toString(36);
     setCheckoutToken(token);
-  }, [cartState.items]);
+  }, [effectiveCartState.items]);
   // Shipping config from backend
   const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
     shippingFee: 10,
@@ -146,13 +362,80 @@ export default function CheckoutPage() {
   // Pre-fill form for logged-in users
   useEffect(() => {
     if (isLoggedIn && userState.user) {
+      const profilePhone = extractQatarLocalNumber(userState.profileData?.phone || "");
       setForm((prev) => ({
         ...prev,
         fullName: prev.fullName || userState.user?.name || "",
         email: prev.email || userState.user?.email || "",
+        phone: profilePhone || prev.phone,
       }));
     }
-  }, [isLoggedIn, userState.user]);
+  }, [isLoggedIn, userState.user, userState.profileData]);
+
+  // Sync form contact details when selected address changes
+  useEffect(() => {
+    if (isLoggedIn && !useNewAddress && selectedAddress) {
+      const profilePhone = extractQatarLocalNumber(userState.profileData?.phone || "");
+      setForm((prev) => ({
+        ...prev,
+        fullName: selectedAddress.fullName || prev.fullName,
+        phone: profilePhone || extractQatarLocalNumber(selectedAddress.mobile) || prev.phone,
+      }));
+    }
+  }, [selectedAddress, isLoggedIn, useNewAddress, userState.profileData]);
+
+  // Validate inventory in real-time
+  useEffect(() => {
+    let active = true;
+    const validateCartInventory = async () => {
+      if (effectiveCartState.items.length === 0) return;
+      
+      const newStockErrors: Record<number, { title: string; availableStock: number }> = {};
+      let hasErrors = false;
+      
+      try {
+        await Promise.all(
+          effectiveCartState.items.map(async (item) => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${item.productId}`);
+            if (res.ok && active) {
+              const data = await res.json();
+              const serverProd = data.data;
+              if (serverProd && active) {
+                if (!serverProd.is_active || serverProd.stock < item.quantity) {
+                  newStockErrors[item.productId] = {
+                    title: item.title,
+                    availableStock: serverProd.is_active ? serverProd.stock : 0,
+                  };
+                  hasErrors = true;
+                }
+              }
+            }
+          })
+        );
+        
+        if (!active) return;
+        setStockErrors(newStockErrors);
+        if (hasErrors) {
+          setOrderError("Some items in your cart are no longer available.");
+          if (!hasShownStockToastRef.current) {
+            toast.error("Some items in your cart are no longer available.");
+            hasShownStockToastRef.current = true;
+          }
+        } else {
+          hasShownStockToastRef.current = false;
+        }
+      } catch (err) {
+        if (active) {
+          console.error("Failed to pre-validate inventory:", err);
+        }
+      }
+    };
+
+    validateCartInventory();
+    return () => {
+      active = false;
+    };
+  }, [effectiveCartState.items, toast]);
 
   // Fetch saved addresses for logged-in users
   useEffect(() => {
@@ -188,14 +471,27 @@ export default function CheckoutPage() {
 
   // Redirect if cart is empty (but not while placing order)
   useEffect(() => {
-    if (isPlacingOrder) return;
-    if (cartState.items.length === 0) {
+    if (!mounted || isPlacingOrder) return;
+    if (isBuyNow) {
+      const stored = sessionStorage.getItem("griva-buynow-item");
+      if (!stored) {
+        router.push("/cart");
+      }
+    } else if (cartState.items.length === 0) {
       router.push("/cart");
     }
-  }, [cartState.items.length, router, isPlacingOrder]);
+  }, [mounted, cartState.items.length, isBuyNow, router, isPlacingOrder]);
 
-  if (!isPlacingOrder && cartState.items.length === 0) {
+  if (!mounted) {
     return null;
+  }
+
+  if (!isPlacingOrder) {
+    if (isBuyNow) {
+      if (!buyNowItem) return null;
+    } else if (cartState.items.length === 0) {
+      return null;
+    }
   }
 
   // Calculate totals
@@ -204,9 +500,6 @@ export default function CheckoutPage() {
       ? 0
       : shippingConfig.shippingFee;
   const orderTotal = activeCart.totalPrice + shippingCost;
-
-  // Selected saved address
-  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
   // Form field handler
   const updateForm = (field: keyof CheckoutForm, value: string) => {
@@ -222,38 +515,44 @@ export default function CheckoutPage() {
   );
   const hasStockErrors = activeStockErrors.length > 0;
 
-  const handleUpdateStockQty = (itemId: number, productId: number, availableStock: number) => {
+  const handleUpdateStockQty = (itemId: number, errorKey: string, availableStock: number) => {
     cartDispatch({
       type: "UPDATE_QTY",
       payload: { id: itemId, quantity: availableStock },
     });
     setStockErrors((prev) => {
       const next = { ...prev };
-      delete next[productId];
+      delete next[errorKey];
       return next;
     });
     // Clear top error message if there are no more active stock errors
     const remaining = Object.keys(stockErrors).filter(
-      (id) => Number(id) !== productId && activeCart.items.some((item) => item.productId === Number(id))
+      (key) => String(key) !== String(errorKey) && activeCart.items.some((item) => {
+        const itemKey = item.variantId ? `${item.productId}-${item.variantId}` : String(item.productId);
+        return itemKey === key;
+      })
     );
     if (remaining.length === 0) {
       setOrderError("");
     }
   };
 
-  const handleRemoveStockItem = (itemId: number, productId: number) => {
+  const handleRemoveStockItem = (itemId: number, errorKey: string) => {
     cartDispatch({
       type: "REMOVE",
       payload: { id: itemId },
     });
     setStockErrors((prev) => {
       const next = { ...prev };
-      delete next[productId];
+      delete next[errorKey];
       return next;
     });
     // Clear top error message if there are no more active stock errors
     const remaining = Object.keys(stockErrors).filter(
-      (id) => Number(id) !== productId && activeCart.items.some((item) => item.productId === Number(id))
+      (key) => String(key) !== String(errorKey) && activeCart.items.some((item) => {
+        const itemKey = item.variantId ? `${item.productId}-${item.variantId}` : String(item.productId);
+        return itemKey === key;
+      })
     );
     if (remaining.length === 0) {
       setOrderError("");
@@ -263,36 +562,127 @@ export default function CheckoutPage() {
   // Validation
   const validateForm = (): boolean => {
     const errors: Partial<Record<keyof CheckoutForm, string>> = {};
-
-    // If logged in and using saved address, only validate contact info
     const needsAddressValidation = !isLoggedIn || useNewAddress || !selectedAddress;
+    let hasRequiredMissing = false;
+    let firstErrorMsg = "";
 
-    if (!form.fullName.trim()) errors.fullName = "Full name is required";
-    
-    // HIGH-5: Strict Qatar phone validation
-    const cleanedPhone = form.phone.trim().replace(/[\s\-\(\)]/g, "");
-    const qatarPhoneRegex = /^(?:\+?974|00974)?[3567]\d{7}$/;
-    if (!qatarPhoneRegex.test(cleanedPhone)) {
-      errors.phone = "Invalid Qatar phone format. Enter an 8-digit number (optionally starting with +974) starting with 3, 5, 6, or 7.";
+    // Full Name validation: Min 3, Max 80
+    const nameVal = form.fullName.trim();
+    if (!nameVal) {
+      errors.fullName = "Full name is required";
+      if (!firstErrorMsg) firstErrorMsg = "Please enter your full name.";
+      hasRequiredMissing = true;
+    } else if (nameVal.length < 3 || nameVal.length > 80) {
+      errors.fullName = "Full name must be between 3 and 80 characters";
+      if (!firstErrorMsg) firstErrorMsg = "Full name must be between 3 and 80 characters.";
     }
-    
-    if (!form.email.trim()) {
+
+    // Phone validation: exactly 8 digits starting with 3, 5, 6, 7
+    const phoneVal = form.phone.trim();
+    if (!phoneVal) {
+      errors.phone = "Phone number is required";
+      if (!firstErrorMsg) firstErrorMsg = "Please enter a valid Qatar phone number.";
+      hasRequiredMissing = true;
+    } else {
+      const qatarLocalRegex = /^[3567]\d{7}$/;
+      if (!qatarLocalRegex.test(phoneVal)) {
+        errors.phone = "Please enter an 8-digit Qatar phone number starting with 3, 5, 6, or 7.";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter a valid Qatar phone number.";
+      }
+    }
+
+    // Email validation: Max 120
+    const emailVal = form.email.trim();
+    if (!emailVal) {
       errors.email = "Email address is required";
+      if (!firstErrorMsg) firstErrorMsg = "Please enter your email address.";
+      hasRequiredMissing = true;
+    } else if (emailVal.length > 120) {
+      errors.email = "Email must not exceed 120 characters";
+      if (!firstErrorMsg) firstErrorMsg = "Email must not exceed 120 characters.";
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(form.email.trim())) {
+      if (!emailRegex.test(emailVal)) {
         errors.email = "Invalid email address format";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter a valid email address.";
       }
     }
 
     if (needsAddressValidation) {
-      if (!form.area.trim()) errors.area = "Area is required";
-      if (!form.street.trim()) errors.street = "Street is required";
-      if (!form.buildingNumber.trim()) errors.buildingNumber = "Building number is required";
+      // Area: Max 100
+      const areaVal = form.area.trim();
+      if (!areaVal) {
+        errors.area = "Area is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your area or district.";
+        hasRequiredMissing = true;
+      } else if (areaVal.length > 100) {
+        errors.area = "Area must not exceed 100 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Area / District must not exceed 100 characters.";
+      }
+
+      // Zone Number: Required, numeric only, max 3 digits
+      const zoneVal = form.zone.trim();
+      if (!zoneVal) {
+        errors.zone = "Zone number is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your zone number.";
+        hasRequiredMissing = true;
+      } else if (!/^\d{1,3}$/.test(zoneVal)) {
+        errors.zone = "Zone number must be numeric (max 3 digits)";
+        if (!firstErrorMsg) firstErrorMsg = "Zone number must be numeric (max 3 digits).";
+      }
+
+      // Street: Max 120
+      const streetVal = form.street.trim();
+      if (!streetVal) {
+        errors.street = "Street is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your street name.";
+        hasRequiredMissing = true;
+      } else if (streetVal.length > 120) {
+        errors.street = "Street must not exceed 120 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Street must not exceed 120 characters.";
+      }
+
+      // Building Number: Max 30
+      const bldgVal = form.buildingNumber.trim();
+      if (!bldgVal) {
+        errors.buildingNumber = "Building number is required";
+        if (!firstErrorMsg) firstErrorMsg = "Please enter your building number.";
+        hasRequiredMissing = true;
+      } else if (bldgVal.length > 30) {
+        errors.buildingNumber = "Building number must not exceed 30 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Building number must not exceed 30 characters.";
+      }
+
+      // Villa / Apartment: Max 50
+      if (form.villaApartment.trim().length > 50) {
+        errors.villaApartment = "Villa / Apartment must not exceed 50 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Villa / Apartment must not exceed 50 characters.";
+      }
+
+      // Floor: Max 20
+      if (form.floor.trim().length > 20) {
+        errors.floor = "Floor must not exceed 20 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Floor must not exceed 20 characters.";
+      }
+
+      // Landmark: Max 150
+      if (form.landmark.trim().length > 150) {
+        errors.landmark = "Landmark must not exceed 150 characters";
+        if (!firstErrorMsg) firstErrorMsg = "Landmark must not exceed 150 characters.";
+      }
     }
 
-    if (!selectedSlotId) {
-      errors.deliverySlotId = "Preferred delivery slot is required";
+    // Delivery Notes: Max 300
+    if (form.deliveryNotes.trim().length > 300) {
+      errors.deliveryNotes = "Delivery notes must not exceed 300 characters";
+      if (!firstErrorMsg) firstErrorMsg = "Delivery notes must not exceed 300 characters.";
+    }
+
+    // Show only the first error message toast
+    if (firstErrorMsg) {
+      toast.error(firstErrorMsg);
+    } else if (hasRequiredMissing) {
+      toast.error("Please complete all required fields.");
     }
 
     setFormErrors(errors);
@@ -321,6 +711,7 @@ export default function CheckoutPage() {
       form.villaApartment,
       form.street,
       form.area,
+      form.zone && `Zone ${form.zone}`,
       form.floor && `Floor ${form.floor}`,
       form.landmark && `Near ${form.landmark}`,
       "Doha",
@@ -331,13 +722,15 @@ export default function CheckoutPage() {
 
   // Place order handler
   const handlePlaceOrder = async () => {
+    if (isPlacingOrder || isSubmitRef.current) return;
     if (!validateForm()) {
       setOrderError("Please fill in all required fields.");
       return;
     }
 
-    setFrozenCart(cartState);
+    setFrozenCart(effectiveCartState);
     setIsPlacingOrder(true);
+    isSubmitRef.current = true;
     setOrderError("");
 
     try {
@@ -345,21 +738,32 @@ export default function CheckoutPage() {
         isLoggedIn && !useNewAddress && selectedAddress
           ? selectedAddress.fullName
           : form.fullName;
-      const customerPhone =
+      const rawPhone =
         isLoggedIn && !useNewAddress && selectedAddress
           ? form.phone || selectedAddress.mobile
           : form.phone;
+      
+      const normalizedPhone = rawPhone.startsWith("+974") || rawPhone.startsWith("00974")
+        ? rawPhone
+        : `+974${rawPhone}`;
+
+      const customerPhone = normalizedPhone;
       const customerCity =
         isLoggedIn && !useNewAddress && selectedAddress
           ? selectedAddress.city
           : "Doha";
 
       const response = await orderService.createOrder({
-        items: cartState.items.map((item) => ({
+        items: effectiveCartState.items.map((item) => ({
           product_id: item.productId,
           quantity: item.quantity,
           selectedColor: item.selectedColor,
           selectedStorage: item.selectedStorage,
+          variantId: item.variantId,
+          variant_id: item.variantId,
+          selectedAttributes: item.selectedAttributes,
+          selected_attributes: item.selectedAttributes,
+          sku: item.sku,
         })),
         shipping_address: buildShippingAddress(),
         customer_name: customerName,
@@ -370,6 +774,8 @@ export default function CheckoutPage() {
         city: customerCity,
         delivery_slot_id: selectedSlotId || undefined,
         checkout_token: checkoutToken, // Pass checkout token for idempotency
+        latitude: isLoggedIn && !useNewAddress && selectedAddress ? selectedAddress.latitude : form.latitude,
+        longitude: isLoggedIn && !useNewAddress && selectedAddress ? selectedAddress.longitude : form.longitude,
       });
 
       if (response.success) {
@@ -399,8 +805,32 @@ export default function CheckoutPage() {
           }
         } catch {}
 
-        // Clear frontend cart state
-        cartDispatch({ type: "CLEAR" });
+        // Clear ordered items from the cart (sequentially to avoid race conditions/lockups)
+        if (isBuyNow) {
+          sessionStorage.removeItem("griva-buynow-item");
+        } else {
+          for (const item of effectiveCartState.items) {
+            if (isLoggedIn) {
+              await cartService.removeItem(item.id).catch((err) => {
+                console.error(`Failed to remove item ${item.id} from DB cart:`, err);
+              });
+            } else {
+              cartDispatch({ type: "REMOVE", payload: { id: item.id } });
+            }
+          }
+
+          // For logged-in users, sync the context cart state once at the end
+          if (isLoggedIn) {
+            try {
+              const res = await cartService.getCart();
+              if (res.success && res.cart) {
+                cartDispatch({ type: "SET_CART", payload: res.cart.items });
+              }
+            } catch (err) {
+              console.error("Failed to sync cart after removal:", err);
+            }
+          }
+        }
 
         // Navigate to success page (exposing order number & slot only, omitting total price URL param)
         const selectedSlot = deliverySlots.find((s) => s.id === selectedSlotId);
@@ -411,6 +841,7 @@ export default function CheckoutPage() {
       } else {
         setOrderError(response.message || "Failed to place order. Please try again.");
         setIsPlacingOrder(false);
+        isSubmitRef.current = false;
         setFrozenCart(null);
       }
     } catch (error: any) {
@@ -423,9 +854,10 @@ export default function CheckoutPage() {
       const details = error.response?.data?.details;
 
       if (code === "INSUFFICIENT_STOCK" && details) {
+        const errorKey = details.variantId ? `${details.productId}-${details.variantId}` : details.productId;
         setStockErrors((prev) => ({
           ...prev,
-          [details.productId]: {
+          [errorKey]: {
             title: details.title,
             availableStock: details.availableStock,
           },
@@ -437,11 +869,12 @@ export default function CheckoutPage() {
         if (match) {
           const title = match[1];
           const availableStock = parseInt(match[2], 10);
-          const item = cartState.items.find((i) => i.title === title);
+          const item = effectiveCartState.items.find((i) => i.title === title);
           if (item) {
+            const errorKey = item.variantId ? `${item.productId}-${item.variantId}` : item.productId;
             setStockErrors((prev) => ({
               ...prev,
-              [item.productId]: { title, availableStock },
+              [errorKey]: { title, availableStock },
             }));
           }
         }
@@ -449,6 +882,7 @@ export default function CheckoutPage() {
 
       setOrderError(errMsg);
       setIsPlacingOrder(false);
+      isSubmitRef.current = false;
       setFrozenCart(null);
     }
   };
@@ -520,11 +954,12 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Enter your full name"
+                      maxLength={80}
                       value={form.fullName}
                       onChange={(e) => updateForm("fullName", e.target.value)}
                       className={`block w-full rounded-xl border ${
                         formErrors.fullName ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                     />
                   </div>
                   {formErrors.fullName && (
@@ -537,16 +972,23 @@ export default function CheckoutPage() {
                   <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
                     Phone Number <span className="text-red-400">*</span>
                   </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className={`flex rounded-xl border ${
+                    formErrors.phone ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                  } focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 overflow-hidden transition-all duration-300`}>
+                    <span className="bg-gray-50 border-r border-gray-200 px-3 py-2.5 text-sm text-gray-550 select-none flex items-center gap-1.5 font-bold shrink-0">
+                      <Phone className="h-4 w-4 text-gray-450" />
+                      <span>+974</span>
+                    </span>
                     <input
                       type="tel"
-                      placeholder="+974 XXXX XXXX"
+                      placeholder="e.g. 51234567"
+                      maxLength={8}
                       value={form.phone}
-                      onChange={(e) => updateForm("phone", e.target.value)}
-                      className={`block w-full rounded-xl border ${
-                        formErrors.phone ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 8);
+                        updateForm("phone", val);
+                      }}
+                      className="block w-full px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent"
                     />
                   </div>
                   {formErrors.phone && (
@@ -564,11 +1006,12 @@ export default function CheckoutPage() {
                     <input
                       type="email"
                       placeholder="your@email.com"
+                      maxLength={120}
                       value={form.email}
                       onChange={(e) => updateForm("email", e.target.value)}
                       className={`block w-full rounded-xl border ${
                         formErrors.email ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-450 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                     />
                   </div>
                   {formErrors.email && (
@@ -617,7 +1060,7 @@ export default function CheckoutPage() {
                           setForm((prev) => ({
                             ...prev,
                             fullName: prev.fullName || addr.fullName,
-                            phone: prev.phone === "+974" ? addr.mobile : prev.phone,
+                            phone: prev.phone === "" ? extractQatarLocalNumber(addr.mobile) : prev.phone,
                           }));
                         }}
                         className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -703,6 +1146,29 @@ export default function CheckoutPage() {
               {/* Inline Address Form (guests, or logged-in with "new address" selected) */}
               {(!isLoggedIn || useNewAddress || addresses.length === 0) && !addressesLoading && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Use Current Location Button */}
+                  <div className="sm:col-span-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={handleUseMyLocation}
+                      disabled={locating}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-orange-500/25 bg-orange-50/30 hover:bg-orange-50 text-orange-600 font-bold text-sm transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {locating ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                      ) : (
+                        <MapPin className="h-4 w-4 text-orange-500" />
+                      )}
+                      <span>
+                        {locating
+                          ? "Locating your GPS coordinates..."
+                          : locationSuccess
+                          ? "Location coordinates saved! (Click to locate again)"
+                          : "Use My Location (Exact GPS)"}
+                      </span>
+                    </button>
+                  </div>
+
                   {/* Area */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
@@ -713,15 +1179,39 @@ export default function CheckoutPage() {
                       <input
                         type="text"
                         placeholder="e.g. Al Sadd, The Pearl, West Bay"
+                        maxLength={100}
                         value={form.area}
                         onChange={(e) => updateForm("area", e.target.value)}
                         className={`block w-full rounded-xl border ${
                           formErrors.area ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                       />
                     </div>
                     {formErrors.area && (
                       <p className="text-xs text-red-500 mt-1">{formErrors.area}</p>
+                    )}
+                  </div>
+
+                  {/* Zone Number */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                      Zone Number <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 66"
+                      maxLength={3}
+                      value={form.zone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 3);
+                        updateForm("zone", val);
+                      }}
+                      className={`block w-full rounded-xl border ${
+                        formErrors.zone ? "border-red-300 bg-red-50/30" : "border-gray-200"
+                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
+                    />
+                    {formErrors.zone && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.zone}</p>
                     )}
                   </div>
 
@@ -733,11 +1223,12 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Street name or number"
+                      maxLength={120}
                       value={form.street}
                       onChange={(e) => updateForm("street", e.target.value)}
                       className={`block w-full rounded-xl border ${
                         formErrors.street ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                      } px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                     />
                     {formErrors.street && (
                       <p className="text-xs text-red-500 mt-1">{formErrors.street}</p>
@@ -754,11 +1245,12 @@ export default function CheckoutPage() {
                       <input
                         type="text"
                         placeholder="Building number"
+                        maxLength={30}
                         value={form.buildingNumber}
                         onChange={(e) => updateForm("buildingNumber", e.target.value)}
                         className={`block w-full rounded-xl border ${
                           formErrors.buildingNumber ? "border-red-300 bg-red-50/30" : "border-gray-200"
-                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors`}
+                        } pl-10 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300`}
                       />
                     </div>
                     {formErrors.buildingNumber && (
@@ -774,9 +1266,10 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Villa or apartment number"
+                      maxLength={50}
                       value={form.villaApartment}
                       onChange={(e) => updateForm("villaApartment", e.target.value)}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
                     />
                   </div>
 
@@ -788,9 +1281,10 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Floor number"
+                      maxLength={20}
                       value={form.floor}
                       onChange={(e) => updateForm("floor", e.target.value)}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
                     />
                   </div>
 
@@ -802,9 +1296,10 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Nearby landmark"
+                      maxLength={150}
                       value={form.landmark}
                       onChange={(e) => updateForm("landmark", e.target.value)}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
                     />
                   </div>
 
@@ -815,10 +1310,11 @@ export default function CheckoutPage() {
                     </label>
                     <textarea
                       placeholder="Any special instructions for delivery..."
+                      maxLength={300}
                       value={form.deliveryNotes}
                       onChange={(e) => updateForm("deliveryNotes", e.target.value)}
                       rows={2}
-                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors resize-none"
+                      className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 resize-none"
                     />
                   </div>
                 </div>
@@ -826,12 +1322,12 @@ export default function CheckoutPage() {
             </div>
 
             {/* ── Section: Preferred Delivery Time ── */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-in fade-in duration-300">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 transition-all duration-200">
               <div className="flex items-center gap-2 mb-5 border-b pb-3">
                 <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
                   <Clock className="h-4 w-4 text-orange-500" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Preferred Delivery Time</h3>
+                <h3 className="text-lg font-bold text-gray-900">Preferred Delivery Time <span className="text-sm font-normal text-gray-400 ml-1">(Optional)</span></h3>
               </div>
 
               {deliverySlots.length === 0 ? (
@@ -839,15 +1335,12 @@ export default function CheckoutPage() {
                   Loading active delivery slots...
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1 rounded-xl">
                   {deliverySlots.map((slot) => (
                     <div
                       key={slot.id}
                       onClick={() => {
-                        setSelectedSlotId(slot.id);
-                        if (formErrors.deliverySlotId) {
-                          setFormErrors((prev) => ({ ...prev, deliverySlotId: undefined }));
-                        }
+                        setSelectedSlotId((prev) => (prev === slot.id ? null : slot.id));
                       }}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
                         selectedSlotId === slot.id
@@ -867,9 +1360,6 @@ export default function CheckoutPage() {
                     </div>
                   ))}
                 </div>
-              )}
-              {formErrors.deliverySlotId && (
-                <p className="text-xs text-red-500 mt-2">{formErrors.deliverySlotId}</p>
               )}
             </div>
 
@@ -915,10 +1405,8 @@ export default function CheckoutPage() {
               )}
             </div>
           </div>
-
-          {/* ─── Right Column: Order Summary ─── */}
           <div className="lg:col-span-5">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 sticky top-24">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 sticky top-[130px]">
               <div className="flex items-center gap-2 border-b pb-4">
                 <ShoppingBag className="h-4 w-4 text-orange-500" />
                 <h3 className="text-base font-bold text-gray-900">Order Summary</h3>
@@ -930,67 +1418,93 @@ export default function CheckoutPage() {
               {/* Items */}
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 {activeCart.items.map((item) => {
-                  const stockErr = stockErrors[item.productId];
+                  const isSelected = selectedItemIds.has(item.id);
+                  const errorKey = item.variantId ? `${item.productId}-${item.variantId}` : String(item.productId);
+                  const stockErr = stockErrors[errorKey];
                   return (
-                    <div key={item.id} className="flex items-start gap-3">
-                      <div className="relative h-14 w-14 shrink-0 rounded-lg border border-gray-100 bg-gray-50 p-1 overflow-hidden mt-0.5">
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          sizes="56px"
-                          className="object-contain"
+                    <div key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                      {/* Checkbox (Left Side) */}
+                      {!isBuyNow ? (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={isPlacingOrder}
+                          onChange={() => toggleItemSelection(item.id)}
+                          className="h-4 w-4 rounded border-gray-200 text-orange-500 focus:ring-orange-500 cursor-pointer disabled:opacity-55 disabled:cursor-not-allowed shrink-0"
                         />
-                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
-                          {item.quantity}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {item.selectedColor && (
-                            <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                              {item.selectedColor}
-                            </span>
-                          )}
-                          {item.selectedStorage && (
-                            <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
-                              {item.selectedStorage}
-                            </span>
+                      ) : (
+                        <div className="h-4 w-4 shrink-0 flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-orange-500" />
+                        </div>
+                      )}
+                      <div className={`flex-1 flex items-center gap-3 min-w-0 ${!isSelected ? "opacity-55 select-none" : ""}`}>
+                        <div className="relative h-16 w-16 shrink-0 rounded-xl border border-gray-150 bg-gray-50 p-1 overflow-hidden">
+                          <Image
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            sizes="64px"
+                            className="object-contain"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">{item.title}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 ? (
+                              Object.entries(item.selectedAttributes).map(([key, val]) => (
+                                <span key={key} className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                  {key}: {val}
+                                </span>
+                              ))
+                            ) : (
+                              <>
+                                {item.selectedColor && (
+                                  <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                    {item.selectedColor}
+                                  </span>
+                                )}
+                                {item.selectedStorage && (
+                                  <span className="text-[9px] bg-gray-50 border px-1 py-0.5 rounded text-gray-400">
+                                    {item.selectedStorage}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-gray-550 mt-1 font-medium">Qty &times; {item.quantity}</p>
+
+                          {stockErr && isSelected && (
+                            <div className="mt-2 bg-red-55/65 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
+                              <div className="flex items-center gap-1.5 text-red-600 font-bold text-[11px]">
+                                <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                                <span>
+                                  {stockErr.availableStock === 0
+                                    ? "Out Of Stock"
+                                    : `Only ${stockErr.availableStock} available`}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  onClick={() => handleRemoveStockItem(item.id, errorKey)}
+                                  className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                                >
+                                  Remove Item
+                                </button>
+                                {stockErr.availableStock > 0 && (
+                                  <button
+                                    onClick={() => handleUpdateStockQty(item.id, errorKey, stockErr.availableStock)}
+                                    className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-705 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                                  >
+                                    Update to {stockErr.availableStock}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
-
-                        {stockErr && (
-                          <div className="mt-2 bg-red-50 border border-red-100 rounded-xl p-2.5 space-y-2 animate-in fade-in-50 slide-in-from-top-1">
-                            <div className="flex items-center gap-1.5 text-red-600">
-                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                              <span className="text-[11px] font-bold">
-                                {stockErr.availableStock === 0
-                                  ? "Out of Stock"
-                                  : `Only ${stockErr.availableStock} available`}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {stockErr.availableStock > 0 && (
-                                <button
-                                  onClick={() => handleUpdateStockQty(item.id, item.productId, stockErr.availableStock)}
-                                  className="text-[10px] bg-red-100 hover:bg-red-200 text-red-700 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
-                                >
-                                  Update to {stockErr.availableStock}
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleRemoveStockItem(item.id, item.productId)}
-                                className="text-[10px] flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-2 py-1 rounded-md transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
-                      <span className="text-xs font-bold text-gray-900 shrink-0 mt-0.5">
+                      <span className={`text-xs font-bold text-gray-900 shrink-0 mt-0.5 ${!isSelected ? "opacity-55 line-through decoration-gray-400" : ""}`}>
                         QAR {(item.priceNumber * item.quantity).toFixed(2)}
                       </span>
                     </div>
@@ -999,36 +1513,66 @@ export default function CheckoutPage() {
               </div>
 
               {/* Totals */}
-              <div className="border-t pt-4 space-y-3 text-sm">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
+              <div className="border-t pt-4 space-y-3.5 text-sm">
+                {/* Price (count of items) */}
+                <div className="flex justify-between text-gray-655">
+                  <span>Price ({activeCart.totalItems} item{activeCart.totalItems !== 1 ? "s" : ""})</span>
                   <span className="font-semibold text-gray-900">
-                    QAR {activeCart.totalPrice.toFixed(2)}
+                    QAR {activeCart.totalOldPrice.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <Truck className="h-3.5 w-3.5" />
-                    Delivery
+
+                {/* Discount */}
+                <div className="flex justify-between text-gray-655 items-center">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-600 border border-orange-200/50 rounded-md flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
+                      Discount
+                    </span>
                   </span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-bold text-green-600">
+                    &minus; QAR {(activeCart.totalOldPrice - activeCart.totalPrice).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Shipping Charge */}
+                <div className="flex justify-between text-gray-655 items-center">
+                  <span className="flex items-center gap-1.5">
+                    <Truck className="h-4 w-4 text-gray-400" />
+                    <span>Shipping Charge</span>
+                  </span>
+                  <span className="font-semibold">
                     {shippingCost === 0 ? (
-                      <span className="text-green-600">Free</span>
+                      <span className="text-green-600 bg-green-50 border border-green-200/60 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Free
+                      </span>
                     ) : (
-                      `QAR ${shippingCost.toFixed(2)}`
+                      <span className="text-gray-900 font-bold">QAR {shippingCost.toFixed(2)}</span>
                     )}
                   </span>
                 </div>
                 {shippingCost > 0 && (
-                  <p className="text-[10px] text-green-600 text-right">
+                  <p className="text-[10px] text-green-600 text-right font-semibold">
                     Free delivery on orders over QAR {shippingConfig.freeShippingThreshold.toFixed(0)}
                   </p>
                 )}
-                <div className="border-t pt-3 flex justify-between text-base font-bold text-gray-900">
-                  <span>Total</span>
-                  <span className="text-orange-500 text-lg">QAR {orderTotal.toFixed(2)}</span>
+
+                {/* Total Amount */}
+                <div className="border-t pt-4.5 flex justify-between items-center text-base font-bold text-gray-900">
+                  <span>Total Amount</span>
+                  <span className="text-gray-900 text-xl font-black">QAR {orderTotal.toFixed(2)}</span>
                 </div>
               </div>
+
+              {/* Savings message */}
+              {activeCart.totalOldPrice - activeCart.totalPrice > 0 && (
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-250/50 rounded-2xl px-4 py-3 text-center shadow-sm shadow-emerald-500/5 animate-in fade-in duration-300">
+                  <p className="text-xs font-bold text-emerald-700 flex items-center justify-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <span>You save <strong className="font-extrabold">QAR {(activeCart.totalOldPrice - activeCart.totalPrice).toFixed(2)}</strong> on this order!</span>
+                  </p>
+                </div>
+              )}
 
               {/* Stock Warning Sidebar Notice Card */}
               {hasStockErrors && (
@@ -1052,21 +1596,23 @@ export default function CheckoutPage() {
                     setOrderError("Please fill in all required fields.");
                   }
                 }}
-                disabled={isPlacingOrder || hasStockErrors}
+                disabled={isPlacingOrder || hasStockErrors || activeCart.totalItems === 0}
                 className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-lg ${
                   isPlacingOrder
                     ? "bg-gray-300 cursor-not-allowed shadow-none"
-                    : hasStockErrors
+                    : (hasStockErrors || activeCart.totalItems === 0)
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none border border-gray-300/50"
-                    : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20 cursor-pointer active:scale-[0.98]"
+                    : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-orange-500/25 hover:shadow-orange-600/35 cursor-pointer active:scale-[0.985]"
                 }`}
               >
                 {isPlacingOrder && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isPlacingOrder
                   ? "Placing Order..."
+                  : activeCart.totalItems === 0
+                  ? "Select Items to Place Order"
                   : hasStockErrors
-                  ? "Fix Cart Items to Place Order"
-                  : `Place Order — QAR ${orderTotal.toFixed(2)}`}
+                  ? "Fix Selected Items to Place Order"
+                  : `Place Order for ${activeCart.totalItems} item${activeCart.totalItems !== 1 ? "s" : ""} — QAR ${orderTotal.toFixed(2)}`}
               </button>
 
               <p className="text-center text-[10px] text-gray-400">
@@ -1100,7 +1646,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="border-t pt-2.5 flex justify-between font-bold text-base">
                   <span className="text-gray-900">Total Amount</span>
-                  <span className="text-orange-500">QAR {orderTotal.toFixed(2)}</span>
+                  <span className="text-gray-900">QAR {orderTotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1118,7 +1664,7 @@ export default function CheckoutPage() {
                 <button
                   onClick={() => setShowConfirmModal(false)}
                   disabled={isPlacingOrder}
-                  className="flex-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 text-sm font-bold transition-all cursor-pointer"
+                  className="flex-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-707 py-3 text-sm font-bold transition-all cursor-pointer"
                 >
                   Cancel
                 </button>

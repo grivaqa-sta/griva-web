@@ -39,6 +39,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [searchInputVal, setSearchInputVal] = useState<string>("");
   const [searchVal, setSearchVal] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<number>(1000000);
@@ -57,6 +58,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
   const [openSortDropdown, setOpenSortDropdown] = useState(false);
   const hasInitializedRef = useRef(false);
+  const isFirstRenderRef = useRef(true);
 
   // Debounce search input value
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
     const categoryParam = searchParamsHook.get("category") || resolvedParams.category || "";
     const subParam = searchParamsHook.get("sub") || "";
+    const brandsParam = searchParamsHook.get("brands") || "";
     const searchParam = searchParamsHook.get("search") || resolvedParams.search || "";
     const ratingParam = searchParamsHook.get("rating") || "";
     const maxPriceParam = searchParamsHook.get("maxPrice") || "";
@@ -80,6 +83,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
     if (categoryParam) setSelectedCategory(categoryParam.toLowerCase());
     if (subParam) setSelectedSubCategory(subParam.toLowerCase());
+    if (brandsParam) setSelectedBrands(brandsParam.split(","));
     if (searchParam) {
       setSearchInputVal(searchParam);
       setSearchVal(searchParam);
@@ -98,6 +102,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
     const categoryParam = searchParamsHook.get("category") || "";
     const subParam = searchParamsHook.get("sub") || "";
+    const brandsParam = searchParamsHook.get("brands") || "";
     const searchParam = searchParamsHook.get("search") || "";
     const ratingParam = searchParamsHook.get("rating") ? Number(searchParamsHook.get("rating")) : 0;
     const maxPriceParam = searchParamsHook.get("maxPrice") ? Number(searchParamsHook.get("maxPrice")) : 1000000;
@@ -109,6 +114,10 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
     if (subParam.toLowerCase() !== selectedSubCategory) {
       setSelectedSubCategory(subParam.toLowerCase());
+    }
+    const brandsArr = brandsParam ? brandsParam.split(",") : [];
+    if (brandsArr.join(",") !== selectedBrands.join(",")) {
+      setSelectedBrands(brandsArr);
     }
     if (searchParam !== searchInputVal) {
       setSearchInputVal(searchParam);
@@ -140,28 +149,33 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     if (maxPrice < 1000000) params.set("maxPrice", String(maxPrice));
     if (sortBy !== "featured") params.set("sortBy", sortBy);
     if (minDiscount > 0) params.set("minDiscount", String(minDiscount));
+    if (selectedBrands.length > 0) params.set("brands", selectedBrands.join(","));
 
     const newQuery = params.toString();
     const newPath = `${pathname}${newQuery ? `?${newQuery}` : ""}`;
     window.history.replaceState(null, "", newPath);
-  }, [selectedCategory, selectedSubCategory, searchVal, minRating, maxPrice, sortBy, minDiscount, pathname]);
+  }, [selectedCategory, selectedSubCategory, searchVal, minRating, maxPrice, sortBy, minDiscount, selectedBrands, pathname]);
 
   // Smooth scroll to products grid on filter changes
   useEffect(() => {
-    if (categories.length > 0 && (selectedCategory || selectedSubCategory)) {
-      const el = document.getElementById("shop-products-grid");
-      if (el) {
-        const offset = 140;
-        const elementPosition = el.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - offset;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth"
-        });
-      }
+    if (categories.length === 0) return;
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
     }
-  }, [selectedCategory, selectedSubCategory, categories.length]);
+
+    const el = document.getElementById("shop-products-grid");
+    if (el) {
+      const offset = 140;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - offset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  }, [selectedCategory, selectedSubCategory, selectedBrands, categories.length]);
 
   const isRatingSearch = /(\d)\s*stars?/i.test(searchVal);
   // Fetch all products from API once for high-speed client-side filtering and fuzzy matching
@@ -179,6 +193,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   const handleResetFilters = () => {
     setSelectedCategory("");
     setSelectedSubCategory("");
+    setSelectedBrands([]);
     setSearchInputVal("");
     setSearchVal("");
     setMaxPrice(1000000);
@@ -227,7 +242,50 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     return new Set(activeSubCategories.map((s) => s.id));
   }, [selectedCategory, activeSubCategories]);
 
-  // Client-side filter for category, subcategory, rating, and sort
+  // Dynamic brand list & counts computed from products
+  const brandCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      if (p.brand && p.brand.trim()) {
+        const b = p.brand.trim();
+        counts[b] = (counts[b] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [products]);
+
+  const availableBrands = useMemo(() => {
+    return Object.keys(brandCounts).sort((a, b) => a.localeCompare(b));
+  }, [brandCounts]);
+
+  // Dynamic category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      const sub = subCategories.find((s) => s.id === p.subcategory_id);
+      if (sub) {
+        const cat = categories.find((c) => c.id === sub.category_id);
+        if (cat) {
+          counts[cat.slug] = (counts[cat.slug] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  }, [products, subCategories, categories]);
+
+  // Dynamic subcategory counts
+  const subCategoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      const sub = subCategories.find((s) => s.id === p.subcategory_id);
+      if (sub) {
+        counts[sub.slug] = (counts[sub.slug] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [products, subCategories]);
+
+  // Client-side filter for category, subcategory, rating, brand, and sort
   const processedProducts = useMemo((): ApiProduct[] => {
     let result = [...products];
 
@@ -294,6 +352,11 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
       }
     }
 
+    // Brand Filter
+    if (selectedBrands.length > 0) {
+      result = result.filter((p) => p.brand && selectedBrands.includes(p.brand.trim()));
+    }
+
     // Max Price filter
     if (maxPrice < 1000000) {
       result = result.filter((p) => Number(p.price || 0) <= maxPrice);
@@ -326,7 +389,7 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     }
 
     return result;
-  }, [products, selectedCategory, selectedSubCategory, selectedCategorySubIds, activeSubCategories, minRating, sortBy, searchVal, maxPrice, minDiscount]);
+  }, [products, selectedCategory, selectedSubCategory, selectedCategorySubIds, activeSubCategories, selectedBrands, minRating, sortBy, searchVal, maxPrice, minDiscount]);
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-16">
@@ -496,6 +559,42 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                   ))}
                 </div>
               </div>
+
+              {/* Brands Filter */}
+              {availableBrands.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
+                    Brands
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {availableBrands.map((brandName) => {
+                      const isChecked = selectedBrands.includes(brandName);
+                      return (
+                        <label
+                          key={brandName}
+                          className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-900 transition-colors cursor-pointer select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              setSelectedBrands((prev) =>
+                                prev.includes(brandName)
+                                  ? prev.filter((b) => b !== brandName)
+                                  : [...prev, brandName]
+                              );
+                            }}
+                            className="h-3.5 w-3.5 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+                          />
+                          <span className={isChecked ? "font-semibold text-gray-900" : ""}>
+                            {brandName}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -838,6 +937,38 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
                     ))}
                   </div>
                 </div>
+
+                {/* Brands Filter */}
+                {availableBrands.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
+                      Brands
+                    </h4>
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1">
+                      {availableBrands.map((brandName) => {
+                        const isChecked = selectedBrands.includes(brandName);
+                        return (
+                          <button
+                            key={brandName}
+                            onClick={() => {
+                              setSelectedBrands((prev) =>
+                                prev.includes(brandName)
+                                  ? prev.filter((b) => b !== brandName)
+                                  : [...prev, brandName]
+                              );
+                            }}
+                            className={`text-xs py-1.5 px-3 rounded-lg border transition cursor-pointer ${isChecked
+                              ? "border-orange-500 bg-orange-50 text-orange-500 font-bold"
+                              : "border-gray-200 text-gray-600 bg-white"
+                              }`}
+                          >
+                            {brandName}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button

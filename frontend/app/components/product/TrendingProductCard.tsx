@@ -73,7 +73,7 @@ export default function TrendingProductCard({
           <div className="absolute left-2 top-2 z-10 flex items-center gap-1">
             {(product.discount_percentage ?? 0) > 0 && (
               <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
-                -{product.discount_percentage}%
+                {product.discount_percentage}% OFF
               </span>
             )}
             {product.is_trending && (
@@ -195,7 +195,7 @@ export default function TrendingProductCard({
           <div className="absolute left-3 top-3 z-20 flex gap-1">
             {(product.discount_percentage ?? 0) > 0 && (
               <span className="rounded bg-orange-500 px-2 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
-                -{product.discount_percentage}%
+                {product.discount_percentage}% OFF
               </span>
             )}
             {product.is_trending && (

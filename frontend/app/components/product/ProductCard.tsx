@@ -110,7 +110,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
               className="absolute left-2 top-2 z-20 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white sm:px-2.5 sm:text-[9px]"
               style={{ backgroundColor: ORANGE }}
             >
-              -{product.discount_percentage}%
+              {product.discount_percentage}% OFF
             </div>
           )}
 

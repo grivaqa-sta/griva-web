@@ -23,7 +23,7 @@ import FAQSchema from "@/components/seo/FAQSchema";
 const DELIVERY_FAQS = [
   {
     question: "What are the shipping charges for GRIVA orders in Qatar?",
-    answer: "Delivery is completely FREE across all municipalities in Qatar for orders above QAR 99. For orders below QAR 99, a flat delivery fee of QAR 15 applies to Doha and inner suburbs, and QAR 25-30 for remote outer zones."
+    answer: "Delivery is completely FREE across all municipalities in Qatar for orders above QAR 99. For orders below QAR 99, a flat delivery fee of QAR 10 applies to Doha and inner suburbs, and QAR 25-30 for remote outer zones."
   },
   {
     question: "How fast is the same-day delivery in Doha?",
@@ -48,7 +48,7 @@ const COVERAGE_ZONES = [
     name: "DOHA MUNICIPAL & INNER SUBURBS",
     areas: "West Bay, The Pearl, Lusail, Al Waab, Abu Hamour, Al Sadd, Madinat Khalifa",
     time: "2 - 4 Hours",
-    fee: "QAR 15 (Free over QAR 99)",
+    fee: "QAR 10 (Free over QAR 99)",
     highlight: true
   },
   {

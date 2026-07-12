@@ -41,6 +41,13 @@ function mapProductToSlide(p: BannerProduct): HeroSlide {
     };
 }
 
+function formatPrice(price?: string | number): string {
+    if (!price) return "";
+    const value = typeof price === "string" ? Number(price) : price;
+    if (Number.isNaN(value)) return String(price);
+    return value.toFixed(2);
+}
+
 export default function DesktopHeroBanner() {
     const { bannerProducts } = useBannerProducts();
     const { settings } = useGlobalSettings();
@@ -141,18 +148,19 @@ export default function DesktopHeroBanner() {
                                     <p className="max-w-lg text-sm text-gray-300 mt-2 lg:mt-3 line-clamp-2 leading-relaxed">
                                         {currentSlide.subtitle}
                                     </p>
-                                    <div className="flex items-end gap-2 lg:gap-3 justify-center lg:justify-start">
-                                        <span className="text-sm font-medium text-gray-300 lg:text-lg">From</span>
+                                    <div className="flex items-baseline gap-2 lg:gap-3 justify-center lg:justify-start">
+                                        <span className="text-sm font-medium text-gray-300 lg:text-lg mr-1">From</span>
                                         <motion.span
                                             variants={priceShake}
                                             animate="shake"
                                             className="inline-block text-2xl font-black text-orange-400 lg:text-4xl"
                                         >
-                                            <span className="text-[15px] font-bold">QAR</span> {currentSlide.price}
+                                            <span className="text-[15px] font-bold mr-1">QAR</span>
+                                            {formatPrice(currentSlide.price)}
                                         </motion.span>
-                                        {currentSlide.old_price && (
-                                            <span className="mb-0.5 text-sm text-gray-400 line-through lg:mb-1 lg:text-lg">
-                                                {currentSlide.old_price}
+                                        {currentSlide.old_price && Number(currentSlide.old_price) > 0 && Number(currentSlide.old_price) > Number(currentSlide.price) && (
+                                            <span className="text-sm text-gray-400 line-through lg:text-lg ml-2">
+                                                QAR {formatPrice(currentSlide.old_price)}
                                             </span>
                                         )}
                                     </div>

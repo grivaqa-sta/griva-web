@@ -833,20 +833,24 @@ export default function CategoryPage() {
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
                 <p className="text-sm font-semibold text-gray-500">
-                  No products matched the filters inside this category.
+                  {subParam || minRating > 0 || maxPrice < 1000000
+                    ? "No products matched the filters inside this category."
+                    : "New Arrivals Arriving Soon!"}
                 </p>
-                <button
-                  onClick={handleResetFilters}
-                  className="mt-4 inline-flex items-center justify-center rounded-xl px-6 py-2.5 text-xs font-semibold text-white transition cursor-pointer"
-                  style={{
-                    backgroundColor: "#FF6A00",
-                    boxShadow: "0 4px 6px -1px rgba(255,106,0,0.10)",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e05a00")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF6A00")}
-                >
-                  Clear All Filters
-                </button>
+                {(subParam || minRating > 0 || maxPrice < 1000000) && (
+                  <button
+                    onClick={handleResetFilters}
+                    className="mt-4 inline-flex items-center justify-center rounded-xl px-6 py-2.5 text-xs font-semibold text-white transition cursor-pointer"
+                    style={{
+                      backgroundColor: "#FF6A00",
+                      boxShadow: "0 4px 6px -1px rgba(255,106,0,0.10)",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e05a00")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF6A00")}
+                  >
+                    Clear All Filters
+                  </button>
+                )}
               </div>
             )}
           </div>

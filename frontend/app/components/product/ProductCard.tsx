@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, Truck } from "lucide-react";
 import { ApiProduct } from "@/app/types/types";
 import Rating from "../rating/Rating";
 import { useCart } from "@/app/context/CartContext";
@@ -110,7 +110,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
               className="absolute left-2 top-2 z-20 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white sm:px-2.5 sm:text-[9px]"
               style={{ backgroundColor: ORANGE }}
             >
-              -{product.discount_percentage}%
+              {product.discount_percentage}% OFF
             </div>
           )}
 
@@ -194,11 +194,17 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
                 {formatPrice(product.price)}
               </span>
             </span>
-            {product.old_price && (
+            {product.old_price && Number(product.old_price) > 0 && (
               <span className="text-[8px] font-semibold uppercase text-gray-400 line-through sm:text-[10px]">
                 QAR {formatPrice(product.old_price)}
               </span>
             )}
+          </div>
+
+          {/* Delivery Estimate */}
+          <div className="flex items-center gap-1.5 mt-1 text-[9px] sm:text-xs font-semibold text-gray-500">
+            <Truck size={13} className="text-gray-400 shrink-0" />
+            <span>Delivery in 1-2 Days</span>
           </div>
         </div>
       </Link>

@@ -1,0 +1,79 @@
+[
+  {
+    "id": 7,
+    "title": "Flowers & Bouquets",
+    "slug": "flowers-bouquets",
+    "href": "/category/flowers-bouquets",
+    "image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/f_auto,q_auto/v1782546487/griva/products/1782546479081-flowers-category.jpg",
+    "mobile_image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/f_auto,q_auto/v1782546705/griva/products/1782546701940-mobile-flower.png",
+    "is_active": true,
+    "createdAt": "2026-06-27T07:48:43.966Z",
+    "updatedAt": "2026-06-30T14:05:56.523Z"
+  },
+  {
+    "id": 4,
+    "title": "Gadgets & Electronics",
+    "slug": "gadgets-electronics",
+    "href": "/category/gadgets-electronics",
+    "image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782056622/griva/products/1782056613350-gadgets.png",
+    "mobile_image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782223242/griva/products/1782223239289-nbg.png",
+    "is_active": true,
+    "createdAt": "2026-06-18T15:24:26.863Z",
+    "updatedAt": "2026-06-23T14:00:45.514Z"
+  },
+  {
+    "id": 5,
+    "title": "Gaming Accessories",
+    "slug": "gaming-accessories",
+    "href": "/category/gaming-accessories",
+    "image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782056648/griva/products/1782056645280-gamming-accessories.png",
+    "mobile_image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782223279/griva/products/1782223275696-gamejoystic%20new.png",
+    "is_active": true,
+    "createdAt": "2026-06-18T15:24:29.047Z",
+    "updatedAt": "2026-06-23T14:01:23.310Z"
+  },
+  {
+    "id": 1,
+    "title": "Perfumes & Buhoor",
+    "slug": "perfumes-buhoor",
+    "href": "/category/perfumes-buhoor",
+    "image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782056898/griva/products/1782056892052-perfume-cat-img.png",
+    "mobile_image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782224771/griva/products/1782224767694-ChatGPT%20Image%20Jun%2023%2C%202026%2C%2007_55_28%20PM.png",
+    "is_active": true,
+    "createdAt": "2026-06-18T15:24:23.484Z",
+    "updatedAt": "2026-06-23T14:26:17.929Z"
+  },
+  {
+    "id": 2,
+    "title": "Toys",
+    "slug": "toys",
+    "href": "/category/toys",
+    "image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782056581/griva/products/1782056577719-toys.png",
+    "mobile_image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782306875/griva/products/1782306874989-ChatGPT%20Image%20Jun%2024%2C%202026%2C%2006_40_17%20PM.png",
+    "is_active": true,
+    "createdAt": "2026-06-18T15:24:24.678Z",
+    "updatedAt": "2026-06-24T13:14:40.540Z"
+  },
+  {
+    "id": 3,
+    "title": "Baby Products",
+    "slug": "baby-products",
+    "href": "/category/baby-products",
+    "image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782056602/griva/products/1782056592248-babby.png",
+    "mobile_image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782308402/griva/products/1782308401350-ChatGPT%20Image%20Jun%2024%2C%202026%2C%2007_08_18%20PM.png",
+    "is_active": true,
+    "createdAt": "2026-06-18T15:24:25.873Z",
+    "updatedAt": "2026-06-24T13:40:08.562Z"
+  },
+  {
+    "id": 6,
+    "title": "Kitchen Appliances & Essentials",
+    "slug": "kitchen-appliances-essentials",
+    "href": "/category/kitchen-appliances-essentials",
+    "image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782057082/griva/products/1782057077043-kitchen-cat-img.png",
+    "mobile_image_url": "https://res.cloudinary.com/dr7bozhoi/image/upload/v1782309304/griva/products/1782309303626-ChatGPT%20Image%20Jun%2024%2C%202026%2C%2007_24_03%20PM.png",
+    "is_active": true,
+    "createdAt": "2026-06-18T15:24:30.636Z",
+    "updatedAt": "2026-06-24T13:55:09.909Z"
+  }
+]

@@ -69,8 +69,8 @@ export const productService = {
   },
 
   // Update banner status
-  updateBannerStatus: async (id: number, is_banner: boolean, href?: string,mobile_ad_banner?:string, banner_background_color?: string, tags?: string[]) => {
-    const response = await api.patch(`/products/${id}/banner`, { is_banner, href,banner_background_color,mobile_ad_banner, tags });
+  updateBannerStatus: async (id: number, is_banner: boolean, href?: string, mobile_ad_banner?: string, banner_background_color?: string, tags?: string[], desktop_ad_banner?: string) => {
+    const response = await api.patch(`/products/${id}/banner`, { is_banner, href, banner_background_color, mobile_ad_banner, desktop_ad_banner, tags });
     queryClient.invalidate("product");
     return response.data;
   },

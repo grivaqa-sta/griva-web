@@ -577,14 +577,15 @@ exports.updateBannerStatus = async (req, res) => {
       });
     }
 
-    const { is_banner, href, tags,banner_background_color,mobile_ad_banner} = req.body;
+    const { is_banner, href, tags, banner_background_color, mobile_ad_banner, desktop_ad_banner } = req.body;
 
     await product.update({
       is_banner,
       href,
       tags,
       banner_background_color,
-      mobile_ad_banner
+      mobile_ad_banner,
+      desktop_ad_banner
     });
     cache.clear(); // Clear cache on update
 

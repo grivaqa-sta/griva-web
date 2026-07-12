@@ -194,7 +194,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
                 {formatPrice(product.price)}
               </span>
             </span>
-            {product.old_price && (
+            {product.old_price && Number(product.old_price) > 0 && (
               <span className="text-[8px] font-semibold uppercase text-gray-400 line-through sm:text-[10px]">
                 QAR {formatPrice(product.old_price)}
               </span>

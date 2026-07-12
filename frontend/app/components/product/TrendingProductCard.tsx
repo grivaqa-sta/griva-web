@@ -148,7 +148,7 @@ export default function TrendingProductCard({
               <span className="text-sm font-bold text-orange-500">
                 QAR {formatPrice(product.price)}
               </span>
-              {product.old_price && (
+              {product.old_price && Number(product.old_price) > 0 && (
                 <span className="text-[9px] text-gray-400 line-through">
                   QAR {formatPrice(product.old_price)}
                 </span>
@@ -269,7 +269,7 @@ export default function TrendingProductCard({
                 <span className="text-base font-bold text-orange-500">
                   QAR {formatPrice(product.price)}
                 </span>
-                {product.old_price && (
+                {product.old_price && Number(product.old_price) > 0 && (
                   <span className="text-[11px] text-gray-400 line-through">
                     QAR {formatPrice(product.old_price)}
                   </span>

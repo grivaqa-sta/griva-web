@@ -209,6 +209,7 @@ export interface ApiProduct {
   is_banner?: boolean;
   banner_background_color?: string;
   mobile_ad_banner?: string;
+  desktop_ad_banner?: string;
   href?: string;
   meta_title?: string;
   meta_description?: string;
@@ -235,6 +236,7 @@ export interface BannerProduct extends ProductRequest {
   href?: string;
   banner_background_color?: string;
   mobile_ad_banner: string;
+  desktop_ad_banner?: string;
 }
 
 
@@ -248,6 +250,7 @@ export interface HeroSlide {
   href: string;
   bg: string;
   mobile_ad_banner: string;
+  desktop_ad_banner?: string;
 }
 
 

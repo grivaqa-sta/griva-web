@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Plus, Trash2, ToggleLeft, ToggleRight, Image as ImageIcon, Upload, Check, Loader, Loader2, RefreshCw, ChevronDown
+  Plus, Trash2, Edit, ToggleLeft, ToggleRight, Image as ImageIcon, Upload, Check, Loader, Loader2, RefreshCw, ChevronDown
 } from 'lucide-react';
 import {
   getAllDiscoverMore,
   createDiscoverMore,
+  updateDiscoverMore,
   updateDiscoverMoreStatus,
   deleteDiscoverMore
 } from '@/app/services/discoverMore.service';
@@ -20,6 +21,7 @@ export default function DiscoverMoreSection() {
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [editingBannerId, setEditingBannerId] = useState<number | null>(null);
 
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -101,6 +103,28 @@ export default function DiscoverMoreSection() {
     setIsUploading(false);
   };
 
+  const handleStartEdit = (banner: DiscoverMore) => {
+    setEditingBannerId(banner.id);
+    setSelectedCategoryId(banner.categoryId);
+    setTitle(banner.title);
+    setSubtitle(banner.subtitle);
+    setHref(banner.href);
+    setImageUrl(banner.image_url);
+    const formEl = document.getElementById('discover-more-form');
+    if (formEl) {
+      formEl.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingBannerId(null);
+    setSelectedCategoryId('');
+    setTitle('');
+    setSubtitle('');
+    setHref('');
+    setImageUrl('');
+  };
+
   const handleSaveBanner = async () => {
     if (!selectedCategoryId) return showError("Please select a category.");
     if (!title.trim() || !subtitle.trim() || !href.trim() || !imageUrl) {
@@ -108,6 +132,7 @@ export default function DiscoverMoreSection() {
     }
 
     setIsSaving(true);
+    const isEditing = editingBannerId !== null;
     try {
       const payload: DiscoverMorePayload = {
         categoryId: Number(selectedCategoryId),
@@ -118,7 +143,14 @@ export default function DiscoverMoreSection() {
         is_active: true
       };
 
-      await createDiscoverMore(payload);
+      if (isEditing) {
+        await updateDiscoverMore(editingBannerId, payload);
+        showSuccess("Banner updated successfully!");
+        setEditingBannerId(null);
+      } else {
+        await createDiscoverMore(payload);
+        showSuccess("Banner created successfully!");
+      }
 
       // Reset form
       setSelectedCategoryId('');
@@ -128,10 +160,9 @@ export default function DiscoverMoreSection() {
       setImageUrl('');
       
       await loadData(false);
-      showSuccess("Banner created successfully!");
     } catch (err) {
       console.error(err);
-      showError("Failed to save banner. Please try again.");
+      showError(isEditing ? "Failed to update banner." : "Failed to save banner. Please try again.");
     }
     setIsSaving(false);
   };
@@ -264,23 +295,32 @@ export default function DiscoverMoreSection() {
                         <><ToggleLeft className="h-4 w-4 text-gray-400" /> Enable</>
                       )}
                     </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(banner.id)}
-                      className="text-[10px] font-bold text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors cursor-pointer bg-red-50 hover:bg-red-100 px-2 py-1 rounded"
-                    >
-                      <Trash2 className="h-3 w-3" /> Delete
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleStartEdit(banner)}
+                        className="text-[10px] font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 transition-colors cursor-pointer bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded"
+                      >
+                        <Edit className="h-3 w-3" /> Edit
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(banner.id)}
+                        className="text-[10px] font-bold text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors cursor-pointer bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded"
+                      >
+                        <Trash2 className="h-3 w-3" /> Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Add Form */}
-          {canAddMore ? (
-            <div className="bg-orange-50/50 border border-orange-500/20 p-5 rounded-xl">
+          {/* Form */}
+          {canAddMore || editingBannerId !== null ? (
+            <div id="discover-more-form" className="bg-orange-50/50 border border-orange-500/20 p-5 rounded-xl">
               <h5 className="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Plus className="h-4 w-4 text-orange-500" /> Add New Discover More Banner
+                {editingBannerId !== null ? <Edit className="h-4 w-4 text-orange-500" /> : <Plus className="h-4 w-4 text-orange-500" />}
+                {editingBannerId !== null ? 'Edit Discover More Banner' : 'Add New Discover More Banner'}
               </h5>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -419,14 +459,35 @@ export default function DiscoverMoreSection() {
 
               </div>
 
-              <div className="mt-5 flex justify-end pt-4 border-t border-orange-500/10">
+              <div className="mt-5 flex justify-end gap-3 pt-4 border-t border-orange-500/10">
+                {editingBannerId !== null && (
+                  <button
+                    onClick={handleCancelEdit}
+                    type="button"
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
                 <button
                   onClick={handleSaveBanner}
                   disabled={isSaving}
                   className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-md shadow-orange-500/20 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
                 >
-                  {isSaving ? <Loader className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  {isSaving ? 'Creating...' : 'Create Discover More Banner'}
+                  {isSaving ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : editingBannerId !== null ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {isSaving ? (
+                    editingBannerId !== null ? 'Saving...' : 'Creating...'
+                  ) : editingBannerId !== null ? (
+                    'Save Changes'
+                  ) : (
+                    'Create Discover More Banner'
+                  )}
                 </button>
               </div>
             </div>

@@ -59,6 +59,11 @@ const Product = sequelize.define(
       allowNull: true,
     },
 
+    desktop_ad_banner:{
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
     deal_of_day:{
       type: DataTypes.BOOLEAN,
       defaultValue: false,

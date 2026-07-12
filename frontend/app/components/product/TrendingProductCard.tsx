@@ -145,11 +145,16 @@ export default function TrendingProductCard({
           </div>
           <div className="flex items-end justify-between mt-1">
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-bold text-orange-500">
-                QAR {formatPrice(product.price)}
+              <span className="flex items-baseline gap-0.5 leading-none">
+                <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">
+                  QAR
+                </span>
+                <span className="tabular-nums text-[14px] font-extrabold tracking-tight text-[#0D0D0D]">
+                  {formatPrice(product.price)}
+                </span>
               </span>
               {product.old_price && Number(product.old_price) > 0 && (
-                <span className="text-[9px] text-gray-400 line-through">
+                <span className="text-[9px] text-gray-400 line-through mt-0.5">
                   QAR {formatPrice(product.old_price)}
                 </span>
               )}
@@ -266,11 +271,16 @@ export default function TrendingProductCard({
                     );
                   })()}
                 </div>
-                <span className="text-base font-bold text-orange-500">
-                  QAR {formatPrice(product.price)}
+                <span className="flex items-baseline gap-0.5 leading-none">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    QAR
+                  </span>
+                  <span className="tabular-nums text-base font-extrabold tracking-tight text-[#0D0D0D]">
+                    {formatPrice(product.price)}
+                  </span>
                 </span>
                 {product.old_price && Number(product.old_price) > 0 && (
-                  <span className="text-[11px] text-gray-400 line-through">
+                  <span className="text-[11px] text-gray-400 line-through mt-0.5">
                     QAR {formatPrice(product.old_price)}
                   </span>
                 )}

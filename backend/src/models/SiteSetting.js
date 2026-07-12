@@ -35,7 +35,7 @@ const SiteSetting = sequelize.define(
     },
     supportEmail: {
       type: DataTypes.STRING,
-      defaultValue: "support@thegriva.com",
+      defaultValue: "info@thegriva.com",
     },
     shippingFee: {
       type: DataTypes.DECIMAL(10, 2),

@@ -275,7 +275,7 @@ export default function ForgotPasswordPage() {
                   <span className="text-[8px] text-gray-400 mt-0.5">Message us</span>
                 </a>
                 <a
-                  href="mailto:support@thegriva.com"
+                  href="mailto:info@thegriva.com"
                   className="flex flex-col items-center text-center p-2.5 rounded-xl bg-gray-50/50 hover:bg-orange-50/30 border border-gray-100/50 hover:border-orange-100/50 transition-all duration-300 cursor-pointer"
                 >
                   <Headphones size={16} className="text-[#F54900] mb-1" />

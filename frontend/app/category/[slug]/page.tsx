@@ -378,6 +378,31 @@ export default function CategoryPage() {
     icon: <Tag className="h-6 w-6 text-white" />,
   };
 
+  if (!loading && !matchedCategory) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-gray-50/40 px-4 py-16">
+        <title>Category Not Found | GRIVA</title>
+        <div className="text-center max-w-md w-full bg-white rounded-[32px] border border-gray-100 p-8 md:p-10 shadow-sm space-y-6">
+          <div className="h-16 w-16 bg-orange-50 text-[#FF6A00] rounded-2xl flex items-center justify-center mx-auto">
+            <Tag className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Category Not Found</h1>
+            <p className="text-xs text-gray-500 leading-relaxed font-medium">
+              We couldn't find the category you're looking for. It may have been moved or deleted.
+            </p>
+          </div>
+          <Link
+            href="/shop"
+            className="block w-full text-center rounded-2xl bg-[#FF6A00] py-4 text-xs font-bold text-white hover:bg-[#d93e00] transition-colors shadow-lg shadow-orange-500/10"
+          >
+            Explore All Products
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="bg-gray-50/40 min-h-screen py-8"

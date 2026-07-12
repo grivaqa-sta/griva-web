@@ -1,4 +1,3 @@
-[ignoring loop detection]
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 const readline = require("readline");
@@ -75,7 +74,7 @@ async function cleanEverything() {
       announcementBarText: "Free shipping across Doha for orders over QAR 99!",
       fridaySaleEnabled: true,
       whatsappNumber: "+97455551234",
-      supportEmail: "support@thegriva.com",
+      supportEmail: "info@thegriva.com",
       shippingFee: 10.00,
       freeShippingThreshold: 99.00,
     });

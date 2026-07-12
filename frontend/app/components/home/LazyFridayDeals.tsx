@@ -85,9 +85,22 @@ export default function LazyFridayDeals() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [fridaySaleEnabled, setFridaySaleEnabled] = useState<boolean | null>(null);
   const [fridaySaleConfig, setFridaySaleConfig] = useState<any[] | null>(null);
+  const [isFriday, setIsFriday] = useState(false);
 
   const { categories: apiCategories } = useCategories();
   const { subCategories: apiSubCategories } = useSubCategories();
+
+  useEffect(() => {
+    const checkFriday = () => {
+      const QATAR_OFFSET_MS = 3 * 60 * 60 * 1000;
+      const utc = Date.now() + new Date().getTimezoneOffset() * 60 * 1000;
+      const qt = new Date(utc + QATAR_OFFSET_MS);
+      setIsFriday(qt.getDay() === 5); // 5 is Friday
+    };
+    checkFriday();
+    const interval = setInterval(checkFriday, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -103,7 +116,14 @@ export default function LazyFridayDeals() {
     fetchSettings();
   }, []);
 
-  if (fridaySaleEnabled === null || fridaySaleEnabled === false) {
+  const isPreview = typeof window !== "undefined" && window.location.search.includes("preview=friday");
+  const showSection = fridaySaleEnabled === true && (isFriday || isPreview);
+
+  if (fridaySaleEnabled === null) {
+    return null;
+  }
+
+  if (!showSection) {
     return null;
   }
 

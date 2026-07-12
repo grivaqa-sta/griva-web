@@ -14,7 +14,7 @@ export default function ShippingPage() {
             <section className="space-y-3">
               <h3 className="font-bold text-gray-900 text-base">Delivery Rates &amp; Timelines</h3>
               <p>
-                We offer free delivery on all orders over QAR 99. For orders under QAR 99, a flat delivery fee of QAR 15 applies to any location within Qatar.
+                We offer free delivery on all orders over QAR 99. For orders under QAR 99, a flat delivery fee of QAR 10 applies to any location within Qatar.
               </p>
               <div className="overflow-x-auto pt-2">
                 <table className="min-w-full divide-y divide-gray-200 border text-xs">
@@ -29,12 +29,12 @@ export default function ShippingPage() {
                     <tr>
                       <td className="px-4 py-3 font-semibold text-gray-900">Same Day Delivery (Doha &amp; suburbs)</td>
                       <td className="px-4 py-3 text-gray-500">Same day (orders before 4:00 PM)</td>
-                      <td className="px-4 py-3 text-green-600 font-semibold">Free (over QAR 99) / QAR 15</td>
+                      <td className="px-4 py-3 text-green-600 font-semibold">Free (over QAR 99) / QAR 10</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 font-semibold text-gray-900">Next Day Delivery (Other municipalities)</td>
                       <td className="px-4 py-3 text-gray-500">24–48 hours</td>
-                      <td className="px-4 py-3 text-green-600 font-semibold">Free (over QAR 99) / QAR 15</td>
+                      <td className="px-4 py-3 text-green-600 font-semibold">Free (over QAR 99) / QAR 10</td>
                     </tr>
                   </tbody>
                 </table>

@@ -584,7 +584,7 @@ const faqData: FAQItem[] = [
   {
     question: "How long does shipping take and what are the rates?",
     answer:
-      "We deliver all across Qatar. Standard delivery takes 1–2 business days. Delivery is completely free for orders over QAR 50. For orders below QAR 50, a standard delivery fee of QAR 15 applies.",
+      "We deliver all across Qatar. Standard delivery takes 1–2 business days. Delivery is completely free for orders over QAR 99. For orders below QAR 99, a standard delivery fee of QAR 10 applies.",
   },
   {
     question: "How can I track my order?",

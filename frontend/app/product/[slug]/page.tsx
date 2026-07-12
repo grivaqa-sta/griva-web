@@ -272,10 +272,25 @@ export default function ProductPage({ params }: ProductPageProps) {
     loadSubCategories();
   }, []);
   const [quantity, setQuantity] = useState<number>(1);
-  const [activeTab, setActiveTab] = useState<"desc" | "specs" | "reviews">("desc");
+  const [activeTab, setActiveTab] = useState<string>("specs");
 
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(150);
   const [reviewsList, setReviewsList] = useState<any[]>([]);
+
+  const tabsList = React.useMemo(() => {
+    const list: { id: string; label: string }[] = [];
+    list.push({ id: "specs", label: "Specifications" });
+    list.push({ id: "desc", label: "Description" });
+    
+    const warrantyTitle = product?.specifications?.find((s: any) => s.name === "Warranty Title")?.value;
+    const warrantyDesc = product?.specifications?.find((s: any) => s.name === "Warranty Description")?.value;
+    if (warrantyTitle || warrantyDesc) {
+      list.push({ id: "warranty", label: "Warranty" });
+    }
+    
+    list.push({ id: "reviews", label: `Reviews (${reviewsList.length})` });
+    return list;
+  }, [product?.specifications, reviewsList.length]);
 
   const [submittingReview, setSubmittingReview] = useState(false);
   const [newRating, setNewRating] = useState<number>(5);
@@ -893,18 +908,18 @@ export default function ProductPage({ params }: ProductPageProps) {
 
         {/* Tabbed Product Details */}
         <div ref={reviewsTabRef} className="bg-white rounded-[24px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 mb-12 w-full">
-          <div className="flex border-b border-gray-100 gap-6">
-            {(["desc", "specs", "reviews"] as const).map((tab) => (
+          <div className="flex border-b border-gray-100 gap-6 overflow-x-auto scrollbar-none">
+            {tabsList.map((tabItem) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
-                  activeTab === tab
+                key={tabItem.id}
+                onClick={() => setActiveTab(tabItem.id)}
+                className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === tabItem.id
                     ? "border-orange-500 text-orange-500 font-extrabold"
                     : "border-transparent text-gray-500 hover:text-gray-800"
                 }`}
               >
-                {tab === "desc" ? "Description" : tab === "specs" ? "Specifications" : `Reviews (${reviewsList.length})`}
+                {tabItem.label}
               </button>
             ))}
           </div>
@@ -918,38 +933,69 @@ export default function ProductPage({ params }: ProductPageProps) {
 
             {activeTab === "specs" && (
               <div className="max-w-2xl overflow-hidden rounded-2xl border border-gray-100 shadow-sm bg-white">
-                {product.specifications && product.specifications.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-100 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">
-                            Specification
-                          </th>
-                          <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-2/3">
-                            Detail
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-150 bg-white">
-                        {product.specifications.map((spec, index) => (
-                          <tr key={spec.name} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                            <td className="px-6 py-4 font-semibold text-gray-700 whitespace-nowrap">
-                              {spec.name}
-                            </td>
-                            <td className="px-6 py-4 font-medium text-gray-900 whitespace-pre-wrap">
-                              {spec.value}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="p-6 text-center text-sm text-gray-500">
-                    No specifications listed for this product.
-                  </div>
-                )}
+                {(() => {
+                  const displaySpecs = (product.specifications || []).filter(
+                    (s: any) => s.name !== "Warranty Title" && s.name !== "Warranty Description"
+                  );
+                  if (displaySpecs.length > 0) {
+                    return (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-100 text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">
+                                Specification
+                              </th>
+                              <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-2/3">
+                                Detail
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-150 bg-white">
+                            {displaySpecs.map((spec, index) => (
+                              <tr key={spec.name} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                                <td className="px-6 py-4 font-semibold text-gray-700 whitespace-nowrap">
+                                  {spec.name}
+                                </td>
+                                <td className="px-6 py-4 font-medium text-gray-900 whitespace-pre-wrap">
+                                  {spec.value}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="p-6 text-center text-sm text-gray-500">
+                      No specifications listed for this product.
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {activeTab === "warranty" && (
+              <div className="max-w-2xl bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4">
+                {(() => {
+                  const warrantyTitle = product.specifications?.find((s: any) => s.name === "Warranty Title")?.value;
+                  const warrantyDesc = product.specifications?.find((s: any) => s.name === "Warranty Description")?.value;
+                  return (
+                    <div className="space-y-3">
+                      {warrantyTitle && (
+                        <h4 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                          {warrantyTitle}
+                        </h4>
+                      )}
+                      {warrantyDesc && (
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                          {warrantyDesc}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

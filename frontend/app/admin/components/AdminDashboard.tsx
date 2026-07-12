@@ -19,7 +19,6 @@ import BannersTab from "./BannersTab";
 import SubscribersTab from "./SubscribersTab";
 import CategoriesTab from "./CategoriesTab";
 import SubCategoriesTab from "./SubCategoriesTab";
-import AddProductModal from "./AddProductModal";
 import DeliveryTab from "./DeliveryTab";
 import CustomersTab from "./CustomersTab";
 import StaffTab from "./StaffTab";

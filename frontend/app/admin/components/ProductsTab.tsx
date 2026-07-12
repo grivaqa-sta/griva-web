@@ -7,9 +7,10 @@ import { productService } from '@/app/services/product.service';
 import { useToast } from '@/app/context/ToastContext';
 import { categoryService } from '@/app/services/category.service';
 import { subCategoryService } from '@/app/services/subCategory.service';
-import AddProductModal from './AddProductModal';
+import { useRouter } from 'next/navigation';
 
 export default function ProductsTab() {
+  const router = useRouter();
   const { toast, confirm } = useToast();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -95,13 +96,11 @@ export default function ProductsTab() {
   };
 
   const handleOpenAdd = () => {
-    setEditingProduct(null);
-    setIsModalOpen(true);
+    router.push('/admin/products/new');
   };
 
   const handleOpenEdit = (product: any) => {
-    setEditingProduct(product);
-    setIsModalOpen(true);
+    router.push(`/admin/products/edit/${product.id}`);
   };
 
   const getSubCategoryName = (id: number) => {
@@ -418,21 +417,32 @@ export default function ProductsTab() {
 
                     {/* Stock Status Badge */}
                     <td className="p-4">
-                      {isOutOfStock ? (
-                        <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-red-50 border-red-200 text-red-500">
-                          <span className="flex items-center gap-1"><XCircle className="h-3.5 w-3.5 text-red-500 animate-pulse" /> Out of Stock</span>
-                          {p.attributes && p.attributes.length > 0 && <span className="text-[8px] text-red-400 mt-0.5 font-semibold text-left">(via Variants)</span>}
-                        </span>
-                      ) : isLowStock ? (
-                        <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-orange-50 border-orange-200 text-orange-600">
-                          <span className="flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5 text-orange-500" /> Low Stock ({p.stock})</span>
-                          {p.attributes && p.attributes.length > 0 && <span className="text-[8px] text-orange-400 mt-0.5 font-semibold text-left">(via Variants)</span>}
-                        </span>
+                      {p.attributes && p.attributes.length > 0 ? (
+                        isOutOfStock ? (
+                          <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-red-50 border-red-200 text-red-500">
+                            <span className="flex items-center gap-1"><XCircle className="h-3.5 w-3.5 text-red-500 animate-pulse" /> Out of Stock</span>
+                            <span className="text-[8px] text-red-400 mt-0.5 font-semibold text-left">Managed by Variants</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-green-50 border-green-200 text-green-600">
+                            <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-550" /> {p.stock} Units</span>
+                            <span className="text-[8px] text-green-500 mt-0.5 font-bold uppercase tracking-wider text-left">Managed by Variants</span>
+                          </span>
+                        )
                       ) : (
-                        <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-green-50 border-green-200 text-green-600">
-                          <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> In Stock ({p.stock})</span>
-                          {p.attributes && p.attributes.length > 0 && <span className="text-[8px] text-green-400 mt-0.5 font-semibold text-left">(via Variants)</span>}
-                        </span>
+                        isOutOfStock ? (
+                          <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-red-50 border-red-200 text-red-500">
+                            <span className="flex items-center gap-1"><XCircle className="h-3.5 w-3.5 text-red-500 animate-pulse" /> Out of Stock</span>
+                          </span>
+                        ) : isLowStock ? (
+                          <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-orange-50 border-orange-200 text-orange-600">
+                            <span className="flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5 text-orange-500" /> Low Stock ({p.stock})</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex flex-col text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-green-50 border-green-200 text-green-600">
+                            <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> In Stock ({p.stock})</span>
+                          </span>
+                        )
                       )}
                     </td>
 
@@ -585,16 +595,7 @@ export default function ProductsTab() {
         </div>
       )}
 
-      {isModalOpen && (
-        <AddProductModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={loadData}
-          productToEdit={editingProduct}
-          categories={categories}
-          subCategories={activeSubCategories}
-        />
-      )}
+
     </div>
   );
 }

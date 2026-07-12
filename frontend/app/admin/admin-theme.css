@@ -484,3 +484,70 @@
   background-color: var(--admin-surface-hover);
 }
 
+/* ── Sidebar UX Adjustments for Short Viewports (Laptops, small screens) ── */
+@media (max-height: 850px) {
+  /* Reduce outer padding of the footer */
+  aside.w-64 .p-6 {
+    padding: 1rem !important; /* from p-6 (1.5rem) to 1rem */
+  }
+  /* Reduce spacer height */
+  aside.w-64 .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem !important; /* from space-y-3 (0.75rem) to 0.5rem */
+  }
+  /* Reduce nav links top/bottom container padding and group margins */
+  aside.w-64 .py-6 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  aside.w-64 .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem !important; /* from space-y-6 (1.5rem) to 0.75rem */
+  }
+  /* Reduce spacing inside nav group items */
+  aside.w-64 .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.375rem !important;
+  }
+  /* Reduce nav item padding slightly */
+  aside.w-64 nav.space-y-1 button {
+    padding-top: 0.5rem !important; /* from py-2.5 (0.625rem) to 0.5rem */
+    padding-bottom: 0.5rem !important;
+  }
+}
+
+@media (max-height: 720px) {
+  /* Reduce spacing even further for very small laptop displays */
+  aside.w-64 .p-6 {
+    padding: 0.75rem !important;
+  }
+  aside.w-64 .py-6 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  aside.w-64 .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem !important;
+  }
+  aside.w-64 nav.space-y-1 button {
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+  }
+  /* Reduce logo section height */
+  aside.w-64 .h-16 {
+    height: 3.5rem !important; /* from h-16 (4rem) to 3.5rem */
+  }
+}
+
+/* Slimmer & Cleaner scrollbar for the navigation list */
+aside.w-64 .flex-1.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-scrollbar-thumb) transparent;
+}
+aside.w-64 .flex-1.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+aside.w-64 .flex-1.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+aside.w-64 .flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: var(--admin-scrollbar-thumb);
+  border-radius: 2px;
+}
+

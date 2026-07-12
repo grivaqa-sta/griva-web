@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const response:ForgotPasswordResponse = await authService.forgotPassword(email);
+      const response: ForgotPasswordResponse = await authService.forgotPassword(email);
       console.log(response.resetUrl)
       if (response.success) {
         setSuccess(response.message);
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
     } catch (error: any) {
       setError(
         error?.response?.data?.message ||
-          "Unable to process request."
+        "Unable to process request."
       );
     } finally {
       setLoading(false);
@@ -92,9 +92,7 @@ export default function ForgotPasswordPage() {
 
           {/* Header */}
           <div className="flex flex-col items-center mb-8">
-            <div className="h-12 w-12 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/40 mb-4">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
+
 
             <img src={isDark ? "/images/logo-light.png" : "/images/logo-dark.png"} alt="Griva Logo" className="h-8 w-auto object-contain mb-1" />
 

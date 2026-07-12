@@ -23,6 +23,8 @@ import { io } from "socket.io-client";
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   pending: { label: "Pending", color: "text-amber-600", bg: "bg-amber-50 border-amber-200", icon: <Clock className="h-3 w-3" /> },
   processing: { label: "Processing", color: "text-orange-600", bg: "bg-orange-50 border-orange-200", icon: <Clock className="h-3 w-3" /> },
+  assigned: { label: "Dispatched", color: "text-blue-600", bg: "bg-blue-50 border-blue-200", icon: <Truck className="h-3 w-3" /> },
+  out_for_delivery: { label: "Out for Delivery", color: "text-orange-650", bg: "bg-orange-50 border-orange-200", icon: <Truck className="h-3 w-3" /> },
   shipped: { label: "Shipped", color: "text-blue-600", bg: "bg-blue-50 border-blue-200", icon: <Truck className="h-3 w-3" /> },
   completed: { label: "Completed", color: "text-green-600", bg: "bg-green-50 border-green-200", icon: <CheckCircle className="h-3 w-3" /> },
   delivered: { label: "Delivered", color: "text-green-600", bg: "bg-green-50 border-green-200", icon: <CheckCircle className="h-3 w-3" /> },
@@ -544,6 +546,8 @@ export default function AccountPage() {
         return 1;
       case "processing":
         return 2;
+      case "assigned":
+      case "out_for_delivery":
       case "shipped":
         return 3;
       case "completed":
@@ -560,7 +564,7 @@ export default function AccountPage() {
     if (orderStatusFilter !== "all") {
       const step = getOrderStatusStep(order.status);
       if (orderStatusFilter === "pending" && step > 2) return false;
-      if (orderStatusFilter === "shipped" && statusLower !== "shipped") return false;
+      if (orderStatusFilter === "shipped" && statusLower !== "shipped" && statusLower !== "out_for_delivery" && statusLower !== "assigned") return false;
       if (orderStatusFilter === "completed" && statusLower !== "completed" && statusLower !== "delivered") return false;
       if (orderStatusFilter === "cancelled" && statusLower !== "cancelled") return false;
     }
@@ -1418,6 +1422,15 @@ export default function AccountPage() {
                                         Cancel Order
                                       </button>
                                     )}
+                                    {(statusLower === "out_for_delivery" || statusLower === "shipped" || statusLower === "assigned") && (
+                                      <Link
+                                        href={`/track-order?order=${encodeURIComponent(order.order_number || "")}&phone=${encodeURIComponent(order.customer_phone || profile?.phone || "")}`}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-orange-650 hover:text-white bg-orange-50 hover:bg-orange-550 border border-orange-200 hover:border-orange-500 rounded-xl transition-all duration-300 cursor-pointer shadow-sm shadow-orange-500/5 hover:shadow-md hover:shadow-orange-500/20 hover:-translate-y-0.5 active:translate-y-0"
+                                      >
+                                        <Truck className="h-3.5 w-3.5" />
+                                        Track Order
+                                      </Link>
+                                    )}
                                     {(() => {
                                       const isDeliveredOrCompleted = statusLower === "delivered" || statusLower === "completed" || statusLower === "returned";
                                       const deliveryTime = new Date((order as any).updatedAt || order.createdAt).getTime();
@@ -1481,30 +1494,83 @@ export default function AccountPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex gap-4.5 p-5 bg-slate-50/40 border border-slate-100 rounded-2xl relative overflow-hidden hover:border-orange-200 transition duration-300">
-                      <div className="h-10 w-10 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-green-500 shrink-0 shadow-sm">
-                        <CheckCircle className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                          Order Delivered Successfully
-                          <span className="h-1.5 w-1.5 bg-orange-500 rounded-full animate-ping" />
-                        </h4>
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">Your order #GRV-2045 has been delivered to your saved address.</p>
-                        <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2 inline-block">2 Hours Ago</span>
-                      </div>
-                    </div>
+                    {(() => {
+                      const activeOrders = orders.filter((o) => {
+                        const s = (o.status || "").toLowerCase().trim();
+                        return ["assigned", "out_for_delivery", "shipped", "delivered", "completed"].includes(s);
+                      });
 
-                    <div className="flex gap-4.5 p-5 bg-slate-50/40 border border-slate-100 rounded-2xl hover:border-orange-200 transition duration-300">
-                      <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0 shadow-sm">
-                        <Truck className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-800">Order Dispatched</h4>
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">Your order #GRV-2041 is out for delivery with our rider.</p>
-                        <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2 inline-block">1 Day Ago</span>
-                      </div>
-                    </div>
+                      if (activeOrders.length === 0) {
+                        return (
+                          <div className="text-center py-16 px-4 bg-slate-50/30 border border-dashed border-slate-200 rounded-3xl">
+                            <div className="h-14 w-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 mb-4 mx-auto shadow-sm">
+                              <Bell className="h-6 w-6" />
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-800">No Notifications Yet</h4>
+                            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+                              When you place an order, delivery and tracking status alerts will appear here.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return activeOrders.map((order) => {
+                        const statusLower = (order.status || "").toLowerCase().trim();
+                        const orderNum = order.order_number || `ORD-${String(order.id).padStart(4, "0")}`;
+                        const phoneParam = order.customer_phone || profile?.phone || "";
+
+                        if (statusLower === "out_for_delivery" || statusLower === "shipped" || statusLower === "assigned") {
+                          return (
+                            <div key={order.id} className="flex gap-4.5 p-5 bg-slate-50/40 border border-slate-100 rounded-2xl hover:border-orange-200 transition duration-300">
+                              <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0 shadow-sm">
+                                <Truck className="h-5 w-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-bold text-slate-800">Order Out for Delivery</h4>
+                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                  Your order <span className="font-bold text-slate-700">{orderNum}</span> is out for delivery with our rider.
+                                </p>
+                                <div className="mt-3 flex gap-2">
+                                  <Link
+                                    href={`/track-order?order=${encodeURIComponent(orderNum)}&phone=${encodeURIComponent(phoneParam)}`}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white bg-orange-500 hover:bg-orange-600 rounded-xl transition duration-200 shadow-md shadow-orange-500/10 cursor-pointer"
+                                  >
+                                    <Truck className="h-3.5 w-3.5" />
+                                    Track Order
+                                  </Link>
+                                </div>
+                                <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2.5 inline-block">
+                                  {new Date((order as any).updatedAt || order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (statusLower === "delivered" || statusLower === "completed") {
+                          return (
+                            <div key={order.id} className="flex gap-4.5 p-5 bg-slate-50/40 border border-slate-100 rounded-2xl relative overflow-hidden hover:border-orange-200 transition duration-300">
+                              <div className="h-10 w-10 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-green-500 shrink-0 shadow-sm">
+                                <CheckCircle className="h-5 w-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                  Order Delivered Successfully
+                                </h4>
+                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                  Your order <span className="font-bold text-slate-700">{orderNum}</span> has been delivered to your saved address.
+                                </p>
+                                <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2 inline-block">
+                                  {new Date((order as any).updatedAt || order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      });
+                    })()}
                   </div>
                 </div>
               )}

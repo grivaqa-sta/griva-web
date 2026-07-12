@@ -378,6 +378,31 @@ export default function CategoryPage() {
     icon: <Tag className="h-6 w-6 text-white" />,
   };
 
+  if (!loading && !matchedCategory) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-gray-50/40 px-4 py-16">
+        <title>Category Not Found | GRIVA</title>
+        <div className="text-center max-w-md w-full bg-white rounded-[32px] border border-gray-100 p-8 md:p-10 shadow-sm space-y-6">
+          <div className="h-16 w-16 bg-orange-50 text-[#FF6A00] rounded-2xl flex items-center justify-center mx-auto">
+            <Tag className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Category Not Found</h1>
+            <p className="text-xs text-gray-500 leading-relaxed font-medium">
+              We couldn't find the category you're looking for. It may have been moved or deleted.
+            </p>
+          </div>
+          <Link
+            href="/shop"
+            className="block w-full text-center rounded-2xl bg-[#FF6A00] py-4 text-xs font-bold text-white hover:bg-[#d93e00] transition-colors shadow-lg shadow-orange-500/10"
+          >
+            Explore All Products
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="bg-gray-50/40 min-h-screen py-8"
@@ -417,9 +442,8 @@ export default function CategoryPage() {
           <span className="text-gray-900 capitalize font-bold">{meta.title}</span>
         </nav>
 
-        {/* Category Hero Banner */}
         <div
-          className="relative overflow-hidden rounded-3xl text-white shadow-2xl bg-zinc-950"
+          className="hidden sm:block relative overflow-hidden rounded-3xl text-white shadow-2xl bg-zinc-950"
           style={{
             minHeight: "220px",
             background: `linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)`,
@@ -464,15 +488,9 @@ export default function CategoryPage() {
             style={{ background: `linear-gradient(to right, ${meta.accentColor}, transparent)` }}
           />
           <div className="relative z-10 p-8 md:p-12 max-w-2xl flex flex-col justify-center min-h-[220px]">
-            <div className="space-y-4">
-              {/* Premium Top Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-bold tracking-widest uppercase text-white/95 w-fit">
-                <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: meta.accentColor || "#FF6A00" }} />
-                Premium Qatar Collection
-              </div>
-
+            <div className="space-y-2">
               {/* Heading */}
-              <h1 className="text-3xl md:text-5xl font-extrabold tracking-wider uppercase leading-tight">
+              <h1 className="text-2xl md:text-4xl font-extrabold tracking-wider uppercase leading-tight">
                 {meta.title.includes("&") ? (
                   <>
                     {meta.title.split("&")[0]}
@@ -483,26 +501,9 @@ export default function CategoryPage() {
               </h1>
 
               {/* Tagline */}
-              <p className="text-xs md:text-sm text-white/85 leading-relaxed max-w-md font-medium tracking-wide">
+              <p className="text-xs md:text-sm text-white/90 leading-relaxed max-w-md font-medium tracking-wide">
                 {meta.tagline}
               </p>
-
-              {/* Professional Benefit Blocks */}
-              {meta.benefits && meta.benefits.length > 0 && (
-                <div className="flex flex-wrap gap-5 pt-3">
-                  {meta.benefits.map((benefit, i) => (
-                    <div key={i} className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 backdrop-blur-xs">
-                        {getBenefitIcon(benefit.iconName, meta.accentColor || "#FF6A00")}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-bold text-white tracking-wide leading-tight">{benefit.title}</span>
-                        <span className="text-[9px] text-white/60 font-semibold tracking-wide mt-0.5">{benefit.desc}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>

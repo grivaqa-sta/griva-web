@@ -508,7 +508,7 @@ const seedDatabase = async () => {
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
         whatsappNumber: "+97455551234",
-        supportEmail: "support@thegriva.com",
+        supportEmail: "info@thegriva.com",
         shippingFee: 10.00,
         freeShippingThreshold: 99.00,
       });

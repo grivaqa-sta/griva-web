@@ -372,7 +372,7 @@ const sendBroadcastEmail = async (email, subject, htmlContent) => {
 
     const sendSmtpEmail = {
       sender: {
-        email: process.env.SENDER_EMAIL || "support@griva.com",
+        email: process.env.SENDER_EMAIL || "info@thegriva.com",
         name: process.env.SENDER_NAME || "GRIVA Store",
       },
       to: [
@@ -404,7 +404,7 @@ const sendSubscriberWelcomeEmail = async (email) => {
 
     const sendSmtpEmail = {
       sender: {
-        email: process.env.SENDER_EMAIL || "support@griva.com",
+        email: process.env.SENDER_EMAIL || "info@thegriva.com",
         name: process.env.SENDER_NAME || "GRIVA Store",
       },
       to: [
@@ -450,7 +450,7 @@ const sendAdminNewSubscriberNotification = async (email, country) => {
 
     const sendSmtpEmail = {
       sender: {
-        email: process.env.SENDER_EMAIL || "support@griva.com",
+        email: process.env.SENDER_EMAIL || "info@thegriva.com",
         name: process.env.SENDER_NAME || "GRIVA Store",
       },
       to: [
@@ -489,7 +489,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
 
     const sendSmtpEmail = {
       sender: {
-        email: process.env.SENDER_EMAIL || "support@thegriva.com",
+        email: process.env.SENDER_EMAIL || "info@thegriva.com",
         name: process.env.SENDER_NAME || "GRIVA Store",
       },
       to: [

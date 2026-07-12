@@ -46,10 +46,12 @@ const footerLinks: FooterLinkGroup[] = [
   {
     title: "Popular Categories",
     links: [
-      { label: "Laptops", href: "/category/laptops" },
-      { label: "Television", href: "/category/television" },
-      { label: "Headphones", href: "/category/headphones" },
-      { label: "Smart Gadgets", href: "/category/gadgets" },
+      { label: "Perfumes & Buhoor", href: "/category/perfumes-buhoor" },
+      { label: "Toys & Games", href: "/category/toys" },
+      { label: "Baby Products", href: "/category/baby-products" },
+      { label: "Gadgets & Electronics", href: "/category/gadgets-electronics" },
+      { label: "Gaming Accessories", href: "/category/gaming-accessories" },
+      { label: "Kitchen Appliances", href: "/category/kitchen-appliances-essentials" },
     ],
   },
 ];
@@ -123,7 +125,7 @@ export default function Footer() {
               Your go-to store for authenticated, high-quality flagship electronics, audio gear, and gadgets.
             </p>
             <div className="space-y-1.5 text-xs text-zinc-300 font-semibold">
-              <p>Email: support@griva.com</p>
+              <p>Email: info@thegriva.com</p>
               <p>Support: +08 9229 8228</p>
             </div>
             {/* Social handles */}

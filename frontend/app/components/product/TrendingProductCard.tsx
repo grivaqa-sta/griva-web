@@ -4,7 +4,7 @@ import { ApiProduct } from "@/app/types/types";
 import Image from "next/image";
 import Link from "next/link";
 import Rating from "../rating/Rating";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, Truck } from "lucide-react";
 import { useWishlist } from "@/app/context/WishlistContext";
 import { useCart } from "@/app/context/CartContext";
 import { motion } from "framer-motion";
@@ -73,7 +73,7 @@ export default function TrendingProductCard({
           <div className="absolute left-2 top-2 z-10 flex items-center gap-1">
             {(product.discount_percentage ?? 0) > 0 && (
               <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
-                -{product.discount_percentage}%
+                {product.discount_percentage}% OFF
               </span>
             )}
             {product.is_trending && (
@@ -173,6 +173,11 @@ export default function TrendingProductCard({
               </button>
             )}
           </div>
+          {/* Delivery Estimate */}
+          <div className="flex items-center gap-1 mt-1.5 text-[9px] font-semibold text-gray-500">
+            <Truck size={12} className="text-gray-400 shrink-0" />
+            <span>Delivery in 1-2 Days</span>
+          </div>
         </div>
       </Link>
 
@@ -190,7 +195,7 @@ export default function TrendingProductCard({
           <div className="absolute left-3 top-3 z-20 flex gap-1">
             {(product.discount_percentage ?? 0) > 0 && (
               <span className="rounded bg-orange-500 px-2 py-0.5 text-[9px] font-extrabold text-white uppercase tracking-wide">
-                -{product.discount_percentage}%
+                {product.discount_percentage}% OFF
               </span>
             )}
             {product.is_trending && (
@@ -298,6 +303,11 @@ export default function TrendingProductCard({
                   <ShoppingCart size={14} strokeWidth={2.2} />
                 </button>
               )}
+            </div>
+            {/* Delivery Estimate */}
+            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-semibold text-gray-500">
+              <Truck size={13} className="text-gray-400 shrink-0" />
+              <span>Delivery in 1-2 Days</span>
             </div>
           </div>
         </Link>

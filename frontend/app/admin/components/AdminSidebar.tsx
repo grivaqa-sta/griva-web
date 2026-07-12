@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,7 +8,7 @@ import {
   Sliders,
   Users,
   ArrowUpRight,
-  EyeOff,
+  LogOut,
   ShoppingBag,
   List,
   Layers,
@@ -23,6 +23,8 @@ import {
   Undo,
   Sun,
   Moon,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
 import { useAdminTheme } from "@/app/admin/context/AdminThemeContext";
@@ -97,6 +99,16 @@ export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount,
   const { logout, role, user } = useUser();
   const { theme, toggleTheme, isDark } = useAdminTheme();
   
+  // Track collapsed state of groups (default expanded)
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (groupName: string) => {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [groupName]: !prev[groupName],
+    }));
+  };
+
   const handleSignOut = () => {
     logout();
     router.replace("/admin/auth/login");
@@ -148,111 +160,120 @@ export default function AdminSidebar({ activeTab, setActiveTab, unreviewedCount,
         </div>
    
         {/* Nav Links */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {filteredGroups.map((g) => (
-            <div key={g.group} className="space-y-2">
-              <h3 className="px-4 text-[10px] font-bold tracking-wider uppercase" style={{ color: 'var(--admin-text-faint)' }}>
-                {g.group}
-              </h3>
-              <nav className="space-y-1">
-                {g.items.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => {
-                      setActiveTab(n.id);
-                      onClose?.();
-                    }}
-                    className={`w-full flex items-center text-left gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                      activeTab === n.id
-                        ? "text-orange-500 border-l-4 border-orange-500"
-                        : ""
-                    }`}
-                    style={
-                      activeTab === n.id
-                        ? { background: 'var(--admin-sidebar-active-bg)' }
-                        : { color: 'var(--admin-text-dim)' }
-                    }
-                    onMouseEnter={(e) => {
-                      if (activeTab !== n.id) {
-                        e.currentTarget.style.backgroundColor = 'var(--admin-surface-hover)';
-                        e.currentTarget.style.color = 'var(--admin-text)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activeTab !== n.id) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = 'var(--admin-text-dim)';
-                      }
-                    }}
-                  >
-                    {n.icon}
-                    <span className="flex-1">{n.label}</span>
-                    {n.id === "orders" && unreviewedCount !== undefined && unreviewedCount > 0 && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white animate-pulse shrink-0">
-                        {unreviewedCount}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </nav>
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {filteredGroups.map((g) => {
+            const isCollapsed = collapsedGroups[g.group];
+            return (
+              <div key={g.group} className="space-y-1">
+                <button
+                  onClick={() => toggleGroup(g.group)}
+                  className="w-full flex items-center justify-between px-4 py-1.5 text-[10px] font-bold tracking-wider uppercase text-left cursor-pointer select-none rounded-lg hover:text-orange-500 transition-colors"
+                  style={{ color: 'var(--admin-text-faint)' }}
+                >
+                  <span>{g.group}</span>
+                  {isCollapsed ? (
+                    <ChevronRight className="h-3 w-3 shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  )}
+                </button>
+                {!isCollapsed && (
+                  <nav className="space-y-0.5">
+                    {g.items.map((n) => (
+                      <button
+                        key={n.id}
+                        onClick={() => {
+                          setActiveTab(n.id);
+                          onClose?.();
+                        }}
+                        className={`w-full flex items-center text-left gap-3 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                          activeTab === n.id
+                            ? "text-orange-500 border-l-4 border-orange-500"
+                            : ""
+                        }`}
+                        style={
+                          activeTab === n.id
+                            ? { background: 'var(--admin-sidebar-active-bg)' }
+                            : { color: 'var(--admin-text-dim)' }
+                        }
+                        onMouseEnter={(e) => {
+                          if (activeTab !== n.id) {
+                            e.currentTarget.style.backgroundColor = 'var(--admin-surface-hover)';
+                            e.currentTarget.style.color = 'var(--admin-text)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (activeTab !== n.id) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--admin-text-dim)';
+                          }
+                        }}
+                      >
+                        {n.icon}
+                        <span className="flex-1">{n.label}</span>
+                        {n.id === "orders" && unreviewedCount !== undefined && unreviewedCount > 0 && (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white animate-pulse shrink-0">
+                            {unreviewedCount}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </nav>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+      {/* Compact Footer (Saves 80% vertical space, fits small laptops perfectly) */}
+      <div className="p-4 shrink-0" style={{ borderTop: '1px solid var(--admin-sidebar-border)' }}>
+        <div className="flex items-center justify-between px-1">
+          {/* Identity */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-black text-xs text-white uppercase shrink-0">
+              {role === "staff" ? "S" : "A"}
             </div>
-          ))}
-        </div>
-
-      {/* Footer */}
-      <div className="p-6 space-y-3 shrink-0" style={{ borderTop: '1px solid var(--admin-sidebar-border)' }}>
-
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-[0.98]"
-          style={{
-            backgroundColor: isDark ? 'var(--admin-surface-hover)' : 'var(--admin-bg-secondary)',
-            color: 'var(--admin-text-dim)',
-            border: '1px solid var(--admin-border)',
-          }}
-        >
-          {isDark ? <Sun className="h-3.5 w-3.5 text-orange-500" /> : <Moon className="h-3.5 w-3.5 text-orange-500" />}
-          {isDark ? "Light Mode" : "Dark Mode"}
-        </button>
-
-        {/* Admin Identity */}
-        <div className="flex items-center gap-3 px-2">
-          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-black text-sm text-white uppercase">
-            {role === "staff" ? "S" : "A"}
+            <div className="min-w-0 leading-tight">
+              <span className="text-xs font-bold block truncate max-w-[85px]" style={{ color: 'var(--admin-text-secondary)' }}>
+                {user?.name || (role === "staff" ? "Staff" : "Admin")}
+              </span>
+              <span className="text-[8px] text-green-500 font-bold flex items-center gap-0.5">
+                <span className="h-1 w-1 rounded-full bg-green-500 animate-pulse shrink-0" />
+                {role === "staff" ? "Operations" : "Store Admin"}
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="text-xs font-bold block truncate max-w-[120px]" style={{ color: 'var(--admin-text-secondary)' }}>
-              {user?.name || (role === "staff" ? "Griva Staff" : "Griva Admin")}
-            </span>
-            <span className="text-[9px] text-green-500 font-bold flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-              {role === "staff" ? "Operations Staff" : "Store Admin"}
-            </span>
+
+          {/* Compact Action Icons */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition cursor-pointer active:scale-95"
+              title={isDark ? "Light Mode" : "Dark Mode"}
+            >
+              {isDark ? <Sun className="h-3.5 w-3.5 text-orange-500" /> : <Moon className="h-3.5 w-3.5 text-orange-500" />}
+            </button>
+
+            {/* View Live Store */}
+            <Link
+              href="/"
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition cursor-pointer"
+              title="View Live Store"
+            >
+              <ArrowUpRight className="h-3.5 w-3.5 text-orange-500" />
+            </Link>
+
+            {/* Sign Out */}
+            <button
+              onClick={handleSignOut}
+              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-400 hover:text-red-500 transition cursor-pointer active:scale-95"
+              title="Sign Out"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
-
-        {/* View Store */}
-        <Link
-          href="/"
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
-          style={{
-            border: '1px solid var(--admin-border-accent)',
-            color: 'var(--admin-text-dim)',
-          }}
-        >
-          <ArrowUpRight className="h-3.5 w-3.5 text-orange-500" />
-          View Live Store
-        </Link>
-
-        {/* Sign Out */}
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-red-500/30 text-xs font-bold text-red-400 hover:bg-red-500/5 transition-all cursor-pointer"
-        >
-          <EyeOff className="h-3.5 w-3.5" />
-          Sign Out
-        </button>
       </div>
     </aside>
     </>

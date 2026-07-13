@@ -27,6 +27,28 @@ function getVisibleCards(width: number): number {
   return 5;
 }
 
+function CategorySectionSkeleton() {
+  return (
+    <div>
+      {/* Mobile placeholder */}
+      <div className="block sm:hidden h-20 animate-pulse bg-gray-50/50 border-b border-gray-100/50" />
+      
+      {/* Desktop skeleton */}
+      <section className="hidden sm:block w-full py-8 animate-pulse">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-2xl bg-gray-50/50 border border-gray-100/50 h-[120px] flex items-center justify-center">
+                <div className="h-4 w-20 bg-gray-200/80 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function CategorySection() {
   const { announcementBarEnabled } = useAdminSettings();
   // ── API state ──────────────────────────────────────────────────────────────
@@ -172,7 +194,11 @@ export default function CategorySection() {
     }
   };
 
-  if (isLoading || categories.length === 0) return null;
+  if (isLoading) {
+    return <CategorySectionSkeleton />;
+  }
+
+  if (categories.length === 0) return null;
 
   return (
     <div>

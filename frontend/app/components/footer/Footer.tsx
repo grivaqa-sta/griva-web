@@ -246,9 +246,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom copyright section */}
-        <div className="border-t border-zinc-800 py-6 flex flex-col md:flex-row items-center justify-center gap-4">
+        <div className="border-t border-zinc-800 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[11px] text-zinc-500 font-medium">
             © {new Date().getFullYear()} GRIVA Store. All Rights Reserved.
+          </p>
+          <p className="text-[11px] text-zinc-500 font-medium">
+            Crafted by <Link href="https://ekodrix.com" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors font-bold">Ekodrix</Link>
           </p>
         </div>
       </div>

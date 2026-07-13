@@ -7,14 +7,24 @@ import { AnimatePresence, motion } from "framer-motion";
 import { productService } from "@/app/services/product.service";
 import { ApiProduct } from "@/app/types/types";
 
+function MobileHeroBannerSkeleton() {
+  return (
+    <div className="block lg:hidden px-4 mt-3 pb-2 animate-pulse">
+      <div className="relative w-full h-[200px] rounded-2xl bg-gray-50 border border-gray-100/50 overflow-hidden" />
+    </div>
+  );
+}
+
 // ─── Mobile Hero Banner Component ───────────────────────────────────────────────
 export default function MobileHeroBanner() {
   const [bannerProducts, setBannerProducts] = useState<ApiProduct[]>([]);
+  const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
 
   useEffect(() => {
+    setLoading(true);
     productService.getBannerProducts().then((res) => {
       const data: ApiProduct[] = res?.data || res;
       if (Array.isArray(data)) {
@@ -24,6 +34,9 @@ export default function MobileHeroBanner() {
         );
         setBannerProducts(withMobileBanner);
       }
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -57,6 +70,10 @@ export default function MobileHeroBanner() {
       );
     }
   };
+
+  if (loading) {
+    return <MobileHeroBannerSkeleton />;
+  }
 
   if (bannerProducts.length === 0) return null;
 

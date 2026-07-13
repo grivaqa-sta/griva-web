@@ -11,6 +11,88 @@ import { useCart } from "@/app/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDealOfDay } from "@/app/hooks/useHomeData";
 
+function DealOfTheDaySkeleton() {
+  return (
+    <section className="w-full py-5 animate-pulse">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
+        
+        {/* Left Timer Skeleton - Desktop only */}
+        <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl border border-orange-100 bg-orange-50/50 px-6 py-8 space-y-4 h-full">
+          <div className="h-3.5 w-24 bg-orange-100 rounded" />
+          <div className="h-6 w-32 bg-orange-200/55 rounded" />
+          <div className="h-10 w-44 bg-orange-150/45 rounded" />
+          <div className="flex gap-2 pt-2">
+            <div className="h-11 w-12 bg-orange-200/50 rounded" />
+            <div className="h-11 w-12 bg-orange-200/50 rounded" />
+            <div className="h-11 w-12 bg-orange-200/50 rounded" />
+          </div>
+        </div>
+
+        {/* Right Product Card Skeleton */}
+        <div className="relative overflow-hidden rounded-[10px] border border-gray-150 bg-white p-4 lg:p-6 shadow-sm">
+          {/* Mobile timer skeleton */}
+          <div className="lg:hidden h-16 bg-orange-50 rounded mb-4 flex items-center justify-between px-4">
+            <div className="space-y-1.5">
+              <div className="h-2 w-16 bg-orange-200/50 rounded" />
+              <div className="h-4 w-24 bg-orange-200/55 rounded" />
+            </div>
+            <div className="flex gap-1.5">
+              <div className="h-8 w-8 bg-orange-200/50 rounded" />
+              <div className="h-8 w-8 bg-orange-200/50 rounded" />
+              <div className="h-8 w-8 bg-orange-200/50 rounded" />
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Image section skeleton */}
+            <div className="flex shrink-0 gap-3">
+              {/* Thumbs skeleton */}
+              <div className="flex shrink-0 flex-col gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-12 w-12 bg-gray-100 rounded-lg border border-gray-50" />
+                ))}
+              </div>
+              {/* Main image placeholder */}
+              <div className="mx-auto h-[220px] w-[220px] lg:h-[240px] lg:w-[240px] bg-gray-50 rounded-xl border border-gray-100/50" />
+            </div>
+
+            {/* Content section skeleton */}
+            <div className="flex flex-col gap-3 flex-1 justify-between py-1">
+              <div className="space-y-2.5">
+                {/* Badge & Category */}
+                <div className="flex gap-2">
+                  <div className="h-4 w-24 bg-gray-200 rounded" />
+                  <div className="h-4 w-12 bg-gray-200 rounded" />
+                </div>
+                <div className="h-3 w-16 bg-gray-200 rounded" />
+                {/* Title */}
+                <div className="h-5 w-11/12 bg-gray-200 rounded" />
+                <div className="h-5 w-8/12 bg-gray-200 rounded" />
+                {/* Rating */}
+                <div className="h-4 w-24 bg-gray-200 rounded mt-1" />
+                {/* Price */}
+                <div className="h-8 w-36 bg-gray-200 rounded mt-2" />
+                {/* Description */}
+                <div className="hidden lg:block space-y-1.5 pt-1">
+                  <div className="h-3 w-full bg-gray-200 rounded" />
+                  <div className="h-3 w-10/12 bg-gray-200 rounded" />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 w-full lg:w-[360px] pt-4">
+                <div className="h-11 flex-1 bg-gray-200 rounded-[5px]" />
+                <div className="h-11 flex-1 bg-gray-200 rounded-[5px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
+
 export default function DealOfTheDaySection() {
   const { addToCart } = useCart();
   const router = useRouter();
@@ -112,15 +194,7 @@ export default function DealOfTheDaySection() {
   };
 
   if (loading) {
-    return (
-      <section className="w-full py-5">
-        <div className="mx-auto grid max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-gray-100 bg-white">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-          </div>
-        </div>
-      </section>
-    );
+    return <DealOfTheDaySkeleton />;
   }
 
   if (!slides.length) return null;

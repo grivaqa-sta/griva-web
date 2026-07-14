@@ -97,7 +97,7 @@ export default function MobileHeroBanner() {
       >
         {/* Rectangle Image Banner */}
         <Link href={href}>
-          <div className="relative w-full h-[200px] rounded-2xl overflow-hidden">
+          <div className="relative w-full rounded-2xl overflow-hidden shadow-xs border border-gray-150/40 bg-gray-50/50">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current}
@@ -105,15 +105,12 @@ export default function MobileHeroBanner() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.4 }}
-                className="absolute inset-0"
+                className="w-full"
               >
-                <Image
+                <img
                   src={imageSrc}
                   alt={product.title}
-                  fill
-                  sizes="(max-width: 1024px) 100vw"
-                  priority
-                  className="object-cover"
+                  className="w-full h-auto object-contain block"
                 />
               </motion.div>
             </AnimatePresence>

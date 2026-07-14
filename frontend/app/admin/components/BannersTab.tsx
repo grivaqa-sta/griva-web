@@ -155,8 +155,8 @@ function MobileBannersSection() {
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20 flex justify-between items-center">
         <div>
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Homepage Banner Creative Uploads (Mobile &amp; Desktop)</h4>
-          <p className="text-[10px] text-gray-400 mt-1">Upload mobile and desktop-specific promo banner images for active hero products.</p>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Homepage Banner Creative Uploads (Mobile)</h4>
+          <p className="text-[10px] text-gray-400 mt-1">Upload mobile-specific promo banner images for active hero products.</p>
         </div>
         <button
           onClick={loadBannerProducts}
@@ -179,11 +179,8 @@ function MobileBannersSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {bannerProducts.map((product) => {
             const mobileSrc = product.mobile_ad_banner;
-            const desktopSrc = product.desktop_ad_banner;
             const isUploadingMobile = uploadingMobileId === product.id;
             const isSuccessMobile = successMobileId === product.id;
-            const isUploadingDesktop = uploadingDesktopId === product.id;
-            const isSuccessDesktop = successDesktopId === product.id;
 
             return (
               <div key={product.id} className="bg-white border border-orange-500/30 p-4 rounded-xl flex flex-col gap-4">
@@ -195,122 +192,60 @@ function MobileBannersSection() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Mobile Banner Card */}
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Mobile Banner (750x400 approx.)</span>
-                    <div className="flex gap-3 items-center">
-                      <label
-                        className="h-20 w-32 shrink-0 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative cursor-pointer hover:opacity-80 transition-opacity group flex items-center justify-center"
-                        title="Click to upload mobile banner image"
-                      >
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleMobileImageUpload(product, file);
-                          }}
-                        />
-                        {isUploadingMobile ? (
-                          <Loader className="h-5 w-5 animate-spin text-orange-500" />
-                        ) : isSuccessMobile ? (
-                          <Check className="h-6 w-6 text-green-500" />
-                        ) : mobileSrc ? (
-                          <>
-                            <img
-                              src={mobileSrc.startsWith('http') || mobileSrc.startsWith('/') ? mobileSrc : `http://localhost:8080${mobileSrc}`}
-                              className="w-full h-full object-cover"
-                              alt="Mobile Banner"
-                            />
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <span className="text-white text-[9px] font-bold">Change Image</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-1 hover:text-orange-500 transition-colors">
-                            <ImageIcon className="h-5 w-5" />
-                            <span className="text-[8px] font-bold uppercase">Upload</span>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Mobile Banner (750x400 approx.)</span>
+                  <div className="flex gap-3 items-center">
+                    <label
+                      className="h-20 w-32 shrink-0 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative cursor-pointer hover:opacity-80 transition-opacity group flex items-center justify-center"
+                      title="Click to upload mobile banner image"
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleMobileImageUpload(product, file);
+                        }}
+                      />
+                      {isUploadingMobile ? (
+                        <Loader className="h-5 w-5 animate-spin text-orange-500" />
+                      ) : isSuccessMobile ? (
+                        <Check className="h-6 w-6 text-green-500" />
+                      ) : mobileSrc ? (
+                        <>
+                          <img
+                            src={mobileSrc.startsWith('http') || mobileSrc.startsWith('/') ? mobileSrc : `http://localhost:8080${mobileSrc}`}
+                            className="w-full h-full object-cover"
+                            alt="Mobile Banner"
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-white text-[9px] font-bold">Change Image</span>
                           </div>
-                        )}
-                      </label>
-                      <div className="flex-1 min-w-0">
-                        {mobileSrc ? (
-                          <div className="space-y-1">
-                            <div className="text-[9px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100 text-center">
-                              Uploaded
-                            </div>
-                            <button
-                              onClick={() => handleRemoveMobileImage(product)}
-                              className="text-[9px] font-bold text-red-500 hover:text-red-700 underline block cursor-pointer"
-                            >
-                              Remove Image
-                            </button>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-1 hover:text-orange-500 transition-colors">
+                          <ImageIcon className="h-5 w-5" />
+                          <span className="text-[8px] font-bold uppercase">Upload</span>
+                        </div>
+                      )}
+                    </label>
+                    <div className="flex-1 min-w-0">
+                      {mobileSrc ? (
+                        <div className="space-y-1">
+                          <div className="text-[9px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100 text-center">
+                            Uploaded
                           </div>
-                        ) : (
-                          <span className="text-[9px] text-gray-400 italic">No image</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop Banner Card */}
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Desktop Banner (1920x600 approx.)</span>
-                    <div className="flex gap-3 items-center">
-                      <label
-                        className="h-20 w-32 shrink-0 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative cursor-pointer hover:opacity-80 transition-opacity group flex items-center justify-center"
-                        title="Click to upload desktop banner image"
-                      >
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleDesktopImageUpload(product, file);
-                          }}
-                        />
-                        {isUploadingDesktop ? (
-                          <Loader className="h-5 w-5 animate-spin text-orange-500" />
-                        ) : isSuccessDesktop ? (
-                          <Check className="h-6 w-6 text-green-500" />
-                        ) : desktopSrc ? (
-                          <>
-                            <img
-                              src={desktopSrc.startsWith('http') || desktopSrc.startsWith('/') ? desktopSrc : `http://localhost:8080${desktopSrc}`}
-                              className="w-full h-full object-cover"
-                              alt="Desktop Banner"
-                            />
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <span className="text-white text-[9px] font-bold">Change Image</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-1 hover:text-orange-500 transition-colors">
-                            <ImageIcon className="h-5 w-5" />
-                            <span className="text-[8px] font-bold uppercase">Upload</span>
-                          </div>
-                        )}
-                      </label>
-                      <div className="flex-1 min-w-0">
-                        {desktopSrc ? (
-                          <div className="space-y-1">
-                            <div className="text-[9px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100 text-center">
-                              Uploaded
-                            </div>
-                            <button
-                              onClick={() => handleRemoveDesktopImage(product)}
-                              className="text-[9px] font-bold text-red-500 hover:text-red-700 underline block cursor-pointer"
-                            >
-                              Remove Image
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-[9px] text-gray-400 italic">No image</span>
-                        )}
-                      </div>
+                          <button
+                            onClick={() => handleRemoveMobileImage(product)}
+                            className="text-[9px] font-bold text-red-500 hover:text-red-700 underline block cursor-pointer"
+                          >
+                            Remove Image
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[9px] text-gray-400 italic">No image</span>
+                      )}
                     </div>
                   </div>
                 </div>

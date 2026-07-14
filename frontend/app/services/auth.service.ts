@@ -12,8 +12,8 @@ export const authService = {
     return response.data;
   },
 
-  forgotPassword: async (email: string) => {
-    const response = await api.post("/auth/forgot-password",{ email });
+  forgotPassword: async (email: string, isAdminRequest?: boolean) => {
+    const response = await api.post("/auth/forgot-password", { email, isAdminRequest });
     return response.data;
   },
 

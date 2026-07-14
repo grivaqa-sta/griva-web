@@ -117,11 +117,7 @@ export default function LazyFridayDeals() {
   }, []);
 
   const isPreview = typeof window !== "undefined" && window.location.search.includes("preview=friday");
-  const showSection = fridaySaleEnabled === true && (isFriday || isPreview);
-
-  if (fridaySaleEnabled === null) {
-    return null;
-  }
+  const showSection = isFriday || isPreview;
 
   if (!showSection) {
     return null;

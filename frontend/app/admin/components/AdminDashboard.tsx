@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdminSettings } from "@/app/context/AdminContext";
 import { useUser } from "@/app/context/UserContext";
+import { queryClient } from "@/app/utils/cache";
 import { useSocket } from "@/app/context/SocketContext";
 import { useToast } from "@/app/context/ToastContext";
 import { useAdminTheme } from "@/app/admin/context/AdminThemeContext";
@@ -155,6 +156,10 @@ export default function AdminDashboard() {
   }, []);
 
   const loadAnalytics = useCallback(async () => {
+    if (role === "staff") {
+      setAnalyticsLoading(false);
+      return;
+    }
     if (dateRangeOption === "custom" && (!customStartDate || !customEndDate)) {
       return;
     }
@@ -168,7 +173,7 @@ export default function AdminDashboard() {
     } finally {
       setAnalyticsLoading(false);
     }
-  }, [dateRangeOption, customStartDate, customEndDate]);
+  }, [dateRangeOption, customStartDate, customEndDate, role]);
 
   // ── Data load (Static Settings, Subs, Orders) ──────────────────────────────
   useEffect(() => {
@@ -263,28 +268,34 @@ export default function AdminDashboard() {
   const handleToggleAnnouncement = async () => {
     const v = !announcementBarEnabled; setAnnouncementBarEnabled(v);
     await updateSettingsApi({ announcementBarEnabled: v });
+    queryClient.invalidate("global_settings");
   };
   const handleToggleFridaySale = async () => {
     const v = !fridaySaleEnabled; setFridaySaleEnabled(v);
     await updateSettingsApi({ fridaySaleEnabled: v });
+    queryClient.invalidate("global_settings");
   };
   const handleToggleMidnightSale = async () => {
     const v = !midnightSaleEnabled; setMidnightSaleEnabled(v);
     await updateSettingsApi({ midnightSaleEnabled: v });
+    queryClient.invalidate("global_settings");
   };
   const handleSaveShippingConfig = async (fee: number, threshold: number) => {
     setShippingFee(fee);
     setFreeShippingThreshold(threshold);
     await updateSettingsApi({ shippingFee: fee, freeShippingThreshold: threshold });
+    queryClient.invalidate("global_settings");
   };
   const handleSaveExclusiveLinks = async (tg: string, wa: string) => {
     setTelegramLink(tg);
     setWhatsappCommunityLink(wa);
     await updateSettingsApi({ telegramLink: tg, whatsappCommunityLink: wa });
+    queryClient.invalidate("global_settings");
   };
   const handleSaveFridaySaleConfig = async (config: any) => {
     setFridaySaleConfig(config);
     await updateSettingsApi({ fridaySaleConfig: config });
+    queryClient.invalidate("global_settings");
   };
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
@@ -376,8 +387,6 @@ export default function AdminDashboard() {
               setCustomStartDate={setCustomStartDate}
               customEndDate={customEndDate}
               setCustomEndDate={setCustomEndDate}
-              fridaySaleConfig={fridaySaleConfig}
-              onSaveFridaySaleConfig={handleSaveFridaySaleConfig}
             />
           )}
           {activeTab === "products" && (
@@ -390,7 +399,10 @@ export default function AdminDashboard() {
             <BannersTab
               slidesList={slidesList}
               handleToggleSlide={() => { }}
-              mobileBannersList={mobileBannersList} setMobileBannersList={setMobileBannersList}
+              mobileBannersList={mobileBannersList}
+              setMobileBannersList={setMobileBannersList}
+              fridaySaleConfig={fridaySaleConfig}
+              onSaveFridaySaleConfig={handleSaveFridaySaleConfig}
             />
           )}
           {activeTab === "subscribers" && (

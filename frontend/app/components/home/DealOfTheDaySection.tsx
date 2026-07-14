@@ -29,7 +29,7 @@ function DealOfTheDaySkeleton() {
         </div>
 
         {/* Right Product Card Skeleton */}
-        <div className="relative overflow-hidden rounded-[10px] border border-gray-150 bg-white p-4 lg:p-6 shadow-sm">
+        <div className="relative overflow-hidden rounded-[10px] border border-gray-100/40 bg-white p-4 lg:p-6 shadow-sm">
           {/* Mobile timer skeleton */}
           <div className="lg:hidden h-16 bg-orange-50 rounded mb-4 flex items-center justify-between px-4">
             <div className="space-y-1.5">

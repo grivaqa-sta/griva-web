@@ -143,7 +143,8 @@ export function MidnightSaleProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(tick);
   }, [computeState]);
 
-  const isActive = adminEnabled && withinWindow;
+  const isPreview = typeof window !== "undefined" && window.location.search.includes("preview=midnight");
+  const isActive = withinWindow || isPreview;
 
   // Inject / remove "midnight-sale" class on <html>
   useEffect(() => {

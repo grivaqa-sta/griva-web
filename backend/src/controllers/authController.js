@@ -236,7 +236,7 @@ exports.forgotPassword = async (req, res, next) => {
       resetPasswordExpire,
     });
     let resetUrl;
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.FRONTEND_URL || "https://thegriva.com";
     if(user.role === "customer"){
         resetUrl =`${frontendUrl}/auth/reset-password/${resetToken}`;
     }else{

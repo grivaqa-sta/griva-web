@@ -35,11 +35,6 @@ const getAllowedOrigins = () => {
     "https://www.griva.qa",
     "https://thegriva.com",
     "https://www.thegriva.com",
-    
-    // Vercel Preview & Production
-    "https://griva-web-chi.vercel.app",
-    "https://griva-276jdc4qt-griva.vercel.app",
-    "https://griva-web-git-main-griva.vercel.app",
 
     "https://griva-backend-kprt.onrender.com",
   ];

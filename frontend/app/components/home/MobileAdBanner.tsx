@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useBannerProducts } from "@/app/hooks/useHomeData";
 
 function MobileHeroBannerSkeleton() {
@@ -27,9 +26,11 @@ export default function MobileHeroBanner({ bannerProducts: propProducts, loading
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
 
-  const bannerProducts = (rawProducts || []).filter(
-    (p) => p.mobile_ad_banner && p.mobile_ad_banner !== "null" && p.mobile_ad_banner !== "undefined"
-  );
+  const bannerProducts = useMemo(() => {
+    return (rawProducts || []).filter(
+      (p) => p.mobile_ad_banner && p.mobile_ad_banner !== "null" && p.mobile_ad_banner !== "undefined"
+    );
+  }, [rawProducts]);
 
   useEffect(() => {
     if (bannerProducts.length === 0) return;
@@ -39,6 +40,25 @@ export default function MobileHeroBanner({ bannerProducts: propProducts, loading
     );
     return () => clearInterval(t);
   }, [bannerProducts.length]);
+
+  // Preload all banner images in background to prevent flashing/refresh feel
+  const bannerUrlsKey = useMemo(() => {
+    return bannerProducts.map((p) => p.mobile_ad_banner).join(",");
+  }, [bannerProducts]);
+
+  useEffect(() => {
+    if (bannerProducts.length === 0) return;
+    bannerProducts.forEach((product) => {
+      const src = product.mobile_ad_banner;
+      if (src) {
+        const fullSrc = src.startsWith("http") || src.startsWith("/")
+          ? src
+          : `http://localhost:8080${src}`;
+        const img = new window.Image();
+        img.src = fullSrc;
+      }
+    });
+  }, [bannerUrlsKey]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -69,18 +89,15 @@ export default function MobileHeroBanner({ bannerProducts: propProducts, loading
 
   if (bannerProducts.length === 0) return null;
 
-  // Protect array bounds
   const activeIndex = current % bannerProducts.length;
-  const product = bannerProducts[activeIndex];
-  const rawSrc = product?.mobile_ad_banner;
-  
-  if (!rawSrc) return null;
 
-  const imageSrc =
-    rawSrc.startsWith("http") || rawSrc.startsWith("/")
-      ? rawSrc
-      : `http://localhost:8080${rawSrc}`;
-  const href = product.href || `/product/${product.slug}`;
+  // We use the first image as a hidden spacer in normal document flow
+  // to dynamically establish the correct aspect ratio/height for the container.
+  const firstProduct = bannerProducts[0];
+  const firstRawSrc = firstProduct?.mobile_ad_banner;
+  const firstImageSrc = firstRawSrc.startsWith("http") || firstRawSrc.startsWith("/")
+    ? firstRawSrc
+    : `http://localhost:8080${firstRawSrc}`;
 
   return (
     <div className="block lg:hidden px-4 mt-3 pb-2">
@@ -88,44 +105,60 @@ export default function MobileHeroBanner({ bannerProducts: propProducts, loading
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        className="relative w-full rounded-2xl overflow-hidden shadow-xs bg-white"
       >
-        {/* Rectangle Image Banner */}
-        <Link href={href}>
-          <div className="relative w-full rounded-2xl overflow-hidden shadow-xs bg-white">
-            <AnimatePresence mode="popLayout">
-              <motion.div
-                key={activeIndex}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="w-full"
-              >
-                <img
-                  src={imageSrc}
-                  alt={product.title}
-                  className="w-full h-auto object-contain block"
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </Link>
+        {/* Invisible Spacer Image to establish natural aspect ratio/height */}
+        <img
+          src={firstImageSrc}
+          alt=""
+          className="w-full h-auto opacity-0 pointer-events-none block"
+        />
 
-        {/* Dot Slider */}
-        {bannerProducts.length > 1 && (
-          <div className="flex justify-center items-center gap-1.5 mt-2.5">
-            {bannerProducts.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === activeIndex ? "w-5 bg-orange-500" : "w-1.5 bg-gray-300"
-                }`}
+        {/* Stacked Images - Toggled via CSS opacity for buttery smooth transition */}
+        {bannerProducts.map((product, idx) => {
+          const rawSrc = product.mobile_ad_banner;
+          if (!rawSrc) return null;
+          
+          const imageSrc = rawSrc.startsWith("http") || rawSrc.startsWith("/")
+            ? rawSrc
+            : `http://localhost:8080${rawSrc}`;
+            
+          const href = product.href || `/product/${product.slug}`;
+          const active = idx === activeIndex;
+
+          return (
+            <Link
+              key={idx}
+              href={href}
+              className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
+                active ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+              }`}
+            >
+              <img
+                src={imageSrc}
+                alt={product.title}
+                className="w-full h-full object-cover block"
               />
-            ))}
-          </div>
-        )}
+            </Link>
+          );
+        })}
+
       </div>
+
+      {/* Dot Slider */}
+      {bannerProducts.length > 1 && (
+        <div className="flex justify-center items-center gap-1.5 mt-3">
+          {bannerProducts.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === activeIndex ? "w-5 bg-orange-500" : "w-1.5 bg-gray-300"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

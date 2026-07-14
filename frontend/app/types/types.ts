@@ -273,7 +273,7 @@ export interface ProductBanner {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  product?: ProductBannerProduct;
+  product?: ApiProduct;
 }
 
 export interface ProductBannerRequest {
@@ -372,6 +372,7 @@ export interface DealProduct {
     name: string;
   };
   rating?: number;
+  review_count?: number;
   short_description?: string;
   description?: string;
   stock?: number;

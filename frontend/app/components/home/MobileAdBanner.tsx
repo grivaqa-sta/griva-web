@@ -13,9 +13,16 @@ function MobileHeroBannerSkeleton() {
   );
 }
 
+interface MobileHeroBannerProps {
+  bannerProducts?: any[];
+  loading?: boolean;
+}
+
 // ─── Mobile Hero Banner Component ───────────────────────────────────────────────
-export default function MobileHeroBanner() {
-  const { bannerProducts: rawProducts, loading } = useBannerProducts();
+export default function MobileHeroBanner({ bannerProducts: propProducts, loading: propLoading }: MobileHeroBannerProps = {}) {
+  const hookResult = useBannerProducts();
+  const loading = propLoading !== undefined ? propLoading : hookResult.loading;
+  const rawProducts = propProducts !== undefined ? propProducts : hookResult.bannerProducts;
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);

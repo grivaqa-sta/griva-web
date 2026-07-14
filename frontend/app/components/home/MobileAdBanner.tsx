@@ -10,7 +10,7 @@ import { ApiProduct } from "@/app/types/types";
 function MobileHeroBannerSkeleton() {
   return (
     <div className="block lg:hidden px-4 mt-3 pb-2 animate-pulse">
-      <div className="relative w-full h-[200px] rounded-2xl bg-gray-50 border border-gray-100/50 overflow-hidden" />
+      <div className="relative w-full h-[180px] rounded-2xl bg-gray-100 overflow-hidden" />
     </div>
   );
 }
@@ -98,7 +98,7 @@ export default function MobileHeroBanner() {
         {/* Rectangle Image Banner */}
         <Link href={href}>
           <div className="relative w-full rounded-2xl overflow-hidden shadow-xs border border-gray-150/40 bg-gray-50/50">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout">
               <motion.div
                 key={current}
                 initial={{ opacity: 0 }}

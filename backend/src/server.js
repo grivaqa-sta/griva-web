@@ -205,6 +205,23 @@ const startServer = async () => {
 };
 
 const createDefaultAdmin = async () => {
+  // Clean up the old default admin account from database if a new admin email is configured
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL.toLowerCase().trim() !== "admin@example.com") {
+    try {
+      const deletedCount = await User.destroy({
+        where: {
+          email: "admin@example.com",
+          role: "admin",
+        }
+      });
+      if (deletedCount > 0) {
+        console.log("🧹 [DATABASE]: Cleaned up old default admin account (admin@example.com).");
+      }
+    } catch (err) {
+      console.error("⚠️ Failed to clean up old admin account:", err.message);
+    }
+  }
+
   const existingAdmin = await User.findOne({
     where: {
         email: process.env.ADMIN_EMAIL,

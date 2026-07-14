@@ -43,7 +43,6 @@ export default function ForgotPasswordPage() {
 
     try {
       const response: ForgotPasswordResponse = await authService.forgotPassword(email, true);
-      console.log(response.resetUrl)
       if (response.success) {
         setSuccess(response.message);
       }

@@ -66,7 +66,6 @@ export default function DiscoverMoreSection() {
     // Load categories independently so a banner API failure doesn't block the dropdown
     try {
       const categoriesRes = await categoryService.getAllActiveCategories();
-      console.log('Categories res:', categoriesRes);
       const allCategories = Array.isArray(categoriesRes?.data) ? categoriesRes.data : Array.isArray(categoriesRes) ? categoriesRes : [];
       setCategories(allCategories);
     } catch (err) {

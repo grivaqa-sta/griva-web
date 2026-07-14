@@ -55,7 +55,6 @@ export default function CategorySection() {
   const { categories: rawCategories, loading: isLoading } = useCategories();
   const categories = rawCategories.filter((c) => c.is_active);
 
-  console.log("categories", categories)
   // ──────────────────────────────────────────────────────────────────────────
 
   const TOTAL_CARDS = categories.length;

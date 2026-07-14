@@ -899,7 +899,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">Sub Category *</label>
-                  <div className="relative">
+                  <div className="relative z-20">
                     <div className="relative">
                       <input
                         type="text"

@@ -63,7 +63,7 @@ export default function BasicInfoStep({
         </div>
 
         {/* Sub Category */}
-        <div className="flex flex-col gap-1.5 relative">
+        <div className="flex flex-col gap-1.5 relative z-20">
           <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Sub Category *</label>
           <div className="relative">
             <input

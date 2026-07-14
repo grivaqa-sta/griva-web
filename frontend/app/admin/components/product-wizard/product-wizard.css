@@ -113,6 +113,8 @@
 
 /* Card layout enhancements */
 .wizard-card {
+  position: relative;
+  z-index: 10;
   background-color: var(--admin-surface, #ffffff);
   border: 1px solid var(--admin-card-border, rgba(249, 115, 22, 0.15));
   border-radius: 20px;

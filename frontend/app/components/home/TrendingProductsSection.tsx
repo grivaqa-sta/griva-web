@@ -85,8 +85,8 @@ export default function TrendingProductsSection() {
         <ScrollReveal>
           <div className="
             mt-6
-            grid grid-cols-2 gap-0 divide-x divide-y divide-gray-200 border border-gray-200
-            sm:mt-8 sm:grid-cols-1 sm:gap-6 sm:border-0 sm:divide-none
+            grid grid-cols-2 gap-3
+            sm:mt-8 sm:grid-cols-1 sm:gap-6
             md:grid-cols-2 xl:grid-cols-3
           ">
             {loading ? (

@@ -1,11 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { productService } from "@/app/services/product.service";
-import { ApiProduct } from "@/app/types/types";
+import { useBannerProducts } from "@/app/hooks/useHomeData";
 
 function MobileHeroBannerSkeleton() {
   return (
@@ -17,28 +15,14 @@ function MobileHeroBannerSkeleton() {
 
 // ─── Mobile Hero Banner Component ───────────────────────────────────────────────
 export default function MobileHeroBanner() {
-  const [bannerProducts, setBannerProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { bannerProducts: rawProducts, loading } = useBannerProducts();
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
 
-  useEffect(() => {
-    setLoading(true);
-    productService.getBannerProducts().then((res) => {
-      const data: ApiProduct[] = res?.data || res;
-      if (Array.isArray(data)) {
-        // Only include products that have a mobile ad banner uploaded
-        const withMobileBanner = data.filter(
-          (p) => p.mobile_ad_banner && p.mobile_ad_banner !== "null" && p.mobile_ad_banner !== "undefined"
-        );
-        setBannerProducts(withMobileBanner);
-      }
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
-  }, []);
+  const bannerProducts = (rawProducts || []).filter(
+    (p) => p.mobile_ad_banner && p.mobile_ad_banner !== "null" && p.mobile_ad_banner !== "undefined"
+  );
 
   useEffect(() => {
     if (bannerProducts.length === 0) return;
@@ -61,6 +45,7 @@ export default function MobileHeroBanner() {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (bannerProducts.length === 0) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 40) {
       setCurrent(
@@ -77,8 +62,10 @@ export default function MobileHeroBanner() {
 
   if (bannerProducts.length === 0) return null;
 
-  const product = bannerProducts[current];
-  const rawSrc = product.mobile_ad_banner;
+  // Protect array bounds
+  const activeIndex = current % bannerProducts.length;
+  const product = bannerProducts[activeIndex];
+  const rawSrc = product?.mobile_ad_banner;
   
   if (!rawSrc) return null;
 
@@ -97,10 +84,10 @@ export default function MobileHeroBanner() {
       >
         {/* Rectangle Image Banner */}
         <Link href={href}>
-          <div className="relative w-full rounded-2xl overflow-hidden shadow-xs border border-gray-150/40 bg-gray-50/50">
+          <div className="relative w-full rounded-2xl overflow-hidden shadow-xs bg-white">
             <AnimatePresence mode="popLayout">
               <motion.div
-                key={current}
+                key={activeIndex}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -125,7 +112,7 @@ export default function MobileHeroBanner() {
                 key={i}
                 onClick={() => setCurrent(i)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === current ? "w-5 bg-orange-500" : "w-1.5 bg-gray-300"
+                  i === activeIndex ? "w-5 bg-orange-500" : "w-1.5 bg-gray-300"
                 }`}
               />
             ))}

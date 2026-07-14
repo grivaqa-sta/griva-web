@@ -68,10 +68,10 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
     <motion.div
       whileHover={isDesktop && !isOutOfStock ? { y: -2 } : {}}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="group relative flex flex-col h-full overflow-hidden bg-white p-2 transition-all duration-300
-        rounded-none sm:p-4
-        border border-gray-200 sm:border sm:border-[#ECECEC]
-        shadow-sm sm:shadow-sm"
+      className="group relative flex flex-col h-full overflow-hidden bg-white p-3 transition-all duration-300
+        rounded-2xl sm:p-4
+        border border-gray-100/70 sm:border sm:border-[#ECECEC]
+        shadow-sm"
       onMouseEnter={(e) => {
         if (!isDesktop || isOutOfStock) return;
         e.currentTarget.style.borderColor = "#FF6A0033";

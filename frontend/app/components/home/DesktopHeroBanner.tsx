@@ -87,8 +87,15 @@ function DesktopHeroBannerSkeleton() {
     );
 }
 
-export default function DesktopHeroBanner() {
-    const { bannerProducts, loading } = useBannerProducts();
+interface DesktopHeroBannerProps {
+    bannerProducts?: any[];
+    loading?: boolean;
+}
+
+export default function DesktopHeroBanner({ bannerProducts: propProducts, loading: propLoading }: DesktopHeroBannerProps = {}) {
+    const hookResult = useBannerProducts();
+    const loading = propLoading !== undefined ? propLoading : hookResult.loading;
+    const bannerProducts = propProducts !== undefined ? propProducts : hookResult.bannerProducts;
     const { settings } = useGlobalSettings();
     const slides: HeroSlide[] = bannerProducts.map(mapProductToSlide);
     const [current, setCurrent] = useState(0);

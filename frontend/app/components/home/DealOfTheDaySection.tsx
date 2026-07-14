@@ -114,6 +114,7 @@ export default function DealOfTheDaySection() {
       oldPrice: p?.old_price ? `${Number(p?.old_price).toFixed(2)}` : "",
       category: p?.subcategory?.name || "Special Offer",
       rating: p?.rating || 4.5,
+      reviewCount: p?.review_count || 0,
       description: p?.short_description || p?.description || "Incredible savings on this exclusive deal.",
       badge: "DEAL OF THE DAY",
       hot: true,
@@ -413,8 +414,25 @@ export default function DealOfTheDaySection() {
                   <h3 className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors hover:text-orange-500 line-clamp-1 lg:line-clamp-2">
                     <Link href={`/product/${slide.slug}`}>{slide.title}</Link>
                   </h3>
-                  <div className="mt-2">
-                    <Rating rating={slide.rating} />
+                  <div className="mt-2 min-h-[24px] flex items-center">
+                    {(() => {
+                      const count = slide.reviewCount ?? 0;
+                      if (count === 0) {
+                        return (
+                          <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
+                            New Arrival
+                          </span>
+                        );
+                      }
+                      return (
+                        <div className="flex items-center gap-1.5">
+                          <Rating rating={slide.rating} />
+                          <span className="text-[10px] text-gray-400">
+                            ({count})
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="mt-3 flex items-end gap-2">
                     <span className="text-2xl font-bold text-black "><span className="text-[10px] font-bold text-orange-500">QAR </span>{slide.price}</span>

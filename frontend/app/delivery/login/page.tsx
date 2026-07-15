@@ -36,17 +36,24 @@ export default function DeliveryLoginPage() {
     window.dispatchEvent(new CustomEvent("griva-delivery-theme-toggle", { detail: nextTheme }));
   };
 
-  // Redirect if already logged in
+  // Redirect if already logged in with a valid (non-expired) token
   useEffect(() => {
     try {
       const token = localStorage.getItem("griva_delivery_token");
       if (token) {
         const payload = JSON.parse(atob(token.split(".")[1]));
+        const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+        if (isExpired) {
+          localStorage.removeItem("griva_delivery_token");
+          return;
+        }
         if (payload.role === "delivery") {
           router.replace("/delivery/dashboard");
         }
       }
-    } catch {}
+    } catch {
+      localStorage.removeItem("griva_delivery_token");
+    }
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {

@@ -9,6 +9,7 @@ export default function robots(): MetadataRoute.Robots {
     "/cart",
     "/checkout/",
     "/order-success/",
+    "/track-order/",
     "/auth/",
     "/_next/",
     "/static/",
@@ -25,11 +26,11 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: commonDisallows,
+        disallow: ["/admin/", "/api/", "/delivery/"],
       },
       {
         userAgent: "Googlebot-Image",
-        allow: "/",
+        allow: ["/", "/images/"],
         disallow: ["/admin/"],
       }
     ],

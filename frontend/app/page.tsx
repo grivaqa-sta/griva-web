@@ -13,11 +13,18 @@ import LazyFridayDeals from "./components/home/LazyFridayDeals";
 import MoreToExploreSection from "./components/home/MoreToExploreSection";
 import WebsiteSchema from "@/components/seo/WebsiteSchema";
 import OrganizationSchema from "@/components/seo/OrganizationSchema";
-import ComingSoonOverlay from "./components/common/ComingSoonOverlay";
+import OnlineStoreSchema from "@/components/seo/OnlineStoreSchema";
 
 export const metadata: Metadata = {
-  title: "GRIVA Qatar — Premium Electronics & Tech Gifts Store | Same Day Delivery Doha",
-  description: "Shop premium electronics, gadgets, gaming gear, high-fidelity audio, and luxury gifts in Qatar. Enjoy free same day delivery in Doha on orders over QAR 99, 100% authentic products, and Cash on Delivery.",
+  title: "GRIVA Qatar — Online Shopping | Electronics, Toys, Perfumes, Gaming | Same Day Delivery Doha",
+  description: "Shop online in Qatar at GRIVA. Premium electronics, Apple & Samsung accessories, gaming gadgets, Arabic perfumes, buhoor, educational toys, baby products & kitchen essentials. Free same day delivery in Doha on orders over QAR 99. Cash on Delivery across all Qatar.",
+  keywords: [
+    "online shopping Qatar", "buy electronics Qatar", "GRIVA Qatar",
+    "Apple accessories Qatar", "Samsung charger Qatar", "gaming accessories Qatar",
+    "perfumes Qatar", "buhoor Qatar", "toys Qatar", "baby products Qatar",
+    "kitchen appliances Qatar", "cash on delivery Qatar", "free delivery Qatar",
+    "تسوق اون لاين قطر", "شراء الكترونيات قطر", "العاب اطفال قطر",
+  ],
   alternates: {
     canonical: "https://thegriva.com",
   },
@@ -28,6 +35,7 @@ export default function Home() {
     <div>
       <WebsiteSchema />
       <OrganizationSchema />
+      <OnlineStoreSchema />
       <div id="layout-subnavbar">
         <SubNavbar />
       </div>

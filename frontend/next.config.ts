@@ -38,7 +38,9 @@ const nextConfig: NextConfig = {
       }
     ],
     formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 60,
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+    minimumCacheTTL: 31536000, // 1 year
     dangerouslyAllowSVG: false,
   },
   async headers() {
@@ -46,6 +48,10 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
+          },
           {
             key: "X-Content-Type-Options",
             value: "nosniff",
@@ -72,10 +78,26 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/images/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
   async redirects() {
     return [
+      // www → non-www canonical redirect
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.thegriva.com" }],
+        destination: "https://thegriva.com/:path*",
+        permanent: true,
+      },
       {
         source: "/home",
         destination: "/",

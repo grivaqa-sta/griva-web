@@ -69,18 +69,7 @@ export default function AnnouncementBar() {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener("resize", handleResize);
 
-    const isComingSoonActive = process.env.NEXT_PUBLIC_COMING_SOON === "true";
-    if (isComingSoonActive) {
-      const hasBypassStorage = localStorage.getItem("griva_coming_soon_bypass") === "true";
-      setComingSoonVisible(hasBypassStorage);
-    } else {
-      setComingSoonVisible(true);
-    }
-
-    const handleBypassEvent = () => {
-      setComingSoonVisible(true);
-    };
-    window.addEventListener("griva_coming_soon_bypassed", handleBypassEvent);
+    setComingSoonVisible(true);
 
     const initial = SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
     setShoppersCount(initial);
@@ -115,7 +104,6 @@ export default function AnnouncementBar() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("griva_coming_soon_bypassed", handleBypassEvent);
       clearInterval(timer);
     };
   }, []);

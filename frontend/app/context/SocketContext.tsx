@@ -42,11 +42,23 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       return null;
     };
 
+    // Returns the localStorage key for the token in the current path context
+    const getTokenKey = (): string | null => {
+      if (typeof window === "undefined") return null;
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith("/delivery")) return "griva_delivery_token";
+      if (currentPath.startsWith("/admin")) {
+        const activeRole = sessionStorage.getItem("griva_active_role");
+        if (activeRole === "staff") return "griva_staff_token";
+        return "griva_admin_token";
+      }
+      return null;
+    };
+
     const token = getActiveToken();
 
     if (!token) {
       if (socket) {
-        console.log("🔌 [Socket.IO Client]: Disconnecting because no token was found.");
         socket.disconnect();
         setSocket(null);
         setIsConnected(false);
@@ -54,39 +66,59 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // Validate token expiry before attempting a connection
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        // Token is already expired — clear it and bail out, no socket attempt
+        const key = getTokenKey();
+        if (key) localStorage.removeItem(key);
+        if (socket) {
+          socket.disconnect();
+          setSocket(null);
+          setIsConnected(false);
+        }
+        return;
+      }
+    } catch {
+      // Malformed token — ignore and let the server reject it
+    }
+
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8080";
-    console.log(`🔌 [Socket.IO Client]: Connecting to ${socketUrl}...`);
 
     const socketIo = io(socketUrl, {
       auth: { token },
       query: { token },
       transports: ["websocket"],
       reconnection: true,
-      reconnectionAttempts: Infinity,
+      reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
     });
 
     socketIo.on("connect", () => {
-      console.log("🔌 [Socket.IO Client]: Connected with connection ID:", socketIo.id);
       setIsConnected(true);
     });
 
-    socketIo.on("disconnect", (reason) => {
-      console.warn("🔌 [Socket.IO Client]: Disconnected. Reason:", reason);
+    socketIo.on("disconnect", () => {
       setIsConnected(false);
     });
 
     socketIo.on("connect_error", (error) => {
-      console.error("🔌 [Socket.IO Client]: Connection Error:", error.message);
       setIsConnected(false);
+      // Auth errors (expired / invalid token) — stop looping, clear the stale token
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("jwt") || msg.includes("expired") || msg.includes("authentication failed") || msg.includes("unauthorized")) {
+        socketIo.disconnect();
+        const key = getTokenKey();
+        if (key) localStorage.removeItem(key);
+      }
     });
 
     setSocket(socketIo);
 
     return () => {
-      console.log("🔌 [Socket.IO Client]: Cleaning up socket connection...");
       socketIo.disconnect();
     };
   }, [state.isLoggedIn, state.role, state.token, pathname]); // Reconnect when authentication status, role, token, or page path changes

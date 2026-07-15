@@ -72,6 +72,9 @@ export const metadata: Metadata = {
     "منتجات اطفال قطر",
     "الدفع عند الاستلام قطر",
     "ادوات مطبخ قطر",
+    "اكسسوارات العاب قطر",
+    "سماعات العاب قطر",
+    "يد تحكم العاب قطر",
     // Long tail
     "buy Apple charger cash on delivery Qatar",
     "best gaming headset price Qatar",

@@ -25,7 +25,8 @@ const CATEGORY_SEO: Record<string, {
       "gaming headset Qatar", "phone cooler Qatar",
       "gaming trigger Qatar", "finger sleeve gaming Qatar",
       "mobile gaming Qatar", "buy gaming Qatar COD",
-      "best gaming headset price Qatar"
+      "best gaming headset price Qatar",
+      "اكسسوارات العاب قطر", "سماعات العاب قطر", "يد تحكم العاب قطر"
     ]
   },
   "perfumes-buhoor": {

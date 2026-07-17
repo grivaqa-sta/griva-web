@@ -37,6 +37,7 @@ import { ApiProduct } from "@/app/types/types";
 import ProductCard from "@/app/components/product/ProductCard";
 import { motion, AnimatePresence } from "framer-motion";
 import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import CategorySchema from "@/components/seo/CategorySchema";
 
 interface BenefitItem {
   iconName: "shield" | "book" | "star" | "tag" | "clock" | "award" | "heart" | "zap";
@@ -416,6 +417,12 @@ export default function CategoryPage() {
         { name: "Shop", path: "/shop" },
         { name: meta.title, path: `/category/${slug}` }
       ]} />
+      <CategorySchema
+        categoryName={fallbackTitle}
+        categorySlug={slug}
+        description={meta.tagline}
+        products={filteredProducts}
+      />
       <style>{`::selection { background-color: #FF6A00; color: white; }`}</style>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
 

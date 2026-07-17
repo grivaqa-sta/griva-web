@@ -328,11 +328,8 @@ export default function LazyFridayDeals() {
                       {/* Soft ambient gradient overlay on hover */}
                       <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.01] to-amber-500/[0.01] group-hover:from-orange-500/[0.03] group-hover:to-amber-500/[0.03] transition-colors duration-300 z-0" />
 
-                      {/* Top: Number & Deal Tag */}
-                      <div className="relative z-10 flex items-center justify-between">
-                        <span className="text-[20px] sm:text-[28px] lg:text-[36px] font-black text-zinc-100 group-hover:text-orange-500/10 transition-colors duration-300 leading-none">
-                          {item.number}
-                        </span>
+                      {/* Top: Deal Tag */}
+                      <div className="relative z-10 flex items-center justify-end">
                         <span className="text-[7.5px] sm:text-[8px] lg:text-[9px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100 shadow-sm">
                           {discountVal}% OFF
                         </span>

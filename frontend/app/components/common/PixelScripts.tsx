@@ -18,6 +18,7 @@ declare global {
     fbq: (...args: any[]) => void;
     _fbq: any;
     snaptr: (...args: any[]) => void;
+    gtag?: (...args: any[]) => void;
   }
 }
 
@@ -94,6 +95,17 @@ export function trackViewContent(productId: string | number, title: string, pric
       currency: "QAR",
     });
   }
+  // ─── Google Analytics GA4 ─────────────────────────────
+  window.gtag?.("event", "view_item", {
+    currency: "QAR",
+    value: price,
+    items: [{
+      item_id: String(productId),
+      item_name: title,
+      price: price,
+      quantity: 1
+    }]
+  });
 }
 
 /**
@@ -117,6 +129,17 @@ export function trackAddToCart(productId: string | number, title: string, price:
       currency: "QAR",
     });
   }
+  // ─── Google Analytics GA4 ─────────────────────────────
+  window.gtag?.("event", "add_to_cart", {
+    currency: "QAR",
+    value: price,
+    items: [{
+      item_id: String(productId),
+      item_name: title,
+      price: price,
+      quantity: 1
+    }]
+  });
 }
 
 /**
@@ -137,6 +160,11 @@ export function trackInitiateCheckout(totalValue: number, numItems: number) {
       currency: "QAR",
     });
   }
+  // ─── Google Analytics GA4 ─────────────────────────────
+  window.gtag?.("event", "begin_checkout", {
+    currency: "QAR",
+    value: totalValue
+  });
 }
 
 /**
@@ -159,4 +187,10 @@ export function trackPurchase(orderNumber: string, totalValue: number, numItems:
       transaction_id: orderNumber,
     });
   }
+  // ─── Google Analytics GA4 ─────────────────────────────
+  window.gtag?.("event", "purchase", {
+    transaction_id: orderNumber,
+    value: totalValue,
+    currency: "QAR"
+  });
 }

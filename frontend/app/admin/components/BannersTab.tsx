@@ -922,102 +922,190 @@ function FridayDealsSection({ fridaySaleConfig, onSaveFridaySaleConfig }: { frid
               </div>
 
               {/* Product Image Selection */}
-              <div>
-                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Featured Image</label>
+              <div className="space-y-2">
+                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider">Featured Image</label>
+                
                 {(() => {
-                  const isPreset = ["/images/gamejoysticnew.png", "/images/headphonenew.png", "/images/iwatch.png", "/images/bspeaker.png"].includes(card.image);
+                  const presets = ["/images/gamejoysticnew.png", "/images/headphonenew.png", "/images/iwatch.png", "/images/bspeaker.png"];
+                  const isPreset = presets.includes(card.image);
                   const isCategoryImg = matchedCategoryUrl && card.image === matchedCategoryUrl;
                   const isProductImg = matchedProducts.some((p: any) => p.main_image_url === card.image);
                   
-                  let selectValue = "custom";
-                  if (isPreset) {
-                    selectValue = card.image;
-                  } else if (isCategoryImg) {
-                    selectValue = "category-img";
-                  } else if (isProductImg) {
-                    selectValue = card.image;
-                  }
+                  let activeMode = "custom";
+                  if (isPreset) activeMode = "preset";
+                  else if (isCategoryImg) activeMode = "category";
+                  else if (isProductImg) activeMode = "product";
 
                   return (
-                    <select
-                      value={selectValue}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const newCards = [...cards];
-                        if (val === "category-img") {
-                          newCards[idx] = { ...card, image: matchedCategoryUrl || "" };
-                        } else {
-                          newCards[idx] = { ...card, image: val === "custom" ? "" : val };
-                        }
-                        setCards(newCards);
-                      }}
-                      className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors mb-2"
-                    >
-                      <option value="/images/gamejoysticnew.png">Gamepad (Preset)</option>
-                      <option value="/images/headphonenew.png">Headphones (Preset)</option>
-                      <option value="/images/iwatch.png">Smartwatch (Preset)</option>
-                      <option value="/images/bspeaker.png">Speaker (Preset)</option>
-                      {matchedCategoryUrl && (
-                        <option value="category-img">Category / Subcategory Image</option>
+                    <>
+                      {/* Mode Tabs */}
+                      <div className="flex flex-wrap gap-1 bg-gray-100 p-0.5 rounded-lg mb-2">
+                        {[
+                          { id: "product", label: "Product" },
+                          { id: "category", label: "Category" },
+                          { id: "preset", label: "Preset" },
+                          { id: "custom", label: "Custom" },
+                        ].map((mode) => {
+                          const isActive = activeMode === mode.id;
+                          return (
+                            <button
+                              key={mode.id}
+                              type="button"
+                              onClick={() => {
+                                const newCards = [...cards];
+                                let newImg = "";
+                                if (mode.id === "category") {
+                                  newImg = matchedCategoryUrl || "";
+                                } else if (mode.id === "preset") {
+                                  newImg = presets[idx] || presets[0];
+                                } else if (mode.id === "product") {
+                                  const firstProd = matchedProducts.find((p: any) => p.main_image_url);
+                                  newImg = firstProd ? firstProd.main_image_url : "";
+                                }
+                                newCards[idx] = { ...card, image: newImg };
+                                setCards(newCards);
+                              }}
+                              className={`flex-1 text-[9px] font-bold py-1.5 px-1 rounded-md transition-all cursor-pointer ${
+                                isActive
+                                  ? "bg-white text-orange-600 shadow-sm"
+                                  : "text-gray-500 hover:text-gray-900"
+                              }`}
+                            >
+                              {mode.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Mode Fields */}
+                      {activeMode === "product" && (
+                        <div className="space-y-1">
+                          <select
+                            value={card.image || ""}
+                            onChange={(e) => {
+                              const newCards = [...cards];
+                              newCards[idx] = { ...card, image: e.target.value };
+                              setCards(newCards);
+                            }}
+                            className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                          >
+                            {matchedProducts.filter((p: any) => p.main_image_url).length === 0 ? (
+                              <option value="">No products with images found...</option>
+                            ) : (
+                              <>
+                                <option value="">Select a product...</option>
+                                {matchedProducts
+                                  .filter((p: any) => p.main_image_url)
+                                  .map((p: any) => (
+                                    <option key={p.id} value={p.main_image_url}>
+                                      {p.title}
+                                    </option>
+                                  ))}
+                              </>
+                            )}
+                          </select>
+                        </div>
                       )}
-                      {matchedProducts.length > 0 && (
-                        <optgroup label="Corresponding Product Images">
-                          {matchedProducts.slice(0, 10).map((p: any) => (
-                            <option key={p.id} value={p.main_image_url}>
-                              Product: {p.title}
-                            </option>
-                          ))}
-                        </optgroup>
+
+                      {activeMode === "category" && (
+                        <div className="text-[10px] text-gray-500 bg-orange-50/50 p-2 rounded-lg border border-orange-100/30 flex items-center justify-between">
+                          <span>Using default category image</span>
+                          {matchedCategoryUrl ? (
+                            <span className="text-green-600 font-bold text-[9px] uppercase">Active</span>
+                          ) : (
+                            <span className="text-red-500 font-bold text-[9px] uppercase font-bold">No Image</span>
+                          )}
+                        </div>
                       )}
-                      <option value="custom">Custom URL / Upload...</option>
-                    </select>
+
+                      {activeMode === "preset" && (
+                        <div className="space-y-1">
+                          <select
+                            value={card.image}
+                            onChange={(e) => {
+                              const newCards = [...cards];
+                              newCards[idx] = { ...card, image: e.target.value };
+                              setCards(newCards);
+                            }}
+                            className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                          >
+                            <option value="/images/gamejoysticnew.png">Gamepad (Preset)</option>
+                            <option value="/images/headphonenew.png">Headphones (Preset)</option>
+                            <option value="/images/iwatch.png">Smartwatch (Preset)</option>
+                            <option value="/images/bspeaker.png">Speaker (Preset)</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {activeMode === "custom" && (
+                        <div className="space-y-1">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={card.image || ""}
+                              onChange={(e) => {
+                                const newCards = [...cards];
+                                newCards[idx] = { ...card, image: e.target.value };
+                                setCards(newCards);
+                              }}
+                              placeholder="Enter image URL..."
+                              className="flex-1 text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  try {
+                                    const data = await uploadService.uploadImage(file);
+                                    if (data && data.imageUrl) {
+                                      const newCards = [...cards];
+                                      newCards[idx] = { ...card, image: data.imageUrl };
+                                      setCards(newCards);
+                                      toast.success("Image uploaded successfully!");
+                                    } else {
+                                      toast.error("Failed to upload image. No URL returned.");
+                                    }
+                                  } catch (err: any) {
+                                    toast.error(err?.response?.data?.message || "Failed to upload image");
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                              <button
+                                type="button"
+                                className="h-full px-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-lg text-xs transition-colors whitespace-nowrap min-h-[34px] flex items-center justify-center border border-orange-500/10 cursor-pointer"
+                              >
+                                Upload
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   );
                 })()}
-                {((!["/images/gamejoysticnew.png", "/images/headphonenew.png", "/images/iwatch.png", "/images/bspeaker.png"].includes(card.image) && card.image !== matchedCategoryUrl && !matchedProducts.some((p: any) => p.main_image_url === card.image)) || card.image === "") && (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={card.image || ""}
-                      onChange={(e) => {
-                        const newCards = [...cards];
-                        newCards[idx] = { ...card, image: e.target.value };
-                        setCards(newCards);
-                      }}
-                      placeholder="Enter image URL..."
-                      className="flex-1 text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
-                    />
-                    <div className="relative">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            const data = await uploadService.uploadImage(file);
-                            if (data && data.imageUrl) {
-                              const newCards = [...cards];
-                              newCards[idx] = { ...card, image: data.imageUrl };
-                              setCards(newCards);
-                              toast.success("Image uploaded successfully!");
-                            } else {
-                              toast.error("Failed to upload image. No URL returned.");
-                            }
-                          } catch (err: any) {
-                            toast.error(err?.response?.data?.message || "Failed to upload image");
-                          }
-                        }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+
+                {/* Visual Image Preview */}
+                <div className="mt-3">
+                  <span className="block text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">Image Preview</span>
+                  <div className="h-24 w-full bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative flex items-center justify-center">
+                    {card.image ? (
+                      <img
+                        src={card.image.startsWith('http') || card.image.startsWith('/') ? card.image : `http://localhost:8080${card.image}`}
+                        alt="Preview"
+                        className="h-full w-full object-contain p-1"
                       />
-                      <button
-                        type="button"
-                        className="h-full px-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-lg text-xs transition-colors whitespace-nowrap min-h-[34px] flex items-center justify-center border border-orange-500/10 cursor-pointer"
-                      >
-                        Upload
-                      </button>
-                    </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400 gap-1">
+                        <ImageIcon className="h-5 w-5" />
+                        <span className="text-[8px] font-bold uppercase">No Image Selected</span>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           );

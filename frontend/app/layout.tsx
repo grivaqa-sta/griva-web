@@ -204,6 +204,25 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Google Analytics (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-NJRX15EYGX"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="ga4-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-NJRX15EYGX', {
+                page_path: window.location.pathname,
+              });
+            `,
+          }}
+        />
         {/* Facebook Domain Verification */}
         <meta name="facebook-domain-verification" content="bswovkme9kzzdihcncgswrer4oy3s0" />
       </head>

@@ -201,7 +201,7 @@ export default function CartPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -100 }}
-                      className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 py-4 ${
+                      className={`flex items-start gap-4 py-4 ${
                         idx !== state.items.length - 1 ? "border-b border-gray-100" : ""
                       }`}
                     >
@@ -216,15 +216,31 @@ export default function CartPage() {
                         />
                       </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <Link href={`/product/${item.slug || item.productId}`} className="truncate text-sm font-semibold text-gray-900 hover:text-orange-500 block transition">
-                          {item.title}
-                        </Link>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
+                      {/* Info & Actions side */}
+                      <div className="flex-1 min-w-0 flex flex-col gap-2">
+                        {/* Title & Delete button row */}
+                        <div className="flex justify-between items-start gap-2">
+                          <Link
+                            href={`/product/${item.slug || item.productId}`}
+                            className="text-sm font-semibold text-gray-900 hover:text-orange-500 transition line-clamp-2 break-words leading-tight"
+                          >
+                            {item.title}
+                          </Link>
+                          <button
+                            onClick={() => handleRemove(item.id)}
+                            className="rounded-lg p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {/* Category */}
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold -mt-1">
                           {item.category}
                         </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
+
+                        {/* Attributes selection */}
+                        <div className="flex flex-wrap items-center gap-2 mt-0.5">
                           {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 ? (
                             Object.entries(item.selectedAttributes).map(([key, val]) => (
                               <span key={key} className="text-[10px] bg-gray-50 border px-1.5 py-0.5 rounded text-gray-500">
@@ -246,9 +262,10 @@ export default function CartPage() {
                             </>
                           )}
                         </div>
-                        {/* HIGH-9: Stock error warning notice */}
+
+                        {/* Stock error warning notice */}
                         {stockStatus[item.id] && !stockStatus[item.id].ok && (
-                          <div className="mt-1.5 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1 inline-flex items-center gap-1.5 animate-fadeIn">
+                          <div className="mt-1 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1 inline-flex items-center gap-1.5 animate-fadeIn">
                             <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
                             <span>
                               {!stockStatus[item.id].active ? (
@@ -259,45 +276,39 @@ export default function CartPage() {
                             </span>
                           </div>
                         )}
-                      </div>
 
-                      {/* Qty Controls */}
-                      <div className="flex items-center rounded-lg border border-gray-200 bg-white">
-                        <button
-                          onClick={() => handleDecrement(item.id, item.quantity)}
-                          className="flex h-8 w-8 items-center justify-center text-gray-500 hover:bg-orange-50 hover:text-orange-500 transition cursor-pointer"
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </button>
-                        <span className="w-8 text-center text-xs font-bold text-gray-700">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleIncrement(item.id, item.quantity)}
-                          className="flex h-8 w-8 items-center justify-center text-gray-500 hover:bg-orange-50 hover:text-orange-500 transition cursor-pointer"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                        {/* Controls & Price Row */}
+                        <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-gray-50">
+                          {/* Qty Controls */}
+                          <div className="flex items-center rounded-lg border border-gray-200 bg-white shrink-0">
+                            <button
+                              onClick={() => handleDecrement(item.id, item.quantity)}
+                              className="flex h-8 w-8 items-center justify-center text-gray-500 hover:bg-orange-50 hover:text-orange-500 transition cursor-pointer"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-8 text-center text-xs font-bold text-gray-700">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => handleIncrement(item.id, item.quantity)}
+                              className="flex h-8 w-8 items-center justify-center text-gray-500 hover:bg-orange-50 hover:text-orange-500 transition cursor-pointer"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
 
-                      {/* Price */}
-                      <div className="text-right sm:min-w-[80px]">
-                        <span className="text-sm font-bold text-orange-500">
-                          QAR {(item.priceNumber * item.quantity).toFixed(2)}
-                        </span>
-                        <p className="text-[10px] text-gray-400">
-                          QAR {item.priceNumber.toFixed(2)} each
-                        </p>
+                          {/* Price */}
+                          <div className="text-right">
+                            <span className="text-sm font-bold text-orange-500">
+                              QAR {(item.priceNumber * item.quantity).toFixed(2)}
+                            </span>
+                            <p className="text-[10px] text-gray-400">
+                              QAR {item.priceNumber.toFixed(2)} each
+                            </p>
+                          </div>
+                        </div>
                       </div>
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleRemove(item.id)}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
-                      >
-                        {/* MED-8: Fix invalid Tailwind CSS class */}
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </motion.div>
                   ))}
                 </AnimatePresence>

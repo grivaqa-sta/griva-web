@@ -148,7 +148,13 @@ export default function LazyFridayDeals() {
   }, []);
 
   const isPreview = typeof window !== "undefined" && window.location.search.includes("preview=friday");
-  const showSection = isFriday || isPreview;
+  
+  // Prevent hydration/loading flicker of default hardcoded images
+  if (fridaySaleEnabled === null) {
+    return null;
+  }
+
+  const showSection = (isFriday && fridaySaleEnabled === true) || isPreview;
 
   if (!showSection) {
     return null;

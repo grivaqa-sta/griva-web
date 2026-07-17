@@ -517,7 +517,7 @@ function DealOfDaySection() {
                           <img
                             src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
                             alt="Product"
-                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0"
+                            className="w-12 h-12 rounded-lg object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
@@ -618,7 +618,7 @@ function DealOfDaySection() {
                               className={`px-3 py-2 hover:bg-orange-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 ${selectedProductId === p.id ? 'bg-orange-50' : ''}`}
                             >
                               {imgSrc ? (
-                                <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0" />
+                                <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0" />
                               ) : (
                                 <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
                                   <ImageIcon className="w-4 h-4 text-gray-300" />
@@ -641,7 +641,7 @@ function DealOfDaySection() {
                         <img
                           src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
                           alt="Selected Product"
-                          className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0"
+                          className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
                         />
                         <span className="text-[10px] font-medium text-gray-600 truncate">{selectedP?.title}</span>
                       </div>

@@ -507,7 +507,7 @@ const seedDatabase = async () => {
         announcementBarText: "Free shipping across Doha for orders over QAR 99!",
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
-        whatsappNumber: "+97455551234",
+        whatsappNumber: "+97470066559",
         supportEmail: "info@thegriva.com",
         shippingFee: 10.00,
         freeShippingThreshold: 99.00,

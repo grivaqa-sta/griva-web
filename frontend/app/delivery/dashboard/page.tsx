@@ -1268,7 +1268,7 @@ export default function DeliveryDashboard() {
                     <p className={`text-[10px] ${isDark ? "text-zinc-500" : "text-gray-500"}`}>Contact admin for route or order updates.</p>
                   </div>
                   <a
-                    href="https://wa.me/97455551234"
+                    href="https://wa.me/97470066559"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`px-4 py-2 border text-xs font-bold text-[#FF6A00] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${isDark ? "bg-zinc-900 hover:bg-zinc-800 border-zinc-800 hover:border-zinc-700" : "bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300"}`}

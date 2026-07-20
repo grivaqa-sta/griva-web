@@ -323,7 +323,7 @@ export default function CheckoutPage() {
   const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
     shippingFee: 10,
     freeShippingThreshold: 99,
-    whatsappNumber: "+97455551234",
+    whatsappNumber: "+97470066559",
   });
 
   const isLoggedIn = isAuthenticated && isCustomer;
@@ -337,7 +337,7 @@ export default function CheckoutPage() {
           setShippingConfig({
             shippingFee: settings.shippingFee !== undefined ? Number(settings.shippingFee) : 10,
             freeShippingThreshold: settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 99,
-            whatsappNumber: settings.whatsappNumber || "+97455551234",
+            whatsappNumber: settings.whatsappNumber || "+97470066559",
           });
         }
       } catch {

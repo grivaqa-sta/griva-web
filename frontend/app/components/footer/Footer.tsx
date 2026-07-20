@@ -126,7 +126,7 @@ export default function Footer() {
             </p>
             <div className="space-y-1.5 text-xs text-zinc-300 font-semibold">
               <p>Email: info@thegriva.com</p>
-              <p>Support: +08 9229 8228</p>
+              <p>Support: +974 7006 6559</p>
             </div>
             {/* Social handles */}
             <div className="flex items-center gap-3 pt-2">

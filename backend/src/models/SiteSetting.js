@@ -31,7 +31,7 @@ const SiteSetting = sequelize.define(
     },
     whatsappNumber: {
       type: DataTypes.STRING,
-      defaultValue: "+97455551234",
+      defaultValue: "+97470066559",
     },
     supportEmail: {
       type: DataTypes.STRING,

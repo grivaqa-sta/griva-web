@@ -133,7 +133,7 @@ export default function Footer() {
               {[
                 { icon: <FaFacebookF size={12} />, href: "#", label: "Facebook" },
                 { icon: <FaInstagram size={12} />, href: "https://www.instagram.com/griva.qa", label: "Instagram", target: "_blank" },
-                { icon: <FaWhatsapp size={14} />, href: "https://wa.me/97455551234", label: "WhatsApp", target: "_blank" },
+                { icon: <FaWhatsapp size={14} />, href: "https://wa.me/97470066559", label: "WhatsApp", target: "_blank" },
               ].map((item, idx) => (
                 <a
                   key={idx}

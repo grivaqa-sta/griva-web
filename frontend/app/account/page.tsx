@@ -1735,7 +1735,7 @@ export default function AccountPage() {
                     </div>
 
                     <a
-                      href="https://wa.me/+97455551234"
+                      href="https://wa.me/+97470066559"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-6 rounded-2xl border border-slate-100 bg-slate-50/30 flex gap-4.5 hover:border-green-200 hover:shadow-sm transition-all duration-300"

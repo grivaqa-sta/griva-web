@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 // WhatsApp details
-const WHATSAPP_NUMBER = "97455551234";
+const WHATSAPP_NUMBER = "97470066559";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hello GRIVA! 👋 I need help with my order / have a question.")}`;
 
 interface Option {

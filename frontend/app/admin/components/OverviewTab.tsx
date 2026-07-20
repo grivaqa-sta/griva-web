@@ -720,7 +720,7 @@ export default function OverviewTab(props: OverviewTabProps) {
               <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">WhatsApp Link</label>
               <input
                 type="text"
-                placeholder="e.g. https://wa.me/9747770123"
+                placeholder="e.g. https://wa.me/97470066559"
                 value={waInput}
                 onChange={(e) => setWaInput(e.target.value)}
                 className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/20 rounded-xl px-3 py-2.5 outline-none focus:border-orange-500 transition-colors"

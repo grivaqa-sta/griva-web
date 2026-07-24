@@ -1,8 +1,9 @@
 const FlashSale = require("../models/FlashSale");
 const FlashSaleProduct = require("../models/FlashSaleProduct");
 const Product = require("../models/Product");
+const handleApiError = require("../utils/errorHandler");
 
-exports.getActiveFlashSale = async (req, res, next) => {
+exports.getActiveFlashSale = async (req, res) => {
   try {
     const activeSale = await FlashSale.findOne({
       where: { is_active: true },
@@ -21,13 +22,13 @@ exports.getActiveFlashSale = async (req, res, next) => {
       order: [["id", "DESC"]],
     });
 
-    res.status(200).json({ activeSale });
+    res.status(200).json({ success: true, activeSale });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "FlashSaleController.getActiveFlashSale");
   }
 };
 
-exports.getFlashSales = async (req, res, next) => {
+exports.getFlashSales = async (req, res) => {
   try {
     const sales = await FlashSale.findAll({
       include: [
@@ -39,48 +40,58 @@ exports.getFlashSales = async (req, res, next) => {
       ],
       order: [["id", "DESC"]],
     });
-    res.status(200).json({ sales });
+    res.status(200).json({ success: true, sales });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "FlashSaleController.getFlashSales");
   }
 };
 
-exports.createFlashSale = async (req, res, next) => {
+exports.createFlashSale = async (req, res) => {
   try {
     const { title, start_time, end_time, is_active } = req.body;
-    if (!title || !start_time || !end_time) {
-      return res.status(400).json({ error: "Missing campaign details." });
+    if (!title || typeof title !== "string" || !title.trim() || !start_time || !end_time) {
+      const err = new Error("Missing campaign details.");
+      err.statusCode = 400;
+      throw err;
     }
 
     if (is_active) {
-      // Deactivate other sales if this one is active
       await FlashSale.update({ is_active: false }, { where: { is_active: true } });
     }
 
     const sale = await FlashSale.create({
-      title,
+      title: title.trim(),
       start_time,
       end_time,
-      is_active: is_active !== undefined ? !!is_active : true,
+      is_active: is_active !== undefined ? Boolean(is_active) : true,
     });
 
     res.status(201).json({
+      success: true,
       message: "Flash sale campaign created successfully.",
       sale,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "FlashSaleController.createFlashSale");
   }
 };
 
-exports.updateFlashSale = async (req, res, next) => {
+exports.updateFlashSale = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid flash sale ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const { title, start_time, end_time, is_active } = req.body;
 
     const sale = await FlashSale.findByPk(id);
     if (!sale) {
-      return res.status(404).json({ error: "Flash sale not found." });
+      const err = new Error("Flash sale not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     if (is_active) {
@@ -95,34 +106,45 @@ exports.updateFlashSale = async (req, res, next) => {
     await sale.save();
 
     res.status(200).json({
+      success: true,
       message: "Flash sale updated successfully.",
       sale,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "FlashSaleController.updateFlashSale");
   }
 };
 
-exports.deleteFlashSale = async (req, res, next) => {
+exports.deleteFlashSale = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid flash sale ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const sale = await FlashSale.findByPk(id);
     if (!sale) {
-      return res.status(404).json({ error: "Flash sale not found." });
+      const err = new Error("Flash sale not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     await sale.destroy();
-    res.status(200).json({ message: "Flash sale campaign deleted successfully." });
+    res.status(200).json({ success: true, message: "Flash sale campaign deleted successfully." });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "FlashSaleController.deleteFlashSale");
   }
 };
 
-exports.addProductToFlashSale = async (req, res, next) => {
+exports.addProductToFlashSale = async (req, res) => {
   try {
     const { flash_sale_id, product_id, flash_price, flash_stock } = req.body;
-    if (!flash_sale_id || !product_id || !flash_price) {
-      return res.status(400).json({ error: "Missing required associations." });
+    if (!flash_sale_id || isNaN(Number(flash_sale_id)) || !product_id || isNaN(Number(product_id)) || flash_price === undefined || isNaN(Number(flash_price))) {
+      const err = new Error("Missing required associations.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const item = await FlashSaleProduct.create({
@@ -133,25 +155,34 @@ exports.addProductToFlashSale = async (req, res, next) => {
     });
 
     res.status(201).json({
+      success: true,
       message: "Product linked to flash sale successfully.",
       item,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "FlashSaleController.addProductToFlashSale");
   }
 };
 
-exports.removeProductFromFlashSale = async (req, res, next) => {
+exports.removeProductFromFlashSale = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid item ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const item = await FlashSaleProduct.findByPk(id);
     if (!item) {
-      return res.status(404).json({ error: "Flash sale product relation not found." });
+      const err = new Error("Flash sale product relation not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     await item.destroy();
-    res.status(200).json({ message: "Product removed from flash sale campaign." });
+    res.status(200).json({ success: true, message: "Product removed from flash sale campaign." });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "FlashSaleController.removeProductFromFlashSale");
   }
 };

@@ -1,5 +1,6 @@
 const { ProductPromoBanner, Product } = require("../models");
 const cache = require("../utils/cache");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Create Banner
@@ -8,13 +9,18 @@ exports.createBanner = async (req, res) => {
   try {
     const { productId, title, subtitle, isActive } = req.body;
 
+    if (!productId || isNaN(Number(productId))) {
+      const err = new Error("Valid productId is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const product = await Product.findByPk(productId);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     const existingBanner = await ProductPromoBanner.findOne({
@@ -22,19 +28,18 @@ exports.createBanner = async (req, res) => {
     });
 
     if (existingBanner) {
-      return res.status(400).json({
-        success: false,
-        message: "Banner already exists for this product",
-      });
+      const err = new Error("Banner already exists for this product");
+      err.statusCode = 409;
+      throw err;
     }
 
     const banner = await ProductPromoBanner.create({
       productId,
       title,
       subtitle,
-      isActive,
+      isActive: isActive !== undefined ? Boolean(isActive) : true,
     });
-    cache.clear(); // Clear cache on change
+    cache.clear();
 
     return res.status(201).json({
       success: true,
@@ -42,12 +47,7 @@ exports.createBanner = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Create Banner Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductPromoBannerController.createBanner");
   }
 };
 
@@ -72,12 +72,7 @@ exports.getAllBanners = async (req, res) => {
       data: banners,
     });
   } catch (error) {
-    console.error("Get All Banners Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductPromoBannerController.getAllBanners");
   }
 };
 
@@ -109,7 +104,7 @@ exports.getActiveBanners = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-    cache.set(cacheKey, banners, 300000); // 5 min cache
+    cache.set(cacheKey, banners, 300000);
 
     return res.status(200).json({
       success: true,
@@ -117,12 +112,7 @@ exports.getActiveBanners = async (req, res) => {
       data: banners,
     });
   } catch (error) {
-    console.error("Get Active Banners Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductPromoBannerController.getActiveBanners");
   }
 };
 
@@ -131,7 +121,14 @@ exports.getActiveBanners = async (req, res) => {
  */
 exports.getBannerById = async (req, res) => {
   try {
-    const banner = await ProductPromoBanner.findByPk(req.params.id, {
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await ProductPromoBanner.findByPk(id, {
       include: [
         {
           model: Product,
@@ -141,10 +138,9 @@ exports.getBannerById = async (req, res) => {
     });
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     return res.status(200).json({
@@ -152,12 +148,7 @@ exports.getBannerById = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Get Banner Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductPromoBannerController.getBannerById");
   }
 };
 
@@ -166,17 +157,23 @@ exports.getBannerById = async (req, res) => {
  */
 exports.updateBanner = async (req, res) => {
   try {
-    const banner = await ProductPromoBanner.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await ProductPromoBanner.findByPk(id);
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await banner.update(req.body);
-    cache.clear(); // Clear cache on update
+    cache.clear();
 
     return res.status(200).json({
       success: true,
@@ -184,12 +181,7 @@ exports.updateBanner = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Update Banner Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductPromoBannerController.updateBanner");
   }
 };
 
@@ -198,19 +190,25 @@ exports.updateBanner = async (req, res) => {
  */
 exports.updateBannerStatus = async (req, res) => {
   try {
-    const banner = await ProductPromoBanner.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await ProductPromoBanner.findByPk(id);
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await banner.update({
-      isActive: req.body.isActive,
+      isActive: req.body.isActive !== undefined ? Boolean(req.body.isActive) : banner.isActive,
     });
-    cache.clear(); // Clear cache on update
+    cache.clear();
 
     return res.status(200).json({
       success: true,
@@ -218,12 +216,7 @@ exports.updateBannerStatus = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Update Banner Status Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductPromoBannerController.updateBannerStatus");
   }
 };
 
@@ -232,28 +225,29 @@ exports.updateBannerStatus = async (req, res) => {
  */
 exports.deleteBanner = async (req, res) => {
   try {
-    const banner = await ProductPromoBanner.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await ProductPromoBanner.findByPk(id);
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await banner.destroy();
-    cache.clear(); // Clear cache on delete
+    cache.clear();
 
     return res.status(200).json({
       success: true,
       message: "Banner deleted successfully",
     });
   } catch (error) {
-    console.error("Delete Banner Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductPromoBannerController.deleteBanner");
   }
 };

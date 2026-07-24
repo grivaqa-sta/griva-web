@@ -159,12 +159,8 @@ app.use("/api/product-promo-banners", productPromoBannerRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    error: {
-      message: err.message || "Internal Server Error",
-    },
-  });
+  const handleApiError = require("./utils/errorHandler");
+  return handleApiError(err, req, res, "GlobalExpressApp");
 });
 
 module.exports = app;

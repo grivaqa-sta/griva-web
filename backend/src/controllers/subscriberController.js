@@ -5,51 +5,62 @@
 const Subscriber = require("../models/Subscriber");
 const brevoService = require("../services/brevoService");
 const { emitToRoles } = require("../socket/socket");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Load all subscribers (Admin protected)
  */
-exports.getSubscribers = async (req, res, next) => {
+exports.getSubscribers = async (req, res) => {
   try {
     const subscribers = await Subscriber.findAll({ order: [["createdAt", "DESC"]] });
-    res.status(200).json({ subscribers });
+    res.status(200).json({ success: true, subscribers });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "SubscriberController.getSubscribers");
   }
 };
 
 /**
  * Register a new email subscription (Public)
  */
-exports.subscribe = async (req, res, next) => {
+exports.subscribe = async (req, res) => {
   try {
     const { email, country } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: "Email is required." });
+    if (!email || typeof email !== "string" || !email.trim()) {
+      const err = new Error("Email is required.");
+      err.statusCode = 400;
+      throw err;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      const err = new Error("Invalid email format.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Check if already registered
-    const existing = await Subscriber.findOne({ where: { email } });
+    const existing = await Subscriber.findOne({ where: { email: normalizedEmail } });
     if (existing) {
-      return res.status(400).json({ error: "Email is already subscribed to newsletters." });
+      const err = new Error("Email is already subscribed to newsletters.");
+      err.statusCode = 409;
+      throw err;
     }
 
-    // Generate readable joined date, e.g., "June 09, 2026"
     const options = { year: "numeric", month: "long", day: "numeric" };
     const joinedDate = new Date().toLocaleDateString("en-US", options);
 
     const subscriber = await Subscriber.create({
-      email,
+      email: normalizedEmail,
       joinedDate,
       country: country || "Qatar",
     });
 
-    // Send confirmation and admin notification email asynchronously (don't block client response)
-    brevoService.sendSubscriberWelcomeEmail(email).catch(err => console.error("Welcome email failed:", err));
-    brevoService.sendAdminNewSubscriberNotification(email, country || "Qatar").catch(err => console.error("Admin subscriber notification failed:", err));
+    brevoService.sendSubscriberWelcomeEmail(normalizedEmail).catch(err => console.error("Welcome email failed:", err));
+    brevoService.sendAdminNewSubscriberNotification(normalizedEmail, country || "Qatar").catch(err => console.error("Admin subscriber notification failed:", err));
 
-    // Notify connected admin dashboard sockets
     try {
       emitToRoles(["admin", "staff"], "new-subscriber", {
         email: subscriber.email,
@@ -61,30 +72,37 @@ exports.subscribe = async (req, res, next) => {
     }
 
     res.status(201).json({
+      success: true,
       message: "Subscribed successfully!",
       subscriber,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "SubscriberController.subscribe");
   }
 };
 
-exports.broadcast = async (req, res, next) => {
+exports.broadcast = async (req, res) => {
   try {
     const { subject, message, target = "all", targetEmail } = req.body;
 
-    if (!subject || subject.trim() === "") {
-      return res.status(400).json({ error: "Broadcast subject is required." });
+    if (!subject || typeof subject !== "string" || !subject.trim()) {
+      const err = new Error("Broadcast subject is required.");
+      err.statusCode = 400;
+      throw err;
     }
-    if (!message || message.trim() === "") {
-      return res.status(400).json({ error: "Broadcast message body is required." });
+    if (!message || typeof message !== "string" || !message.trim()) {
+      const err = new Error("Broadcast message body is required.");
+      err.statusCode = 400;
+      throw err;
     }
 
     let subscribers = [];
 
     if (target === "individual") {
-      if (!targetEmail || targetEmail.trim() === "") {
-        return res.status(400).json({ error: "Individual target email is required." });
+      if (!targetEmail || typeof targetEmail !== "string" || !targetEmail.trim()) {
+        const err = new Error("Individual target email is required.");
+        err.statusCode = 400;
+        throw err;
       }
       subscribers = [{ email: targetEmail.trim() }];
     } else if (target === "new_7_days") {
@@ -112,7 +130,6 @@ exports.broadcast = async (req, res, next) => {
         },
       });
     } else {
-      // Default: "all"
       subscribers = await Subscriber.findAll();
     }
 
@@ -120,12 +137,12 @@ exports.broadcast = async (req, res, next) => {
 
     if (count === 0) {
       return res.status(200).json({
+        success: true,
         message: "No subscribers found matching the target criteria.",
         recipientCount: 0,
       });
     }
 
-    // Format plain text to HTML with beautiful GRIVA email brand layout
     const formattedHtml = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #ff6a00;">
@@ -143,7 +160,6 @@ exports.broadcast = async (req, res, next) => {
 
     console.log(`✉️ [NEWSLETTER BROADCAST]: Starting dispatch of "${subject}" to ${count} subscribers...`);
 
-    // Dispatch emails to all subscribers asynchronously
     let successCount = 0;
     for (const sub of subscribers) {
       try {
@@ -155,10 +171,11 @@ exports.broadcast = async (req, res, next) => {
     }
 
     res.status(200).json({
+      success: true,
       message: `Broadcast completed successfully. Dispatched to ${successCount} of ${count} subscribers.`,
       recipientCount: successCount,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "SubscriberController.broadcast");
   }
 };

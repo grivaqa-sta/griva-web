@@ -2,12 +2,13 @@ const Product = require("../models/Product");
 const SubCategory = require("../models/SubCategory");
 const { Op } = require("sequelize");
 const cache = require("../utils/cache");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Helper to extract Cloudinary public ID from its URL
  */
 const getPublicIdFromUrl = (url) => {
-  if (!url || !url.includes("cloudinary.com")) return null;
+  if (!url || typeof url !== "string" || !url.includes("cloudinary.com")) return null;
   try {
     const splitUrl = url.split("/upload/");
     if (splitUrl.length < 2) return null;
@@ -27,21 +28,36 @@ exports.createProduct = async (req, res) => {
   try {
     const { subcategory_id, title, price, main_image_url } = req.body;
 
-    if (!subcategory_id || !title || !price || !main_image_url) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "subcategory_id, title, price and main_image_url are required",
-      });
+    if (!subcategory_id || isNaN(Number(subcategory_id))) {
+      const err = new Error("Valid subcategory_id is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!title || typeof title !== "string" || !title.trim()) {
+      const err = new Error("Product title is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (price === undefined || price === null || isNaN(Number(price)) || Number(price) < 0) {
+      const err = new Error("Valid non-negative price is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!main_image_url || typeof main_image_url !== "string" || !main_image_url.trim()) {
+      const err = new Error("main_image_url is required");
+      err.statusCode = 400;
+      throw err;
     }
 
     const subCategory = await SubCategory.findByPk(subcategory_id);
 
     if (!subCategory) {
-      return res.status(404).json({
-        success: false,
-        message: "Subcategory not found",
-      });
+      const err = new Error("Subcategory not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     const product = await Product.create(req.body);
@@ -60,13 +76,12 @@ exports.createProduct = async (req, res) => {
       }));
       await ProductVariant.bulkCreate(variantsToCreate);
       
-      // Update parent product stock sum
       const totalStock = variantsToCreate.reduce((sum, v) => sum + v.stock, 0);
       product.stock = totalStock;
       await product.save();
     }
 
-    cache.clear(); // Clear cache on catalog mutation
+    cache.clear();
 
     res.status(201).json({
       success: true,
@@ -74,12 +89,7 @@ exports.createProduct = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.createProduct");
   }
 };
 
@@ -91,7 +101,6 @@ exports.getProducts = async (req, res) => {
     const { search, minPrice, maxPrice } = req.query;
     const isAdminOrStaffUser = req.user && (req.user.role === "admin" || req.user.role === "staff");
 
-    // Construct cache key based on query filters and user permissions
     const cacheKey = `products_${search || ""}_${minPrice || ""}_${maxPrice || ""}_${isAdminOrStaffUser}`;
     const cached = cache.get(cacheKey);
     if (cached) {
@@ -104,13 +113,11 @@ exports.getProducts = async (req, res) => {
 
     const where = {};
 
-    // CRIT-4: Enforce is_active check for public views (allow admin/staff to see deactivated ones)
     if (!isAdminOrStaffUser) {
       where.is_active = true;
     }
 
     if (search) {
-      // MED-11: Escape SQL wildcard characters % and _ in search query
       const escapedSearch = search.replace(/[%_]/g, "\\$&");
       where[Op.or] = [
         {
@@ -129,11 +136,11 @@ exports.getProducts = async (req, res) => {
     if (minPrice || maxPrice) {
       where.price = {};
 
-      if (minPrice) {
+      if (minPrice && !isNaN(Number(minPrice))) {
         where.price[Op.gte] = Number(minPrice);
       }
 
-      if (maxPrice) {
+      if (maxPrice && !isNaN(Number(maxPrice))) {
         where.price[Op.lte] = Number(maxPrice);
       }
     }
@@ -143,7 +150,7 @@ exports.getProducts = async (req, res) => {
       order: [["id", "DESC"]],
     });
 
-    cache.set(cacheKey, products, 300000); // Cache for 5 mins
+    cache.set(cacheKey, products, 300000);
 
     res.status(200).json({
       success: true,
@@ -151,12 +158,7 @@ exports.getProducts = async (req, res) => {
       data: products,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getProducts");
   }
 };
 
@@ -165,24 +167,29 @@ exports.getProducts = async (req, res) => {
  */
 exports.getProductById = async (req, res) => {
   try {
-    const isId = /^\d+$/.test(req.params.id);
+    const { id } = req.params;
+    if (!id) {
+      const err = new Error("Product identifier is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const isId = /^\d+$/.test(id);
     let product;
     const ProductVariant = require("../models/ProductVariant");
     const includeOption = [{ model: ProductVariant, as: "productVariants" }];
 
     if (isId) {
-      product = await Product.findByPk(req.params.id, { include: includeOption });
+      product = await Product.findByPk(id, { include: includeOption });
     } else {
-      product = await Product.findOne({ where: { slug: req.params.id }, include: includeOption });
+      product = await Product.findOne({ where: { slug: id }, include: includeOption });
     }
 
-    // CRIT-4: Add is_active check for public views on product details
     const isAdminOrStaffUser = req.user && (req.user.role === "admin" || req.user.role === "staff");
     if (!product || (!product.is_active && !isAdminOrStaffUser)) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     res.status(200).json({
@@ -190,12 +197,7 @@ exports.getProductById = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getProductById");
   }
 };
 
@@ -204,11 +206,17 @@ exports.getProductById = async (req, res) => {
  */
 exports.getProductsBySubCategory = async (req, res) => {
   try {
+    const { subcategoryId } = req.params;
+    if (!subcategoryId || isNaN(Number(subcategoryId))) {
+      const err = new Error("Invalid subcategory ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const where = {
-      subcategory_id: req.params.subcategoryId,
+      subcategory_id: subcategoryId,
     };
 
-    // CRIT-4: Enforce is_active check for public subcategory view
     const isAdminOrStaffUser = req.user && (req.user.role === "admin" || req.user.role === "staff");
     if (!isAdminOrStaffUser) {
       where.is_active = true;
@@ -223,12 +231,7 @@ exports.getProductsBySubCategory = async (req, res) => {
       data: products,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getProductsBySubCategory");
   }
 };
 
@@ -253,17 +256,14 @@ exports.getFeaturedProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000); // 5 min cache
+    cache.set(cacheKey, products, 300000);
 
     res.status(200).json({
       success: true,
       data: products,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getFeaturedProducts");
   }
 };
 
@@ -288,17 +288,14 @@ exports.getTrendingProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000); // 5 min cache
+    cache.set(cacheKey, products, 300000);
 
     res.status(200).json({
       success: true,
       data: products,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getTrendingProducts");
   }
 };
 
@@ -323,17 +320,14 @@ exports.getBestSellerProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000); // 5 min cache
+    cache.set(cacheKey, products, 300000);
 
     res.status(200).json({
       success: true,
       data: products,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getBestSellerProducts");
   }
 };
 
@@ -356,21 +350,18 @@ exports.getNewProducts = async (req, res) => {
         is_new: true,
         is_active: true,
       },
-      order: [["createdAt", "DESC"]], // latest first
-      limit: 4, // only 4 products
+      order: [["createdAt", "DESC"]],
+      limit: 4,
     });
 
-    cache.set(cacheKey, products, 300000); // 5 min cache
+    cache.set(cacheKey, products, 300000);
 
     res.status(200).json({
       success: true,
       data: products,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getNewProducts");
   }
 };
 
@@ -379,16 +370,21 @@ exports.getNewProducts = async (req, res) => {
  */
 exports.updateProduct = async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid product ID");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // If main_image_url is being updated, delete the old one from Cloudinary to free space
+    const product = await Product.findByPk(id);
+
+    if (!product) {
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
     if (req.body.main_image_url && product.main_image_url && req.body.main_image_url !== product.main_image_url) {
       const oldPublicId = getPublicIdFromUrl(product.main_image_url);
       if (oldPublicId) {
@@ -404,7 +400,6 @@ exports.updateProduct = async (req, res) => {
     const ProductVariant = require("../models/ProductVariant");
     const { variants, attributes } = req.body;
     
-    // Check if the updated product is variant-based (has non-empty attributes)
     const hasAttributes = (attributes && attributes.length > 0) || (product.attributes && product.attributes.length > 0);
 
     if (hasAttributes && Array.isArray(variants)) {
@@ -414,14 +409,12 @@ exports.updateProduct = async (req, res) => {
 
       const payloadVariantIds = variants.filter(v => v.id).map(v => Number(v.id));
       
-      // Delete variants not in the update payload
       for (const ev of existingVariants) {
         if (!payloadVariantIds.includes(ev.id)) {
           await ev.destroy();
         }
       }
 
-      // Create / Update variants in payload
       for (const v of variants) {
         if (v.id) {
           const ev = existingVariants.find(x => x.id === Number(v.id));
@@ -448,18 +441,16 @@ exports.updateProduct = async (req, res) => {
         }
       }
 
-      // Re-calculate parent product stock sum
       const totalStock = await ProductVariant.sum("stock", {
         where: { product_id: product.id }
       }) || 0;
       product.stock = totalStock;
       await product.save();
     } else if (!hasAttributes) {
-      // Simple product: delete any variants that might exist in the db to prevent leftover state
       await ProductVariant.destroy({ where: { product_id: product.id } });
     }
 
-    cache.clear(); // Clear cache on update
+    cache.clear();
 
     res.status(200).json({
       success: true,
@@ -467,12 +458,7 @@ exports.updateProduct = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.updateProduct");
   }
 };
 
@@ -481,31 +467,41 @@ exports.updateProduct = async (req, res) => {
  */
 exports.updateProductStock = async (req, res) => {
   try {
+    const { id } = req.params;
     const { stock } = req.body;
 
-    const product = await Product.findByPk(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid product ID");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // If the product has variants, stock must be modified via variants
+    if (stock === undefined || stock === null || isNaN(Number(stock)) || Number(stock) < 0) {
+      const err = new Error("Valid non-negative stock quantity is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const product = await Product.findByPk(id);
+
+    if (!product) {
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
     const ProductVariant = require("../models/ProductVariant");
     const variantCount = await ProductVariant.count({ where: { product_id: product.id } });
     if (variantCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Stock of a variant-based product must be updated via variants."
-      });
+      const err = new Error("Stock of a variant-based product must be updated via variants.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    product.stock = stock;
+    product.stock = Number(stock);
 
     await product.save();
-    cache.clear(); // Clear cache on stock update
+    cache.clear();
 
     res.status(200).json({
       success: true,
@@ -513,12 +509,7 @@ exports.updateProductStock = async (req, res) => {
       stock: product.stock,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.updateProductStock");
   }
 };
 
@@ -527,16 +518,21 @@ exports.updateProductStock = async (req, res) => {
  */
 exports.deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid product ID");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // Delete image from Cloudinary if it exists
+    const product = await Product.findByPk(id);
+
+    if (!product) {
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
     if (product.main_image_url) {
       const publicId = getPublicIdFromUrl(product.main_image_url);
       if (publicId) {
@@ -548,33 +544,33 @@ exports.deleteProduct = async (req, res) => {
     }
 
     await product.destroy();
-    cache.clear(); // Clear cache on delete
+    cache.clear();
 
     res.status(200).json({
       success: true,
       message: "Product deleted successfully",
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.deleteProduct");
   }
 };
 
-//banner update api
-
+// Update Banner Status
 exports.updateBannerStatus = async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid product ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const product = await Product.findByPk(id);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     const { is_banner, href, tags, banner_background_color, mobile_ad_banner, desktop_ad_banner } = req.body;
@@ -587,7 +583,7 @@ exports.updateBannerStatus = async (req, res) => {
       mobile_ad_banner,
       desktop_ad_banner
     });
-    cache.clear(); // Clear cache on update
+    cache.clear();
 
     res.status(200).json({
       success: true,
@@ -595,16 +591,11 @@ exports.updateBannerStatus = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.updateBannerStatus");
   }
 };
 
-//get isbanner active product
+// Get Banner Active Products
 exports.getBannerActiveProducts = async (req, res) => {
   try {
     const cacheKey = "products_banner_active";
@@ -624,7 +615,7 @@ exports.getBannerActiveProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000); // 5 min cache
+    cache.set(cacheKey, products, 300000);
 
     res.status(200).json({
       success: true,
@@ -632,33 +623,34 @@ exports.getBannerActiveProducts = async (req, res) => {
       data: products,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getBannerActiveProducts");
   }
 };
 
-//deal of the day
+// Deal of the Day
 exports.updateDealOfDay = async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid product ID");
+      err.statusCode = 400;
+      throw err;
     }
 
-    const { deal_of_day} = req.body;
+    const product = await Product.findByPk(id);
+
+    if (!product) {
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const { deal_of_day } = req.body;
 
     await product.update({
       deal_of_day
     });
-    cache.clear(); // Clear cache on update
+    cache.clear();
 
     res.status(200).json({
       success: true,
@@ -666,16 +658,11 @@ exports.updateDealOfDay = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.updateDealOfDay");
   }
 };
 
-//get deal of the day products
+// Get Deal of the Day Products
 exports.getDealOfDayProducts = async (req, res) => {
   try {
     const cacheKey = "products_deal_of_day";
@@ -695,7 +682,7 @@ exports.getDealOfDayProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000); // 5 min cache
+    cache.set(cacheKey, products, 300000);
 
     res.status(200).json({
       success: true,
@@ -703,12 +690,6 @@ exports.getDealOfDayProducts = async (req, res) => {
       data: products,
     });
   } catch (error) {
-    console.log(error);
-
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "ProductController.getDealOfDayProducts");
   }
 };
-

@@ -3,12 +3,13 @@ const { sequelize } = require("../config/db");
 const User = require("../models/User");
 const Order = require("../models/Order");
 const Address = require("../models/Address");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Get Paginated and Filtered Customer Directory
  * GET /api/admin/customers
  */
-exports.getCustomers = async (req, res, next) => {
+exports.getCustomers = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
@@ -17,7 +18,6 @@ exports.getCustomers = async (req, res, next) => {
     const filter = req.query.filter || "";
     const sort = req.query.sort || "newest";
 
-    // SQL subqueries for calculating stats directly in the DB
     const phoneSubquery = `COALESCE(
       "User".phone,
       (SELECT mobile FROM addresses WHERE addresses."userId" = "User".id AND addresses."isDefault" = true LIMIT 1),
@@ -57,7 +57,6 @@ exports.getCustomers = async (req, res, next) => {
       where[Op.and] = sequelize.literal(`${totalOrdersCol} >= 2`);
     }
 
-    // Run count first for pagination
     const totalItems = await User.count({ where });
 
     let orderClause = [["createdAt", "DESC"]];
@@ -140,7 +139,7 @@ exports.getCustomers = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "CustomerController.getCustomers");
   }
 };
 
@@ -148,9 +147,14 @@ exports.getCustomers = async (req, res, next) => {
  * Get Customer Profile and Statistics by ID
  * GET /api/admin/customers/:id
  */
-exports.getCustomerById = async (req, res, next) => {
+exports.getCustomerById = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid customer ID.");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const user = await User.findByPk(id, {
       attributes: ["id", "name", "email", "status", "createdAt", "phone", "role"],
@@ -163,13 +167,11 @@ exports.getCustomerById = async (req, res, next) => {
     });
 
     if (!user || user.role === "admin") {
-      return res.status(404).json({
-        success: false,
-        message: "Customer not found.",
-      });
+      const err = new Error("Customer not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
-    // Get order statistics
     const stats = await Order.findOne({
       where: { user_id: id },
       attributes: [
@@ -206,14 +208,12 @@ exports.getCustomerById = async (req, res, next) => {
       customerSegment = "Repeat Customer";
     }
 
-    // Home and Office addresses (prefer the default one within each label group)
     const homeAddresses = user.addresses ? user.addresses.filter(a => a.label === "home") : [];
     const officeAddresses = user.addresses ? user.addresses.filter(a => a.label === "office") : [];
 
     const homeAddress = homeAddresses.find(a => a.isDefault) || homeAddresses[0] || null;
     const officeAddress = officeAddresses.find(a => a.isDefault) || officeAddresses[0] || null;
 
-    // Latest 10 orders
     const recentOrders = await Order.findAll({
       where: { user_id: id },
       attributes: ["id", "order_number", "createdAt", "total_price", "status"],
@@ -262,7 +262,7 @@ exports.getCustomerById = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "CustomerController.getCustomerById");
   }
 };
 
@@ -270,9 +270,15 @@ exports.getCustomerById = async (req, res, next) => {
  * Get Paginated and Status-filtered Customer Order History
  * GET /api/admin/customers/:id/orders
  */
-exports.getCustomerOrders = async (req, res, next) => {
+exports.getCustomerOrders = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid customer ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const offset = (page - 1) * limit;
@@ -312,7 +318,7 @@ exports.getCustomerOrders = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "CustomerController.getCustomerOrders");
   }
 };
 
@@ -320,7 +326,7 @@ exports.getCustomerOrders = async (req, res, next) => {
  * Get Customer Directory Analytics Summary
  * GET /api/admin/customers/analytics
  */
-exports.getCustomerAnalytics = async (req, res, next) => {
+exports.getCustomerAnalytics = async (req, res) => {
   try {
     const totalCustomers = await User.count({ where: { role: "customer" } });
     const activeCustomers = await User.count({ where: { role: "customer", status: "ACTIVE" } });
@@ -388,7 +394,7 @@ exports.getCustomerAnalytics = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "CustomerController.getCustomerAnalytics");
   }
 };
 
@@ -396,39 +402,40 @@ exports.getCustomerAnalytics = async (req, res, next) => {
  * Update Customer ACTIVE/BLOCKED Status
  * PATCH /api/admin/customers/:id/status
  */
-exports.updateCustomerStatus = async (req, res, next) => {
+exports.updateCustomerStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid customer ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const { status } = req.body;
 
     if (!status || !["ACTIVE", "BLOCKED"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Status parameter must be 'ACTIVE' or 'BLOCKED'.",
-      });
+      const err = new Error("Status parameter must be 'ACTIVE' or 'BLOCKED'.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const customer = await User.findByPk(id);
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: "Customer not found.",
-      });
+      const err = new Error("Customer not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
-    // Security validation
     if (customer.id === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: "You cannot block your own admin account.",
-      });
+      const err = new Error("You cannot block your own admin account.");
+      err.statusCode = 400;
+      throw err;
     }
 
     if (customer.role === "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Admin accounts cannot be blocked or managed from this endpoint.",
-      });
+      const err = new Error("Admin accounts cannot be blocked or managed from this endpoint.");
+      err.statusCode = 403;
+      throw err;
     }
 
     customer.status = status;
@@ -445,7 +452,7 @@ exports.updateCustomerStatus = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "CustomerController.updateCustomerStatus");
   }
 };
 
@@ -453,13 +460,12 @@ exports.updateCustomerStatus = async (req, res, next) => {
  * Export Customer Directory (All/Registered/Guest) as Excel/CSV
  * GET /api/admin/customers/export
  */
-exports.exportCustomers = async (req, res, next) => {
+exports.exportCustomers = async (req, res) => {
   try {
     const { segment, startDate, endDate, format } = req.query;
 
     const exportData = [];
 
-    // Date range logic for filtering
     let dateFilter = "";
     const replacements = {};
     if (startDate) {
@@ -487,7 +493,6 @@ exports.exportCustomers = async (req, res, next) => {
     };
 
     if (includeRegistered) {
-      // Fetch registered customers
       let userQuery = `
         SELECT 
           u.id, 
@@ -527,7 +532,6 @@ exports.exportCustomers = async (req, res, next) => {
     }
 
     if (includeGuest) {
-      // Fetch guest customers from Orders table
       let guestQuery = `
         SELECT 
           customer_email AS email,
@@ -567,14 +571,12 @@ exports.exportCustomers = async (req, res, next) => {
       });
     }
 
-    // Sort by registration date descending
     exportData.sort((a, b) => new Date(b["Registration Date"]).getTime() - new Date(a["Registration Date"]).getTime());
 
     const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Customers");
 
-    // Define columns
     worksheet.columns = [
       { header: "Customer Name", key: "customerName" },
       { header: "Phone", key: "phone" },
@@ -585,7 +587,6 @@ exports.exportCustomers = async (req, res, next) => {
       { header: "Type", key: "type" }
     ];
 
-    // Add rows
     exportData.forEach((u) => {
       worksheet.addRow({
         customerName: u["Customer Name"],
@@ -598,7 +599,6 @@ exports.exportCustomers = async (req, res, next) => {
       });
     });
 
-    // Style header row
     const headerRow = worksheet.getRow(1);
     headerRow.height = 28;
     headerRow.eachCell((cell) => {
@@ -612,7 +612,7 @@ exports.exportCustomers = async (req, res, next) => {
       cell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FFF97316" } // Orange brand color
+        fgColor: { argb: "FFF97316" }
       };
       cell.alignment = {
         vertical: "middle",
@@ -627,38 +627,35 @@ exports.exportCustomers = async (req, res, next) => {
       };
     });
 
-    // Style data rows
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header
+      if (rowNumber === 1) return;
       row.height = 22;
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         cell.font = {
           name: "Segoe UI",
           size: 10,
-          color: { argb: "FF374151" } // gray-700
+          color: { argb: "FF374151" }
         };
         cell.alignment = {
           vertical: "middle",
           horizontal: [2, 4, 5, 6, 7].includes(colNumber) ? "center" : "left"
         };
         cell.border = {
-          top: { style: "thin", color: { argb: "FFE5E7EB" } }, // light gray
+          top: { style: "thin", color: { argb: "FFE5E7EB" } },
           bottom: { style: "thin", color: { argb: "FFE5E7EB" } },
           left: { style: "thin", color: { argb: "FFE5E7EB" } },
           right: { style: "thin", color: { argb: "FFE5E7EB" } }
         };
-        // Alternating row background for readability
         if (rowNumber % 2 === 0) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FFFDF8F6" } // light orange-gray tint
+            fgColor: { argb: "FFFDF8F6" }
           };
         }
       });
     });
 
-    // Auto-fit columns
     worksheet.columns.forEach((column) => {
       let maxLength = 0;
       column.eachCell({ includeEmpty: true }, (cell) => {
@@ -680,7 +677,6 @@ exports.exportCustomers = async (req, res, next) => {
       await workbook.xlsx.write(res);
     }
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "CustomerController.exportCustomers");
   }
 };
-

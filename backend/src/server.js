@@ -17,11 +17,29 @@ const startServer = async () => {
     await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
-    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "desktop_ad_banner" VARCHAR(255);');
-    // Resync primary key sequence for categories and sub_categories to prevent PK duplicate key errors in production
-    await sequelize.query(`SELECT setval(pg_get_serial_sequence('"sub_categories"', 'id'), COALESCE((SELECT MAX(id) FROM "sub_categories"), 1));`);
-    await sequelize.query(`SELECT setval(pg_get_serial_sequence('"categories"', 'id'), COALESCE((SELECT MAX(id) FROM "categories"), 1));`);
-    console.log('🟢 [DATABASE]: Unconditionally ensured products short_description type TEXT, delivery_boy_id, status type VARCHAR(50), fridaySaleConfig JSONB, desktop_ad_banner, and categories/sub_categories primary key sequences are synced.');
+    // Resync primary key sequences for all database tables to prevent PK duplicate key errors in production
+    const tablesToResync = [
+      'sub_categories',
+      'categories',
+      'products',
+      'Users',
+      'Orders',
+      'addresses',
+      'Reviews',
+      'DeliverySlots',
+      'DealOfDays',
+      'FlashSales',
+      'product_variants'
+    ];
+
+    for (const tbl of tablesToResync) {
+      try {
+        await sequelize.query(`SELECT setval(pg_get_serial_sequence('"${tbl}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tbl}"), 1));`);
+      } catch (e) {
+        // Table or sequence may not exist yet if fresh DB
+      }
+    }
+    console.log('🟢 [DATABASE]: Unconditionally ensured products short_description type TEXT, delivery_boy_id, status type VARCHAR(50), fridaySaleConfig JSONB, desktop_ad_banner, and all primary key sequences are synced.');
   } catch (dbErr) {
     console.log('ℹ️ [DATABASE]: Skipping unconditional table/sequence alterations:', dbErr.message);
   }

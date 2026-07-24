@@ -37,7 +37,9 @@ const initSocket = (server) => {
 
   const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
-  console.log("🔌 [Socket.IO]: Allowed Origins for WebSockets:", allowedOrigins);
+  if (process.env.NODE_ENV === "development") {
+    console.log("🔌 [Socket.IO]: Allowed Origins for WebSockets:", allowedOrigins);
+  }
 
   io = new Server(server, {
     cors: {
@@ -90,14 +92,18 @@ const initSocket = (server) => {
 
       next();
     } catch (err) {
-      console.error("🔌 [Socket.IO AUTH ERROR]:", err.message);
+      if (process.env.NODE_ENV === "development") {
+        console.error("🔌 [Socket.IO AUTH ERROR]:", err.message);
+      }
       return next(new Error("Authentication failed: " + err.message));
     }
   });
 
   io.on("connection", (socket) => {
     const { id: userId, role, name } = socket.user;
-    console.log(`🟢 [Socket.IO CONNECT]: User: "${name}" (ID: ${userId}, Role: ${role}), Socket: ${socket.id}`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🟢 [Socket.IO CONNECT]: User: "${name}" (ID: ${userId}, Role: ${role}), Socket: ${socket.id}`);
+    }
 
     // Track active connection (only for logged-in users)
     if (userId !== -1) {
@@ -108,7 +114,9 @@ const initSocket = (server) => {
 
       // Join room based on role (role:admin, role:staff, role:delivery)
       socket.join(`role:${role}`);
-      console.log(`🔌 [Socket.IO ROOMS]: Socket ${socket.id} joined room "role:${role}"`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`🔌 [Socket.IO ROOMS]: Socket ${socket.id} joined room "role:${role}"`);
+      }
 
       // Join room for specific user ID for direct/targeted messages
       socket.join(`user:${userId}`);
@@ -117,12 +125,16 @@ const initSocket = (server) => {
     // Guest listener to join specific order tracking room
     socket.on("join-order-tracking", (orderId) => {
       socket.join(`order:${orderId}`);
-      console.log(`🔌 [Socket.IO ROOMS]: Socket ${socket.id} joined tracking room "order:${orderId}"`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`🔌 [Socket.IO ROOMS]: Socket ${socket.id} joined tracking room "order:${orderId}"`);
+      }
     });
 
     // Handle Client Disconnect
     socket.on("disconnect", (reason) => {
-      console.log(`🔴 [Socket.IO DISCONNECT]: Socket: ${socket.id}, Reason: ${reason}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`🔴 [Socket.IO DISCONNECT]: Socket: ${socket.id}, Reason: ${reason}`);
+      }
       if (userId !== -1) {
         const sockets = userSockets.get(userId);
         if (sockets) {

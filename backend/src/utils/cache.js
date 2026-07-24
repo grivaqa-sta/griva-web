@@ -41,7 +41,9 @@ const set = (key, value, ttlMs = 300000) => {
  */
 const clear = () => {
   cacheStore.clear();
-  console.log("🧹 [CACHE]: In-memory cache cleared successfully.");
+  if (process.env.NODE_ENV === "development") {
+    console.log("🧹 [CACHE]: In-memory cache cleared successfully.");
+  }
 };
 
 /**

@@ -1,13 +1,13 @@
 const SiteSetting = require("../models/SiteSetting");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Load global configurations
  */
-exports.getSettings = async (req, res, next) => {
+exports.getSettings = async (req, res) => {
   try {
     let setting = await SiteSetting.findOne();
     if (!setting) {
-      // Create default if none exists
       setting = await SiteSetting.create({
         announcementBarEnabled: true,
         announcementBarText: "Free shipping across Doha for orders over $150!",
@@ -22,16 +22,16 @@ exports.getSettings = async (req, res, next) => {
         fridaySaleConfig: null,
       });
     }
-    res.status(200).json({ settings: setting });
+    res.status(200).json({ success: true, settings: setting });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "SettingController.getSettings");
   }
 };
 
 /**
  * Update global configurations
  */
-exports.updateSettings = async (req, res, next) => {
+exports.updateSettings = async (req, res) => {
   try {
     const {
       announcementBarEnabled,
@@ -50,27 +50,27 @@ exports.updateSettings = async (req, res, next) => {
     let setting = await SiteSetting.findOne();
     if (!setting) {
       setting = await SiteSetting.create({
-        announcementBarEnabled: announcementBarEnabled !== undefined ? announcementBarEnabled : true,
+        announcementBarEnabled: announcementBarEnabled !== undefined ? Boolean(announcementBarEnabled) : true,
         announcementBarText: announcementBarText || "Free shipping across Doha for orders over $150!",
-        fridaySaleEnabled: fridaySaleEnabled !== undefined ? fridaySaleEnabled : true,
-        midnightSaleEnabled: midnightSaleEnabled !== undefined ? midnightSaleEnabled : false,
+        fridaySaleEnabled: fridaySaleEnabled !== undefined ? Boolean(fridaySaleEnabled) : true,
+        midnightSaleEnabled: midnightSaleEnabled !== undefined ? Boolean(midnightSaleEnabled) : false,
         whatsappNumber: whatsappNumber || "+97470066559",
         supportEmail: supportEmail || "info@thegriva.com",
-        shippingFee: shippingFee !== undefined ? shippingFee : 15.00,
-        freeShippingThreshold: freeShippingThreshold !== undefined ? freeShippingThreshold : 150.00,
+        shippingFee: shippingFee !== undefined ? Number(shippingFee) : 15.00,
+        freeShippingThreshold: freeShippingThreshold !== undefined ? Number(freeShippingThreshold) : 150.00,
         telegramLink: telegramLink || "",
         whatsappCommunityLink: whatsappCommunityLink || "",
         fridaySaleConfig: fridaySaleConfig || null,
       });
     } else {
-      if (announcementBarEnabled !== undefined) setting.announcementBarEnabled = announcementBarEnabled;
+      if (announcementBarEnabled !== undefined) setting.announcementBarEnabled = Boolean(announcementBarEnabled);
       if (announcementBarText !== undefined) setting.announcementBarText = announcementBarText;
-      if (fridaySaleEnabled !== undefined) setting.fridaySaleEnabled = fridaySaleEnabled;
-      if (midnightSaleEnabled !== undefined) setting.midnightSaleEnabled = midnightSaleEnabled;
+      if (fridaySaleEnabled !== undefined) setting.fridaySaleEnabled = Boolean(fridaySaleEnabled);
+      if (midnightSaleEnabled !== undefined) setting.midnightSaleEnabled = Boolean(midnightSaleEnabled);
       if (whatsappNumber !== undefined) setting.whatsappNumber = whatsappNumber;
       if (supportEmail !== undefined) setting.supportEmail = supportEmail;
-      if (shippingFee !== undefined) setting.shippingFee = shippingFee;
-      if (freeShippingThreshold !== undefined) setting.freeShippingThreshold = freeShippingThreshold;
+      if (shippingFee !== undefined) setting.shippingFee = Number(shippingFee);
+      if (freeShippingThreshold !== undefined) setting.freeShippingThreshold = Number(freeShippingThreshold);
       if (telegramLink !== undefined) setting.telegramLink = telegramLink;
       if (whatsappCommunityLink !== undefined) setting.whatsappCommunityLink = whatsappCommunityLink;
       if (fridaySaleConfig !== undefined) setting.fridaySaleConfig = fridaySaleConfig;
@@ -78,10 +78,11 @@ exports.updateSettings = async (req, res, next) => {
     }
 
     res.status(200).json({
+      success: true,
       message: "Campaign configurations updated successfully.",
       settings: setting,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "SettingController.updateSettings");
   }
 };

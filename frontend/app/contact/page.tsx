@@ -52,8 +52,8 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-gray-800">Phone Support</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">+08 9229 8228</p>
-                      <p className="text-[10px] text-gray-400">Mon - Fri, 9:00 AM - 6:00 PM EST</p>
+                      <p className="text-xs text-gray-500 mt-0.5">+974 7006 6559</p>
+                      <p className="text-[10px] text-gray-400">Mon - Fri, 9:00 AM - 6:00 PM AST</p>
                     </div>
                   </div>
 
@@ -64,7 +64,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-gray-800">Email Enquiries</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">support@griva.com</p>
+                      <p className="text-xs text-gray-500 mt-0.5">info@thegriva.com</p>
                       <p className="text-[10px] text-gray-400">Expect a response within 24 hours</p>
                     </div>
                   </div>

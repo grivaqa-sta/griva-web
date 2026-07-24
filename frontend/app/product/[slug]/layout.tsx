@@ -9,6 +9,7 @@ interface Props {
 /**
  * Server-side dynamic metadata generation for product pages.
  * This enables proper OG images for WhatsApp, Instagram, Facebook, and Snapchat sharing.
+ * Also generates SEO-optimized titles with Qatar/COD keywords for Google ranking.
  */
 export async function generateMetadata(
   { params }: Props,
@@ -28,25 +29,38 @@ export async function generateMetadata(
 
     if (!product) throw new Error("No product data");
 
-    const title = product.title || "Product";
-    const description = product.description
-      ? product.description.slice(0, 160).replace(/<[^>]*>/g, "")
-      : `Buy ${title} in Qatar. Fast delivery across Doha with Cash on Delivery.`;
-
+    const productName = product.title || "Product";
+    const brandName = product.brand || "GRIVA";
     const priceStr = product.price
       ? `QAR ${Number(product.price).toFixed(2)}`
       : "";
+    const cleanDescription = product.description
+      ? product.description.slice(0, 160).replace(/<[^>]*>/g, "")
+      : `Buy ${productName} in Qatar. Fast delivery across Doha with Cash on Delivery.`;
+
+    const title = `${productName} Price in Qatar | Buy Online COD | GRIVA`;
+    const description = `Buy ${productName} in Qatar${priceStr ? ` at ${priceStr}` : ""}. ${cleanDescription}. Cash on Delivery across Qatar. Free shipping. GRIVA Qatar.`;
 
     const imageUrl = product.main_image_url || (await parent).openGraph?.images?.[0] || "/images/logo-dark.png";
-
     const pageUrl = `https://thegriva.com/product/${slug}`;
 
+    const categoryName = typeof product.category === "object" ? product.category.title : (product.category || "");
+
     return {
-      title: `${title} — GRIVA Qatar`,
-      description: `${priceStr ? priceStr + " | " : ""}${description}`,
+      title,
+      description,
+      keywords: [
+        `${productName} Qatar`,
+        `${productName} price Qatar`,
+        `buy ${productName} Qatar`,
+        `${brandName} Qatar`,
+        `${productName} COD Qatar`,
+        `${productName} Doha`,
+        categoryName ? `${categoryName} Qatar` : "",
+      ].filter(Boolean),
       openGraph: {
-        title: `${title} | GRIVA Qatar`,
-        description: `${priceStr ? priceStr + " — " : ""}${description}`,
+        title: `${productName} | GRIVA Qatar`,
+        description: `${priceStr ? priceStr + " — " : ""}${cleanDescription}`,
         url: pageUrl,
         siteName: "GRIVA Qatar",
         type: "website",
@@ -55,16 +69,19 @@ export async function generateMetadata(
             url: imageUrl,
             width: 800,
             height: 800,
-            alt: title,
+            alt: productName,
           },
         ],
         locale: "en_QA",
       },
       twitter: {
         card: "summary_large_image",
-        title: `${title} | GRIVA Qatar`,
-        description: `${priceStr ? priceStr + " — " : ""}${description}`,
+        title: `${productName} | GRIVA Qatar`,
+        description: `${priceStr ? priceStr + " — " : ""}${cleanDescription}`,
         images: [imageUrl],
+      },
+      alternates: {
+        canonical: pageUrl,
       },
     };
   } catch {

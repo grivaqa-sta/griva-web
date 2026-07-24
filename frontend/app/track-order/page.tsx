@@ -200,7 +200,7 @@ function TrackOrderContent() {
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. +97455551234"
+                placeholder="e.g. +97470066559"
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-orange-500 focus:outline-none transition shadow-sm"
               />
             </div>

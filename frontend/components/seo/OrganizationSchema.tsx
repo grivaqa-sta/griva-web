@@ -20,7 +20,7 @@ export default function OrganizationSchema() {
       "caption": "GRIVA Qatar Logo"
     },
     "image": "https://thegriva.com/og-image.jpg",
-    "description": "Qatar's premier online electronics store offering premium tech products with same day delivery and cash on delivery across all Qatar areas.",
+    "description": "Qatar's premier online store offering electronics, gaming accessories, perfumes, buhoor, toys, baby products and kitchen essentials with same day delivery and cash on delivery across all Qatar areas.",
     "foundingDate": "2024",
     "address": {
       "@type": "PostalAddress",
@@ -31,7 +31,6 @@ export default function OrganizationSchema() {
     "contactPoint": [
       {
         "@type": "ContactPoint",
-        "telephone": "+974-XXXX-XXXX",
         "contactType": "customer service",
         "availableLanguage": ["English", "Arabic"],
         "contactOption": "TollFree",
@@ -53,14 +52,14 @@ export default function OrganizationSchema() {
     ],
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
-      "name": "GRIVA Electronics Catalog",
+      "name": "GRIVA Product Catalog",
       "itemListElement": [
-        { "@type": "OfferCatalog", "name": "Electronics" },
-        { "@type": "OfferCatalog", "name": "Headphones and Audio" },
-        { "@type": "OfferCatalog", "name": "Laptops and Computers" },
-        { "@type": "OfferCatalog", "name": "Gaming Accessories" },
-        { "@type": "OfferCatalog", "name": "Smartwatches and Wearables" },
-        { "@type": "OfferCatalog", "name": "Phone Accessories" }
+        { "@type": "OfferCatalog", "name": "Gadgets & Electronics", "url": "https://thegriva.com/category/gadgets-electronics" },
+        { "@type": "OfferCatalog", "name": "Gaming Accessories", "url": "https://thegriva.com/category/gaming-accessories" },
+        { "@type": "OfferCatalog", "name": "Perfumes & Buhoor", "url": "https://thegriva.com/category/perfumes-buhoor" },
+        { "@type": "OfferCatalog", "name": "Toys", "url": "https://thegriva.com/category/toys" },
+        { "@type": "OfferCatalog", "name": "Baby Products", "url": "https://thegriva.com/category/baby-products" },
+        { "@type": "OfferCatalog", "name": "Kitchen Appliances & Essentials", "url": "https://thegriva.com/category/kitchen-appliances-essentials" }
       ]
     },
     "areaServed": {

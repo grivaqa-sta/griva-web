@@ -17,9 +17,13 @@ const startServer = async () => {
     await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
-    console.log('🟢 [DATABASE]: Unconditionally ensured products short_description type TEXT, delivery_boy_id, status type VARCHAR(50), and fridaySaleConfig JSONB exist in the database');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "desktop_ad_banner" VARCHAR(255);');
+    // Resync primary key sequence for categories and sub_categories to prevent PK duplicate key errors in production
+    await sequelize.query(`SELECT setval(pg_get_serial_sequence('"sub_categories"', 'id'), COALESCE((SELECT MAX(id) FROM "sub_categories"), 1));`);
+    await sequelize.query(`SELECT setval(pg_get_serial_sequence('"categories"', 'id'), COALESCE((SELECT MAX(id) FROM "categories"), 1));`);
+    console.log('🟢 [DATABASE]: Unconditionally ensured products short_description type TEXT, delivery_boy_id, status type VARCHAR(50), fridaySaleConfig JSONB, desktop_ad_banner, and categories/sub_categories primary key sequences are synced.');
   } catch (dbErr) {
-    console.log('ℹ️ [DATABASE]: Skipping unconditional ReturnRequests/SiteSettings/products table alterations:', dbErr.message);
+    console.log('ℹ️ [DATABASE]: Skipping unconditional table/sequence alterations:', dbErr.message);
   }
 
   if (process.env.DB_SYNC === "true") {
@@ -58,6 +62,14 @@ const startServer = async () => {
         console.log("🟢 [DATABASE]: Added deal_of_day column to products table");
       } catch (dodColErr) {
         console.log("ℹ️ [DATABASE]: Skipping raw products column addition:", dodColErr.message);
+      }
+
+      // Safely add desktop_ad_banner column to products table if it doesn't exist
+      try {
+        await sequelize.query("ALTER TABLE \"products\" ADD COLUMN IF NOT EXISTS desktop_ad_banner VARCHAR(255);");
+        console.log("🟢 [DATABASE]: Added desktop_ad_banner column to products table");
+      } catch (dtColErr) {
+        console.log("ℹ️ [DATABASE]: Skipping raw products desktop_ad_banner column addition:", dtColErr.message);
       }
 
       // Safely alter Reviews foreign key to cascade delete
@@ -196,6 +208,23 @@ const startServer = async () => {
 };
 
 const createDefaultAdmin = async () => {
+  // Clean up the old default admin account from database if a new admin email is configured
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL.toLowerCase().trim() !== "admin@example.com") {
+    try {
+      const deletedCount = await User.destroy({
+        where: {
+          email: "admin@example.com",
+          role: "admin",
+        }
+      });
+      if (deletedCount > 0) {
+        console.log("🧹 [DATABASE]: Cleaned up old default admin account (admin@example.com).");
+      }
+    } catch (err) {
+      console.error("⚠️ Failed to clean up old admin account:", err.message);
+    }
+  }
+
   const existingAdmin = await User.findOne({
     where: {
         email: process.env.ADMIN_EMAIL,

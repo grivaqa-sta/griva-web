@@ -187,7 +187,7 @@ exports.getProfile = async (req, res, next) => {
 // This function is called when user clicks "Forgot Password" and submits their email
 exports.forgotPassword = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, isAdminRequest } = req.body;
 
     // Always return generic success to prevent user enumeration attacks
     const genericResponse = {
@@ -202,7 +202,20 @@ exports.forgotPassword = async (req, res, next) => {
     });
 
     if (!user) {
+      if (isAdminRequest) {
+        return res.status(403).json({
+          success: false,
+          message: "This email is not registered as an administrator or staff member.",
+        });
+      }
       return res.status(200).json(genericResponse);
+    }
+
+    if (isAdminRequest && user.role !== "admin" && user.role !== "staff") {
+      return res.status(403).json({
+        success: false,
+        message: "This email is not registered as an administrator or staff member.",
+      });
     }
 
     // Generate raw token (sent to user via email) and hashed token (stored in DB)
@@ -223,7 +236,7 @@ exports.forgotPassword = async (req, res, next) => {
       resetPasswordExpire,
     });
     let resetUrl;
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.FRONTEND_URL || "https://thegriva.com";
     if(user.role === "customer"){
         resetUrl =`${frontendUrl}/auth/reset-password/${resetToken}`;
     }else{

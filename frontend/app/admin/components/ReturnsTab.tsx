@@ -18,6 +18,7 @@ import {
 import { getAllReturnRequestsApi, updateReturnRequestStatusApi, getDeliveryBoysApi } from "../../utils/api";
 import { useToast } from "@/app/context/ToastContext";
 import { useSocket } from "@/app/context/SocketContext";
+import { useAdminTheme } from "@/app/admin/context/AdminThemeContext";
 
 interface DeliveryBoy {
   id: number;
@@ -75,6 +76,7 @@ interface ReturnRequest {
 
 export default function ReturnsTab() {
   const { socket } = useSocket();
+  const { isDark } = useAdminTheme();
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -111,7 +113,6 @@ export default function ReturnsTab() {
     if (!socket) return;
 
     const handleUpdate = () => {
-      console.log("🔌 [Socket.IO Event]: return request/order updated. Refetching return requests...");
       fetchReturnRequests();
     };
 
@@ -129,8 +130,8 @@ export default function ReturnsTab() {
       try {
         const drivers = await getDeliveryBoysApi();
         setDeliveryBoys(drivers || []);
-      } catch (err) {
-        console.error("Failed to fetch delivery boys:", err);
+      } catch {
+        // silently ignore
       }
     };
     fetchDeliveryBoys();
@@ -210,42 +211,46 @@ export default function ReturnsTab() {
   const approvedRefCount = requests.filter(r => r.status === "approved_refund").length;
   const rejectedCount = requests.filter(r => r.status === "rejected").length;
 
+  const card = isDark ? "bg-gray-800 border-gray-700" : "bg-slate-50 border-slate-100";
+  const cardText = isDark ? "text-gray-200" : "text-slate-800";
+  const mutedText = isDark ? "text-gray-400" : "text-slate-400";
+
   return (
     <div className="space-y-6">
       
       {/* Metrics Banner */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        
-        <div className="bg-slate-50 border border-slate-100 p-4.5 rounded-2xl">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Requests</span>
-          <span className="text-2xl font-extrabold text-slate-800 mt-1 block">{totalCount}</span>
+
+        <div className={`${card} border p-4 rounded-2xl`}>
+          <span className={`text-[10px] font-bold ${mutedText} uppercase tracking-wider block`}>Total Requests</span>
+          <span className={`text-2xl font-extrabold ${cardText} mt-1 block`}>{totalCount}</span>
         </div>
 
-        <div className="bg-amber-50/50 border border-amber-100 p-4.5 rounded-2xl">
-          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Pending Review</span>
-          <span className="text-2xl font-extrabold text-amber-700 mt-1 block">{pendingCount}</span>
+        <div className={`${isDark ? "bg-amber-900/20 border-amber-800/40" : "bg-amber-50/50 border-amber-100"} border p-4 rounded-2xl`}>
+          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block">Pending Review</span>
+          <span className="text-2xl font-extrabold text-amber-600 mt-1 block">{pendingCount}</span>
         </div>
 
-        <div className="bg-green-50/50 border border-green-100 p-4.5 rounded-2xl">
-          <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider block">Replacements</span>
-          <span className="text-2xl font-extrabold text-green-700 mt-1 block">{approvedReplCount}</span>
+        <div className={`${isDark ? "bg-green-900/20 border-green-800/40" : "bg-green-50/50 border-green-100"} border p-4 rounded-2xl`}>
+          <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider block">Replacements</span>
+          <span className="text-2xl font-extrabold text-green-600 mt-1 block">{approvedReplCount}</span>
         </div>
 
-        <div className="bg-emerald-50/50 border border-emerald-100 p-4.5 rounded-2xl">
-          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Refunds Issued</span>
-          <span className="text-2xl font-extrabold text-emerald-700 mt-1 block">{approvedRefCount}</span>
+        <div className={`${isDark ? "bg-emerald-900/20 border-emerald-800/40" : "bg-emerald-50/50 border-emerald-100"} border p-4 rounded-2xl`}>
+          <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider block">Refunds Issued</span>
+          <span className="text-2xl font-extrabold text-emerald-600 mt-1 block">{approvedRefCount}</span>
         </div>
 
-        <div className="bg-red-50/50 border border-red-100 p-4.5 rounded-2xl col-span-2 lg:col-span-1">
+        <div className={`${isDark ? "bg-red-900/20 border-red-800/40" : "bg-red-50/50 border-red-100"} border p-4 rounded-2xl col-span-2 lg:col-span-1`}>
           <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">Rejected</span>
-          <span className="text-2xl font-extrabold text-red-650 mt-1 block">{rejectedCount}</span>
+          <span className="text-2xl font-extrabold text-red-500 mt-1 block">{rejectedCount}</span>
         </div>
 
       </div>
 
       {/* Control Bar */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
-        
+      <div className={`flex flex-col md:flex-row gap-4 justify-between items-center border p-4 rounded-2xl shadow-sm ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-slate-100"}`}>
+
         {/* Filter buttons */}
         <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
           {["all", "pending", "approved_replacement", "approved_refund", "rejected"].map((filter) => (
@@ -255,7 +260,7 @@ export default function ReturnsTab() {
               className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
                 activeFilter === filter
                   ? "bg-orange-500 text-white shadow-sm"
-                  : "bg-slate-50 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                  : isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-slate-50 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
               }`}
             >
               {filter.replace("_", " ")}
@@ -265,13 +270,13 @@ export default function ReturnsTab() {
 
         {/* Search Input */}
         <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isDark ? "text-gray-500" : "text-slate-400"}`} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search request, order, customer..."
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-orange-500 transition-colors"
+            className={`w-full pl-9 pr-4 py-2 border rounded-xl text-xs focus:outline-none focus:border-orange-500 transition-colors ${isDark ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500" : "border-slate-200 text-slate-800"}`}
           />
         </div>
 
@@ -281,13 +286,13 @@ export default function ReturnsTab() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="h-8 w-8 text-orange-500 animate-spin" />
-          <p className="text-xs text-slate-400 mt-3 font-semibold uppercase tracking-wider">Fetching requests...</p>
+          <p className={`text-xs mt-3 font-semibold uppercase tracking-wider ${isDark ? "text-gray-500" : "text-slate-400"}`}>Fetching requests...</p>
         </div>
       ) : filteredRequests.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50/20 border border-slate-100 rounded-2xl">
-          <Undo className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-          <h4 className="text-sm font-bold text-slate-700">No return requests found</h4>
-          <p className="text-xs text-slate-400 mt-1">Try switching filters or adjusting your search term.</p>
+        <div className={`text-center py-16 border rounded-2xl ${isDark ? "bg-gray-800/30 border-gray-700" : "bg-slate-50/20 border-slate-100"}`}>
+          <Undo className={`h-10 w-10 mx-auto mb-3 ${isDark ? "text-gray-600" : "text-slate-300"}`} />
+          <h4 className={`text-sm font-bold ${isDark ? "text-gray-300" : "text-slate-700"}`}>No return requests found</h4>
+          <p className={`text-xs mt-1 ${isDark ? "text-gray-500" : "text-slate-400"}`}>Try switching filters or adjusting your search term.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -307,12 +312,12 @@ export default function ReturnsTab() {
             return (
               <div
                 key={req.id}
-                className="bg-white border border-slate-100 hover:border-slate-200/70 rounded-2xl shadow-sm overflow-hidden transition-all duration-300"
+                className={`border rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${isDark ? "bg-gray-800 border-gray-700 hover:border-gray-600" : "bg-white border-slate-100 hover:border-slate-200/70"}`}
               >
                 {/* Request Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-6 py-4.5 bg-slate-50/20 border-b border-slate-100">
+                <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-6 py-4 border-b ${isDark ? "bg-gray-800/50 border-gray-700" : "bg-slate-50/20 border-slate-100"}`}>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400">#RET-{req.id}</span>
+                    <span className={`text-xs font-bold ${isDark ? "text-gray-500" : "text-slate-400"}`}>#RET-{req.id}</span>
                     <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${cfg.bg} ${cfg.color}`}>
                       {cfg.label}
                     </span>
@@ -321,12 +326,12 @@ export default function ReturnsTab() {
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
+                  <div className={`flex items-center gap-4 text-xs ${isDark ? "text-gray-500" : "text-slate-500"}`}>
                     <span className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
                       {new Date(req.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </span>
-                    <span className="font-semibold text-slate-700">
+                    <span className={`font-semibold ${isDark ? "text-gray-300" : "text-slate-700"}`}>
                       Order: {req.order?.order_number || "—"}
                     </span>
                   </div>
@@ -337,16 +342,16 @@ export default function ReturnsTab() {
                   
                   {/* Left Column: Customer details */}
                   <div className="space-y-3">
-                    <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <h5 className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isDark ? "text-gray-500" : "text-slate-400"}`}>
                       <User className="h-3.5 w-3.5" /> Customer Details
                     </h5>
                     <div className="space-y-1.5 text-xs">
-                      <p className="font-bold text-slate-800">{custName}</p>
-                      <p className="text-slate-550 flex items-center gap-2">
+                      <p className={`font-bold ${isDark ? "text-gray-200" : "text-slate-800"}`}>{custName}</p>
+                      <p className={`flex items-center gap-2 ${isDark ? "text-gray-400" : "text-slate-500"}`}>
                         <Mail className="h-3 w-3 shrink-0" />
                         {custEmail}
                       </p>
-                      <p className="text-slate-550 flex items-center gap-2">
+                      <p className={`flex items-center gap-2 ${isDark ? "text-gray-400" : "text-slate-500"}`}>
                         <Phone className="h-3 w-3 shrink-0" />
                         {custPhone}
                       </p>
@@ -355,12 +360,12 @@ export default function ReturnsTab() {
 
                   {/* Middle Column: Returned Product & reason */}
                   <div className="space-y-3">
-                    <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <h5 className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isDark ? "text-gray-500" : "text-slate-400"}`}>
                       <ShoppingBag className="h-3.5 w-3.5" /> Return Item & Reason
                     </h5>
                     
                     <div className="flex gap-3">
-                      <div className="h-12 w-12 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center relative">
+                      <div className={`h-12 w-12 border rounded-xl overflow-hidden shrink-0 flex items-center justify-center relative ${isDark ? "bg-gray-700 border-gray-600" : "bg-slate-50 border-slate-100"}`}>
                         <img
                           src={req.orderItem?.product?.main_image_url || "/images/placeholder.jpg"}
                           alt={req.orderItem?.product?.title || "Product"}
@@ -368,9 +373,9 @@ export default function ReturnsTab() {
                         />
                       </div>
                       <div className="min-w-0">
-                        <h6 className="text-xs font-bold text-slate-800 truncate">{req.orderItem?.product?.title || "Product"}</h6>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          Qty: <span className="text-slate-700 font-bold">{req.quantity}</span>
+                        <h6 className={`text-xs font-bold truncate ${isDark ? "text-gray-200" : "text-slate-800"}`}>{req.orderItem?.product?.title || "Product"}</h6>
+                        <p className={`text-[10px] mt-0.5 ${isDark ? "text-gray-500" : "text-slate-400"}`}>
+                          Qty: <span className={`font-bold ${isDark ? "text-gray-300" : "text-slate-700"}`}>{req.quantity}</span>
                           {req.orderItem?.selected_color && ` | Color: ${req.orderItem.selected_color}`}
                           {req.orderItem?.selected_storage && ` | Storage: ${req.orderItem.selected_storage}`}
                         </p>
@@ -385,11 +390,11 @@ export default function ReturnsTab() {
                     </div>
 
                     <div className="pt-2 text-xs space-y-1">
-                      <p className="font-semibold text-slate-700 capitalize">
-                        Reason: <span className="text-slate-900 font-bold">{req.reason.replace("_", " ")}</span>
+                      <p className={`font-semibold capitalize ${isDark ? "text-gray-400" : "text-slate-700"}`}>
+                        Reason: <span className={`font-bold ${isDark ? "text-gray-200" : "text-slate-900"}`}>{req.reason.replace("_", " ")}</span>
                       </p>
                       {req.description && (
-                        <p className="text-slate-500 leading-relaxed bg-slate-50/50 p-2.5 border border-slate-100 rounded-xl italic">
+                        <p className={`leading-relaxed p-2.5 border rounded-xl italic ${isDark ? "text-gray-400 bg-gray-700/50 border-gray-600" : "text-slate-500 bg-slate-50/50 border-slate-100"}`}>
                           "{req.description}"
                         </p>
                       )}
@@ -398,7 +403,7 @@ export default function ReturnsTab() {
 
                   {/* Right Column: Photo Proof & Notes */}
                   <div className="space-y-3">
-                    <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <h5 className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isDark ? "text-gray-500" : "text-slate-400"}`}>
                       <FileText className="h-3.5 w-3.5" /> Proof & Status Notes
                     </h5>
                     
@@ -410,7 +415,7 @@ export default function ReturnsTab() {
                             href={img}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="h-12 w-12 bg-slate-50 border border-slate-200 hover:border-orange-500 rounded-lg overflow-hidden shrink-0 flex items-center justify-center cursor-zoom-in transition-all relative group"
+                            className={`h-12 w-12 border hover:border-orange-500 rounded-lg overflow-hidden shrink-0 flex items-center justify-center cursor-zoom-in transition-all relative group ${isDark ? "bg-gray-700 border-gray-600" : "bg-slate-50 border-slate-200"}`}
                           >
                             <img src={img} alt="proof" className="object-cover h-full w-full" />
                             <div className="absolute inset-0 bg-black/30 items-center justify-center hidden group-hover:flex">
@@ -420,13 +425,13 @@ export default function ReturnsTab() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[10px] text-slate-450 italic">No proof photos uploaded.</span>
+                      <span className={`text-[10px] italic ${isDark ? "text-gray-600" : "text-slate-400"}`}>No proof photos uploaded.</span>
                     )}
 
                     {req.admin_notes && (
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Decision Note:</span>
-                        <p className="text-slate-700 leading-relaxed mt-0.5 whitespace-pre-line">{req.admin_notes}</p>
+                      <div className={`border rounded-xl p-3 text-xs ${isDark ? "bg-gray-700/50 border-gray-600" : "bg-slate-50 border-slate-100"}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider block ${isDark ? "text-gray-500" : "text-slate-400"}`}>Decision Note:</span>
+                        <p className={`leading-relaxed mt-0.5 whitespace-pre-line ${isDark ? "text-gray-300" : "text-slate-700"}`}>{req.admin_notes}</p>
                       </div>
                     )}
 
@@ -465,20 +470,20 @@ export default function ReturnsTab() {
       {/* CONFIRMATION / ACTION MODAL */}
       {selectedReq && modalAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-scaleUp">
+          <div className={`rounded-3xl border shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-scaleUp ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-slate-100"}`}>
             
-            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div className={`px-6 py-5 border-b flex justify-between items-center ${isDark ? "bg-gray-800/80 border-gray-700" : "bg-slate-50/50 border-slate-100"}`}>
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 capitalize">
+                <h3 className={`text-base font-extrabold capitalize ${isDark ? "text-gray-100" : "text-slate-800"}`}>
                   {modalAction.replace("_", " ")}
                 </h3>
-                <p className="text-[11px] text-slate-450 mt-0.5">Request #RET-{selectedReq.id}</p>
+                <p className={`text-[11px] mt-0.5 ${isDark ? "text-gray-500" : "text-slate-400"}`}>Request #RET-{selectedReq.id}</p>
               </div>
               <button
                 onClick={handleCloseModal}
-                className="h-8 w-8 rounded-full hover:bg-slate-200/60 flex items-center justify-center text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isDark ? "text-gray-500 hover:bg-gray-700 hover:text-gray-300" : "text-slate-400 hover:bg-slate-200/60"}`}
               >
-                <X className="h-4.5 w-4.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -506,13 +511,13 @@ export default function ReturnsTab() {
               {/* Assign Delivery Driver Dropdown */}
               {(modalAction === "approved_replacement" || modalAction === "approved_refund") && (
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <label className={`block text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-gray-400" : "text-slate-400"}`}>
                     Assign Delivery Boy / Courier <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedDriverId || ""}
                     onChange={(e) => setSelectedDriverId(e.target.value ? Number(e.target.value) : null)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-orange-500 transition-colors"
+                    className={`w-full rounded-xl border px-3.5 py-2.5 text-xs focus:outline-none focus:border-orange-500 transition-colors ${isDark ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-slate-200 text-slate-800"}`}
                     required
                   >
                     <option value="">-- Choose Driver (Required) --</option>
@@ -526,7 +531,7 @@ export default function ReturnsTab() {
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <label className={`block text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-gray-400" : "text-slate-400"}`}>
                   Provide Decision Notes / Feedback
                   {modalAction === "rejected" && <span className="text-red-500 ml-1">* Required for rejection email</span>}
                 </label>
@@ -540,7 +545,7 @@ export default function ReturnsTab() {
                       ? "Explain clearly to the customer why their request was rejected..."
                       : "Add details about replacement tracking or refund timeline..."
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-xs focus:outline-none focus:border-orange-500 transition-colors resize-none ${isDark ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500" : "bg-white border-slate-200 text-slate-800 placeholder-slate-400"}`}
                 />
               </div>
 
@@ -548,7 +553,7 @@ export default function ReturnsTab() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-650 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                  className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition cursor-pointer ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                 >
                   Cancel
                 </button>

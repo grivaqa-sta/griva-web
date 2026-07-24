@@ -381,7 +381,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif;">
           <div>
             <img src="${window.location.origin}/images/logo-dark.png" alt="GRIVA" style="height: 35px; width: auto; object-fit: contain; display: block; margin-bottom: 4px;" />
-            <span style="font-size: 10px; color: #999; display: block; margin-top: 1px;">State of Qatar | support@thegriva.com</span>
+            <span style="font-size: 10px; color: #999; display: block; margin-top: 1px;">State of Qatar | info@thegriva.com</span>
           </div>
           <div style="text-align: right;">
             <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #111; letter-spacing: 1px;">TAX INVOICE</h2>

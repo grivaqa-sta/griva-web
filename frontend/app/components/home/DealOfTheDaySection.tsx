@@ -8,8 +8,91 @@ import { useEffect, useState } from "react";
 import Rating from "../rating/Rating";
 import { useCountdown } from "@/app/hooks/useCountdown";
 import { useCart } from "@/app/context/CartContext";
+import { useMidnightSale } from "@/app/context/MidnightSaleContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDealOfDay } from "@/app/hooks/useHomeData";
+
+function DealOfTheDaySkeleton() {
+  return (
+    <section className="w-full py-5 animate-pulse">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
+        
+        {/* Left Timer Skeleton - Desktop only */}
+        <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl border border-orange-100 bg-orange-50/50 px-6 py-8 space-y-4 h-full">
+          <div className="h-3.5 w-24 bg-orange-100 rounded" />
+          <div className="h-6 w-32 bg-orange-200/55 rounded" />
+          <div className="h-10 w-44 bg-orange-150/45 rounded" />
+          <div className="flex gap-2 pt-2">
+            <div className="h-11 w-12 bg-orange-200/50 rounded" />
+            <div className="h-11 w-12 bg-orange-200/50 rounded" />
+            <div className="h-11 w-12 bg-orange-200/50 rounded" />
+          </div>
+        </div>
+
+        {/* Right Product Card Skeleton */}
+        <div className="relative overflow-hidden rounded-[10px] border border-gray-100/40 bg-white p-4 lg:p-6 shadow-sm">
+          {/* Mobile timer skeleton */}
+          <div className="lg:hidden h-16 bg-orange-50 rounded mb-4 flex items-center justify-between px-4">
+            <div className="space-y-1.5">
+              <div className="h-2 w-16 bg-orange-200/50 rounded" />
+              <div className="h-4 w-24 bg-orange-200/55 rounded" />
+            </div>
+            <div className="flex gap-1.5">
+              <div className="h-8 w-8 bg-orange-200/50 rounded" />
+              <div className="h-8 w-8 bg-orange-200/50 rounded" />
+              <div className="h-8 w-8 bg-orange-200/50 rounded" />
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Image section skeleton */}
+            <div className="flex shrink-0 gap-3">
+              {/* Thumbs skeleton */}
+              <div className="flex shrink-0 flex-col gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-12 w-12 bg-gray-100 rounded-lg border border-gray-50" />
+                ))}
+              </div>
+              {/* Main image placeholder */}
+              <div className="mx-auto h-[220px] w-[220px] lg:h-[240px] lg:w-[240px] bg-gray-50 rounded-xl border border-gray-100/50" />
+            </div>
+
+            {/* Content section skeleton */}
+            <div className="flex flex-col gap-3 flex-1 justify-between py-1">
+              <div className="space-y-2.5">
+                {/* Badge & Category */}
+                <div className="flex gap-2">
+                  <div className="h-4 w-24 bg-gray-200 rounded" />
+                  <div className="h-4 w-12 bg-gray-200 rounded" />
+                </div>
+                <div className="h-3 w-16 bg-gray-200 rounded" />
+                {/* Title */}
+                <div className="h-5 w-11/12 bg-gray-200 rounded" />
+                <div className="h-5 w-8/12 bg-gray-200 rounded" />
+                {/* Rating */}
+                <div className="h-4 w-24 bg-gray-200 rounded mt-1" />
+                {/* Price */}
+                <div className="h-8 w-36 bg-gray-200 rounded mt-2" />
+                {/* Description */}
+                <div className="hidden lg:block space-y-1.5 pt-1">
+                  <div className="h-3 w-full bg-gray-200 rounded" />
+                  <div className="h-3 w-10/12 bg-gray-200 rounded" />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 w-full lg:w-[360px] pt-4">
+                <div className="h-11 flex-1 bg-gray-200 rounded-[5px]" />
+                <div className="h-11 flex-1 bg-gray-200 rounded-[5px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
 
 export default function DealOfTheDaySection() {
   const { addToCart } = useCart();
@@ -31,6 +114,7 @@ export default function DealOfTheDaySection() {
       oldPrice: p?.old_price ? `${Number(p?.old_price).toFixed(2)}` : "",
       category: p?.subcategory?.name || "Special Offer",
       rating: p?.rating || 4.5,
+      reviewCount: p?.review_count || 0,
       description: p?.short_description || p?.description || "Incredible savings on this exclusive deal.",
       badge: "DEAL OF THE DAY",
       hot: true,
@@ -44,8 +128,22 @@ export default function DealOfTheDaySection() {
   const [isPaused, setIsPaused] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
 
+  const { isActive: isMidnightActive, countdown: midnightCountdown } = useMidnightSale();
   const slide = slides[current];
   const { hours, mins, secs } = useCountdown(slide?.endDate);
+
+  let displayHours = hours;
+  let displayMins = mins;
+  let displaySecs = secs;
+
+  if (isMidnightActive && midnightCountdown) {
+    const parts = midnightCountdown.split(":");
+    if (parts.length === 3) {
+      displayHours = Number(parts[0]) || 0;
+      displayMins = Number(parts[1]) || 0;
+      displaySecs = Number(parts[2]) || 0;
+    }
+  }
 
   const prev = (): void => {
     setDirection("prev");
@@ -112,23 +210,15 @@ export default function DealOfTheDaySection() {
   };
 
   if (loading) {
-    return (
-      <section className="w-full py-5">
-        <div className="mx-auto grid max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-gray-100 bg-white">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-          </div>
-        </div>
-      </section>
-    );
+    return <DealOfTheDaySkeleton />;
   }
 
   if (!slides.length) return null;
 
   const timerBlocks = [
-    { value: hours, label: "Hrs" },
-    { value: mins, label: "Min" },
-    { value: secs, label: "Sec" },
+    { value: displayHours, label: "Hrs" },
+    { value: displayMins, label: "Min" },
+    { value: displaySecs, label: "Sec" },
   ];
 
   return (
@@ -136,21 +226,39 @@ export default function DealOfTheDaySection() {
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
 
         {/* ── LEFT TIMER CARD — desktop only ── */}
-        <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl border border-orange-100 bg-orange-100 px-6 py-8 text-center shadow-sm">
-          <span className="text-[10px] font-bold uppercase tracking-[3px] text-red-500">
-            Only For Today
+        <div className={`hidden lg:flex flex-col items-center justify-center rounded-2xl p-6 py-8 text-center shadow-sm transition-all duration-500 ${
+          isMidnightActive 
+            ? "bg-gradient-to-br from-indigo-950 via-slate-900 to-black border border-purple-500/25 text-white" 
+            : "bg-orange-100 border border-orange-100 text-gray-950"
+        }`}>
+          <span className={`text-[10px] font-bold uppercase tracking-[3px] ${
+            isMidnightActive ? "text-purple-400 animate-pulse" : "text-red-500"
+          }`}>
+            {isMidnightActive ? "Midnight Sale Active" : "Only For Today"}
           </span>
-          <h2 className="mt-2 text-xl font-bold text-gray-950">Deal Of The Day</h2>
-          <p className="mt-2 max-w-sm text-xs leading-5 text-gray-500">
-            Awesome lightning deals on premium consumer electronics. Act fast!
+          <h2 className={`mt-2 text-xl font-bold ${
+            isMidnightActive ? "text-white" : "text-gray-950"
+          }`}>
+            {isMidnightActive ? "Midnight Flash Sale" : "Deal Of The Day"}
+          </h2>
+          <p className={`mt-2 max-w-sm text-xs leading-5 ${
+            isMidnightActive ? "text-gray-400" : "text-gray-500"
+          }`}>
+            {isMidnightActive 
+              ? "Exclusive, super hot deals on premium consumer electronics. Grab them before morning!"
+              : "Awesome lightning deals on premium consumer electronics. Act fast!"}
           </p>
           <div className="mt-3 flex items-center gap-3">
             {timerBlocks.map(({ value, label }) => (
               <div key={label} className="flex flex-col items-center">
-                <div className="flex h-11 w-12 items-center justify-center rounded-[5px] bg-orange-600 shadow-md shadow-orange-500/10">
+                <div className={`flex h-11 w-12 items-center justify-center rounded-[5px] shadow-md ${
+                  isMidnightActive ? "bg-indigo-600 shadow-indigo-500/20" : "bg-orange-600 shadow-orange-500/10"
+                }`}>
                   <span className="text-lg font-bold text-white">{String(value).padStart(2, "0")}</span>
                 </div>
-                <span className="mt-1.5 text-[9px] font-medium text-gray-400">{label}</span>
+                <span className={`mt-1.5 text-[9px] font-medium ${
+                  isMidnightActive ? "text-gray-500" : "text-gray-400"
+                }`}>{label}</span>
               </div>
             ))}
           </div>
@@ -164,17 +272,21 @@ export default function DealOfTheDaySection() {
           onTouchStart={() => setIsPaused(true)}
           onTouchEnd={() => setIsPaused(false)}
         >
-          {/* ── MOBILE ONLY: orange timer banner ── */}
-          <div className="lg:hidden bg-orange-700 px-5 py-4 flex items-center justify-between gap-4">
+          {/* ── MOBILE ONLY: timer banner ── */}
+          <div className={`lg:hidden px-5 py-4 flex items-center justify-between gap-4 transition-colors duration-500 ${
+            isMidnightActive 
+              ? "bg-gradient-to-r from-indigo-950 via-purple-900 to-slate-900 text-white" 
+              : "bg-orange-700 text-white"
+          }`}>
             <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-[2.5px]" style={{ color: "#ffd0b0" }}>
-                Only For Today
+              <span className="text-[8px] font-black uppercase tracking-[2.5px]" style={{ color: isMidnightActive ? "#c7d2fe" : "#ffd0b0" }}>
+                {isMidnightActive ? "Midnight Sale Active" : "Only For Today"}
               </span>
               <h2 className="text-[15px] font-black text-white leading-snug">
-                Deal of the Day
+                {isMidnightActive ? "Midnight Flash Sale" : "Deal of the Day"}
               </h2>
-              <p className="text-[8px] mt-0.5 leading-tight" style={{ color: "#ffc49a" }}>
-                Lightning deals on electronics!
+              <p className="text-[8px] mt-0.5 leading-tight" style={{ color: isMidnightActive ? "#a5b4fc" : "#ffc49a" }}>
+                {isMidnightActive ? "Exclusive, midnight prices!" : "Lightning deals on electronics!"}
               </p>
             </div>
             <div className="flex items-center gap-1">
@@ -186,7 +298,7 @@ export default function DealOfTheDaySection() {
                         {String(value).padStart(2, "0")}
                       </span>
                     </div>
-                    <span className="mt-0.5 text-[7px] font-bold uppercase" style={{ color: "#ffc49a" }}>
+                    <span className="mt-0.5 text-[7px] font-bold uppercase" style={{ color: isMidnightActive ? "#a5b4fc" : "#ffc49a" }}>
                       {label}
                     </span>
                   </div>
@@ -278,9 +390,11 @@ export default function DealOfTheDaySection() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span
-                      className="rounded px-2 py-0.5 text-[9px] font-bold uppercase text-white bg-orange-600"
+                      className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase text-white ${
+                        isMidnightActive ? "bg-purple-600 animate-pulse" : "bg-orange-600"
+                      }`}
                     >
-                      {slide.badge}
+                      {isMidnightActive ? "MIDNIGHT DEAL" : slide.badge}
                     </span>
                     {(slide.stock ?? 0) <= 0 ? (
                       <span className="rounded bg-gray-500 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
@@ -300,8 +414,25 @@ export default function DealOfTheDaySection() {
                   <h3 className="mt-1 break-words text-base font-semibold leading-6 text-gray-900 transition-colors hover:text-orange-500 line-clamp-1 lg:line-clamp-2">
                     <Link href={`/product/${slide.slug}`}>{slide.title}</Link>
                   </h3>
-                  <div className="mt-2">
-                    <Rating rating={slide.rating} />
+                  <div className="mt-2 min-h-[24px] flex items-center">
+                    {(() => {
+                      const count = slide.reviewCount ?? 0;
+                      if (count === 0) {
+                        return (
+                          <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
+                            New Arrival
+                          </span>
+                        );
+                      }
+                      return (
+                        <div className="flex items-center gap-1.5">
+                          <Rating rating={slide.rating} />
+                          <span className="text-[10px] text-gray-400">
+                            ({count})
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="mt-3 flex items-end gap-2">
                     <span className="text-2xl font-bold text-black "><span className="text-[10px] font-bold text-orange-500">QAR </span>{slide.price}</span>

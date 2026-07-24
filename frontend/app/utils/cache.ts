@@ -98,10 +98,14 @@ class CustomQueryClient {
       for (const key of Array.from(this.cache.keys())) {
         if (key.includes(keyPattern)) {
           this.cache.delete(key);
+          this.notify(key, undefined);
         }
       }
     } else {
-      this.cache.clear();
+      for (const key of Array.from(this.cache.keys())) {
+        this.cache.delete(key);
+        this.notify(key, undefined);
+      }
     }
   }
 
@@ -158,11 +162,15 @@ export function useQuery<T>(
   // Subscribe to cache updates
   useEffect(() => {
     const unsubscribe = queryClient.subscribe(key, (updatedData) => {
-      setData(updatedData);
-      setLoading(false);
+      if (updatedData === undefined) {
+        executeFetch(true);
+      } else {
+        setData(updatedData);
+        setLoading(false);
+      }
     });
     return unsubscribe;
-  }, [key]);
+  }, [key, executeFetch]);
 
   // Trigger initial fetch if not cached
   useEffect(() => {

@@ -221,20 +221,21 @@ export default function DeliveryOrderDetailPage() {
   const customerName = order.customer_name || order.user?.name || "Customer";
   const customerPhone = order.customer_phone || "";
   const fullAddress = order.shipping_address + (order.city ? `, ${order.city}` : "");
+  const isDark = theme === "dark";
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col relative pb-32">
+    <div className={`min-h-screen flex flex-col relative pb-32 ${isDark ? "bg-[#050505] text-white" : "bg-gray-50 text-gray-900"}`}>
       
       {/* Header bar */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-zinc-900 bg-[#070707]/90 backdrop-blur-md sticky top-0 z-40">
+      <header className={`px-6 py-4 flex items-center justify-between sticky top-0 z-40 backdrop-blur-md border-b ${isDark ? "border-zinc-900 bg-[#070707]/90" : "border-gray-200 bg-white/90"}`}>
         <button
           onClick={() => router.push("/delivery/dashboard")}
-          className="flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-white cursor-pointer active:scale-95"
+          className={`flex items-center gap-1 text-xs font-bold cursor-pointer active:scale-95 ${isDark ? "text-zinc-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
         >
           <ArrowLeft size={16} />
           <span>Dashboard</span>
         </button>
-        <span className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Task details</span>
+        <span className={`text-[10px] font-black tracking-[0.2em] uppercase ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Task details</span>
         <button
           onClick={toggleTheme}
           className="text-zinc-400 hover:text-white transition-colors cursor-pointer active:scale-95"
@@ -247,11 +248,11 @@ export default function DeliveryOrderDetailPage() {
       <div className="p-6 space-y-6">
         
         {/* Order Status Header Card */}
-        <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
+        <div className={`border rounded-3xl p-5 space-y-4 shadow-xl ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Order ID</span>
-              <h2 className="text-xl font-black text-white">
+              <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Order ID</span>
+              <h2 className={`text-xl font-black ${isDark ? "text-white" : "text-gray-900"}`}>
                 {order.order_number || `ORD-${String(order.id).padStart(4, "0")}`}
               </h2>
             </div>
@@ -267,7 +268,7 @@ export default function DeliveryOrderDetailPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-zinc-400 border-t border-zinc-900 pt-3">
+          <div className={`flex items-center justify-between text-xs border-t pt-3 ${isDark ? "text-zinc-400 border-zinc-900" : "text-gray-500 border-gray-100"}`}>
             <span className="font-semibold">Current State:</span>
             <span className="font-bold text-[#FF6A00] uppercase tracking-wide bg-[#FF6A00]/10 px-2 py-0.5 rounded-lg border border-[#FF6A00]/25">
               {order.status.replace(/_/g, ' ')}
@@ -275,7 +276,7 @@ export default function DeliveryOrderDetailPage() {
           </div>
 
           {order.delivery_payment_method && (
-            <div className="flex items-center justify-between text-xs text-zinc-400 border-t border-zinc-900 pt-3">
+            <div className={`flex items-center justify-between text-xs border-t pt-3 ${isDark ? "text-zinc-400 border-zinc-900" : "text-gray-500 border-gray-100"}`}>
               <span className="font-semibold">Collected Via:</span>
               <span className="font-bold text-green-400 uppercase tracking-wide bg-green-950/20 px-2 py-0.5 rounded-lg border border-green-900/30">
                 {order.delivery_payment_method}
@@ -285,29 +286,29 @@ export default function DeliveryOrderDetailPage() {
         </div>
 
         {/* Customer Information Section */}
-        <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
-          <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Customer Details</h3>
+        <div className={`border rounded-3xl p-5 space-y-4 shadow-xl ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
+          <h3 className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Customer Details</h3>
           
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+              <div className={`h-9 w-9 rounded-xl border flex items-center justify-center ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-400" : "bg-gray-100 border-gray-200 text-gray-500"}`}>
                 <User size={16} />
               </div>
               <div>
-                <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Recipient Name</p>
-                <p className="text-xs font-bold text-white">{customerName}</p>
+                <p className={`text-[9px] uppercase tracking-wider ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Recipient Name</p>
+                <p className={`text-xs font-bold ${isDark ? "text-white" : "text-gray-900"}`}>{customerName}</p>
               </div>
             </div>
 
             {customerPhone && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                  <div className={`h-9 w-9 rounded-xl border flex items-center justify-center ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-400" : "bg-gray-100 border-gray-200 text-gray-500"}`}>
                     <Phone size={16} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Contact Phone</p>
-                    <p className="text-xs font-bold text-white">{customerPhone}</p>
+                    <p className={`text-[9px] uppercase tracking-wider ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Contact Phone</p>
+                    <p className={`text-xs font-bold ${isDark ? "text-white" : "text-gray-900"}`}>{customerPhone}</p>
                   </div>
                 </div>
                 
@@ -322,12 +323,12 @@ export default function DeliveryOrderDetailPage() {
 
             {order.customer_email && (
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                <div className={`h-9 w-9 rounded-xl border flex items-center justify-center ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-400" : "bg-gray-100 border-gray-200 text-gray-500"}`}>
                   <Mail size={16} />
                 </div>
                 <div>
-                  <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Contact Email</p>
-                  <p className="text-xs font-semibold text-zinc-300">{order.customer_email}</p>
+                  <p className={`text-[9px] uppercase tracking-wider ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Contact Email</p>
+                  <p className={`text-xs font-semibold ${isDark ? "text-zinc-300" : "text-gray-600"}`}>{order.customer_email}</p>
                 </div>
               </div>
             )}
@@ -335,9 +336,9 @@ export default function DeliveryOrderDetailPage() {
         </div>
 
         {/* Address Card */}
-          <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
+          <div className={`border rounded-3xl p-5 space-y-4 shadow-xl ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
           <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Delivery Destination</h3>
+            <h3 className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Delivery Destination</h3>
             <button
               onClick={copyAddress}
               className="flex items-center gap-1 text-[9px] font-bold text-[#FF6A00] hover:text-[#FF8C00] transition-colors cursor-pointer"
@@ -347,11 +348,11 @@ export default function DeliveryOrderDetailPage() {
             </button>
           </div>
 
-          <div className="bg-[#0b0b0b]/80 border border-zinc-900 p-4 rounded-2xl space-y-2">
+          <div className={`border p-4 rounded-2xl space-y-2 ${isDark ? "bg-[#0b0b0b]/80 border-zinc-900" : "bg-gray-50 border-gray-200"}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-start gap-2.5 flex-1">
                 <MapPin size={16} className="text-[#FF6A00] shrink-0 mt-0.5" />
-                <p className="text-xs font-medium text-zinc-300 leading-relaxed">{fullAddress}</p>
+                <p className={`text-xs font-medium leading-relaxed ${isDark ? "text-zinc-300" : "text-gray-700"}`}>{fullAddress}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 mt-1">
@@ -368,9 +369,9 @@ export default function DeliveryOrderDetailPage() {
           </div>
 
           {order.delivery_notes && (
-            <div className="space-y-1 bg-zinc-900/10 p-3 rounded-2xl border border-zinc-900">
-              <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Special drop instructions</span>
-              <p className="text-xs text-zinc-400 italic">"{order.delivery_notes}"</p>
+            <div className={`space-y-1 p-3 rounded-2xl border ${isDark ? "bg-zinc-900/10 border-zinc-900" : "bg-amber-50 border-amber-200"}`}>
+              <span className={`text-[8px] font-bold uppercase tracking-widest ${isDark ? "text-zinc-500" : "text-amber-600"}`}>Special drop instructions</span>
+              <p className={`text-xs italic ${isDark ? "text-zinc-400" : "text-amber-800"}`}>"{order.delivery_notes}"</p>
             </div>
           )}
 
@@ -396,15 +397,15 @@ export default function DeliveryOrderDetailPage() {
         </div>
 
         {/* Order Items List */}
-        <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 space-y-4 shadow-xl">
-          <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Items in package ({order.items?.length || 0})</h3>
+        <div className={`border rounded-3xl p-5 space-y-4 shadow-xl ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
+          <h3 className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Items in package ({order.items?.length || 0})</h3>
           
-          <div className="divide-y divide-zinc-900/60">
+          <div className={`divide-y ${isDark ? "divide-zinc-900/60" : "divide-gray-100"}`}>
             {(order.items || []).map((item) => (
-              <div key={item.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 border-b last:border-0 border-zinc-900/60">
+              <div key={item.id} className={`flex flex-col gap-3 py-4 first:pt-0 last:pb-0 border-b last:border-0 ${isDark ? "border-zinc-900/60" : "border-gray-100"}`}>
                 <div className="flex items-center gap-3.5">
                   <div 
-                    className="h-12 w-12 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+                    className={`h-12 w-12 rounded-2xl overflow-hidden border flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all ${isDark ? "bg-zinc-950 border-zinc-900" : "bg-gray-100 border-gray-200"}`}
                     onClick={() => {
                       if (item.product?.main_image_url || item.image_snapshot) {
                         setSelectedImagePreview(item.product?.main_image_url || item.image_snapshot || null);
@@ -418,12 +419,12 @@ export default function DeliveryOrderDetailPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{item.product?.title || (item.sku ? `Product (${item.sku})` : `Product #${item.id}`)}</p>
-                    <p className="text-[10px] text-zinc-500">
+                    <p className={`text-xs font-bold truncate ${isDark ? "text-white" : "text-gray-900"}`}>{item.product?.title || (item.sku ? `Product (${item.sku})` : `Product #${item.id}`)}</p>
+                    <p className={`text-[10px] ${isDark ? "text-zinc-500" : "text-gray-500"}`}>
                       Quantity: {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
                     </p>
                   </div>
-                  <span className="text-xs font-bold text-zinc-300 shrink-0">
+                  <span className={`text-xs font-bold shrink-0 ${isDark ? "text-zinc-300" : "text-gray-700"}`}>
                     QAR {(parseFloat(parseTotal(item.price_at_purchase || item.product?.price || "0")) * item.quantity).toFixed(2)}
                   </span>
                 </div>
@@ -459,7 +460,7 @@ export default function DeliveryOrderDetailPage() {
                         {imgs.map((img, index) => (
                           <div
                             key={index}
-                            className="h-14 w-14 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-900 shrink-0 snap-start active:scale-95 transition-all cursor-pointer shadow-md hover:border-zinc-800"
+                            className={`h-14 w-14 rounded-xl overflow-hidden border shrink-0 snap-start active:scale-95 transition-all cursor-pointer shadow-md ${isDark ? "bg-zinc-950 border-zinc-900 hover:border-zinc-800" : "bg-gray-100 border-gray-200 hover:border-gray-300"}`}
                             onClick={() => setSelectedImagePreview(img)}
                           >
                             <img src={img} alt={`Sub image ${index}`} className="h-full w-full object-cover" />
@@ -473,16 +474,16 @@ export default function DeliveryOrderDetailPage() {
             ))}
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t border-zinc-900/80">
-            <span className="text-xs font-bold text-zinc-500">Grand Total</span>
-            <span className="text-sm font-black text-white">QAR {totalAmount}</span>
+          <div className={`flex justify-between items-center pt-4 border-t ${isDark ? "border-zinc-900/80" : "border-gray-100"}`}>
+            <span className={`text-xs font-bold ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Grand Total</span>
+            <span className={`text-sm font-black ${isDark ? "text-white" : "text-gray-900"}`}>QAR {totalAmount}</span>
           </div>
         </div>
 
       </div>
 
       {/* Sticky Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#070707]/95 border-t border-zinc-900 p-4 z-40 max-w-[480px] mx-auto pb-safe">
+      <div className={`fixed bottom-0 left-0 right-0 border-t p-4 z-40 max-w-[480px] mx-auto pb-safe ${isDark ? "bg-[#070707]/95 border-zinc-900" : "bg-white/95 border-gray-200"} backdrop-blur-md`}>
         {order.status === "assigned" && (
           <button
             onClick={() => handleStatusUpdate("out_for_delivery")}
@@ -545,18 +546,18 @@ export default function DeliveryOrderDetailPage() {
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-[#0b0b0b] border border-zinc-900 w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl relative"
+              className={`w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl relative border ${isDark ? "bg-[#0b0b0b] border-zinc-900" : "bg-white border-gray-200"}`}
             >
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+                className={`absolute top-4 right-4 transition-colors ${isDark ? "text-zinc-500 hover:text-white" : "text-gray-400 hover:text-gray-900"}`}
               >
                 <X size={20} />
               </button>
 
               <div className="text-center space-y-1.5 pt-2">
-                <h3 className="text-lg font-black text-white">Payment Received</h3>
-                <p className="text-xs text-zinc-400">
+                <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-gray-900"}`}>Payment Received</h3>
+                <p className={`text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
                   Select how payment was received in Qatar before completing delivery.
                 </p>
               </div>
@@ -573,16 +574,16 @@ export default function DeliveryOrderDetailPage() {
                     className={`w-full text-left p-4 rounded-2xl border transition-all flex flex-col gap-1 cursor-pointer ${
                       deliveryPaymentMethod === option.id
                         ? "bg-[#FF6A00]/10 border-[#FF6A00]"
-                        : "bg-zinc-950/40 border-zinc-900 hover:border-zinc-800"
+                        : isDark ? "bg-zinc-950/40 border-zinc-900 hover:border-zinc-800" : "bg-gray-50 border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">{option.label}</span>
+                      <span className={`text-xs font-bold ${isDark ? "text-white" : "text-gray-900"}`}>{option.label}</span>
                       <div
                         className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center transition-all ${
                           deliveryPaymentMethod === option.id
                             ? "border-[#FF6A00] bg-[#FF6A00]"
-                            : "border-zinc-800"
+                            : isDark ? "border-zinc-800" : "border-gray-300"
                         }`}
                       >
                         {deliveryPaymentMethod === option.id && (
@@ -590,7 +591,7 @@ export default function DeliveryOrderDetailPage() {
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] text-zinc-500 font-medium">{option.desc}</span>
+                    <span className={`text-[10px] font-medium ${isDark ? "text-zinc-500" : "text-gray-500"}`}>{option.desc}</span>
                   </button>
                 ))}
               </div>
@@ -598,7 +599,7 @@ export default function DeliveryOrderDetailPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 py-3.5 bg-zinc-900 border border-zinc-800 text-xs font-bold rounded-2xl hover:bg-zinc-850 active:scale-95 transition-all text-zinc-300"
+                  className={`flex-1 py-3.5 border text-xs font-bold rounded-2xl active:scale-95 transition-all ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800" : "bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200"}`}
                 >
                   Cancel
                 </button>

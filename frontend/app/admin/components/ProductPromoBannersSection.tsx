@@ -136,7 +136,7 @@ export default function ProductPromoBannersSection() {
                           <img
                             src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
                             alt="Product"
-                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0"
+                            className="w-12 h-12 rounded-lg object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
@@ -232,11 +232,31 @@ export default function ProductPromoBannersSection() {
                         return (
                           <div
                             key={p.id}
-                            onClick={() => { setSelectedProductId(p.id); setIsDropdownOpen(false); }}
+                            onClick={() => {
+                              setSelectedProductId(p.id);
+                              setIsDropdownOpen(false);
+                              
+                              // Auto-fill product title
+                              setTitle(p.title);
+                              
+                              // Auto-fill discount/subtitle if present
+                              if (p.discount_percentage && p.discount_percentage > 0) {
+                                setSubtitle(`${p.discount_percentage}% OFF`);
+                              } else if (p.old_price && Number(p.old_price) > Number(p.price)) {
+                                const disc = Math.round(((Number(p.old_price) - Number(p.price)) / Number(p.old_price)) * 100);
+                                if (disc > 0) {
+                                  setSubtitle(`${disc}% OFF`);
+                                } else {
+                                  setSubtitle('Special Offer');
+                                }
+                              } else {
+                                setSubtitle('Special Offer');
+                              }
+                            }}
                             className={`px-3 py-2 hover:bg-orange-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 ${selectedProductId === p.id ? 'bg-orange-50' : ''}`}
                           >
                             {imgSrc ? (
-                              <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0" />
+                               <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0" />
                             ) : (
                               <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
                                 <ImageIcon className="w-4 h-4 text-gray-300" />
@@ -249,6 +269,22 @@ export default function ProductPromoBannersSection() {
                     </div>
                   )}
                 </div>
+                {/* Selected Product Image Preview */}
+                {selectedProductId && (() => {
+                  const selectedP = products.find(p => p.id === Number(selectedProductId));
+                  const imgSrc = selectedP?.main_image_url;
+                  if (!imgSrc) return null;
+                  return (
+                    <div className="mt-2 flex items-center gap-2 p-2 bg-white border border-gray-100 rounded-lg">
+                      <img
+                        src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
+                        alt="Selected Product"
+                        className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
+                      />
+                      <span className="text-[10px] font-medium text-gray-600 truncate">{selectedP?.title}</span>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>

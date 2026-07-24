@@ -10,6 +10,8 @@ import { uploadService } from '@/app/services/upload.service';
 import dealOfDayService from '@/app/services/dealOfDay.service';
 import { ApiProduct } from '@/app/types/types';
 import { useToast } from '@/app/context/ToastContext';
+import { queryClient } from '@/app/utils/cache';
+import { useCategories, useSubCategories } from '@/app/hooks/useCategories';
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -28,15 +30,20 @@ interface BannersTabProps {
   handleToggleSlide: (index: number) => void;
   mobileBannersList: any[];
   setMobileBannersList: (val: any[]) => void;
+  fridaySaleConfig: any;
+  onSaveFridaySaleConfig: (config: any) => Promise<void>;
 }
 
-// ─── Mobile Banners Section ─────────────────────────────────────────────────
+// ─── Mobile & Desktop Banners Section ─────────────────────────────────────────────────
 function MobileBannersSection() {
   const [bannerProducts, setBannerProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploadingId, setUploadingId] = useState<number | null>(null);
-  const [successId, setSuccessId] = useState<number | null>(null);
-  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  
+  const [uploadingMobileId, setUploadingMobileId] = useState<number | null>(null);
+  const [successMobileId, setSuccessMobileId] = useState<number | null>(null);
+  
+  const [uploadingDesktopId, setUploadingDesktopId] = useState<number | null>(null);
+  const [successDesktopId, setSuccessDesktopId] = useState<number | null>(null);
 
   const loadBannerProducts = useCallback(async () => {
     setLoading(true);
@@ -53,35 +60,34 @@ function MobileBannersSection() {
   useEffect(() => { loadBannerProducts(); }, [loadBannerProducts]);
 
   const handleMobileImageUpload = async (product: ApiProduct, file: File) => {
-    setUploadingId(product.id);
+    setUploadingMobileId(product.id);
     try {
       const uploadData = await uploadService.uploadImage(file);
       const newUrl: string = uploadData.imageUrl;
 
-      // Call updateBannerStatus with the new mobile_ad_banner URL
       await productService.updateBannerStatus(
         product.id,
         true,
         product.href || `/product/${product.slug}`,
         newUrl,
         product.banner_background_color,
-        product.tags || []
+        product.tags || [],
+        product.desktop_ad_banner
       );
 
-      // Update local state
       setBannerProducts(prev =>
         prev.map(p => p.id === product.id ? { ...p, mobile_ad_banner: newUrl } : p)
       );
-      setSuccessId(product.id);
-      setTimeout(() => setSuccessId(null), 2500);
+      setSuccessMobileId(product.id);
+      setTimeout(() => setSuccessMobileId(null), 2500);
     } catch (err) {
       console.error('Mobile banner upload failed', err);
     }
-    setUploadingId(null);
+    setUploadingMobileId(null);
   };
 
   const handleRemoveMobileImage = async (product: ApiProduct) => {
-    setUploadingId(product.id);
+    setUploadingMobileId(product.id);
     try {
       await productService.updateBannerStatus(
         product.id,
@@ -89,7 +95,8 @@ function MobileBannersSection() {
         product.href || `/product/${product.slug}`,
         '',
         product.banner_background_color,
-        product.tags || []
+        product.tags || [],
+        product.desktop_ad_banner
       );
       setBannerProducts(prev =>
         prev.map(p => p.id === product.id ? { ...p, mobile_ad_banner: '' } : p)
@@ -97,15 +104,63 @@ function MobileBannersSection() {
     } catch (err) {
       console.error('Failed to remove mobile banner image', err);
     }
-    setUploadingId(null);
+    setUploadingMobileId(null);
+  };
+
+  const handleDesktopImageUpload = async (product: ApiProduct, file: File) => {
+    setUploadingDesktopId(product.id);
+    try {
+      const uploadData = await uploadService.uploadImage(file);
+      const newUrl: string = uploadData.imageUrl;
+
+      await productService.updateBannerStatus(
+        product.id,
+        true,
+        product.href || `/product/${product.slug}`,
+        product.mobile_ad_banner,
+        product.banner_background_color,
+        product.tags || [],
+        newUrl
+      );
+
+      setBannerProducts(prev =>
+        prev.map(p => p.id === product.id ? { ...p, desktop_ad_banner: newUrl } : p)
+      );
+      setSuccessDesktopId(product.id);
+      setTimeout(() => setSuccessDesktopId(null), 2500);
+    } catch (err) {
+      console.error('Desktop banner upload failed', err);
+    }
+    setUploadingDesktopId(null);
+  };
+
+  const handleRemoveDesktopImage = async (product: ApiProduct) => {
+    setUploadingDesktopId(product.id);
+    try {
+      await productService.updateBannerStatus(
+        product.id,
+        true,
+        product.href || `/product/${product.slug}`,
+        product.mobile_ad_banner,
+        product.banner_background_color,
+        product.tags || [],
+        ''
+      );
+      setBannerProducts(prev =>
+        prev.map(p => p.id === product.id ? { ...p, desktop_ad_banner: '' } : p)
+      );
+    } catch (err) {
+      console.error('Failed to remove desktop banner image', err);
+    }
+    setUploadingDesktopId(null);
   };
 
   return (
     <div className="space-y-4">
       <div className="pb-3 border-b border-orange-500/20 flex justify-between items-center">
         <div>
-          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Mobile View Homepage Banners</h4>
-          <p className="text-[10px] text-gray-400 mt-1">Upload mobile-specific promo images for each active hero banner product.</p>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider"> Homepage Banner Creative Uploads (Mobile)</h4>
+          <p className="text-[10px] text-gray-400 mt-1">Upload mobile-specific promo banner images for active hero products.</p>
         </div>
         <button
           onClick={loadBannerProducts}
@@ -128,79 +183,75 @@ function MobileBannersSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {bannerProducts.map((product) => {
             const mobileSrc = product.mobile_ad_banner;
-            const isUploading = uploadingId === product.id;
-            const isSuccess = successId === product.id;
+            const isUploadingMobile = uploadingMobileId === product.id;
+            const isSuccessMobile = successMobileId === product.id;
 
             return (
-              <div key={product.id} className="bg-white border border-orange-500/30 p-4 rounded-xl flex gap-4 items-center">
-                {/* Mobile Banner Preview / Upload */}
-                <label
-                  className="h-20 w-32 shrink-0 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative cursor-pointer hover:opacity-80 transition-opacity group"
-                  title="Click to upload mobile banner image"
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={el => { fileInputRefs.current[product.id] = el; }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleMobileImageUpload(product, file);
-                    }}
-                  />
-                  {isUploading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-orange-50">
-                      <Loader className="h-5 w-5 animate-spin text-orange-500" />
-                    </div>
-                  ) : isSuccess ? (
-                    <div className="w-full h-full flex items-center justify-center bg-green-50">
-                      <Check className="h-6 w-6 text-green-500" />
-                    </div>
-                  ) : mobileSrc ? (
-                    <>
-                      <img
-                        src={mobileSrc.startsWith('http') || mobileSrc.startsWith('/') ? mobileSrc : `http://localhost:8080${mobileSrc}`}
-                        className="w-full h-full object-cover"
-                        alt={product.title}
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-white text-[9px] font-bold">Change Image</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-1 hover:text-orange-500 transition-colors">
-                      <ImageIcon className="h-5 w-5" />
-                      <span className="text-[8px] font-bold uppercase">Upload</span>
-                    </div>
-                  )}
-                </label>
-
-                {/* Product Info & Actions */}
-                <div className="flex-1 flex justify-between items-center gap-4 min-w-0">
-                  <div className="flex-1 space-y-1.5 overflow-hidden">
+              <div key={product.id} className="bg-white border border-orange-500/30 p-4 rounded-xl flex flex-col gap-4">
+                {/* Product Title and Link */}
+                <div className="flex justify-between items-start border-b border-gray-100 pb-2">
+                  <div className="min-w-0">
                     <p className="text-xs font-bold text-gray-800 truncate">{product.title}</p>
-                    <div
-                      className="text-[10px] text-gray-500 bg-gray-50 px-2 py-1.5 rounded border border-gray-100 truncate"
-                      title={mobileSrc || 'No mobile image set'}
+                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">{product.href || `/product/${product.slug}`}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Mobile Banner (750x400 approx.)</span>
+                  <div className="flex gap-3 items-center">
+                    <label
+                      className="h-20 w-32 shrink-0 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative cursor-pointer hover:opacity-80 transition-opacity group flex items-center justify-center"
+                      title="Click to upload mobile banner image"
                     >
-                      {mobileSrc ? mobileSrc.split('/').pop() : 'No mobile image uploaded'}
-                    </div>
-                    <div className="text-[10px] text-gray-500 bg-gray-50 px-2 py-1.5 rounded border border-gray-100 truncate">
-                      {product.href || `/product/${product.slug}`}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleMobileImageUpload(product, file);
+                        }}
+                      />
+                      {isUploadingMobile ? (
+                        <Loader className="h-5 w-5 animate-spin text-orange-500" />
+                      ) : isSuccessMobile ? (
+                        <Check className="h-6 w-6 text-green-500" />
+                      ) : mobileSrc ? (
+                        <>
+                          <img
+                            src={mobileSrc.startsWith('http') || mobileSrc.startsWith('/') ? mobileSrc : `http://localhost:8080${mobileSrc}`}
+                            className="w-full h-full object-cover"
+                            alt="Mobile Banner"
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-white text-[9px] font-bold">Change Image</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-1 hover:text-orange-500 transition-colors">
+                          <ImageIcon className="h-5 w-5" />
+                          <span className="text-[8px] font-bold uppercase">Upload</span>
+                        </div>
+                      )}
+                    </label>
+                    <div className="flex-1 min-w-0">
+                      {mobileSrc ? (
+                        <div className="space-y-1">
+                          <div className="text-[9px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100 text-center">
+                            Uploaded
+                          </div>
+                          <button
+                            onClick={() => handleRemoveMobileImage(product)}
+                            className="text-[9px] font-bold text-red-500 hover:text-red-700 underline block cursor-pointer"
+                          >
+                            Remove Image
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[9px] text-gray-400 italic">No image</span>
+                      )}
                     </div>
                   </div>
-
-                  {/* Remove mobile image button */}
-                  {mobileSrc && (
-                    <button
-                      onClick={() => handleRemoveMobileImage(product)}
-                      disabled={isUploading}
-                      className="p-2.5 border border-red-200 text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                      title="Remove mobile banner image"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
                 </div>
               </div>
             );
@@ -343,6 +394,7 @@ function DealOfDaySection() {
       };
 
       await dealOfDayService.createDeal(payload);
+      queryClient.invalidate("deal_of_day_active");
 
       // Reset form
       setSelectedProductId('');
@@ -363,6 +415,7 @@ function DealOfDaySection() {
     setTogglingId(dealId);
     try {
       await dealOfDayService.updateDealStatus(dealId);
+      queryClient.invalidate("deal_of_day_active");
       await loadData(false);
       showSuccess("Deal status updated.");
     } catch (err) {
@@ -376,6 +429,7 @@ function DealOfDaySection() {
     setDeletingId(dealId);
     try {
       await dealOfDayService.deleteDeal(dealId);
+      queryClient.invalidate("deal_of_day_active");
       await loadData(false);
       setConfirmDeleteId(null);
       showSuccess("Deal deleted successfully.");
@@ -463,7 +517,7 @@ function DealOfDaySection() {
                           <img
                             src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
                             alt="Product"
-                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0"
+                            className="w-12 h-12 rounded-lg object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
@@ -524,9 +578,12 @@ function DealOfDaySection() {
           {/* Add Form */}
           {canAddMore ? (
             <div className="bg-orange-50/50 border border-orange-500/20 p-5 rounded-xl">
-              <h5 className="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <h5 className="text-xs font-bold text-gray-800 mb-2 flex items-center gap-2">
                 <Plus className="h-4 w-4 text-orange-500" /> Add New Deal
               </h5>
+              <p className="text-[10px] text-orange-600 font-medium mb-4 leading-relaxed bg-orange-100/30 p-2.5 rounded-lg border border-orange-200/30">
+                💡 <strong>Automated Scheduling:</strong> When creating a new deal, the End Date is automatically pre-configured to exactly 24 hours after the Start Date. After this 24-hour period, the deal will automatically expire and hide from the storefront homepage.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-start">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-700 mb-1">Product</label>
@@ -561,7 +618,7 @@ function DealOfDaySection() {
                               className={`px-3 py-2 hover:bg-orange-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 ${selectedProductId === p.id ? 'bg-orange-50' : ''}`}
                             >
                               {imgSrc ? (
-                                <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0" />
+                                <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0" />
                               ) : (
                                 <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
                                   <ImageIcon className="w-4 h-4 text-gray-300" />
@@ -584,7 +641,7 @@ function DealOfDaySection() {
                         <img
                           src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
                           alt="Selected Product"
-                          className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0"
+                          className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
                         />
                         <span className="text-[10px] font-medium text-gray-600 truncate">{selectedP?.title}</span>
                       </div>
@@ -637,8 +694,429 @@ function DealOfDaySection() {
   );
 }
 
+// ─── Friday Deals Section ─────────────────────────────────────────────────────────────
+function FridayDealsSection({ fridaySaleConfig, onSaveFridaySaleConfig }: { fridaySaleConfig: any, onSaveFridaySaleConfig: (config: any) => Promise<void> }) {
+  const { toast } = useToast();
+  const { categories } = useCategories();
+  const { subCategories } = useSubCategories();
+  const [products, setProducts] = useState<any[]>([]);
+  const [isSavingFridayConfig, setIsSavingFridayConfig] = useState(false);
+
+  const defaultCards = [
+    { number: "01", title: "Gaming Gear", subtitle: "Up to 35% OFF", type: "category", slug: "gaming-store-qatar", discount: 35, image: "/images/gamejoysticnew.png" },
+    { number: "02", title: "Premium Audio", subtitle: "Up to 40% OFF", type: "category", slug: "exclusive-offers", discount: 40, image: "/images/headphonenew.png" },
+    { number: "03", title: "Smartwatches", subtitle: "Up to 30% OFF", type: "category", slug: "shop", discount: 30, image: "/images/iwatch.png" },
+    { number: "04", title: "Speakers & More", subtitle: "Special Drops", type: "category", slug: "electronics-store-qatar", discount: 10, image: "/images/bspeaker.png" },
+  ];
+
+  const [cards, setCards] = useState<any[]>(defaultCards);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const res = await productService.getProducts();
+        const data = res?.data || res;
+        setProducts(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load products in Friday Deals:", err);
+      }
+    };
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    if (fridaySaleConfig && Array.isArray(fridaySaleConfig) && fridaySaleConfig.length === 4) {
+      setCards(fridaySaleConfig);
+    }
+  }, [fridaySaleConfig]);
+
+  return (
+    <div className="bg-white border border-orange-500/30 rounded-2xl p-6 shadow-sm space-y-6">
+      <div className="border-b border-orange-500/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Friday Deals Card Manager</h4>
+          <p className="text-[10px] text-gray-400 mt-0.5">Customize the titles, discounts, linked categories, and product images of the 4 storefront cards.</p>
+        </div>
+        <button
+          onClick={async () => {
+            setIsSavingFridayConfig(true);
+            try {
+              await onSaveFridaySaleConfig(cards);
+              toast.success("Friday Deals layout saved successfully.");
+            } catch (err) {
+              toast.error("Failed to save Friday Deals layout.");
+            } finally {
+              setIsSavingFridayConfig(false);
+            }
+          }}
+          disabled={isSavingFridayConfig}
+          className="inline-flex items-center justify-center rounded-xl bg-orange-500 hover:bg-orange-600 px-6 py-2.5 text-xs font-bold text-white transition shadow-md shadow-orange-500/10 cursor-pointer disabled:opacity-50"
+        >
+          {isSavingFridayConfig ? "Saving..." : "Save Deals Configuration"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {cards.map((card, idx) => {
+          const matchedProducts = (() => {
+            if (!card.slug) return [];
+            if (card.type === "subcategory") {
+              const sub = subCategories.find((s: any) => s.slug === card.slug);
+              return sub ? products.filter((p: any) => p.subcategory_id === sub.id) : [];
+            }
+            const cat = categories.find((c: any) => c.slug === card.slug);
+            if (!cat) return [];
+            const subIds = subCategories
+              .filter((sub: any) => sub.category_id === cat.id)
+              .map((sub: any) => sub.id);
+            return products.filter((p: any) => subIds.includes(p.subcategory_id));
+          })();
+          
+          const matchedCategoryUrl = (() => {
+            if (!card.slug) return null;
+            if (card.type === "subcategory") {
+              return subCategories.find((s: any) => s.slug === card.slug)?.image_url || null;
+            }
+            return categories.find((c: any) => c.slug === card.slug)?.image_url || null;
+          })();
+
+          return (
+            <div key={idx} className="bg-gray-50/50 border border-gray-100 rounded-2xl p-5 space-y-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between border-b pb-2 border-gray-200/50">
+                <span className="text-xs font-black text-orange-500">CARD {card.number}</span>
+                <span className="text-[10px] font-bold text-gray-400">Position {idx + 1}</span>
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Card Title</label>
+                <input
+                  type="text"
+                  value={card.title}
+                  onChange={(e) => {
+                    const newCards = [...cards];
+                    newCards[idx] = { ...card, title: e.target.value };
+                    setCards(newCards);
+                  }}
+                  placeholder="e.g. Gaming Gear"
+                  className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+
+              {/* Subtitle */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Card Subtitle / Offer Text</label>
+                <input
+                  type="text"
+                  value={card.subtitle}
+                  onChange={(e) => {
+                    const newCards = [...cards];
+                    newCards[idx] = { ...card, subtitle: e.target.value };
+                    setCards(newCards);
+                  }}
+                  placeholder="e.g. Up to 35% OFF"
+                  className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+
+              {/* Target Type: Category or Subcategory */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Target Type</label>
+                <select
+                  value={card.type || "category"}
+                  onChange={(e) => {
+                    const newCards = [...cards];
+                    newCards[idx] = { ...card, type: e.target.value, slug: "" };
+                    setCards(newCards);
+                  }}
+                  className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                >
+                  <option value="category">Category</option>
+                  <option value="subcategory">Subcategory</option>
+                </select>
+              </div>
+
+              {/* Target Slug selection */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Target Selection</label>
+                <select
+                  value={card.slug || ""}
+                  onChange={(e) => {
+                    const newSlug = e.target.value;
+                    const newCards = [...cards];
+                    
+                    let autoTitle = card.title;
+                    let autoImage = card.image;
+                    
+                    if (card.type === "subcategory") {
+                      const matchedSub = subCategories.find((sub: any) => sub.slug === newSlug);
+                      if (matchedSub) {
+                        autoTitle = matchedSub.title;
+                        const firstProd = products.find((p: any) => p.subcategory_id === matchedSub.id);
+                        if (firstProd && firstProd.main_image_url) {
+                          autoImage = firstProd.main_image_url;
+                        } else if (matchedSub.image_url) {
+                          autoImage = matchedSub.image_url;
+                        }
+                      }
+                    } else {
+                      const matchedCat = categories.find((cat: any) => cat.slug === newSlug);
+                      if (matchedCat) {
+                        autoTitle = matchedCat.title;
+                        const matchedSubIds = subCategories
+                          .filter((sub: any) => sub.category_id === matchedCat.id)
+                          .map((sub: any) => sub.id);
+                        const firstProd = products.find((p: any) => matchedSubIds.includes(p.subcategory_id));
+                        if (firstProd && firstProd.main_image_url) {
+                          autoImage = firstProd.main_image_url;
+                        } else if (matchedCat.image_url) {
+                          autoImage = matchedCat.image_url;
+                        }
+                      }
+                    }
+
+                    newCards[idx] = { ...card, slug: newSlug, title: autoTitle, image: autoImage };
+                    setCards(newCards);
+                  }}
+                  className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                >
+                  <option value="">Select Target...</option>
+                  {card.type === "subcategory"
+                    ? subCategories.map((sub: any) => (
+                        <option key={sub.slug} value={sub.slug}>
+                          {sub.title}
+                        </option>
+                      ))
+                    : categories.map((cat: any) => (
+                        <option key={cat.slug} value={cat.slug}>
+                          {cat.title}
+                        </option>
+                      ))}
+                </select>
+              </div>
+
+              {/* Discount Percentage */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider mb-1">Min Discount (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={card.discount || 0}
+                  onChange={(e) => {
+                    const newDiscount = Number(e.target.value);
+                    const newCards = [...cards];
+                    
+                    let autoSubtitle = card.subtitle;
+                    if (newDiscount > 0) {
+                      autoSubtitle = `${newDiscount}% OFF & More`;
+                    } else {
+                      autoSubtitle = "Special Drops";
+                    }
+
+                    newCards[idx] = { ...card, discount: newDiscount, subtitle: autoSubtitle };
+                    setCards(newCards);
+                  }}
+                  className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+
+              {/* Product Image Selection */}
+              <div className="space-y-2">
+                <label className="block text-[9px] font-bold uppercase text-gray-400 tracking-wider">Featured Image</label>
+                
+                {(() => {
+                  const presets = ["/images/gamejoysticnew.png", "/images/headphonenew.png", "/images/iwatch.png", "/images/bspeaker.png"];
+                  const isPreset = presets.includes(card.image);
+                  const isCategoryImg = matchedCategoryUrl && card.image === matchedCategoryUrl;
+                  const isProductImg = matchedProducts.some((p: any) => p.main_image_url === card.image);
+                  
+                  let activeMode = "custom";
+                  if (isPreset) activeMode = "preset";
+                  else if (isCategoryImg) activeMode = "category";
+                  else if (isProductImg) activeMode = "product";
+
+                  return (
+                    <>
+                      {/* Mode Tabs */}
+                      <div className="flex flex-wrap gap-1 bg-gray-100 p-0.5 rounded-lg mb-2">
+                        {[
+                          { id: "product", label: "Product" },
+                          { id: "category", label: "Category" },
+                          { id: "preset", label: "Preset" },
+                          { id: "custom", label: "Custom" },
+                        ].map((mode) => {
+                          const isActive = activeMode === mode.id;
+                          return (
+                            <button
+                              key={mode.id}
+                              type="button"
+                              onClick={() => {
+                                const newCards = [...cards];
+                                let newImg = "";
+                                if (mode.id === "category") {
+                                  newImg = matchedCategoryUrl || "";
+                                } else if (mode.id === "preset") {
+                                  newImg = presets[idx] || presets[0];
+                                } else if (mode.id === "product") {
+                                  const firstProd = matchedProducts.find((p: any) => p.main_image_url);
+                                  newImg = firstProd ? firstProd.main_image_url : "";
+                                }
+                                newCards[idx] = { ...card, image: newImg };
+                                setCards(newCards);
+                              }}
+                              className={`flex-1 text-[9px] font-bold py-1.5 px-1 rounded-md transition-all cursor-pointer ${
+                                isActive
+                                  ? "bg-white text-orange-600 shadow-sm"
+                                  : "text-gray-500 hover:text-gray-900"
+                              }`}
+                            >
+                              {mode.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Mode Fields */}
+                      {activeMode === "product" && (
+                        <div className="space-y-1">
+                          <select
+                            value={card.image || ""}
+                            onChange={(e) => {
+                              const newCards = [...cards];
+                              newCards[idx] = { ...card, image: e.target.value };
+                              setCards(newCards);
+                            }}
+                            className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                          >
+                            {matchedProducts.filter((p: any) => p.main_image_url).length === 0 ? (
+                              <option value="">No products with images found...</option>
+                            ) : (
+                              <>
+                                <option value="">Select a product...</option>
+                                {matchedProducts
+                                  .filter((p: any) => p.main_image_url)
+                                  .map((p: any) => (
+                                    <option key={p.id} value={p.main_image_url}>
+                                      {p.title}
+                                    </option>
+                                  ))}
+                              </>
+                            )}
+                          </select>
+                        </div>
+                      )}
+
+                      {activeMode === "category" && (
+                        <div className="text-[10px] text-gray-500 bg-orange-50/50 p-2 rounded-lg border border-orange-100/30 flex items-center justify-between">
+                          <span>Using default category image</span>
+                          {matchedCategoryUrl ? (
+                            <span className="text-green-600 font-bold text-[9px] uppercase">Active</span>
+                          ) : (
+                            <span className="text-red-500 font-bold text-[9px] uppercase font-bold">No Image</span>
+                          )}
+                        </div>
+                      )}
+
+                      {activeMode === "preset" && (
+                        <div className="space-y-1">
+                          <select
+                            value={card.image}
+                            onChange={(e) => {
+                              const newCards = [...cards];
+                              newCards[idx] = { ...card, image: e.target.value };
+                              setCards(newCards);
+                            }}
+                            className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
+                          >
+                            <option value="/images/gamejoysticnew.png">Gamepad (Preset)</option>
+                            <option value="/images/headphonenew.png">Headphones (Preset)</option>
+                            <option value="/images/iwatch.png">Smartwatch (Preset)</option>
+                            <option value="/images/bspeaker.png">Speaker (Preset)</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {activeMode === "custom" && (
+                        <div className="space-y-1">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={card.image || ""}
+                              onChange={(e) => {
+                                const newCards = [...cards];
+                                newCards[idx] = { ...card, image: e.target.value };
+                                setCards(newCards);
+                              }}
+                              placeholder="Enter image URL..."
+                              className="flex-1 text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2.5 py-2 outline-none focus:border-orange-500 transition-colors"
+                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  try {
+                                    const data = await uploadService.uploadImage(file);
+                                    if (data && data.imageUrl) {
+                                      const newCards = [...cards];
+                                      newCards[idx] = { ...card, image: data.imageUrl };
+                                      setCards(newCards);
+                                      toast.success("Image uploaded successfully!");
+                                    } else {
+                                      toast.error("Failed to upload image. No URL returned.");
+                                    }
+                                  } catch (err: any) {
+                                    toast.error(err?.response?.data?.message || "Failed to upload image");
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                              <button
+                                type="button"
+                                className="h-full px-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-lg text-xs transition-colors whitespace-nowrap min-h-[34px] flex items-center justify-center border border-orange-500/10 cursor-pointer"
+                              >
+                                Upload
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* Visual Image Preview */}
+                <div className="mt-3">
+                  <span className="block text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">Image Preview</span>
+                  <div className="h-24 w-full bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative flex items-center justify-center">
+                    {card.image ? (
+                      <img
+                        src={card.image.startsWith('http') || card.image.startsWith('/') ? card.image : `http://localhost:8080${card.image}`}
+                        alt="Preview"
+                        className="h-full w-full object-contain p-1"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400 gap-1">
+                        <ImageIcon className="h-5 w-5" />
+                        <span className="text-[8px] font-bold uppercase">No Image Selected</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        </div>
+      </div>
+    );
+  }
+
 export default function BannersTab(props: BannersTabProps) {
-  const { slidesList, handleToggleSlide, mobileBannersList, setMobileBannersList } = props;
+  const { slidesList, handleToggleSlide, mobileBannersList, setMobileBannersList, fridaySaleConfig, onSaveFridaySaleConfig } = props;
 
   // State for per-category banner management
   const [categoryBanners, setCategoryBanners] = useState<Record<string, string>>(
@@ -680,10 +1158,13 @@ export default function BannersTab(props: BannersTabProps) {
       {/* Section C: Deal of the Day */}
       <DealOfDaySection />
 
-       {/* Section E: Discover More Banners */}
+      {/* Section D: Friday Deals Cards Manager */}
+      <FridayDealsSection fridaySaleConfig={fridaySaleConfig} onSaveFridaySaleConfig={onSaveFridaySaleConfig} />
+
+      {/* Section E: Discover More Banners */}
       <DiscoverMoreSection />
 
-      {/* Section D: Product Promo Banners */}
+      {/* Section F: Product Promo Banners */}
       <ProductPromoBannersSection />
 
     </div>

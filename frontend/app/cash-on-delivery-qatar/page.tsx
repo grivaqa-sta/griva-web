@@ -293,13 +293,13 @@ export default function CashOnDeliveryPage() {
 
               <div className="mt-8 flex justify-center">
                 <a
-                  href="https://wa.me/9747770123"
+                  href="https://wa.me/97470066559"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group inline-flex items-center justify-center gap-2.5 rounded-xl bg-[#25D366] hover:bg-[#20c058] px-8 py-4 text-xs font-bold text-white shadow-lg transition-all duration-300 hover:shadow-emerald-500/20 active:scale-[0.98]"
                 >
                   <MessageSquare className="h-4 w-4" />
-                  <span>Chat on WhatsApp (+974 7770 123)</span>
+                  <span>Chat on WhatsApp (+974 7006 6559)</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </a>
               </div>

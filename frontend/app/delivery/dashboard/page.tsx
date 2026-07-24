@@ -132,6 +132,7 @@ export default function DeliveryDashboard() {
 
   // Theme toggle state
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const isDark = theme === "dark";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -587,17 +588,17 @@ export default function DeliveryDashboard() {
   const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#050505] text-white select-none">
+    <div className={`flex flex-col min-h-screen select-none ${isDark ? "bg-[#050505] text-white" : "bg-gray-50 text-gray-900"}`}>
       
       {/* Premium Dark Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-zinc-900 bg-[#070707]/90 backdrop-blur-md sticky top-0 z-40">
+      <header className={`px-6 py-4 flex items-center justify-between border-b sticky top-0 z-40 backdrop-blur-md ${isDark ? "border-zinc-900 bg-[#070707]/90" : "border-gray-200 bg-white/90"}`}>
         <div className="flex items-center gap-2">
           <img 
             src={theme === "dark" ? "/images/logo-light.png" : "/images/logo-dark.png"} 
             alt="Griva Logo" 
             className="h-6 w-auto object-contain" 
           />
-          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.25em] border-l border-zinc-800 pl-2">DELIVERY</span>
+          <span className={`text-[9px] font-bold text-zinc-500 uppercase tracking-[0.25em] border-l pl-2 ${isDark ? "border-zinc-800" : "border-gray-200"}`}>DELIVERY</span>
         </div>
         <div className="flex items-center gap-4">
           <button
@@ -614,7 +615,7 @@ export default function DeliveryDashboard() {
           >
             <Bell size={20} />
             {notifications.filter(n => !n.isRead).length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[#FF6A00] text-[8px] font-extrabold text-white flex items-center justify-center border border-[#050505] shadow-[0_0_8px_rgba(255,106,0,0.6)]">
+              <span className={`absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[#FF6A00] text-[8px] font-extrabold text-white flex items-center justify-center border shadow-[0_0_8px_rgba(255,106,0,0.6)] ${isDark ? "border-[#050505]" : "border-white"}`}>
                 {notifications.filter(n => !n.isRead).length}
               </span>
             )}
@@ -647,13 +648,13 @@ export default function DeliveryDashboard() {
               <div className="flex justify-between items-end">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-[#FF6A00] tracking-widest uppercase">Overview</span>
-                  <h2 className="text-2xl font-black text-white tracking-tight">My Deliveries</h2>
-                  <p className="text-xs text-zinc-400 font-semibold">{todayStr}</p>
+                  <h2 className={`text-2xl font-black tracking-tight ${isDark ? "text-white" : "text-gray-900"}`}>My Deliveries</h2>
+                  <p className={`text-xs font-semibold ${isDark ? "text-zinc-400" : "text-gray-500"}`}>{todayStr}</p>
                 </div>
                 <button
                   onClick={handleRefresh}
                   disabled={loading}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 border border-zinc-900 text-xs font-bold text-[#FF6A00] hover:text-[#FF8C00] rounded-xl cursor-pointer hover:border-zinc-800 transition-all active:scale-95 disabled:opacity-50 shadow-md"
+                  className={`flex items-center gap-1.5 px-3 py-2 border text-xs font-bold text-[#FF6A00] hover:text-[#FF8C00] rounded-xl cursor-pointer transition-all active:scale-95 disabled:opacity-50 shadow-md ${isDark ? "bg-zinc-950 border-zinc-900 hover:border-zinc-800" : "bg-white border-gray-200 hover:border-gray-300"}`}
                   style={{ minHeight: "36px" }}
                 >
                   <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -669,27 +670,27 @@ export default function DeliveryDashboard() {
                   { label: "Pending", val: totalPending, icon: <Clock size={14} className="text-yellow-400" />, desc: "Awaiting drop" },
                   { label: "Cash Collected", val: `QAR ${totalEarningsToday}`, icon: <DollarSign size={14} className="text-[#FF6A00]" />, desc: "Physical cash in hand" },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 space-y-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.01)] relative overflow-hidden">
+                  <div key={i} className={`border rounded-2xl p-4 space-y-1.5 shadow-sm relative overflow-hidden ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{stat.label}</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-zinc-400" : "text-gray-500"}`}>{stat.label}</span>
                       {stat.icon}
                     </div>
-                    <p className="text-lg font-extrabold text-white tracking-tight">{stat.val}</p>
-                    <p className="text-[9px] text-zinc-500 font-semibold">{stat.desc}</p>
+                    <p className={`text-lg font-extrabold tracking-tight ${isDark ? "text-white" : "text-gray-900"}`}>{stat.val}</p>
+                    <p className={`text-[9px] font-semibold ${isDark ? "text-zinc-500" : "text-gray-400"}`}>{stat.desc}</p>
                     <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-zinc-900/10 blur-[10px]" />
                   </div>
                 ))}
               </div>
 
               {/* Segmented Sub-Tabs for Deliveries */}
-              <div className="flex bg-[#0a0a0a] border border-zinc-900 rounded-2xl p-1 gap-1">
+              <div className={`flex border rounded-2xl p-1 gap-1 ${isDark ? "bg-[#0a0a0a] border-zinc-900" : "bg-gray-100 border-gray-200"}`}>
                 <button
                   type="button"
                   onClick={() => setDeliverySubTab('active')}
                   className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                     deliverySubTab === 'active'
-                      ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800'
-                      : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                      ? isDark ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800' : 'bg-white text-gray-900 shadow-md border border-gray-200'
+                      : isDark ? 'text-zinc-500 hover:text-zinc-300 border border-transparent' : 'text-gray-550 hover:text-gray-800 border border-transparent'
                   }`}
                 >
                   Deliveries ({activeOrders.length})
@@ -699,8 +700,8 @@ export default function DeliveryDashboard() {
                   onClick={() => setDeliverySubTab('pickups')}
                   className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                     deliverySubTab === 'pickups'
-                      ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800'
-                      : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                      ? isDark ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800' : 'bg-white text-gray-900 shadow-md border border-gray-200'
+                      : isDark ? 'text-zinc-500 hover:text-zinc-300 border border-transparent' : 'text-gray-550 hover:text-gray-800 border border-transparent'
                   }`}
                 >
                   Returns ({activePickups.length})
@@ -710,8 +711,8 @@ export default function DeliveryDashboard() {
                   onClick={() => setDeliverySubTab('history')}
                   className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                     deliverySubTab === 'history'
-                      ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800'
-                      : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                      ? isDark ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800' : 'bg-white text-gray-900 shadow-md border border-gray-200'
+                      : isDark ? 'text-zinc-500 hover:text-zinc-300 border border-transparent' : 'text-gray-550 hover:text-gray-800 border border-transparent'
                   }`}
                 >
                   History ({historyOrders.length + completedPickups.length})
@@ -719,7 +720,7 @@ export default function DeliveryDashboard() {
               </div>
 
               {error && (
-                <div className="bg-red-950/30 border border-red-900/50 text-red-400 text-xs font-bold p-3.5 rounded-2xl text-center">
+                <div className={`border text-xs font-bold p-3.5 rounded-2xl text-center ${isDark ? "bg-red-950/30 border-red-900/50 text-red-400" : "bg-red-55 border-red-200 text-red-650"}`}>
                   {error}
                 </div>
               )}
@@ -736,7 +737,7 @@ export default function DeliveryDashboard() {
 
                   return (
                     <>
-                      <h3 className="text-xs font-bold tracking-widest text-zinc-400 uppercase ml-1">
+                      <h3 className={`text-xs font-bold tracking-widest uppercase ml-1 ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
                         {deliverySubTab === 'active' 
                           ? `Assigned Tasks (${activeOrders.length})` 
                           : deliverySubTab === 'pickups'
@@ -747,14 +748,14 @@ export default function DeliveryDashboard() {
                       {loading && currentList.length === 0 && (
                         <div className="space-y-4">
                           {[1, 2].map((n) => (
-                            <div key={n} className="h-44 w-full bg-zinc-950/30 border border-zinc-900 rounded-3xl animate-pulse" />
+                            <div key={n} className={`h-44 w-full border rounded-3xl animate-pulse ${isDark ? "bg-zinc-950/30 border-zinc-900" : "bg-white border-gray-200"}`} />
                           ))}
                         </div>
                       )}
 
                       {/* Empty State */}
                       {!loading && currentList.length === 0 && !error && (
-                        <div className="text-center py-12 px-6 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4 flex flex-col items-center shadow-lg">
+                        <div className={`text-center py-12 px-6 border rounded-3xl space-y-4 flex flex-col items-center shadow-lg ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
                           {/* SVG 3D Package Glow Illustration */}
                           <div className="relative w-16 h-16 flex items-center justify-center">
                             <div className="absolute inset-0 bg-[#FF6A00]/10 rounded-full blur-[20px]" />
@@ -768,14 +769,14 @@ export default function DeliveryDashboard() {
                             </svg>
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-sm font-bold text-white">
+                            <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
                               {deliverySubTab === 'active' 
                                 ? "No Active Orders" 
                                 : deliverySubTab === 'pickups'
                                   ? "No Return Pickups"
                                   : "No Completed History"}
                             </h4>
-                            <p className="text-xs text-zinc-500">
+                            <p className={`text-xs ${isDark ? "text-zinc-500" : "text-gray-400"}`}>
                               {deliverySubTab === 'active' 
                                 ? "You have no active/pending deliveries assigned. Pull down to refresh or check again later."
                                 : deliverySubTab === 'pickups'
@@ -809,12 +810,12 @@ export default function DeliveryDashboard() {
                           return (
                             <div
                               key={`ret-${req.id}`}
-                              className="bg-zinc-950/50 backdrop-blur-md border border-zinc-900 hover:border-zinc-800 rounded-3xl overflow-hidden shadow-xl transition-all duration-300 relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.01] before:to-transparent before:pointer-events-none"
+                              className={`border rounded-3xl overflow-hidden shadow-xl transition-all duration-300 relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.01] before:to-transparent before:pointer-events-none ${isDark ? "bg-zinc-950/50 backdrop-blur-md border-zinc-900 hover:border-zinc-800" : "bg-white border-gray-200 hover:border-gray-300"}`}
                             >
                               {/* Card Top Details */}
-                              <div className="px-5 pt-5 pb-3 flex items-center justify-between border-b border-zinc-900/60">
+                              <div className={`px-5 pt-5 pb-3 flex items-center justify-between border-b ${isDark ? "border-zinc-900/60" : "border-gray-100"}`}>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-white tracking-wider">
+                                  <span className={`text-xs font-bold tracking-wider ${isDark ? "text-white" : "text-gray-900"}`}>
                                     RET-#{req.id}
                                   </span>
                                   <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-lg border ${cfg.bg} ${cfg.color} uppercase tracking-wider`}>
@@ -822,11 +823,11 @@ export default function DeliveryDashboard() {
                                   </span>
                                 </div>
                                 {req.type === "refund" ? (
-                                  <span className="text-[10px] font-bold text-red-400 bg-red-950/30 border border-red-900/35 px-2.5 py-1 rounded-xl">
+                                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${isDark ? "text-red-400 bg-red-950/30 border-red-900/35" : "text-red-650 bg-red-55 border-red-200"}`}>
                                     Pay Refund: QAR {refundVal}
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-bold text-blue-400 bg-blue-950/30 border border-blue-900/35 px-2.5 py-1 rounded-xl">
+                                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${isDark ? "text-blue-400 bg-blue-950/30 border-blue-900/35" : "text-blue-650 bg-blue-50 border-blue-200"}`}>
                                     Exchange Product
                                   </span>
                                 )}
@@ -836,7 +837,7 @@ export default function DeliveryDashboard() {
                               <div className="p-5 space-y-4">
                                 <div className="space-y-2">
                                   <div className="flex items-center justify-between">
-                                    <p className="text-xs font-bold text-zinc-100 flex items-center gap-1.5">
+                                    <p className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-zinc-100" : "text-gray-900"}`}>
                                       <span className="text-zinc-500">👤</span> {custName}
                                     </p>
                                     {custPhone && (
@@ -849,16 +850,16 @@ export default function DeliveryDashboard() {
                                     )}
                                   </div>
 
-                                  <div className="bg-[#0c0c0c]/80 border border-zinc-900/80 rounded-2xl p-3.5 space-y-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
+                                  <div className={`border rounded-2xl p-3.5 space-y-1 shadow-sm ${isDark ? "bg-[#0c0c0c]/80 border-zinc-900/80" : "bg-gray-50 border-gray-150"}`}>
                                     <div className="flex items-center justify-between mb-1">
-                                      <p className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Pickup Location</p>
+                                      <p className={`text-[8px] font-bold tracking-widest uppercase ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Pickup Location</p>
                                       {req.order?.latitude && req.order?.longitude ? (
                                         <span className="text-[8px] font-black text-green-400 bg-green-950/30 border border-green-900/40 px-1.5 py-0.5 rounded-full">📍 GPS</span>
                                       ) : (
                                         <span className="text-[8px] font-bold text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 px-1.5 py-0.5 rounded-full">✏️ Text</span>
                                       )}
                                     </div>
-                                    <p className="text-xs font-semibold text-zinc-300 leading-relaxed flex items-start gap-1">
+                                    <p className={`text-xs font-semibold leading-relaxed flex items-start gap-1 ${isDark ? "text-zinc-300" : "text-gray-700"}`}>
                                       <MapPin size={12} className="text-[#FF6A00] shrink-0 mt-0.5" />
                                       <span>
                                         {req.order?.shipping_address || "No address details available."}
@@ -867,27 +868,27 @@ export default function DeliveryDashboard() {
                                   </div>
 
                                   {req.reason && (
-                                    <p className="text-[11px] text-zinc-500 italic bg-zinc-900/20 px-3 py-2 rounded-xl border border-zinc-900/40">
+                                    <p className={`text-[11px] italic px-3 py-2 rounded-xl border ${isDark ? "text-zinc-500 bg-zinc-900/20 border-zinc-900/40" : "text-gray-550 bg-gray-100 border-gray-200"}`}>
                                       💬 Reason: {req.reason.replace("_", " ")}
                                     </p>
                                   )}
 
                                   {req.admin_notes && (
-                                    <p className="text-[11px] text-zinc-400 bg-zinc-900/40 px-3 py-2 rounded-xl border border-zinc-900/50">
+                                    <p className={`text-[11px] px-3 py-2 rounded-xl border ${isDark ? "text-zinc-400 bg-zinc-900/40 border-zinc-900/50" : "text-gray-600 bg-gray-100 border-gray-200"}`}>
                                       📝 Admin Notes: {req.admin_notes}
                                     </p>
                                   )}
                                 </div>
 
                                 {/* Returned Items Preview */}
-                                <div className="border-t border-zinc-900/80 pt-3 space-y-1.5">
-                                  <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+                                <div className={`border-t pt-3 space-y-1.5 ${isDark ? "border-zinc-900/80" : "border-gray-100"}`}>
+                                  <div className={`flex justify-between text-[9px] font-bold tracking-widest uppercase ${isDark ? "text-zinc-500" : "text-gray-400"}`}>
                                     <span>Return Item</span>
                                     <span>QTY</span>
                                   </div>
-                                  <div className="flex items-center justify-between text-xs font-medium text-zinc-400">
+                                  <div className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-zinc-400" : "text-gray-600"}`}>
                                     <div className="flex items-center gap-2 max-w-[75%]">
-                                      <div className="h-8 w-8 rounded-lg overflow-hidden border border-zinc-900 flex items-center justify-center bg-zinc-950 shrink-0">
+                                      <div className={`h-8 w-8 rounded-lg overflow-hidden border flex items-center justify-center shrink-0 ${isDark ? "border-zinc-900 bg-zinc-950" : "border-gray-200 bg-gray-50"}`}>
                                         <img
                                           src={req.orderItem?.product?.main_image_url || req.orderItem?.image_snapshot || "/images/placeholder.jpg"}
                                           alt={req.orderItem?.product?.title || "Product"}
@@ -904,11 +905,11 @@ export default function DeliveryDashboard() {
 
                                 {/* Instructions Banner */}
                                 {["approved_replacement", "approved_refund"].includes(req.status) && (
-                                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-3.5 space-y-1">
+                                  <div className={`border rounded-2xl p-3.5 space-y-1 ${isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-orange-50 border-orange-100"}`}>
                                     <p className="text-[10px] font-bold text-[#FF6A00] uppercase tracking-wider flex items-center gap-1">
                                       📢 Driver Instructions
                                     </p>
-                                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    <p className={`text-[11px] leading-relaxed ${isDark ? "text-zinc-400" : "text-gray-600"}`}>
                                       {req.type === "replacement"
                                         ? "🔄 Collect the old/faulty product from the customer and deliver the new replacement item."
                                         : `💵 Collect the old/faulty product from the customer and hand over QAR ${refundVal} cash refund.`}
@@ -941,7 +942,7 @@ export default function DeliveryDashboard() {
                                   {custPhone ? (
                                     <a
                                       href={`tel:${custPhone}`}
-                                      className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 border border-zinc-800 transition-colors"
+                                      className={`flex items-center justify-center gap-2 py-3.5 border rounded-xl text-xs font-bold transition-all active:scale-95 ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                                       style={{ minHeight: "48px" }}
                                     >
                                       <Phone size={14} className="text-[#FF6A00]" />
@@ -950,7 +951,7 @@ export default function DeliveryDashboard() {
                                   ) : (
                                     <button
                                       disabled
-                                      className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900/40 rounded-xl text-xs font-bold text-zinc-600 border border-zinc-900/60 cursor-not-allowed"
+                                      className={`flex items-center justify-center gap-2 py-3.5 border rounded-xl text-xs font-bold cursor-not-allowed ${isDark ? "bg-zinc-900/40 border-zinc-900/60 text-zinc-650" : "bg-gray-105 border-gray-200 text-gray-400"}`}
                                       style={{ minHeight: "48px" }}
                                     >
                                       <Phone size={14} />
@@ -965,11 +966,11 @@ export default function DeliveryDashboard() {
                                     }
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold border border-zinc-800 transition-colors cursor-pointer"
+                                    className={`flex items-center justify-center gap-2 py-3.5 border rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                                     style={{ minHeight: "48px" }}
                                   >
                                     <Map size={14} className={req.order?.latitude && req.order?.longitude ? "text-green-400" : "text-blue-400"} />
-                                    <span className={req.order?.latitude && req.order?.longitude ? "text-green-300" : "text-zinc-300"}>
+                                    <span className={req.order?.latitude && req.order?.longitude ? "text-green-500" : isDark ? "text-zinc-300" : "text-gray-700"}>
                                       {req.order?.latitude && req.order?.longitude ? "📍 GPS Map" : "Open Map"}
                                     </span>
                                   </a>
@@ -991,95 +992,95 @@ export default function DeliveryDashboard() {
                         return (
                           <div 
                             key={order.id} 
-                      className="bg-zinc-950/50 backdrop-blur-md border border-zinc-900 hover:border-zinc-800 rounded-3xl overflow-hidden shadow-xl transition-all duration-300 relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.01] before:to-transparent before:pointer-events-none"
-                    >
-                      {/* Card Top Details */}
-                      <div className="px-5 pt-5 pb-3 flex items-center justify-between border-b border-zinc-900/60">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white tracking-wider">
-                            {order.order_number || `ORD-${String(order.id).padStart(4, "0")}`}
-                          </span>
-                          <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-lg border ${statusCfg.bg} ${statusCfg.color} uppercase tracking-wider`}>
-                            {statusCfg.label}
-                          </span>
-                        </div>
-                        {isCOD ? (
-                          <span className="text-[10px] font-bold text-red-400 bg-red-950/30 border border-red-900/35 px-2.5 py-1 rounded-xl">
-                            Collect QAR {totalAmount}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-green-400 bg-green-950/30 border border-green-900/35 px-2.5 py-1 rounded-xl">
-                            Prepaid (QAR {totalAmount})
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Customer info body */}
-                      <div className="p-5 space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold text-zinc-100 flex items-center gap-1.5">
-                              <span className="text-zinc-500">👤</span> {customerName}
-                            </p>
-                            {customerPhone && (
-                              <a
-                                href={`tel:${customerPhone}`}
-                                className="text-[10px] font-bold text-[#FF6A00] flex items-center gap-1 hover:underline cursor-pointer"
-                              >
-                                <Phone size={10} /> Call Now
-                              </a>
-                            )}
-                          </div>
-                          
-                          <div className="bg-[#0c0c0c]/80 border border-zinc-900/80 rounded-2xl p-3.5 space-y-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Delivery Address</p>
-                              {order.latitude && order.longitude ? (
-                                <span className="text-[8px] font-black text-green-400 bg-green-950/30 border border-green-900/40 px-1.5 py-0.5 rounded-full">📍 GPS</span>
+                            className={`border rounded-3xl overflow-hidden shadow-xl transition-all duration-300 relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.01] before:to-transparent before:pointer-events-none ${isDark ? "bg-zinc-950/50 backdrop-blur-md border-zinc-900 hover:border-zinc-800" : "bg-white border-gray-200 hover:border-gray-300"}`}
+                          >
+                            {/* Card Top Details */}
+                            <div className={`px-5 pt-5 pb-3 flex items-center justify-between border-b ${isDark ? "border-zinc-900/60" : "border-gray-100"}`}>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-bold tracking-wider ${isDark ? "text-white" : "text-gray-900"}`}>
+                                  {order.order_number || `ORD-${String(order.id).padStart(4, "0")}`}
+                                </span>
+                                <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-lg border ${statusCfg.bg} ${statusCfg.color} uppercase tracking-wider`}>
+                                  {statusCfg.label}
+                                </span>
+                              </div>
+                              {isCOD ? (
+                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${isDark ? "text-red-400 bg-red-950/30 border-red-900/35" : "text-red-650 bg-red-55 border-red-200"}`}>
+                                  Collect QAR {totalAmount}
+                                </span>
                               ) : (
-                                <span className="text-[8px] font-bold text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 px-1.5 py-0.5 rounded-full">✏️ Text</span>
+                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${isDark ? "text-green-400 bg-green-950/30 border-green-900/35" : "text-green-650 bg-green-50 border-green-200"}`}>
+                                  Prepaid (QAR {totalAmount})
+                                </span>
                               )}
                             </div>
-                            <p className="text-xs font-semibold text-zinc-300 leading-relaxed flex items-start gap-1">
-                              <MapPin size={12} className="text-[#FF6A00] shrink-0 mt-0.5" />
-                              <span>
-                                {order.shipping_address}
-                                {order.city && `, ${order.city}`}
-                              </span>
-                            </p>
-                          </div>
 
-                          {order.delivery_notes && (
-                            <p className="text-[11px] text-zinc-500 italic bg-zinc-900/20 px-3 py-2 rounded-xl border border-zinc-900/40">
-                              📝 Notes: {order.delivery_notes}
-                            </p>
-                          )}
+                            {/* Customer info body */}
+                            <div className="p-5 space-y-4">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <p className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-zinc-100" : "text-gray-900"}`}>
+                                    <span className="text-zinc-500">👤</span> {customerName}
+                                  </p>
+                                  {customerPhone && (
+                                    <a
+                                      href={`tel:${customerPhone}`}
+                                      className="text-[10px] font-bold text-[#FF6A00] flex items-center gap-1 hover:underline cursor-pointer"
+                                    >
+                                      <Phone size={10} /> Call Now
+                                    </a>
+                                  )}
+                                </div>
+                                
+                                <div className={`border rounded-2xl p-3.5 space-y-1 shadow-sm ${isDark ? "bg-[#0c0c0c]/80 border-zinc-900/80" : "bg-gray-50 border-gray-150"}`}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className={`text-[8px] font-bold tracking-widest uppercase ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Delivery Address</p>
+                                    {order.latitude && order.longitude ? (
+                                      <span className="text-[8px] font-black text-green-400 bg-green-950/30 border border-green-900/40 px-1.5 py-0.5 rounded-full">📍 GPS</span>
+                                    ) : (
+                                      <span className="text-[8px] font-bold text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 px-1.5 py-0.5 rounded-full">✏️ Text</span>
+                                    )}
+                                  </div>
+                                  <p className={`text-xs font-semibold leading-relaxed flex items-start gap-1 ${isDark ? "text-zinc-300" : "text-gray-700"}`}>
+                                    <MapPin size={12} className="text-[#FF6A00] shrink-0 mt-0.5" />
+                                    <span>
+                                      {order.shipping_address}
+                                      {order.city && `, ${order.city}`}
+                                    </span>
+                                  </p>
+                                </div>
 
-                          {order.status === "delivered" && order.delivery_payment_method && (
-                            <div className="bg-green-950/25 border border-green-900/35 rounded-xl p-3 space-y-1 mt-2">
-                              <p className="text-[8px] font-bold tracking-widest text-green-400 uppercase">Doorstep Payment Collected</p>
-                              <p className="text-xs font-black text-white flex items-center gap-1.5 mt-0.5">
-                                💳 {order.delivery_payment_method}
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                                {order.delivery_notes && (
+                                  <p className={`text-[11px] italic px-3 py-2 rounded-xl border ${isDark ? "text-zinc-500 bg-zinc-900/20 border-zinc-900/40" : "text-gray-555 bg-gray-100 border-gray-200"}`}>
+                                    📝 Notes: {order.delivery_notes}
+                                  </p>
+                                )}
 
-                        {/* Items Preview */}
-                        <div className="border-t border-zinc-900/80 pt-3 space-y-1.5">
-                          <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
-                            <span>Order Items ({order.items?.length || 0})</span>
-                            <span>QTY & Price</span>
-                          </div>
-                          {(order.items || []).map((item: any) => (
-                            <div key={item.id} className="flex items-center justify-between text-xs font-medium text-zinc-400">
-                              <span className="truncate max-w-[65%]">{item.product?.title || `Product #${item.id}`}</span>
-                              <span className="text-[10px] font-bold text-zinc-500 shrink-0">
-                                {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                                {order.status === "delivered" && order.delivery_payment_method && (
+                                  <div className={`border rounded-xl p-3 space-y-1 mt-2 ${isDark ? "bg-green-950/25 border-green-900/35" : "bg-green-50 border-green-150"}`}>
+                                    <p className="text-[8px] font-bold tracking-widest text-green-500 uppercase">Doorstep Payment Collected</p>
+                                    <p className={`text-xs font-black flex items-center gap-1.5 mt-0.5 ${isDark ? "text-white" : "text-gray-900"}`}>
+                                      💳 {order.delivery_payment_method}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Items Preview */}
+                              <div className={`border-t pt-3 space-y-1.5 ${isDark ? "border-zinc-900/80" : "border-gray-100"}`}>
+                                <div className={`flex justify-between text-[9px] font-bold tracking-widest uppercase ${isDark ? "text-zinc-500" : "text-gray-400"}`}>
+                                  <span>Order Items ({order.items?.length || 0})</span>
+                                  <span>QTY & Price</span>
+                                </div>
+                                {(order.items || []).map((item: any) => (
+                                  <div key={item.id} className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-zinc-400" : "text-gray-600"}`}>
+                                    <span className="truncate max-w-[65%]">{item.product?.title || `Product #${item.id}`}</span>
+                                    <span className={`text-[10px] font-bold shrink-0 ${isDark ? "text-zinc-500" : "text-gray-405"}`}>
+                                      {item.quantity} × QAR {parseTotal(item.price_at_purchase || item.product?.price || "0")}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
 
                         {/* Primary action buttons */}
                         <div className="space-y-3 pt-2">
@@ -1123,19 +1124,19 @@ export default function DeliveryDashboard() {
                               <div className="grid grid-cols-3 gap-1.5 pt-1">
                                 <button
                                   onClick={() => openModal('not_answering', order.id)}
-                                  className="py-3 rounded-xl border border-yellow-900/40 bg-yellow-950/10 text-yellow-500 hover:bg-yellow-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
+                                  className={`py-3 rounded-xl border active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px] ${isDark ? "border-yellow-900/40 bg-yellow-950/10 text-yellow-500 hover:bg-yellow-950/20" : "border-yellow-200 bg-yellow-50 text-yellow-600 hover:bg-yellow-100"}`}
                                 >
                                   📞 No Answer
                                 </button>
                                 <button
                                   onClick={() => openModal('come_later', order.id)}
-                                  className="py-3 rounded-xl border border-blue-900/40 bg-blue-950/10 text-blue-400 hover:bg-blue-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
+                                  className={`py-3 rounded-xl border active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px] ${isDark ? "border-blue-900/40 bg-blue-950/10 text-blue-400 hover:bg-blue-950/20" : "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"}`}
                                 >
                                   🔄 Come Later
                                 </button>
                                 <button
                                   onClick={() => openModal('failed', order.id)}
-                                  className="py-3 rounded-xl border border-red-900/40 bg-red-950/10 text-red-400 hover:bg-red-950/20 active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px]"
+                                  className={`py-3 rounded-xl border active:scale-95 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 min-h-[44px] ${isDark ? "border-red-900/40 bg-red-950/10 text-red-400 hover:bg-red-950/20" : "border-red-200 bg-red-50 text-red-650 hover:bg-red-100"}`}
                                 >
                                   ❌ Failed
                                 </button>
@@ -1148,17 +1149,21 @@ export default function DeliveryDashboard() {
                             {customerPhone ? (
                               <a
                                 href={`tel:${customerPhone}`}
-                                className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 border border-zinc-800 transition-colors"
+                                className={`flex items-center justify-center gap-2 py-3.5 border rounded-xl text-xs font-bold transition-all active:scale-95 ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                                 style={{ minHeight: "48px" }}
                               >
                                 <Phone size={14} className="text-[#FF6A00]" />
                                 <span>Call Customer</span>
                               </a>
                             ) : (
-                              <div className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 opacity-40 rounded-xl text-xs font-bold text-zinc-500 border border-zinc-800" style={{ minHeight: "48px" }}>
+                              <button
+                                disabled
+                                className={`flex items-center justify-center gap-2 py-3.5 border rounded-xl text-xs font-bold cursor-not-allowed ${isDark ? "bg-zinc-900/40 border-zinc-900/60 text-zinc-655" : "bg-gray-105 border-gray-200 text-gray-400"}`}
+                                style={{ minHeight: "48px" }}
+                              >
                                 <Phone size={14} />
                                 <span>No Phone</span>
-                              </div>
+                              </button>
                             )}
 
                              <a
@@ -1169,10 +1174,10 @@ export default function DeliveryDashboard() {
                               }
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 py-3.5 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold text-[#FF6A00] border border-zinc-800 transition-colors"
+                              className={`flex items-center justify-center gap-2 py-3.5 border rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                               style={{ minHeight: "48px" }}
                             >
-                              <Compass size={14} />
+                              <Compass size={14} className="text-[#FF6A00]" />
                               <span>Open Maps</span>
                             </a>
                           </div>
@@ -1180,7 +1185,7 @@ export default function DeliveryDashboard() {
                           {/* View details */}
                           <Link
                             href={`/delivery/order/${order.id}`}
-                            className="block w-full text-center text-[10px] font-bold text-zinc-500 hover:text-zinc-300 py-2 transition-colors border-t border-zinc-900/50 mt-1"
+                            className={`block w-full text-center text-[10px] font-bold py-2 transition-colors border-t mt-1 ${isDark ? "text-zinc-550 hover:text-zinc-300 border-zinc-900/50" : "text-gray-500 hover:text-gray-900 border-gray-100"}`}
                           >
                             View Order Details & Item Pictures →
                           </Link>
@@ -1210,63 +1215,63 @@ export default function DeliveryDashboard() {
             >
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-[#FF6A00] tracking-widest uppercase">My Station</span>
-                <h2 className="text-2xl font-black text-white">Driver Profile</h2>
+                <h2 className={`text-2xl font-black ${isDark ? "text-white" : "text-gray-900"}`}>Driver Profile</h2>
               </div>
 
               {/* Avatar Profile Card */}
-              <div className="bg-zinc-950/50 border border-zinc-900 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 shadow-xl">
+              <div className={`border rounded-3xl p-6 flex flex-col items-center text-center space-y-4 shadow-xl ${isDark ? "bg-zinc-950/50 border-zinc-900" : "bg-white border-gray-200"}`}>
                 <div className="h-20 w-20 rounded-full bg-gradient-to-tr from-[#FF6A00] to-[#E04F00] flex items-center justify-center text-3xl font-bold text-white shadow-lg border border-zinc-800">
                   {driverName.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white">{driverName}</h3>
-                  <p className="text-xs text-zinc-500">{driverEmail}</p>
+                  <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>{driverName}</h3>
+                  <p className={`text-xs ${isDark ? "text-zinc-500" : "text-gray-500"}`}>{driverEmail}</p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-green-400">
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${isDark ? "bg-zinc-900 border-zinc-800 text-green-400" : "bg-green-50 border-green-200 text-green-600"}`}>
                   <ShieldCheck size={12} />
                   <span>Active Carrier Status</span>
                 </div>
               </div>
 
               {/* Fulfillment Details info block */}
-              <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-5 space-y-4">
-                <h4 className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase">Fulfillment Details</h4>
+              <div className={`border rounded-2xl p-5 space-y-4 ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
+                <h4 className={`text-[10px] font-bold tracking-wider uppercase ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Fulfillment Details</h4>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
+                    <div className={`h-10 w-10 rounded-xl border flex items-center justify-center shrink-0 ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-400" : "bg-gray-50 border-gray-200 text-gray-550"}`}>
                       <MapPin size={18} className="text-[#FF6A00]" />
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-white">Active Duty Zone</p>
-                      <p className="text-[10px] text-zinc-500">Doha & Surrounding Municipalities, Qatar</p>
+                      <p className={`text-xs font-bold ${isDark ? "text-white" : "text-gray-900"}`}>Active Duty Zone</p>
+                      <p className={`text-[10px] ${isDark ? "text-zinc-550" : "text-gray-500"}`}>Doha & Surrounding Municipalities, Qatar</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4 border-t border-zinc-900/60 pt-3">
-                    <div className="h-10 w-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
+                  <div className={`flex items-center gap-4 border-t pt-3 ${isDark ? "border-zinc-900/60" : "border-gray-150"}`}>
+                    <div className={`h-10 w-10 rounded-xl border flex items-center justify-center shrink-0 ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-400" : "bg-gray-50 border-gray-200 text-gray-550"}`}>
                       <Package size={18} className="text-[#FF6A00]" />
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-white">Current Active Load</p>
-                      <p className="text-[10px] text-zinc-500">{activeOrders.length} Pending Deliveries Assigned</p>
+                      <p className={`text-xs font-bold ${isDark ? "text-white" : "text-gray-900"}`}>Current Active Load</p>
+                      <p className={`text-[10px] ${isDark ? "text-zinc-500" : "text-gray-500"}`}>{activeOrders.length} Pending Deliveries Assigned</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Support & Operations Help */}
-              <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-5 space-y-3">
-                <h4 className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase">Operations Desk</h4>
+              <div className={`border rounded-2xl p-5 space-y-3 ${isDark ? "bg-zinc-950/40 border-zinc-900" : "bg-white border-gray-200"}`}>
+                <h4 className={`text-[10px] font-bold tracking-wider uppercase ${isDark ? "text-zinc-500" : "text-gray-400"}`}>Operations Desk</h4>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-white">Need Delivery Support?</p>
-                    <p className="text-[10px] text-zinc-500">Contact admin for route or order updates.</p>
+                    <p className={`text-xs font-bold ${isDark ? "text-white" : "text-gray-900"}`}>Need Delivery Support?</p>
+                    <p className={`text-[10px] ${isDark ? "text-zinc-500" : "text-gray-500"}`}>Contact admin for route or order updates.</p>
                   </div>
                   <a
-                    href="https://wa.me/97455551234"
+                    href="https://wa.me/97470066559"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-xs font-bold text-[#FF6A00] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                    className={`px-4 py-2 border text-xs font-bold text-[#FF6A00] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${isDark ? "bg-zinc-900 hover:bg-zinc-800 border-zinc-800 hover:border-zinc-700" : "bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300"}`}
                   >
                     <span>WhatsApp Help</span>
                   </a>
@@ -1276,7 +1281,7 @@ export default function DeliveryDashboard() {
               {/* Log out */}
               <button
                 onClick={handleLogout}
-                className="w-full bg-zinc-900 hover:bg-red-950/20 hover:text-red-400 hover:border-red-900/50 border border-zinc-800 text-xs font-bold py-4 rounded-2xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+                className={`w-full border text-xs font-bold py-4 rounded-2xl transition-colors cursor-pointer flex items-center justify-center gap-2 ${isDark ? "bg-zinc-900 hover:bg-red-950/20 hover:text-red-400 hover:border-red-900/50 border-zinc-850" : "bg-white hover:bg-red-50 hover:text-red-655 hover:border-red-200 border-gray-205"}`}
                 style={{ minHeight: "48px" }}
               >
                 <LogOut size={14} />
@@ -1289,14 +1294,14 @@ export default function DeliveryDashboard() {
       </div>
 
       {/* Luxury Sticky Bottom Navigation Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#070707]/95 border-t border-zinc-900 shadow-[0_-4px_24px_rgba(0,0,0,0.8)] max-w-[480px] mx-auto pb-safe">
+      <nav className={`fixed bottom-0 left-0 right-0 z-50 border-t max-w-[480px] mx-auto pb-safe shadow-lg ${isDark ? "bg-[#070707]/95 border-zinc-900" : "bg-white border-gray-200"}`}>
         <div className="flex h-16 items-center justify-around px-4 relative">
           
           {/* Deliveries Tab button */}
           <button
             onClick={() => setActiveTab('deliveries')}
             className={`flex flex-col items-center justify-center w-24 h-full transition-all cursor-pointer ${
-              activeTab === 'deliveries' ? "text-[#FF6A00] scale-105" : "text-zinc-500 hover:text-zinc-300"
+              activeTab === 'deliveries' ? "text-[#FF6A00] scale-105" : isDark ? "text-zinc-500 hover:text-zinc-350" : "text-gray-400 hover:text-gray-800"
             }`}
           >
             <Package size={20} />
@@ -1307,7 +1312,7 @@ export default function DeliveryDashboard() {
           <button
             onClick={() => setActiveTab('profile')}
             className={`flex flex-col items-center justify-center w-24 h-full transition-all cursor-pointer ${
-              activeTab === 'profile' ? "text-[#FF6A00] scale-105" : "text-zinc-500 hover:text-zinc-300"
+              activeTab === 'profile' ? "text-[#FF6A00] scale-105" : isDark ? "text-zinc-500 hover:text-zinc-350" : "text-gray-400 hover:text-gray-800"
             }`}
           >
             <User size={20} />
@@ -1327,13 +1332,13 @@ export default function DeliveryDashboard() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative bg-[#070707] border-t border-zinc-800 rounded-t-[32px] w-full max-w-[480px] p-6 pb-10 shadow-2xl z-10 before:absolute before:top-2 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:rounded-full before:bg-zinc-800"
+              className={`relative border-t rounded-t-[32px] w-full max-w-[480px] p-6 pb-10 shadow-2xl z-10 before:absolute before:top-2 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:rounded-full ${isDark ? "bg-[#070707] border-zinc-800 before:bg-zinc-800" : "bg-white border-gray-200 before:bg-gray-300"}`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close x */}
               <button 
                 onClick={closeModal} 
-                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center cursor-pointer active:scale-95"
+                className={`absolute top-4 right-4 h-8 w-8 rounded-full border flex items-center justify-center cursor-pointer active:scale-95 ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-800"}`}
               >
                 <X size={14} />
               </button>
@@ -1342,12 +1347,12 @@ export default function DeliveryDashboard() {
               {activeModal.type === 'not_answering' && (
                 <div className="space-y-5 pt-2">
                   <div className="space-y-1">
-                    <h3 className="text-lg font-black text-white">Customer Not Answering</h3>
-                    <p className="text-xs text-zinc-500">Confirm call history details before notifying support.</p>
+                    <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-gray-900"}`}>Customer Not Answering</h3>
+                    <p className={`text-xs ${isDark ? "text-zinc-500" : "text-gray-500"}`}>Confirm call history details before notifying support.</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Call Count Attempted</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? "text-zinc-400" : "text-gray-500"}`}>Call Count Attempted</p>
                     <div className="flex gap-2">
                       {[1, 2, 3].map(n => (
                         <button
@@ -1355,7 +1360,9 @@ export default function DeliveryDashboard() {
                           type="button"
                           onClick={() => setCallCount(n)}
                           className={`flex-1 py-3 rounded-2xl text-xs font-bold border transition-colors cursor-pointer ${
-                            callCount === n ? 'bg-yellow-500 border-yellow-400 text-black' : 'bg-zinc-950 text-zinc-400 border-zinc-900'
+                            callCount === n
+                              ? 'bg-yellow-500 border-yellow-400 text-black'
+                              : isDark ? 'bg-zinc-950 text-zinc-400 border-zinc-900' : 'bg-gray-50 text-gray-650 border-gray-200 hover:bg-gray-100'
                           }`}
                           style={{ minHeight: "44px" }}
                         >
@@ -1366,12 +1373,12 @@ export default function DeliveryDashboard() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Notes / Details</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? "text-zinc-400" : "text-gray-500"}`}>Notes / Details</p>
                     <textarea
                       value={modalNote}
                       onChange={(e) => setModalNote(e.target.value)}
                       placeholder="Phone switched off or customer rejected line..."
-                      className="w-full bg-zinc-950 border border-zinc-900 rounded-2xl p-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-yellow-500/80 transition-colors shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
+                      className={`w-full border rounded-2xl p-3 text-xs placeholder:text-zinc-600 focus:outline-none focus:border-yellow-500/80 transition-colors shadow-sm ${isDark ? "bg-zinc-950 border-zinc-900 text-white" : "bg-white border-gray-205 text-gray-900"}`}
                       rows={3}
                     />
                   </div>
@@ -1393,8 +1400,8 @@ export default function DeliveryDashboard() {
               {activeModal.type === 'come_later' && (
                 <div className="space-y-5 pt-2">
                   <div className="space-y-1">
-                    <h3 className="text-lg font-black text-white">Reschedule Delivery</h3>
-                    <p className="text-xs text-zinc-500">Select customer's preferred reschedule timeframe.</p>
+                    <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-gray-900"}`}>Reschedule Delivery</h3>
+                    <p className={`text-xs ${isDark ? "text-zinc-500" : "text-gray-500"}`}>Select customer's preferred reschedule timeframe.</p>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-2">
@@ -1409,7 +1416,9 @@ export default function DeliveryDashboard() {
                         type="button"
                         onClick={() => setRescheduleOption(opt.key)}
                         className={`py-3 px-2 rounded-2xl text-xs font-bold border transition-colors cursor-pointer ${
-                          rescheduleOption === opt.key ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-zinc-950 text-zinc-400 border-zinc-900'
+                          rescheduleOption === opt.key
+                            ? 'bg-blue-600 border-blue-500 text-white shadow-lg'
+                            : isDark ? 'bg-zinc-950 text-zinc-400 border-zinc-900' : 'bg-gray-50 text-gray-650 border-gray-200 hover:bg-gray-100'
                         }`}
                         style={{ minHeight: "44px" }}
                       >
@@ -1419,12 +1428,12 @@ export default function DeliveryDashboard() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Reschedule Notes</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? "text-zinc-400" : "text-gray-500"}`}>Reschedule Notes</p>
                     <textarea
                       value={modalNote}
                       onChange={(e) => setModalNote(e.target.value)}
                       placeholder="Customer will be home at 7 PM..."
-                      className="w-full bg-zinc-950 border border-zinc-900 rounded-2xl p-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/80 transition-colors shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
+                      className={`w-full border rounded-2xl p-3 text-xs placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/80 transition-colors shadow-sm ${isDark ? "bg-zinc-950 border-zinc-900 text-white" : "bg-white border-gray-205 text-gray-900"}`}
                       rows={3}
                     />
                   </div>
@@ -1446,8 +1455,8 @@ export default function DeliveryDashboard() {
               {activeModal.type === 'failed' && (
                 <div className="space-y-5 pt-2">
                   <div className="space-y-1">
-                    <h3 className="text-lg font-black text-white">Fail Delivery Status</h3>
-                    <p className="text-xs text-zinc-500">Please choose the exact cause of delivery failure.</p>
+                    <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-gray-900"}`}>Fail Delivery Status</h3>
+                    <p className={`text-xs ${isDark ? "text-zinc-500" : "text-gray-500"}`}>Please choose the exact cause of delivery failure.</p>
                   </div>
                   
                   <div className="space-y-2.5">
@@ -1460,7 +1469,9 @@ export default function DeliveryDashboard() {
                         type="button"
                         onClick={() => { setFailedReason(opt.key); setModalError(''); }}
                         className={`w-full py-3.5 rounded-2xl text-xs font-bold border transition-colors cursor-pointer text-left px-4 flex items-center justify-between ${
-                          failedReason === opt.key ? 'bg-red-950/40 border-red-500 text-red-400' : 'bg-zinc-950 text-zinc-400 border-zinc-900'
+                          failedReason === opt.key
+                            ? 'bg-red-950/40 border-red-500 text-red-400'
+                            : isDark ? 'bg-zinc-950 text-zinc-400 border-zinc-900' : 'bg-gray-50 text-gray-650 border-gray-200 hover:bg-gray-100'
                         }`}
                         style={{ minHeight: "44px" }}
                       >
@@ -1471,12 +1482,12 @@ export default function DeliveryDashboard() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Failure Details</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? "text-zinc-400" : "text-gray-500"}`}>Failure Details</p>
                     <textarea
                       value={modalNote}
                       onChange={(e) => setModalNote(e.target.value)}
                       placeholder="Customer cancelled the checkout or moved away..."
-                      className="w-full bg-zinc-950 border border-zinc-900 rounded-2xl p-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500/80 transition-colors shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
+                      className={`w-full border rounded-2xl p-3 text-xs placeholder:text-zinc-600 focus:outline-none focus:border-red-500/80 transition-colors shadow-sm ${isDark ? "bg-zinc-950 border-zinc-900 text-white" : "bg-white border-gray-205 text-gray-900"}`}
                       rows={3}
                     />
                   </div>
@@ -1509,22 +1520,22 @@ export default function DeliveryDashboard() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative bg-[#070707] border-t border-zinc-800 rounded-t-[32px] w-full max-w-[480px] p-6 pb-10 shadow-2xl z-10 before:absolute before:top-2 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:rounded-full before:bg-zinc-800"
+              className={`relative border-t rounded-t-[32px] w-full max-w-[480px] p-6 pb-10 shadow-2xl z-10 before:absolute before:top-2 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:rounded-full ${isDark ? "bg-[#070707] border-zinc-800 before:bg-zinc-800" : "bg-white border-gray-200 before:bg-gray-300"}`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
               <button 
                 onClick={() => setShowNotifModal(false)} 
-                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center cursor-pointer active:scale-95"
+                className={`absolute top-4 right-4 h-8 w-8 rounded-full border flex items-center justify-center cursor-pointer active:scale-95 ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-850"}`}
               >
                 <X size={14} />
               </button>
-
+ 
               <div className="space-y-5 pt-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <h3 className="text-lg font-black text-white">Driver Alerts</h3>
-                    <p className="text-xs text-zinc-500">Official messages from dispatch and administration.</p>
+                    <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-gray-900"}`}>Driver Alerts</h3>
+                    <p className={`text-xs ${isDark ? "text-zinc-500" : "text-gray-500"}`}>Official messages from dispatch and administration.</p>
                   </div>
                   {notifications.length > 0 && (
                     <button
@@ -1535,16 +1546,16 @@ export default function DeliveryDashboard() {
                     </button>
                   )}
                 </div>
-
+ 
                 {/* Notifications list container */}
-                <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
+                <div className={`max-h-[50vh] overflow-y-auto space-y-3 pr-1 scrollbar-thin ${isDark ? "scrollbar-thumb-zinc-800" : "scrollbar-thumb-gray-200"}`}>
                   {notifications.length === 0 ? (
                     <div className="text-center py-10 space-y-3 flex flex-col items-center">
                       <div className="relative w-12 h-12 flex items-center justify-center">
                         <div className="absolute inset-0 bg-[#FF6A00]/5 rounded-full blur-[15px]" />
                         <Bell size={24} className="text-zinc-700" />
                       </div>
-                      <p className="text-xs text-zinc-500 font-semibold">No active alerts at the moment.</p>
+                      <p className={`text-xs font-semibold ${isDark ? "text-zinc-500" : "text-gray-400"}`}>No active alerts at the moment.</p>
                     </div>
                   ) : (
                     notifications.map((notif) => (
@@ -1553,7 +1564,7 @@ export default function DeliveryDashboard() {
                         onClick={() => !notif.isRead && handleMarkNotificationRead(notif.id)}
                         className={`p-4 rounded-2xl border transition-all duration-300 flex items-start gap-3 relative overflow-hidden group cursor-pointer ${
                           notif.isRead 
-                            ? "bg-zinc-950/20 border-zinc-900/60 text-zinc-400" 
+                            ? isDark ? "bg-zinc-950/20 border-zinc-900/60 text-zinc-400" : "bg-gray-50 border-gray-200 text-gray-550" 
                             : "bg-[#FF6A00]/5 border-[#FF6A00]/25 text-white shadow-[0_2px_12px_rgba(255,106,0,0.05)]"
                         }`}
                       >
@@ -1561,26 +1572,26 @@ export default function DeliveryDashboard() {
                         {!notif.isRead && (
                           <span className="absolute top-4 right-12 h-2 w-2 rounded-full bg-[#FF6A00] animate-pulse" />
                         )}
-
+ 
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-xs leading-none">{notif.title}</span>
+                            <span className={`font-bold text-xs leading-none ${notif.isRead ? isDark ? "text-zinc-300" : "text-gray-700" : isDark ? "text-white" : "text-gray-900"}`}>{notif.title}</span>
                           </div>
-                          <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
+                          <p className={`text-[11px] leading-relaxed font-medium ${isDark ? "text-zinc-400" : "text-gray-650"}`}>
                             {notif.message}
                           </p>
-                          <span className="text-[9px] text-zinc-600 font-semibold block pt-1">
+                          <span className={`text-[9px] font-semibold block pt-1 ${isDark ? "text-zinc-650" : "text-gray-400"}`}>
                             {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(notif.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-
+ 
                         {/* Delete button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteNotification(notif.id);
                           }}
-                          className="text-zinc-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-zinc-900 active:scale-95"
+                          className={`transition-colors p-1.5 rounded-lg active:scale-95 ${isDark ? "text-zinc-600 hover:text-red-400 hover:bg-zinc-900" : "text-gray-400 hover:text-red-600 hover:bg-gray-100"}`}
                           aria-label="Delete Notification"
                         >
                           <Trash2 size={13} />
@@ -1594,7 +1605,7 @@ export default function DeliveryDashboard() {
           </div>
         )}
       </AnimatePresence>
-
+ 
       {/* Doorstep Payment Selection Modal */}
       <AnimatePresence>
         {showPaymentModal && paymentModalOrderId && (
@@ -1604,22 +1615,22 @@ export default function DeliveryDashboard() {
               initial={{ scale: 0.95, y: 20, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 20, opacity: 0 }}
-              className="relative bg-[#0b0b0b] border border-zinc-900 w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl z-10"
+              className={`relative border w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl z-10 ${isDark ? "bg-[#0b0b0b] border-zinc-900" : "bg-white border-gray-205 text-gray-900"}`}
             >
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                className={`absolute top-4 right-4 transition-colors cursor-pointer ${isDark ? "text-zinc-500 hover:text-white" : "text-gray-400 hover:text-gray-800"}`}
               >
                 <X size={20} />
               </button>
-
+ 
               <div className="text-center space-y-1.5 pt-2">
-                <h3 className="text-lg font-black text-white">Payment Received</h3>
-                <p className="text-xs text-zinc-400">
+                <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-gray-900"}`}>Payment Received</h3>
+                <p className={`text-xs ${isDark ? "text-zinc-450" : "text-gray-500"}`}>
                   Select how payment was received in Qatar before completing delivery.
                 </p>
               </div>
-
+ 
               <div className="space-y-3">
                 {[
                   { id: "Cash", label: "Cash (QAR)", desc: "Physical cash collected at doorstep" },
@@ -1632,16 +1643,16 @@ export default function DeliveryDashboard() {
                     className={`w-full text-left p-4 rounded-2xl border transition-all flex flex-col gap-1 cursor-pointer ${
                       deliveryPaymentMethod === option.id
                         ? "bg-[#FF6A00]/10 border-[#FF6A00]"
-                        : "bg-zinc-950/40 border-zinc-900 hover:border-zinc-800"
+                        : isDark ? "bg-zinc-950/40 border-zinc-900 hover:border-zinc-800" : "bg-gray-50 border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">{option.label}</span>
+                      <span className={`text-xs font-bold ${deliveryPaymentMethod === option.id ? "text-[#FF6A00]" : isDark ? "text-white" : "text-gray-800"}`}>{option.label}</span>
                       <div
                         className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center transition-all ${
                           deliveryPaymentMethod === option.id
                             ? "border-[#FF6A00] bg-[#FF6A00]"
-                            : "border-zinc-800"
+                            : isDark ? "border-zinc-800" : "border-gray-300"
                         }`}
                       >
                         {deliveryPaymentMethod === option.id && (
@@ -1649,15 +1660,15 @@ export default function DeliveryDashboard() {
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] text-zinc-500 font-medium">{option.desc}</span>
+                    <span className={`text-[10px] font-medium ${isDark ? "text-zinc-550" : "text-gray-400"}`}>{option.desc}</span>
                   </button>
                 ))}
               </div>
-
+ 
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 py-3.5 bg-zinc-900 border border-zinc-800 text-xs font-bold rounded-2xl hover:bg-zinc-850 active:scale-95 transition-all text-zinc-300 cursor-pointer"
+                  className={`flex-1 py-3.5 border text-xs font-bold rounded-2xl transition-all cursor-pointer ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-850" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-550"}`}
                 >
                   Cancel
                 </button>

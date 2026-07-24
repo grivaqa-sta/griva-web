@@ -46,10 +46,12 @@ const footerLinks: FooterLinkGroup[] = [
   {
     title: "Popular Categories",
     links: [
-      { label: "Laptops", href: "/category/laptops" },
-      { label: "Television", href: "/category/television" },
-      { label: "Headphones", href: "/category/headphones" },
-      { label: "Smart Gadgets", href: "/category/gadgets" },
+      { label: "Perfumes & Buhoor", href: "/category/perfumes-buhoor" },
+      { label: "Toys & Games", href: "/category/toys" },
+      { label: "Baby Products", href: "/category/baby-products" },
+      { label: "Gadgets & Electronics", href: "/category/gadgets-electronics" },
+      { label: "Gaming Accessories", href: "/category/gaming-accessories" },
+      { label: "Kitchen Appliances", href: "/category/kitchen-appliances-essentials" },
     ],
   },
 ];
@@ -123,15 +125,15 @@ export default function Footer() {
               Your go-to store for authenticated, high-quality flagship electronics, audio gear, and gadgets.
             </p>
             <div className="space-y-1.5 text-xs text-zinc-300 font-semibold">
-              <p>Email: support@griva.com</p>
-              <p>Support: +08 9229 8228</p>
+              <p>Email: info@thegriva.com</p>
+              <p>Support: +974 7006 6559</p>
             </div>
             {/* Social handles */}
             <div className="flex items-center gap-3 pt-2">
               {[
                 { icon: <FaFacebookF size={12} />, href: "#", label: "Facebook" },
                 { icon: <FaInstagram size={12} />, href: "https://www.instagram.com/griva.qa", label: "Instagram", target: "_blank" },
-                { icon: <FaWhatsapp size={14} />, href: "https://wa.me/97455551234", label: "WhatsApp", target: "_blank" },
+                { icon: <FaWhatsapp size={14} />, href: "https://wa.me/97470066559", label: "WhatsApp", target: "_blank" },
               ].map((item, idx) => (
                 <a
                   key={idx}
@@ -244,9 +246,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom copyright section */}
-        <div className="border-t border-zinc-800 py-6 flex flex-col md:flex-row items-center justify-center gap-4">
+        <div className="border-t border-zinc-800 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[11px] text-zinc-500 font-medium">
             © {new Date().getFullYear()} GRIVA Store. All Rights Reserved.
+          </p>
+          <p className="text-[11px] text-zinc-500 font-medium">
+            Crafted by <Link href="https://ekodrix.com" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors font-bold">Ekodrix</Link>
           </p>
         </div>
       </div>

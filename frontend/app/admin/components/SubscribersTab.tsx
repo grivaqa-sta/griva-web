@@ -39,7 +39,7 @@ const TEMPLATES = [
   {
     name: "⚡ Weekend Flash Sale Alert",
     subject: "⚡ 48 Hours Only: GRIVA Weekend Flash Sale is Live!",
-    message: `Hi there,\n\nOur Weekend Flash Sale is officially LIVE! For the next 48 hours, enjoy up to 50% off on selected items across our store.\n\nNo discount codes needed – all price cuts are automatically applied at checkout. Free shipping on orders over QAR 99.\n\nDon't miss out:\n👉 Shop the sale: https://thegriva.com/exclusive-offers\n\nBest regards,\nThe GRIVA Team`
+    message: `Hi there,\n\nOur Weekend Flash Sale is officially LIVE! For the next 48 hours, enjoy up to 50% off on selected items across our store.\n\nNo discount codes needed – all price cuts are automatically applied at checkout. Free shipping on orders over QAR 99.\n\nDon't miss out:\n👉 Shop the sale: https://thegriva.com/shop\n\nBest regards,\nThe GRIVA Team`
   }
 ];
 

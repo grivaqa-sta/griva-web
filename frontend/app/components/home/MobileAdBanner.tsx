@@ -1,31 +1,36 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { productService } from "@/app/services/product.service";
-import { ApiProduct } from "@/app/types/types";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useBannerProducts } from "@/app/hooks/useHomeData";
+
+function MobileHeroBannerSkeleton() {
+  return (
+    <div className="block lg:hidden px-4 mt-3 pb-2 animate-pulse">
+      <div className="relative w-full h-[180px] rounded-2xl bg-gray-100 overflow-hidden" />
+    </div>
+  );
+}
+
+interface MobileHeroBannerProps {
+  bannerProducts?: any[];
+  loading?: boolean;
+}
 
 // ─── Mobile Hero Banner Component ───────────────────────────────────────────────
-export default function MobileHeroBanner() {
-  const [bannerProducts, setBannerProducts] = useState<ApiProduct[]>([]);
+export default function MobileHeroBanner({ bannerProducts: propProducts, loading: propLoading }: MobileHeroBannerProps = {}) {
+  const hookResult = useBannerProducts();
+  const loading = propLoading !== undefined ? propLoading : hookResult.loading;
+  const rawProducts = propProducts !== undefined ? propProducts : hookResult.bannerProducts;
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
 
-  useEffect(() => {
-    productService.getBannerProducts().then((res) => {
-      const data: ApiProduct[] = res?.data || res;
-      if (Array.isArray(data)) {
-        // Only include products that have a mobile ad banner uploaded
-        const withMobileBanner = data.filter(
-          (p) => p.mobile_ad_banner && p.mobile_ad_banner !== "null" && p.mobile_ad_banner !== "undefined"
-        );
-        setBannerProducts(withMobileBanner);
-      }
-    });
-  }, []);
+  const bannerProducts = useMemo(() => {
+    return (rawProducts || []).filter(
+      (p) => p.mobile_ad_banner && p.mobile_ad_banner !== "null" && p.mobile_ad_banner !== "undefined"
+    );
+  }, [rawProducts]);
 
   useEffect(() => {
     if (bannerProducts.length === 0) return;
@@ -35,6 +40,25 @@ export default function MobileHeroBanner() {
     );
     return () => clearInterval(t);
   }, [bannerProducts.length]);
+
+  // Preload all banner images in background to prevent flashing/refresh feel
+  const bannerUrlsKey = useMemo(() => {
+    return bannerProducts.map((p) => p.mobile_ad_banner).join(",");
+  }, [bannerProducts]);
+
+  useEffect(() => {
+    if (bannerProducts.length === 0) return;
+    bannerProducts.forEach((product) => {
+      const src = product.mobile_ad_banner;
+      if (src) {
+        const fullSrc = src.startsWith("http") || src.startsWith("/")
+          ? src
+          : `http://localhost:8080${src}`;
+        const img = new window.Image();
+        img.src = fullSrc;
+      }
+    });
+  }, [bannerUrlsKey]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -48,6 +72,7 @@ export default function MobileHeroBanner() {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (bannerProducts.length === 0) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 40) {
       setCurrent(
@@ -58,18 +83,21 @@ export default function MobileHeroBanner() {
     }
   };
 
+  if (loading) {
+    return <MobileHeroBannerSkeleton />;
+  }
+
   if (bannerProducts.length === 0) return null;
 
-  const product = bannerProducts[current];
-  const rawSrc = product.mobile_ad_banner;
-  
-  if (!rawSrc) return null;
+  const activeIndex = current % bannerProducts.length;
 
-  const imageSrc =
-    rawSrc.startsWith("http") || rawSrc.startsWith("/")
-      ? rawSrc
-      : `http://localhost:8080${rawSrc}`;
-  const href = product.href || `/product/${product.slug}`;
+  // We use the first image as a hidden spacer in normal document flow
+  // to dynamically establish the correct aspect ratio/height for the container.
+  const firstProduct = bannerProducts[0];
+  const firstRawSrc = firstProduct?.mobile_ad_banner;
+  const firstImageSrc = firstRawSrc.startsWith("http") || firstRawSrc.startsWith("/")
+    ? firstRawSrc
+    : `http://localhost:8080${firstRawSrc}`;
 
   return (
     <div className="block lg:hidden px-4 mt-3 pb-2">
@@ -77,47 +105,60 @@ export default function MobileHeroBanner() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        className="relative w-full rounded-2xl overflow-hidden shadow-xs bg-white"
       >
-        {/* Rectangle Image Banner */}
-        <Link href={href}>
-          <div className="relative w-full h-[200px] rounded-2xl overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={current}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="absolute inset-0"
-              >
-                <Image
-                  src={imageSrc}
-                  alt={product.title}
-                  fill
-                  sizes="(max-width: 1024px) 100vw"
-                  priority
-                  className="object-cover"
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </Link>
+        {/* Invisible Spacer Image to establish natural aspect ratio/height */}
+        <img
+          src={firstImageSrc}
+          alt=""
+          className="w-full h-auto opacity-0 pointer-events-none block"
+        />
 
-        {/* Dot Slider */}
-        {bannerProducts.length > 1 && (
-          <div className="flex justify-center items-center gap-1.5 mt-2.5">
-            {bannerProducts.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === current ? "w-5 bg-orange-500" : "w-1.5 bg-gray-300"
-                }`}
+        {/* Stacked Images - Toggled via CSS opacity for buttery smooth transition */}
+        {bannerProducts.map((product, idx) => {
+          const rawSrc = product.mobile_ad_banner;
+          if (!rawSrc) return null;
+          
+          const imageSrc = rawSrc.startsWith("http") || rawSrc.startsWith("/")
+            ? rawSrc
+            : `http://localhost:8080${rawSrc}`;
+            
+          const href = product.href || `/product/${product.slug}`;
+          const active = idx === activeIndex;
+
+          return (
+            <Link
+              key={idx}
+              href={href}
+              className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
+                active ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+              }`}
+            >
+              <img
+                src={imageSrc}
+                alt={product.title}
+                className="w-full h-full object-cover block"
               />
-            ))}
-          </div>
-        )}
+            </Link>
+          );
+        })}
+
       </div>
+
+      {/* Dot Slider */}
+      {bannerProducts.length > 1 && (
+        <div className="flex justify-center items-center gap-1.5 mt-3">
+          {bannerProducts.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === activeIndex ? "w-5 bg-orange-500" : "w-1.5 bg-gray-300"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -11,8 +11,6 @@ import BackToTop from "@/app/components/common/BackToTop";
 import GrivaAIChatbot from "@/app/components/common/GrivaAIChatbot";
 import PixelScripts from "@/app/components/common/PixelScripts";
 
-import ComingSoonOverlay from "@/app/components/common/ComingSoonOverlay";
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -26,29 +24,66 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://thegriva.com"),
   title: {
-    default: "GRIVA Qatar — Premium Electronics Store | Fast Delivery Doha",
+    default: "GRIVA Qatar | Online Shopping - Electronics, Toys, Perfumes | Cash on Delivery",
     template: "%s | GRIVA Qatar",
   },
-  description: "Qatar's #1 online electronics store. Shop Sony, Apple, Samsung, JBL and more. Free delivery on orders over QAR 99. Cash on delivery available across Doha, Lusail, The Pearl, West Bay and all Qatar areas. Same day delivery guaranteed.",
+  description: "Shop online in Qatar with GRIVA. Best deals on Apple & Samsung accessories, gaming gadgets, perfumes, buhoor, toys, baby products & kitchen essentials. Free delivery across Qatar. Cash on Delivery available.",
   keywords: [
-    "electronics qatar",
-    "online electronics store qatar",
-    "buy electronics qatar",
-    "electronics doha",
-    "tech store qatar",
-    "gadgets qatar",
-    "electronics online qatar",
-    "buy gadgets online qatar",
-    "electronics cash on delivery qatar",
-    "same day delivery electronics qatar",
+    // Tier 1 — English Qatar keywords
+    "online shopping Qatar",
+    "buy electronics Qatar",
+    "Apple accessories Qatar",
+    "Samsung charger Qatar",
+    "iPhone charger Qatar",
+    "cash on delivery Qatar",
+    "online store Qatar",
+    "gadgets Qatar",
+    "gaming accessories Qatar",
+    "perfumes Qatar",
+    "buhoor Qatar",
+    "toys Qatar",
+    "baby products Qatar",
+    "kitchen appliances Qatar",
+    "COD Qatar",
+    "free delivery Qatar",
+    "Doha online shopping",
+    "Qatar e-commerce",
+    // Tier 2 — Medium priority
+    "iPhone accessories Doha",
+    "power bank price Qatar",
+    "smartwatch Qatar price",
+    "gaming controller Qatar",
+    "educational toys Qatar",
+    "Arabic perfume Qatar",
+    "coffee maker Qatar",
+    "same day delivery electronics Qatar",
     "thegriva.com",
     "griva qatar",
     "griva electronics",
     "griva doha",
-    "griva online store"
+    "griva online store",
+    // Tier 3 — Arabic keywords
+    "تسوق اون لاين قطر",
+    "شراء الكترونيات قطر",
+    "شواحن ايفون قطر",
+    "العاب اطفال قطر",
+    "عطور قطر",
+    "بخور قطر",
+    "منتجات اطفال قطر",
+    "الدفع عند الاستلام قطر",
+    "ادوات مطبخ قطر",
+    "اكسسوارات العاب قطر",
+    "سماعات العاب قطر",
+    "يد تحكم العاب قطر",
+    // Long tail
+    "buy Apple charger cash on delivery Qatar",
+    "best gaming headset price Qatar",
+    "Islamic educational toys Qatar online",
+    "buhoor Arabic incense Qatar delivery",
+    "baby bouncer Qatar cash on delivery",
   ],
   applicationName: "GRIVA Qatar",
-  authors: [{ name: "GRIVA Qatar", url: "https://thegriva.com" }],
+  authors: [{ name: "GRIVA", url: "https://thegriva.com" }],
   generator: "Next.js",
   creator: "GRIVA Qatar",
   publisher: "GRIVA Qatar",
@@ -63,14 +98,14 @@ export const metadata: Metadata = {
     alternateLocale: "ar_QA",
     url: "https://thegriva.com",
     siteName: "GRIVA Qatar",
-    title: "GRIVA — Elevating Every Experience | Qatar Electronics Store",
-    description: "Premium electronics delivered same day across Qatar. Sony, Apple, Samsung and more. Cash on delivery available. Free delivery over QAR 99.",
+    title: "GRIVA Qatar - Online Shopping with Cash on Delivery",
+    description: "Qatar's trusted online store. Apple & Samsung accessories, gaming, perfumes, toys, baby products. COD available across Qatar. Free delivery over QAR 99.",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "GRIVA Qatar — Premium Electronics Store",
+        alt: "GRIVA Qatar Online Shopping",
         type: "image/jpeg",
       },
     ],
@@ -79,8 +114,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@grivaqa",
     creator: "@grivaqa",
-    title: "GRIVA Qatar Electronics Store — Same Day Delivery",
-    description: "Premium electronics. Same day Qatar delivery. Cash on delivery. Shop Sony, Apple, Samsung and more.",
+    title: "GRIVA Qatar | Online Shopping COD",
+    description: "Best online store in Qatar. Electronics, Gaming, Perfumes, Toys & More. Cash on Delivery!",
     images: ["/og-image.jpg"],
   },
   robots: {
@@ -120,19 +155,16 @@ export const metadata: Metadata = {
       "ar-QA": "https://thegriva.com/ar",
     },
   },
-  // verification: Add your Google Search Console code here after setting up GSC
-  // verification: { google: "YOUR_CODE_HERE" },
   verification: {
-    // Facebook Domain Verification
+    google: "Q2ysveIjmNIGQrpHfdJMvaPlyM1W1xaW799O3G3RnxE",
     other: {
       "facebook-domain-verification": "bswovkme9kzzdihcncgswrer4oy3s0",
     },
   },
   other: {
-    // Facebook Domain Verification meta tag
     "facebook-domain-verification": "bswovkme9kzzdihcncgswrer4oy3s0",
   },
-  category: "electronics",
+  category: "shopping",
 };
 
 export const viewport = {
@@ -172,6 +204,25 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Google Analytics (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-NJRX15EYGX"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="ga4-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-NJRX15EYGX', {
+                page_path: window.location.pathname,
+              });
+            `,
+          }}
+        />
         {/* Facebook Domain Verification */}
         <meta name="facebook-domain-verification" content="bswovkme9kzzdihcncgswrer4oy3s0" />
       </head>
@@ -196,7 +247,6 @@ export default function RootLayout({
           />
         </noscript>
         <Providers>
-          <ComingSoonOverlay />
           <div id="layout-header">
             <AnnouncementBar />
             <Navbar />

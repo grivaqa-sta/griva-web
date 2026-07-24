@@ -18,9 +18,12 @@ const startServer = async () => {
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
     await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "desktop_ad_banner" VARCHAR(255);');
-    console.log('🟢 [DATABASE]: Unconditionally ensured products short_description type TEXT, delivery_boy_id, status type VARCHAR(50), fridaySaleConfig JSONB, and desktop_ad_banner exist in the database');
+    // Resync primary key sequence for categories and sub_categories to prevent PK duplicate key errors in production
+    await sequelize.query(`SELECT setval(pg_get_serial_sequence('"sub_categories"', 'id'), COALESCE((SELECT MAX(id) FROM "sub_categories"), 1));`);
+    await sequelize.query(`SELECT setval(pg_get_serial_sequence('"categories"', 'id'), COALESCE((SELECT MAX(id) FROM "categories"), 1));`);
+    console.log('🟢 [DATABASE]: Unconditionally ensured products short_description type TEXT, delivery_boy_id, status type VARCHAR(50), fridaySaleConfig JSONB, desktop_ad_banner, and categories/sub_categories primary key sequences are synced.');
   } catch (dbErr) {
-    console.log('ℹ️ [DATABASE]: Skipping unconditional ReturnRequests/SiteSettings/products table alterations:', dbErr.message);
+    console.log('ℹ️ [DATABASE]: Skipping unconditional table/sequence alterations:', dbErr.message);
   }
 
   if (process.env.DB_SYNC === "true") {

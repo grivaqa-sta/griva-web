@@ -12,26 +12,30 @@ const userSockets = new Map(); // userId -> Set of socketIds
  * @param {import("http").Server} server 
  */
 const initSocket = (server) => {
-  const allowedOrigins = [
+  const envOrigins = [
+    ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(",") : []),
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : []),
+    process.env.FRONTEND_URL,
+    process.env.SOCKET_ORIGIN,
+  ]
+    .filter(Boolean)
+    .map((o) => o.trim());
+
+  const defaultOrigins = [
     "http://localhost:3000",
     "http://localhost:8080",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8080",
+    "https://griva-web-chi.vercel.app",
     "https://griva.qa",
     "https://www.griva.qa",
     "https://thegriva.com",
     "https://www.thegriva.com",
-    "https://griva-backend-kprt.onrender.com"
+    "https://griva-backend-kprt.onrender.com",
+    "https://griva-web-production.up.railway.app",
   ];
 
-  if (process.env.SOCKET_ORIGIN) {
-    const customOrigins = process.env.SOCKET_ORIGIN.split(",").map(o => o.trim());
-    customOrigins.forEach(origin => {
-      if (origin && !allowedOrigins.includes(origin)) {
-        allowedOrigins.push(origin);
-      }
-    });
-  }
+  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
   console.log("🔌 [Socket.IO]: Allowed Origins for WebSockets:", allowedOrigins);
 

@@ -17,61 +17,70 @@ app.use(helmet({
 
 // Apply Global Middlewares
 const getAllowedOrigins = () => {
-  if (process.env.ALLOWED_ORIGINS) {
-    const customOrigins = process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()).filter(Boolean);
-    console.log("✅ [CORS] Allowed Origins (from Environment):", customOrigins);
-    return customOrigins;
-  }
+  const envOrigins = [
+    ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(",") : []),
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : []),
+    process.env.FRONTEND_URL,
+    process.env.SOCKET_ORIGIN,
+  ]
+    .filter(Boolean)
+    .map((o) => o.trim());
 
-  const origins = [
+  const defaultOrigins = [
     // Local Development
     "http://localhost:3000",
     "http://localhost:8080",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8080",
     
-    // Production - GriVA Domains
+    // Production - Vercel & Railway & Custom Domains
+    "https://griva-web-chi.vercel.app",
     "https://griva.qa",
     "https://www.griva.qa",
     "https://thegriva.com",
     "https://www.thegriva.com",
-
     "https://griva-backend-kprt.onrender.com",
+    "https://griva-web-production.up.railway.app",
   ];
 
-  // Add Render Backend URL if it exists and is not empty
   if (process.env.RENDER_BACKEND_URL && process.env.RENDER_BACKEND_URL.trim()) {
-    origins.push(process.env.RENDER_BACKEND_URL.trim());
+    defaultOrigins.push(process.env.RENDER_BACKEND_URL.trim());
   }
 
-  console.log("✅ [CORS] Allowed Origins (default):", origins);
-  return origins;
+  return Array.from(new Set([...defaultOrigins, ...envOrigins]));
 };
 
-const allowedOrigins = getAllowedOrigins();
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, Postman, server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (process.env.NODE_ENV === "development") {
-      console.log(`🔍 [CORS DEBUG] Incoming origin: "${origin}"`);
-    }
-    
-    // Allow requests with no origin (Postman, curl, mobile apps)
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
+      const allowedOrigins = getAllowedOrigins();
 
-    // Check if origin is in allowedOrigins
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.error(`❌ [CORS BLOCKED] Origin: ${origin}`);
-      callback(new Error(`CORS policy blocked origin: ${origin}`));
-    }
-  },
-  credentials: true,
-}));
+      // Check exact match, vercel preview subdomains, or local dev localhost
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin) ||
+        (process.env.NODE_ENV === "development" && origin.startsWith("http://localhost:"));
+
+      if (isAllowed) {
+        return callback(null, true);
+      } else {
+        console.warn(`⚠️ [CORS REJECTED] Origin not allowed: ${origin}`);
+        return callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  })
+);
+
+// Explicitly handle preflight OPTIONS requests across all routes
+app.options("*", cors());
 
 // Apply rate limiter to all API endpoints
 app.use("/api", apiLimiter);

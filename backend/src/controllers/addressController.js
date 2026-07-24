@@ -1,4 +1,5 @@
 const Address = require("../models/Address");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Whitelist of fields a user is allowed to set on an address.
@@ -26,6 +27,19 @@ const pickAllowedFields = (body) => {
 exports.createAddress = async (req, res) => {
   try {
     const safeFields = pickAllowedFields(req.body);
+    
+    if (!safeFields.fullName || typeof safeFields.fullName !== "string" || !safeFields.fullName.trim()) {
+      const err = new Error("Full name is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!safeFields.mobile || typeof safeFields.mobile !== "string" || !safeFields.mobile.trim()) {
+      const err = new Error("Mobile number is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const address = await Address.create({
       ...safeFields,
       userId: req.user.id,
@@ -37,12 +51,7 @@ exports.createAddress = async (req, res) => {
       data: address,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "AddressController.createAddress");
   }
 };
 
@@ -66,12 +75,7 @@ exports.getAddresses = async (req, res) => {
       data: addresses,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "AddressController.getAddresses");
   }
 };
 
@@ -80,18 +84,24 @@ exports.getAddresses = async (req, res) => {
  */
 exports.getAddress = async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid address ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const address = await Address.findOne({
       where: {
-        id: req.params.id,
+        id,
         userId: req.user.id,
       },
     });
 
     if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      });
+      const err = new Error("Address not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     res.status(200).json({
@@ -99,12 +109,7 @@ exports.getAddress = async (req, res) => {
       data: address,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "AddressController.getAddress");
   }
 };
 
@@ -113,18 +118,24 @@ exports.getAddress = async (req, res) => {
  */
 exports.updateAddress = async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid address ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const address = await Address.findOne({
       where: {
-        id: req.params.id,
+        id,
         userId: req.user.id,
       },
     });
 
     if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      });
+      const err = new Error("Address not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await address.update(pickAllowedFields(req.body));
@@ -135,12 +146,7 @@ exports.updateAddress = async (req, res) => {
       data: address,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "AddressController.updateAddress");
   }
 };
 
@@ -149,18 +155,24 @@ exports.updateAddress = async (req, res) => {
  */
 exports.deleteAddress = async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid address ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const address = await Address.findOne({
       where: {
-        id: req.params.id,
+        id,
         userId: req.user.id,
       },
     });
 
     if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      });
+      const err = new Error("Address not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await address.destroy();
@@ -170,12 +182,7 @@ exports.deleteAddress = async (req, res) => {
       message: "Address deleted successfully",
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "AddressController.deleteAddress");
   }
 };
 
@@ -184,18 +191,24 @@ exports.deleteAddress = async (req, res) => {
  */
 exports.setDefaultAddress = async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid address ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const address = await Address.findOne({
       where: {
-        id: req.params.id,
+        id,
         userId: req.user.id,
       },
     });
 
     if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      });
+      const err = new Error("Address not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await Address.update(
@@ -217,11 +230,6 @@ exports.setDefaultAddress = async (req, res) => {
       data: address,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "AddressController.setDefaultAddress");
   }
 };

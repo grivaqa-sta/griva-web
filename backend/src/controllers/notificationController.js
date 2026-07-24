@@ -1,44 +1,40 @@
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Admin action: Send a notification message to drivers
  * POST /api/delivery/admin/notifications
  */
-exports.sendNotification = async (req, res, next) => {
+exports.sendNotification = async (req, res) => {
   try {
     const { driverId, title, message } = req.body;
 
-    if (!title || !message) {
-      return res.status(400).json({
-        success: false,
-        message: "Title and message are required parameters.",
-      });
+    if (!title || typeof title !== "string" || !title.trim() || !message || typeof message !== "string" || !message.trim()) {
+      const err = new Error("Title and message are required parameters.");
+      err.statusCode = 400;
+      throw err;
     }
 
     if (!driverId) {
-      return res.status(400).json({
-        success: false,
-        message: "driverId is required ('all' or a specific driver user ID).",
-      });
+      const err = new Error("driverId is required ('all' or a specific driver user ID).");
+      err.statusCode = 400;
+      throw err;
     }
 
     if (driverId === "all") {
-      // Find all active/inactive delivery agents
       const drivers = await User.findAll({ where: { role: "delivery" } });
       
       if (drivers.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "No delivery drivers found to notify.",
-        });
+        const err = new Error("No delivery drivers found to notify.");
+        err.statusCode = 404;
+        throw err;
       }
 
-      // Create notification records for all drivers in bulk/parallel
       const notifications = drivers.map((driver) => ({
         userId: driver.id,
-        title,
-        message,
+        title: title.trim(),
+        message: message.trim(),
         isRead: false,
       }));
 
@@ -49,22 +45,26 @@ exports.sendNotification = async (req, res, next) => {
         message: `Notification broadcast sent successfully to all ${drivers.length} drivers.`,
       });
     } else {
-      // Verify single driver exists and has delivery role
+      if (isNaN(Number(driverId))) {
+        const err = new Error("Invalid driver ID.");
+        err.statusCode = 400;
+        throw err;
+      }
+
       const driver = await User.findOne({
         where: { id: driverId, role: "delivery" },
       });
 
       if (!driver) {
-        return res.status(404).json({
-          success: false,
-          message: "Specified delivery driver not found.",
-        });
+        const err = new Error("Specified delivery driver not found.");
+        err.statusCode = 404;
+        throw err;
       }
 
       const notification = await Notification.create({
         userId: driver.id,
-        title,
-        message,
+        title: title.trim(),
+        message: message.trim(),
         isRead: false,
       });
 
@@ -75,7 +75,7 @@ exports.sendNotification = async (req, res, next) => {
       });
     }
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "NotificationController.sendNotification");
   }
 };
 
@@ -83,7 +83,7 @@ exports.sendNotification = async (req, res, next) => {
  * Driver action: Retrieve notifications for the logged-in driver
  * GET /api/delivery/notifications
  */
-exports.getMyNotifications = async (req, res, next) => {
+exports.getMyNotifications = async (req, res) => {
   try {
     const driverId = req.user.id;
 
@@ -98,7 +98,7 @@ exports.getMyNotifications = async (req, res, next) => {
       notifications,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "NotificationController.getMyNotifications");
   }
 };
 
@@ -106,20 +106,25 @@ exports.getMyNotifications = async (req, res, next) => {
  * Driver action: Mark a notification as read
  * PATCH /api/delivery/notifications/:id/read
  */
-exports.markAsRead = async (req, res, next) => {
+exports.markAsRead = async (req, res) => {
   try {
     const driverId = req.user.id;
     const { id } = req.params;
+
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid notification ID.");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const notification = await Notification.findOne({
       where: { id, userId: driverId },
     });
 
     if (!notification) {
-      return res.status(404).json({
-        success: false,
-        message: "Notification not found.",
-      });
+      const err = new Error("Notification not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     notification.isRead = true;
@@ -131,7 +136,7 @@ exports.markAsRead = async (req, res, next) => {
       notification,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "NotificationController.markAsRead");
   }
 };
 
@@ -139,7 +144,7 @@ exports.markAsRead = async (req, res, next) => {
  * Driver action: Clear all notifications
  * DELETE /api/delivery/notifications/clear-all
  */
-exports.clearNotifications = async (req, res, next) => {
+exports.clearNotifications = async (req, res) => {
   try {
     const driverId = req.user.id;
 
@@ -152,7 +157,7 @@ exports.clearNotifications = async (req, res, next) => {
       message: "All notifications cleared successfully.",
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "NotificationController.clearNotifications");
   }
 };
 
@@ -160,20 +165,25 @@ exports.clearNotifications = async (req, res, next) => {
  * Driver action: Delete a single notification
  * DELETE /api/delivery/notifications/:id
  */
-exports.deleteNotification = async (req, res, next) => {
+exports.deleteNotification = async (req, res) => {
   try {
     const driverId = req.user.id;
     const { id } = req.params;
+
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid notification ID.");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const notification = await Notification.findOne({
       where: { id, userId: driverId },
     });
 
     if (!notification) {
-      return res.status(404).json({
-        success: false,
-        message: "Notification not found.",
-      });
+      const err = new Error("Notification not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     await notification.destroy();
@@ -183,6 +193,6 @@ exports.deleteNotification = async (req, res, next) => {
       message: "Notification deleted successfully.",
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "NotificationController.deleteNotification");
   }
 };

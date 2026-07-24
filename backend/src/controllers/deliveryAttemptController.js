@@ -8,23 +8,36 @@ const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const handleApiError = require("../utils/errorHandler");
 
 const markAttempted = async (req, res) => {
   try {
     const { id } = req.params;
     const { note } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid order ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const order = await Order.findByPk(id);
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found." });
+      const err = new Error("Order not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     if (order.delivery_boy_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: "This order is not assigned to you." });
+      const err = new Error("This order is not assigned to you.");
+      err.statusCode = 403;
+      throw err;
     }
 
     if (order.status !== "out_for_delivery") {
-      return res.status(400).json({ success: false, message: "Order must be out for delivery to mark as attempted." });
+      const err = new Error("Order must be out for delivery to mark as attempted.");
+      err.statusCode = 400;
+      throw err;
     }
 
     order.delivery_attempts += 1;
@@ -48,8 +61,7 @@ const markAttempted = async (req, res) => {
 
     res.json({ success: true, data: order });
   } catch (error) {
-    console.error("markAttempted error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    return handleApiError(error, req, res, "DeliveryAttemptController.markAttempted");
   }
 };
 
@@ -58,21 +70,35 @@ const markRescheduled = async (req, res) => {
     const { id } = req.params;
     const { rescheduleTime, note } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid order ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const order = await Order.findByPk(id);
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found." });
+      const err = new Error("Order not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     if (order.delivery_boy_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: "This order is not assigned to you." });
+      const err = new Error("This order is not assigned to you.");
+      err.statusCode = 403;
+      throw err;
     }
 
     if (order.status !== "out_for_delivery") {
-      return res.status(400).json({ success: false, message: "Order must be out for delivery to mark as rescheduled." });
+      const err = new Error("Order must be out for delivery to mark as rescheduled.");
+      err.statusCode = 400;
+      throw err;
     }
 
     if (!rescheduleTime) {
-      return res.status(400).json({ success: false, message: "Reschedule time is required." });
+      const err = new Error("Reschedule time is required.");
+      err.statusCode = 400;
+      throw err;
     }
 
     order.delivery_attempts += 1;
@@ -97,8 +123,7 @@ const markRescheduled = async (req, res) => {
 
     res.json({ success: true, data: order });
   } catch (error) {
-    console.error("markRescheduled error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    return handleApiError(error, req, res, "DeliveryAttemptController.markRescheduled");
   }
 };
 
@@ -107,22 +132,36 @@ const markFailed = async (req, res) => {
     const { id } = req.params;
     const { reason, note } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid order ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const order = await Order.findByPk(id);
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found." });
+      const err = new Error("Order not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     if (order.delivery_boy_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: "This order is not assigned to you." });
+      const err = new Error("This order is not assigned to you.");
+      err.statusCode = 403;
+      throw err;
     }
 
     if (order.status !== "out_for_delivery" && order.status !== "attempted") {
-      return res.status(400).json({ success: false, message: "Order must be out for delivery or attempted to mark as failed." });
+      const err = new Error("Order must be out for delivery or attempted to mark as failed.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const allowedReasons = ["customer_refused", "wrong_address"];
     if (!reason || !allowedReasons.includes(reason)) {
-      return res.status(400).json({ success: false, message: "Invalid reason. Use customer_refused or wrong_address." });
+      const err = new Error("Invalid reason. Use customer_refused or wrong_address.");
+      err.statusCode = 400;
+      throw err;
     }
 
     order.delivery_attempts += 1;
@@ -146,8 +185,7 @@ const markFailed = async (req, res) => {
 
     res.json({ success: true, data: order });
   } catch (error) {
-    console.error("markFailed error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    return handleApiError(error, req, res, "DeliveryAttemptController.markFailed");
   }
 };
 
@@ -156,18 +194,30 @@ const reopenOrder = async (req, res) => {
     const { id } = req.params;
     const { note } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid order ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const order = await Order.findByPk(id);
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found." });
+      const err = new Error("Order not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     const allowedStatuses = ["cancelled", "attempted", "failed"];
     if (!allowedStatuses.includes(order.status)) {
-      return res.status(400).json({ success: false, message: "Only cancelled, attempted, or failed orders can be reopened." });
+      const err = new Error("Only cancelled, attempted, or failed orders can be reopened.");
+      err.statusCode = 400;
+      throw err;
     }
 
     if (order.reopen_count >= 2) {
-      return res.status(400).json({ success: false, message: "This order has been reopened too many times. Maximum is 2 reopens. Please create a new order for the customer." });
+      const err = new Error("This order has been reopened too many times. Maximum is 2 reopens. Please create a new order for the customer.");
+      err.statusCode = 400;
+      throw err;
     }
 
     order.status = "processing";
@@ -197,8 +247,7 @@ const reopenOrder = async (req, res) => {
 
     res.json({ success: true, data: order, message: "Order reopened successfully. Please assign a delivery driver." });
   } catch (error) {
-    console.error("reopenOrder error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    return handleApiError(error, req, res, "DeliveryAttemptController.reopenOrder");
   }
 };
 
@@ -234,8 +283,7 @@ const getNeedsAttention = async (req, res) => {
 
     res.json({ success: true, count: orders.length, orders });
   } catch (error) {
-    console.error("getNeedsAttention error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    return handleApiError(error, req, res, "DeliveryAttemptController.getNeedsAttention");
   }
 };
 

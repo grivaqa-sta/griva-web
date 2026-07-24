@@ -10,6 +10,9 @@ require("./models");
 
 const app = express();
 
+// Trust reverse proxy (Railway, Render, Cloudflare) for client IP rate-limiting & X-Forwarded-For headers
+app.set("trust proxy", 1);
+
 // Secure HTTP response headers
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled on API layer to allow flexibility on separate SPA/client apps

@@ -38,6 +38,7 @@ const actualApiLimiter = rateLimit({
   max: 1500, // Limit each IP to 1500 requests per window
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     error: "Too many requests from this IP, please try again after 15 minutes.",
   },
@@ -48,6 +49,7 @@ const actualStrictLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     error: "Too many attempts from this IP. Please try again after 15 minutes.",
   },

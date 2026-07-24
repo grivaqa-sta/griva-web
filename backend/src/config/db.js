@@ -38,7 +38,8 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Fallback placeholder connection string to prevent system initialization failure
-const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/grivadb";
+const rawConnectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/grivadb";
+const connectionString = rawConnectionString.replace(/sslmode=require/g, "sslmode=verify-full");
 
 const sequelize = new Sequelize(connectionString, {
   dialect: "postgres",

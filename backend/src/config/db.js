@@ -52,8 +52,8 @@ const sequelize = new Sequelize(connectionString, {
     connectTimeout: 10000, // 10 seconds timeout to prevent infinite hang on unreachable DB
   },
   pool: {
-    max: 10,         // HikariCP's maximumPoolSize equivalent (Azure B1ms friendly)
-    min: 2,          // HikariCP's minimumIdle equivalent
+    max: 10,         // HikariCP's maximumPoolSize equivalent
+    min: 0,          // Set to 0 so connections close on idle and allow Neon DB auto-suspend
     acquire: 30000,  // Max time (ms) ORM waits to get a connection before throwing timeout error
     idle: 10000,     // Max time (ms) connection can be idle before release
   },

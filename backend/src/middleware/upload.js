@@ -4,17 +4,21 @@ const cloudinary = require("../config/cloudinary");
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: async (req, file) => ({
-    folder: "griva/products",
-    resource_type: "image",
-    format: file.mimetype.split("/")[1],
-    public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
-    transformation: [
-      { width: 1000, height: 1000, crop: "limit" },
-      { quality: "auto" },
-      { fetch_format: "auto" }
-    ],
-  }),
+  params: async (req, file) => {
+    const rawName = file.originalname ? file.originalname.split(".")[0] : "upload";
+    const cleanName = rawName
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+    const safePublicId = `${Date.now()}-${cleanName || "img"}`;
+
+    return {
+      folder: "griva/products",
+      resource_type: "auto",
+      public_id: safePublicId,
+    };
+  },
 });
 
 const upload = multer({

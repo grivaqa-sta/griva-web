@@ -14,6 +14,7 @@ import {
   updateWarrantyInSpecs,
   WarrantyData
 } from "./productWizardUtils";
+import { useSocket } from "@/app/context/SocketContext";
 
 export interface UseProductFormProps {
   productToEdit?: any;
@@ -75,6 +76,65 @@ export function useProductForm({
   const galleryFileRef = useRef<HTMLInputElement>(null);
   const [showVariantsStep, setShowVariantsStep] = useState(false);
   const [initialFormDataStr, setInitialFormDataStr] = useState("");
+
+  const { socket } = useSocket();
+
+  // Socket listener for live product & variant stock updates
+  useEffect(() => {
+    if (!socket || !productToEdit?.id) return;
+
+    const handleSocketStockUpdate = async (data?: any) => {
+      if (data?.productId && String(data.productId) !== String(productToEdit.id)) {
+        return;
+      }
+      try {
+        const freshRes = await productService.getProduct(productToEdit.id);
+        const freshProduct = freshRes?.data || freshRes;
+        if (freshProduct) {
+          const freshVariants = normalizeVariants(freshProduct.productVariants || freshProduct.variants || []);
+          setFormData((prev) => {
+            if (!prev.variants || prev.variants.length === 0) {
+              return {
+                ...prev,
+                stock: freshProduct.stock ?? prev.stock,
+                variants: freshVariants
+              };
+            }
+            const mergedVariants = prev.variants.map((v: any) => {
+              const match = freshVariants.find(
+                (fv: any) =>
+                  (fv.sku && v.sku && fv.sku === v.sku) ||
+                  (fv.id && v.id && fv.id === v.id) ||
+                  (fv.combination && v.combination && JSON.stringify(fv.combination) === JSON.stringify(v.combination))
+              );
+              if (match && typeof match.stock === 'number') {
+                return { ...v, stock: match.stock };
+              }
+              return v;
+            });
+
+            return {
+              ...prev,
+              stock: freshProduct.stock ?? prev.stock,
+              variants: mergedVariants
+            };
+          });
+        }
+      } catch (err) {
+        console.error("Failed to sync socket stock update in useProductForm:", err);
+      }
+    };
+
+    socket.on("product-stock-updated", handleSocketStockUpdate);
+    socket.on("new-order", handleSocketStockUpdate);
+    socket.on("order-updated", handleSocketStockUpdate);
+
+    return () => {
+      socket.off("product-stock-updated", handleSocketStockUpdate);
+      socket.off("new-order", handleSocketStockUpdate);
+      socket.off("order-updated", handleSocketStockUpdate);
+    };
+  }, [socket, productToEdit?.id]);
 
   // Initialize draft or edit data
   useEffect(() => {

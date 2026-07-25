@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
-
 const { DealOfDay, Product } = require("../models");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Create Deal Of Day
@@ -15,18 +15,29 @@ exports.createDealOfDay = async (req, res) => {
       isActive = true,
     } = req.body;
 
+    if (!productId || isNaN(Number(productId))) {
+      const err = new Error("Valid productId is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!title || typeof title !== "string" || !title.trim()) {
+      const err = new Error("Title is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const product = await Product.findByPk(productId);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     const deal = await DealOfDay.create({
       productId,
-      title,
+      title: title.trim(),
       startDate,
       endDate,
       isActive,
@@ -38,13 +49,7 @@ exports.createDealOfDay = async (req, res) => {
       data: deal,
     });
   } catch (error) {
-    console.error("Create Deal Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to create deal",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DealOfDayController.createDealOfDay");
   }
 };
 
@@ -86,13 +91,7 @@ exports.getActiveDealOfDay = async (req, res) => {
       data: deals,
     });
   } catch (error) {
-    console.error("Get Deal Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch deal",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DealOfDayController.getActiveDealOfDay");
   }
 };
 
@@ -117,13 +116,7 @@ exports.getAllDeals = async (req, res) => {
       data: deals,
     });
   } catch (error) {
-    console.error("Get Deals Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch deals",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DealOfDayController.getAllDeals");
   }
 };
 
@@ -133,14 +126,18 @@ exports.getAllDeals = async (req, res) => {
 exports.updateDealOfDay = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid deal ID");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const deal = await DealOfDay.findByPk(id);
 
     if (!deal) {
-      return res.status(404).json({
-        success: false,
-        message: "Deal not found",
-      });
+      const err = new Error("Deal not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await deal.update(req.body);
@@ -151,13 +148,7 @@ exports.updateDealOfDay = async (req, res) => {
       data: deal,
     });
   } catch (error) {
-    console.error("Update Deal Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to update deal",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DealOfDayController.updateDealOfDay");
   }
 };
 
@@ -167,14 +158,18 @@ exports.updateDealOfDay = async (req, res) => {
 exports.deleteDealOfDay = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid deal ID");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const deal = await DealOfDay.findByPk(id);
 
     if (!deal) {
-      return res.status(404).json({
-        success: false,
-        message: "Deal not found",
-      });
+      const err = new Error("Deal not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await deal.destroy();
@@ -184,13 +179,7 @@ exports.deleteDealOfDay = async (req, res) => {
       message: "Deal deleted successfully",
     });
   } catch (error) {
-    console.error("Delete Deal Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete deal",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DealOfDayController.deleteDealOfDay");
   }
 };
 
@@ -200,14 +189,18 @@ exports.deleteDealOfDay = async (req, res) => {
 exports.updateDealStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid deal ID");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const deal = await DealOfDay.findByPk(id);
 
     if (!deal) {
-      return res.status(404).json({
-        success: false,
-        message: "Deal not found",
-      });
+      const err = new Error("Deal not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await deal.update({
@@ -222,12 +215,6 @@ exports.updateDealStatus = async (req, res) => {
       data: deal,
     });
   } catch (error) {
-    console.error("Status Update Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to update status",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DealOfDayController.updateDealStatus");
   }
 };

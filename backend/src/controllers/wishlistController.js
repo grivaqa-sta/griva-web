@@ -1,5 +1,6 @@
 const Wishlist = require("../models/Wishlist");
 const Product = require("../models/Product");
+const handleApiError = require("../utils/errorHandler");
 
 // Get all wishlist items for the authenticated user
 exports.getWishlist = async (req, res) => {
@@ -11,7 +12,7 @@ exports.getWishlist = async (req, res) => {
         {
           model: Product,
           as: "product",
-          where: { is_active: true } // Only return active products
+          where: { is_active: true }
         }
       ],
       order: [["createdAt", "DESC"]]
@@ -22,11 +23,7 @@ exports.getWishlist = async (req, res) => {
       data: items
     });
   } catch (error) {
-    console.error("Error in getWishlist:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return handleApiError(error, req, res, "WishlistController.getWishlist");
   }
 };
 
@@ -36,23 +33,19 @@ exports.addToWishlist = async (req, res) => {
     const userId = req.user.id;
     const { product_id } = req.body;
 
-    if (!product_id) {
-      return res.status(400).json({
-        success: false,
-        message: "product_id is required"
-      });
+    if (!product_id || isNaN(Number(product_id))) {
+      const err = new Error("Valid product_id is required");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // Verify product exists and is active
     const product = await Product.findOne({ where: { id: product_id, is_active: true } });
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found or inactive"
-      });
+      const err = new Error("Product not found or inactive");
+      err.statusCode = 404;
+      throw err;
     }
 
-    // Find or create to prevent duplicates
     const [wishlistItem, created] = await Wishlist.findOrCreate({
       where: { user_id: userId, product_id: product_id }
     });
@@ -63,11 +56,7 @@ exports.addToWishlist = async (req, res) => {
       data: wishlistItem
     });
   } catch (error) {
-    console.error("Error in addToWishlist:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return handleApiError(error, req, res, "WishlistController.addToWishlist");
   }
 };
 
@@ -76,6 +65,12 @@ exports.removeFromWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
     const { productId } = req.params;
+
+    if (!productId || isNaN(Number(productId))) {
+      const err = new Error("Valid productId is required");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const deleted = await Wishlist.destroy({
       where: { user_id: userId, product_id: productId }
@@ -87,10 +82,6 @@ exports.removeFromWishlist = async (req, res) => {
       deleted: !!deleted
     });
   } catch (error) {
-    console.error("Error in removeFromWishlist:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return handleApiError(error, req, res, "WishlistController.removeFromWishlist");
   }
 };

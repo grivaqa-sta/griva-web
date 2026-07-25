@@ -7,47 +7,54 @@ const ProductVariant = require("../models/ProductVariant");
 const { sequelize } = require("../config/db");
 const brevoService = require("../services/brevoService");
 const { emitToRoles, emitToUser, emitToAll, emitToOrder } = require("../socket/socket");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Customer Action: Submit a Return/Replacement Request
  * POST /api/returns
  */
-exports.submitReturnRequest = async (req, res, next) => {
+exports.submitReturnRequest = async (req, res) => {
   let transaction;
   try {
     const userId = req.user.id;
     const { orderId, orderItemId, quantity, type, reason, description, images } = req.body;
 
-    // 1. Basic validation
-    if (!orderId || !orderItemId || !quantity || !type || !reason) {
-      return res.status(400).json({ error: "Missing required parameters." });
+    if (!orderId || isNaN(Number(orderId)) || !orderItemId || isNaN(Number(orderItemId)) || !quantity || isNaN(Number(quantity)) || !type || !reason) {
+      const err = new Error("Missing or invalid required parameters.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    if (quantity <= 0) {
-      return res.status(400).json({ error: "Quantity must be greater than 0." });
+    if (Number(quantity) <= 0) {
+      const err = new Error("Quantity must be greater than 0.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const allowedTypes = ["replacement", "refund"];
     if (!allowedTypes.includes(type)) {
-      return res.status(400).json({ error: "Invalid return request type." });
+      const err = new Error("Invalid return request type.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const allowedReasons = ["damaged", "defective", "wrong_item", "changed_mind", "other"];
     if (!allowedReasons.includes(reason)) {
-      return res.status(400).json({ error: "Invalid return reason." });
+      const err = new Error("Invalid return reason.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // 2. Damage/Defect proof check (Mandatory photo rule)
     if (["damaged", "defective"].includes(reason)) {
       if (!Array.isArray(images) || images.length === 0) {
-        return res.status(400).json({ error: "Photos/Proof is strictly required for damaged or defective items." });
+        const err = new Error("Photos/Proof is strictly required for damaged or defective items.");
+        err.statusCode = 400;
+        throw err;
       }
     }
 
-    // Begin ACID transaction
     transaction = await sequelize.transaction();
 
-    // 3. Find order and verify ownership/status
     const order = await Order.findOne({
       where: { id: orderId, user_id: userId },
       transaction,
@@ -55,27 +62,30 @@ exports.submitReturnRequest = async (req, res, next) => {
 
     if (!order) {
       await transaction.rollback();
-      return res.status(404).json({ error: "Order not found or access denied." });
+      const err = new Error("Order not found or access denied.");
+      err.statusCode = 404;
+      throw err;
     }
 
-    // Eligibility check: Order status must be delivered/completed
     const statusLower = (order.status || "").toLowerCase().trim();
     if (statusLower !== "delivered" && statusLower !== "completed" && statusLower !== "returned") {
       await transaction.rollback();
-      return res.status(400).json({ error: "Only delivered or completed orders can be returned." });
+      const err = new Error("Only delivered or completed orders can be returned.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // 7-day restriction check
-    const deliveryDate = order.updatedAt; // updatedAt represents the timestamp when order became delivered/completed
+    const deliveryDate = order.updatedAt;
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     if (new Date(deliveryDate) < sevenDaysAgo) {
       await transaction.rollback();
-      return res.status(400).json({ error: "The 7-day return window for this order has expired." });
+      const err = new Error("The 7-day return window for this order has expired.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // 4. Verify OrderItem exists, belongs to order, and quantity is within limits
     const orderItem = await OrderItem.findOne({
       where: { id: orderItemId, order_id: orderId },
       transaction,
@@ -83,15 +93,18 @@ exports.submitReturnRequest = async (req, res, next) => {
 
     if (!orderItem) {
       await transaction.rollback();
-      return res.status(404).json({ error: "OrderItem not found in this order." });
+      const err = new Error("OrderItem not found in this order.");
+      err.statusCode = 404;
+      throw err;
     }
 
-    if (quantity > orderItem.quantity) {
+    if (Number(quantity) > orderItem.quantity) {
       await transaction.rollback();
-      return res.status(400).json({ error: `Requested quantity (${quantity}) exceeds the purchased quantity (${orderItem.quantity}).` });
+      const err = new Error(`Requested quantity (${quantity}) exceeds the purchased quantity (${orderItem.quantity}).`);
+      err.statusCode = 400;
+      throw err;
     }
 
-    // 5. Prevent double submission (one active request per item)
     const existingRequest = await ReturnRequest.findOne({
       where: { order_item_id: orderItemId, status: ["pending", "approved_replacement", "approved_refund"] },
       transaction,
@@ -99,15 +112,16 @@ exports.submitReturnRequest = async (req, res, next) => {
 
     if (existingRequest) {
       await transaction.rollback();
-      return res.status(400).json({ error: "An active return request already exists for this item." });
+      const err = new Error("An active return request already exists for this item.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // 6. Create Return Request
     const returnRequest = await ReturnRequest.create({
       order_id: orderId,
       user_id: userId,
       order_item_id: orderItemId,
-      quantity,
+      quantity: Number(quantity),
       type,
       reason,
       description,
@@ -117,7 +131,6 @@ exports.submitReturnRequest = async (req, res, next) => {
 
     await transaction.commit();
 
-    // 7. Send confirmation email (async)
     const user = await User.findByPk(userId);
     if (user && user.email) {
       brevoService.sendReturnRequestSubmittedEmail(returnRequest, user, order.order_number).catch(err => {
@@ -139,7 +152,7 @@ exports.submitReturnRequest = async (req, res, next) => {
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
-    next(error);
+    return handleApiError(error, req, res, "ReturnController.submitReturnRequest");
   }
 };
 
@@ -147,7 +160,7 @@ exports.submitReturnRequest = async (req, res, next) => {
  * Customer Action: List current user's return requests
  * GET /api/returns/my-returns
  */
-exports.getMyReturns = async (req, res, next) => {
+exports.getMyReturns = async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -181,7 +194,7 @@ exports.getMyReturns = async (req, res, next) => {
 
     res.status(200).json({ success: true, returnRequests });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "ReturnController.getMyReturns");
   }
 };
 
@@ -189,7 +202,7 @@ exports.getMyReturns = async (req, res, next) => {
  * Admin Action: List all return requests (pending/resolved)
  * GET /api/returns
  */
-exports.getAllReturns = async (req, res, next) => {
+exports.getAllReturns = async (req, res) => {
   try {
     const returnRequests = await ReturnRequest.findAll({
       include: [
@@ -225,7 +238,7 @@ exports.getAllReturns = async (req, res, next) => {
 
     res.status(200).json({ success: true, returnRequests });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "ReturnController.getAllReturns");
   }
 };
 
@@ -233,21 +246,28 @@ exports.getAllReturns = async (req, res, next) => {
  * Admin Action: Approve/Reject return request with stock logic fallback
  * PATCH /api/returns/:id/status
  */
-exports.updateReturnRequestStatus = async (req, res, next) => {
+exports.updateReturnRequestStatus = async (req, res) => {
   let transaction;
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid return request ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const { status, admin_notes, deliveryBoyId, delivery_boy_id } = req.body;
     const assignedDriverId = deliveryBoyId || delivery_boy_id;
 
     const allowedStatuses = ["approved_replacement", "approved_refund", "rejected"];
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ error: "Invalid status code." });
+      const err = new Error("Invalid status code.");
+      err.statusCode = 400;
+      throw err;
     }
 
     transaction = await sequelize.transaction();
 
-    // Fetch the request with details
     const returnRequest = await ReturnRequest.findByPk(id, {
       include: [
         { model: Order, as: "order" },
@@ -259,18 +279,21 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
 
     if (!returnRequest) {
       await transaction.rollback();
-      return res.status(404).json({ error: "Return request not found." });
+      const err = new Error("Return request not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     if (returnRequest.status !== "pending") {
       await transaction.rollback();
-      return res.status(400).json({ error: "This return request has already been processed." });
+      const err = new Error("This return request has already been processed.");
+      err.statusCode = 400;
+      throw err;
     }
 
     let finalStatus = status;
     let detailText = "";
 
-    // ─── REJECTION FLOW ───
     if (status === "rejected") {
       returnRequest.status = "rejected";
       returnRequest.admin_notes = admin_notes;
@@ -298,11 +321,9 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
       return res.status(200).json({ success: true, message: "Return request rejected.", returnRequest });
     }
 
-    // ─── APPROVAL FLOWS ───
     const orderItem = returnRequest.orderItem;
 
     if (status === "approved_replacement") {
-      // 1. Stock check
       let stockAvailable = false;
       let variant = null;
       let product = null;
@@ -320,7 +341,6 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
       }
 
       if (stockAvailable) {
-        // A. Stock Available: Deduct stock and create zero-value replacement order
         if (variant) {
           variant.stock -= returnRequest.quantity;
           await variant.save({ transaction });
@@ -329,7 +349,6 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
           await product.save({ transaction });
         }
 
-        // Generate new Order representation
         const replacementOrderNumber = `RPL-${returnRequest.order.order_number}-${Date.now().toString().slice(-4)}`;
         
         const replacementOrder = await Order.create({
@@ -338,13 +357,13 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
           status: assignedDriverId ? "assigned" : "pending",
           delivery_boy_id: assignedDriverId || null,
           assigned_at: assignedDriverId ? new Date() : null,
-          total_price: 0.00, // zero price
+          total_price: 0.00,
           shipping_address: returnRequest.order.shipping_address,
           customer_name: returnRequest.order.customer_name,
           customer_phone: returnRequest.order.customer_phone,
           customer_email: returnRequest.order.customer_email,
           payment_method: "Replacement (COD)",
-          payment_status: "paid", // Paid already via the original order
+          payment_status: "paid",
           delivery_notes: `REPLACEMENT ORDER FOR: ${returnRequest.order.order_number}. Request ID: #${returnRequest.id}`,
           city: returnRequest.order.city,
           delivery_slot_id: returnRequest.order.delivery_slot_id,
@@ -352,7 +371,6 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
           longitude: returnRequest.order.longitude,
         }, { transaction });
 
-        // Create Order Item
         await OrderItem.create({
           order_id: replacementOrder.id,
           product_id: orderItem.product_id,
@@ -376,14 +394,12 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
 
         detailText = `We have approved a direct replacement for your product. A new replacement order (${replacementOrderNumber}) has been generated and is now in our delivery queue at QAR 0.00.`;
       } else {
-        // B. No Stock Available fallback to refund
         finalStatus = "approved_refund";
         detailText = "Replacement requested but stock was unavailable. We have automatically converted this request to a Full Refund.";
       }
     }
 
     if (finalStatus === "approved_refund") {
-      // Process full refund (set status to approved_refund)
       returnRequest.status = "approved_refund";
       returnRequest.admin_notes = admin_notes 
         ? `${admin_notes}\n(Processed as Refund)`
@@ -394,8 +410,6 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
       }
       await returnRequest.save({ transaction });
 
-      // Update parent order status to returned if all items returned (optional design)
-      // For simplicity, we just keep order as is or log the refund.
       if (detailText === "") {
         detailText = "We have approved a full refund for your product. The refund has been credited back to your original payment method or wallet.";
       }
@@ -403,7 +417,6 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
 
     await transaction.commit();
 
-    // Send success email (async)
     if (returnRequest.user && returnRequest.user.email) {
       brevoService.sendReturnRequestApprovedEmail(
         returnRequest,
@@ -433,6 +446,6 @@ exports.updateReturnRequestStatus = async (req, res, next) => {
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
-    next(error);
+    return handleApiError(error, req, res, "ReturnController.updateReturnRequestStatus");
   }
 };

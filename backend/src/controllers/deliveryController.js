@@ -14,12 +14,13 @@ const {
   sendOutForDeliveryEmail,
   sendOrderDeliveredEmail,
 } = require("../services/brevoService");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * GET /api/delivery/my-orders
  * Fetch today's orders assigned to the logged-in delivery boy
  */
-exports.getMyOrders = async (req, res, next) => {
+exports.getMyOrders = async (req, res) => {
   try {
     const driverId = req.user.id;
 
@@ -82,7 +83,7 @@ exports.getMyOrders = async (req, res, next) => {
       orders,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "DeliveryController.getMyOrders");
   }
 };
 
@@ -93,34 +94,37 @@ exports.getMyOrders = async (req, res, next) => {
  *   'assigned' → 'out_for_delivery'
  *   'out_for_delivery' → 'delivered'
  */
-exports.updateMyOrderStatus = async (req, res, next) => {
+exports.updateMyOrderStatus = async (req, res) => {
   try {
     const driverId = req.user.id;
     const { id } = req.params;
     const { status } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid order ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     if (!status) {
-      return res.status(400).json({
-        success: false,
-        message: "Status is required.",
-      });
+      const err = new Error("Status is required.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const order = await Order.findByPk(id);
 
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found.",
-      });
+      const err = new Error("Order not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     // Ensure this order is assigned to the requesting driver
     if (order.delivery_boy_id !== driverId) {
-      return res.status(403).json({
-        success: false,
-        message: "This order is not assigned to you.",
-      });
+      const err = new Error("This order is not assigned to you.");
+      err.statusCode = 403;
+      throw err;
     }
 
     // Validate allowed status transitions for delivery boy
@@ -133,20 +137,11 @@ exports.updateMyOrderStatus = async (req, res, next) => {
 
     const allowed = allowedTransitions[order.status] || [];
     if (!allowed.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot change status from '${order.status}' to '${status}'. Allowed transitions: '${order.status}' → ${allowed.length ? allowed.map(x => `'${x}'`).join(", ") : "'none'"}.`,
-      });
+      const err = new Error(`Cannot change status from '${order.status}' to '${status}'. Allowed transitions: '${order.status}' → ${allowed.length ? allowed.map(x => `'${x}'`).join(", ") : "'none'"}.`);
+      err.statusCode = 400;
+      throw err;
     }
 
-    // order.status = status;
-    // await order.save();
-
-    // res.status(200).json({
-    //   success: true,
-    //   message: `Order status updated to '${status}'.`,
-    //   order,
-    // });
     order.status = status;
     if (status === "delivered") {
       const { delivery_payment_method } = req.body;
@@ -181,10 +176,7 @@ exports.updateMyOrderStatus = async (req, res, next) => {
       try {
         await sendOutForDeliveryEmail(order);
       } catch (error) {
-        console.error(
-          "Out for delivery email failed:",
-          error.message
-        );
+        console.error("Out for delivery email failed:", error.message);
       }
     }
 
@@ -192,10 +184,7 @@ exports.updateMyOrderStatus = async (req, res, next) => {
       try {
         await sendOrderDeliveredEmail(order);
       } catch (error) {
-        console.error(
-          "Delivered email failed:",
-          error.message
-        );
+        console.error("Delivered email failed:", error.message);
       }
     }
 
@@ -205,7 +194,7 @@ exports.updateMyOrderStatus = async (req, res, next) => {
       order,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "DeliveryController.updateMyOrderStatus");
   }
 };
 
@@ -213,7 +202,7 @@ exports.updateMyOrderStatus = async (req, res, next) => {
  * GET /api/delivery/history
  * Fetch completed deliveries for the last 7 days
  */
-exports.getMyDeliveryHistory = async (req, res, next) => {
+exports.getMyDeliveryHistory = async (req, res) => {
   try {
     const driverId = req.user.id;
 
@@ -254,7 +243,7 @@ exports.getMyDeliveryHistory = async (req, res, next) => {
       orders,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "DeliveryController.getMyDeliveryHistory");
   }
 };
 
@@ -262,10 +251,16 @@ exports.getMyDeliveryHistory = async (req, res, next) => {
  * GET /api/delivery/orders/:id
  * Fetch details of a specific order assigned to the logged-in delivery boy
  */
-exports.getOrderDetails = async (req, res, next) => {
+exports.getOrderDetails = async (req, res) => {
   try {
     const driverId = req.user.id;
     const { id } = req.params;
+
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid order ID.");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const order = await Order.findOne({
       where: {
@@ -291,10 +286,9 @@ exports.getOrderDetails = async (req, res, next) => {
     });
 
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found or not assigned to you.",
-      });
+      const err = new Error("Order not found or not assigned to you.");
+      err.statusCode = 404;
+      throw err;
     }
 
     res.status(200).json({
@@ -302,7 +296,7 @@ exports.getOrderDetails = async (req, res, next) => {
       order,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "DeliveryController.getOrderDetails");
   }
 };
 
@@ -310,7 +304,7 @@ exports.getOrderDetails = async (req, res, next) => {
  * GET /api/delivery/my-returns
  * Fetch return requests assigned to the delivery boy
  */
-exports.getMyReturns = async (req, res, next) => {
+exports.getMyReturns = async (req, res) => {
   try {
     const driverId = req.user.id;
 
@@ -355,7 +349,7 @@ exports.getMyReturns = async (req, res, next) => {
       returns,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "DeliveryController.getMyReturns");
   }
 };
 
@@ -363,18 +357,23 @@ exports.getMyReturns = async (req, res, next) => {
  * PATCH /api/delivery/returns/:id/status
  * Driver updates return status to 'completed_replacement' or 'completed_refund'
  */
-exports.updateReturnStatus = async (req, res, next) => {
+exports.updateReturnStatus = async (req, res) => {
   try {
     const driverId = req.user.id;
     const { id } = req.params;
     const { status } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid return request ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     const allowedStatuses = ["completed_replacement", "completed_refund"];
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid status. Allowed values: completed_replacement, completed_refund",
-      });
+      const err = new Error("Invalid status. Allowed values: completed_replacement, completed_refund");
+      err.statusCode = 400;
+      throw err;
     }
 
     const returnRequest = await ReturnRequest.findByPk(id, {
@@ -383,17 +382,15 @@ exports.updateReturnStatus = async (req, res, next) => {
       ]
     });
     if (!returnRequest) {
-      return res.status(404).json({
-        success: false,
-        message: "Return request not found.",
-      });
+      const err = new Error("Return request not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     if (returnRequest.delivery_boy_id !== driverId) {
-      return res.status(403).json({
-        success: false,
-        message: "This task is not assigned to you.",
-      });
+      const err = new Error("This task is not assigned to you.");
+      err.statusCode = 403;
+      throw err;
     }
 
     returnRequest.status = status;
@@ -440,6 +437,6 @@ exports.updateReturnStatus = async (req, res, next) => {
       returnRequest,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "DeliveryController.updateReturnStatus");
   }
 };

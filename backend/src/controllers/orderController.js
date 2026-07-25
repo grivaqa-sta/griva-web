@@ -41,6 +41,7 @@ const User = require("../models/User");
 const Cart = require("../models/Cart");
 const CartItem = require("../models/CartItem");
 const SiteSetting = require("../models/SiteSetting");
+const handleApiError = require("../utils/errorHandler");
 // const {
 //   sendAdminOrderNotification,
 //   sendOrderShippedEmail,
@@ -494,7 +495,7 @@ exports.createOrder = async (req, res, next) => {
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
-    next(error);
+    return handleApiError(error, req, res, "OrderController");
   }
 };
 
@@ -764,7 +765,7 @@ exports.updateOrderStatus = async (req, res, next) => {
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
-    next(error);
+    return handleApiError(error, req, res, "OrderController");
   }
 };
 
@@ -1543,7 +1544,7 @@ exports.cancelMyOrder = async (req, res, next) => {
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
-    next(error);
+    return handleApiError(error, req, res, "OrderController");
   }
 };
 

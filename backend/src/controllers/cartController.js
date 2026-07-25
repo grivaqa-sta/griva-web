@@ -3,6 +3,7 @@ const CartItem = require("../models/CartItem");
 const Product = require("../models/Product");
 const SubCategory = require("../models/SubCategory");
 const Category = require("../models/Category");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Helper to fetch a unified, formatted cart object for the frontend client.
@@ -44,12 +45,10 @@ const getFormattedCart = async (userId) => {
     const p = item.product;
     const v = item.variant;
     
-    // Support Variant Price override
     const priceStr = v && v.price ? `QAR ${parseFloat(v.price).toFixed(2)}` : (p ? p.price : "QAR 0.00");
     const priceNumber = parseFloat(priceStr.replace(/([$]|qar|[\s,])/gi, "")) || 0;
     const oldPriceNumber = p && p.old_price ? parseFloat(String(p.old_price).replace(/([$]|qar|[\s,])/gi, "")) : priceNumber;
 
-    // Support Variant Image override
     const image = v && Array.isArray(v.images) && v.images.length > 0 ? v.images[0] : (p ? p.main_image_url : "");
 
     return {
@@ -95,11 +94,7 @@ exports.getCart = async (req, res) => {
       cart: formattedCart,
     });
   } catch (error) {
-    console.error("Error fetching cart:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CartController.getCart");
   }
 };
 
@@ -110,43 +105,41 @@ exports.getCart = async (req, res) => {
 exports.addItem = async (req, res) => {
   try {
     const { product_id, variant_id, selected_attributes, selected_color, selected_storage, quantity } = req.body;
-    const qty = parseInt(quantity) || 1;
+    const qty = parseInt(quantity, 10) || 1;
 
-    // MED-1: Limit per-item quantity to 10
-    if (!product_id || qty <= 0 || qty > 10) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid product_id or quantity (must be between 1 and 10).",
-      });
+    if (!product_id || isNaN(Number(product_id)) || qty <= 0 || qty > 10) {
+      const err = new Error("Invalid product_id or quantity (must be between 1 and 10).");
+      err.statusCode = 400;
+      throw err;
     }
 
     const product = await Product.findByPk(product_id);
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found.",
-      });
+      const err = new Error("Product not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
-    // HIGH-7: Check product activity
     if (!product.is_active) {
-      return res.status(400).json({
-        success: false,
-        message: "This product is currently inactive and cannot be added to cart.",
-      });
+      const err = new Error("This product is currently inactive and cannot be added to cart.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // Resolve variant stock and price override
     let availableStock = product.stock;
     let variantPrice = product.price;
     if (variant_id) {
+      if (isNaN(Number(variant_id))) {
+        const err = new Error("Invalid variant_id.");
+        err.statusCode = 400;
+        throw err;
+      }
       const ProductVariant = require("../models/ProductVariant");
       const variant = await ProductVariant.findByPk(variant_id);
       if (!variant) {
-        return res.status(404).json({
-          success: false,
-          message: "Product variant not found.",
-        });
+        const err = new Error("Product variant not found.");
+        err.statusCode = 404;
+        throw err;
       }
       availableStock = variant.stock;
       if (variant.price) {
@@ -159,7 +152,6 @@ exports.addItem = async (req, res) => {
       defaults: { user_id: req.user.id },
     });
 
-    // Check if item already exists with matching variants
     let item = await CartItem.findOne({
       where: {
         cart_id: cart.id,
@@ -172,20 +164,16 @@ exports.addItem = async (req, res) => {
 
     const newQty = item ? item.quantity + qty : qty;
 
-    // MED-1: Enforce maximum cap of 10
     if (newQty > 10) {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot add more items. A maximum of 10 units per product variant is allowed.",
-      });
+      const err = new Error("Cannot add more items. A maximum of 10 units per product variant is allowed.");
+      err.statusCode = 400;
+      throw err;
     }
 
-    // Validate inventory stock level
     if (newQty > availableStock) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot add more items. Only ${availableStock} left in stock.`,
-      });
+      const err = new Error(`Cannot add more items. Only ${availableStock} left in stock.`);
+      err.statusCode = 400;
+      throw err;
     }
 
     if (item) {
@@ -211,11 +199,7 @@ exports.addItem = async (req, res) => {
       cart: formattedCart,
     });
   } catch (error) {
-    console.error("Error adding to cart:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CartController.addItem");
   }
 };
 
@@ -227,14 +211,18 @@ exports.updateItemQty = async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity } = req.body;
-    const qty = parseInt(quantity);
+    const qty = parseInt(quantity, 10);
 
-    // MED-1: limit updated qty to 10
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid cart item ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     if (isNaN(qty) || qty <= 0 || qty > 10) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity must be a positive integer between 1 and 10.",
-      });
+      const err = new Error("Quantity must be a positive integer between 1 and 10.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const item = await CartItem.findOne({
@@ -257,18 +245,16 @@ exports.updateItemQty = async (req, res) => {
     });
 
     if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart item not found.",
-      });
+      const err = new Error("Cart item not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     const availableStock = item.variant ? item.variant.stock : item.product.stock;
     if (qty > availableStock) {
-      return res.status(400).json({
-        success: false,
-        message: `Requested quantity exceeds available stock. Only ${availableStock} available.`,
-      });
+      const err = new Error(`Requested quantity exceeds available stock. Only ${availableStock} available.`);
+      err.statusCode = 400;
+      throw err;
     }
 
     item.quantity = qty;
@@ -281,11 +267,7 @@ exports.updateItemQty = async (req, res) => {
       cart: formattedCart,
     });
   } catch (error) {
-    console.error("Error updating cart item quantity:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CartController.updateItemQty");
   }
 };
 
@@ -296,6 +278,11 @@ exports.updateItemQty = async (req, res) => {
 exports.removeItem = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid cart item ID.");
+      err.statusCode = 400;
+      throw err;
+    }
 
     const item = await CartItem.findOne({
       where: { id },
@@ -309,10 +296,9 @@ exports.removeItem = async (req, res) => {
     });
 
     if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart item not found.",
-      });
+      const err = new Error("Cart item not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     await item.destroy();
@@ -324,11 +310,7 @@ exports.removeItem = async (req, res) => {
       cart: formattedCart,
     });
   } catch (error) {
-    console.error("Error removing cart item:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CartController.removeItem");
   }
 };
 
@@ -353,11 +335,7 @@ exports.clearCart = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error clearing cart:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CartController.clearCart");
   }
 };
 
@@ -370,10 +348,9 @@ exports.mergeCart = async (req, res) => {
     const { items } = req.body;
 
     if (!Array.isArray(items)) {
-      return res.status(400).json({
-        success: false,
-        message: "Items array is required to merge.",
-      });
+      const err = new Error("Items array is required to merge.");
+      err.statusCode = 400;
+      throw err;
     }
 
     let [cart] = await Cart.findOrCreate({
@@ -382,9 +359,9 @@ exports.mergeCart = async (req, res) => {
     });
 
     for (const guestItem of items) {
-      const pId = parseInt(guestItem.productId);
-      const vId = guestItem.variantId ? parseInt(guestItem.variantId) : null;
-      const qty = parseInt(guestItem.quantity) || 1;
+      const pId = parseInt(guestItem.productId, 10);
+      const vId = guestItem.variantId ? parseInt(guestItem.variantId, 10) : null;
+      const qty = parseInt(guestItem.quantity, 10) || 1;
       const attrs = guestItem.selectedAttributes || {};
       const color = guestItem.selectedColor || attrs.Color || null;
       const storage = guestItem.selectedStorage || attrs.Storage || attrs.Size || null;
@@ -447,10 +424,6 @@ exports.mergeCart = async (req, res) => {
       cart: formattedCart,
     });
   } catch (error) {
-    console.error("Error merging cart:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CartController.mergeCart");
   }
 };

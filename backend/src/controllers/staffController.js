@@ -1,11 +1,12 @@
 const User = require("../models/User");
 const { Op } = require("sequelize");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Get all staff users
  * GET /api/admin/staff
  */
-exports.getStaff = async (req, res, next) => {
+exports.getStaff = async (req, res) => {
   try {
     const staffMembers = await User.findAll({
       where: {
@@ -20,7 +21,7 @@ exports.getStaff = async (req, res, next) => {
       staff: staffMembers,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "StaffController.getStaff");
   }
 };
 
@@ -28,15 +29,26 @@ exports.getStaff = async (req, res, next) => {
  * Create a new staff user
  * POST /api/admin/staff
  */
-exports.createStaff = async (req, res, next) => {
+exports.createStaff = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email, and password are required.",
-      });
+    if (!name || typeof name !== "string" || !name.trim()) {
+      const err = new Error("Name is required.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!email || typeof email !== "string" || !email.trim()) {
+      const err = new Error("Email is required.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!password || typeof password !== "string" || password.length < 6) {
+      const err = new Error("Password is required and must be at least 6 characters.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const existingUser = await User.findOne({
@@ -46,21 +58,19 @@ exports.createStaff = async (req, res, next) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is already registered.",
-      });
+      const err = new Error("Email is already registered.");
+      err.statusCode = 409;
+      throw err;
     }
 
     const newStaff = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
       password,
       role: "staff",
       status: "ACTIVE",
     });
 
-    // Remove password from response
     const staffData = newStaff.toJSON();
     delete staffData.password;
 
@@ -70,7 +80,7 @@ exports.createStaff = async (req, res, next) => {
       staff: staffData,
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "StaffController.createStaff");
   }
 };
 
@@ -78,16 +88,21 @@ exports.createStaff = async (req, res, next) => {
  * Update staff details
  * PUT /api/admin/staff/:id
  */
-exports.updateStaff = async (req, res, next) => {
+exports.updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid staff ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     if (!name || !email) {
-      return res.status(400).json({
-        success: false,
-        message: "Name and email are required.",
-      });
+      const err = new Error("Name and email are required.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const staff = await User.findOne({
@@ -98,13 +113,11 @@ exports.updateStaff = async (req, res, next) => {
     });
 
     if (!staff) {
-      return res.status(404).json({
-        success: false,
-        message: "Staff member not found.",
-      });
+      const err = new Error("Staff member not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
-    // Check if email is already taken by another user
     const existingUser = await User.findOne({
       where: {
         email: email.toLowerCase().trim(),
@@ -113,14 +126,13 @@ exports.updateStaff = async (req, res, next) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is already in use by another user.",
-      });
+      const err = new Error("Email is already in use by another user.");
+      err.statusCode = 409;
+      throw err;
     }
 
-    staff.name = name;
-    staff.email = email;
+    staff.name = name.trim();
+    staff.email = email.toLowerCase().trim();
     await staff.save();
 
     res.status(200).json({
@@ -135,7 +147,7 @@ exports.updateStaff = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "StaffController.updateStaff");
   }
 };
 
@@ -143,16 +155,21 @@ exports.updateStaff = async (req, res, next) => {
  * Update staff active/blocked status
  * PATCH /api/admin/staff/:id/status
  */
-exports.updateStaffStatus = async (req, res, next) => {
+exports.updateStaffStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid staff ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     if (!status || !["ACTIVE", "BLOCKED"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Status must be 'ACTIVE' or 'BLOCKED'.",
-      });
+      const err = new Error("Status must be 'ACTIVE' or 'BLOCKED'.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const staff = await User.findOne({
@@ -163,10 +180,9 @@ exports.updateStaffStatus = async (req, res, next) => {
     });
 
     if (!staff) {
-      return res.status(404).json({
-        success: false,
-        message: "Staff member not found.",
-      });
+      const err = new Error("Staff member not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     staff.status = status;
@@ -184,7 +200,7 @@ exports.updateStaffStatus = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "StaffController.updateStaffStatus");
   }
 };
 
@@ -192,16 +208,21 @@ exports.updateStaffStatus = async (req, res, next) => {
  * Reset staff password
  * PATCH /api/admin/staff/:id/reset-password
  */
-exports.resetStaffPassword = async (req, res, next) => {
+exports.resetStaffPassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { password } = req.body;
 
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid staff ID.");
+      err.statusCode = 400;
+      throw err;
+    }
+
     if (!password || password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password is required and must be at least 6 characters long.",
-      });
+      const err = new Error("Password is required and must be at least 6 characters long.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const staff = await User.findOne({
@@ -212,13 +233,12 @@ exports.resetStaffPassword = async (req, res, next) => {
     });
 
     if (!staff) {
-      return res.status(404).json({
-        success: false,
-        message: "Staff member not found.",
-      });
+      const err = new Error("Staff member not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
-    staff.password = password; // Will be hashed automatically by user model hooks
+    staff.password = password;
     await staff.save();
 
     res.status(200).json({
@@ -226,6 +246,6 @@ exports.resetStaffPassword = async (req, res, next) => {
       message: "Staff password reset successfully.",
     });
   } catch (error) {
-    next(error);
+    return handleApiError(error, req, res, "StaffController.resetStaffPassword");
   }
 };

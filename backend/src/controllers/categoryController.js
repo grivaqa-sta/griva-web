@@ -1,24 +1,24 @@
 const Category = require("../models/Category");
 const SubCategory = require("../models/SubCategory");
 const cache = require("../utils/cache");
+const handleApiError = require("../utils/errorHandler");
 
 //Create Category
 exports.createCategory = async (req, res) => {
   try {
     const { title, slug, href, image_url, mobile_image_url, is_active } = req.body;
 
-    if (!title || !title.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Title is required",
-      });
+    if (!title || typeof title !== "string" || !title.trim()) {
+      const err = new Error("Title is required");
+      err.statusCode = 400;
+      throw err;
     }
 
-    const generatedSlug = (slug && slug.trim())
+    const generatedSlug = (slug && typeof slug === "string" && slug.trim())
       ? slug.trim()
       : title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
-    const generatedHref = (href && href.trim())
+    const generatedHref = (href && typeof href === "string" && href.trim())
       ? href.trim()
       : `/category/${generatedSlug}`;
 
@@ -38,18 +38,11 @@ exports.createCategory = async (req, res) => {
       data: category,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message || "Failed to create category",
-      errors: error.errors?.map((err) => ({
-        field: err.path,
-        message: err.message,
-      })),
-    });
+    return handleApiError(error, req, res, "CategoryController.createCategory");
   }
 };
 
-//Get All Categories with out subcategories
+//Get All Categories without subcategories
 exports.getAllCategories = async (req, res) => {
   try {
     const categories = await Category.findAll({
@@ -61,10 +54,7 @@ exports.getAllCategories = async (req, res) => {
       data: categories,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CategoryController.getAllCategories");
   }
 };
 
@@ -94,23 +84,26 @@ exports.getAllActiveCategories = async (req, res) => {
       data: categories,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CategoryController.getAllActiveCategories");
   }
 };
 
 //Get Single Category
 exports.getCategoryById = async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid category ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const category = await Category.findByPk(id);
 
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: "Category not found",
-      });
+      const err = new Error("Category not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     res.status(200).json({
@@ -118,27 +111,26 @@ exports.getCategoryById = async (req, res) => {
       data: category,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-      errors: error.errors?.map((err) => ({
-        field: err.path,
-        message: err.message,
-      })),
-    });
+    return handleApiError(error, req, res, "CategoryController.getCategoryById");
   }
 };
 
 //Update Category
 exports.updateCategory = async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid category ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const category = await Category.findByPk(id);
 
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: "Category not found",
-      });
+      const err = new Error("Category not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await category.update(req.body);
@@ -150,27 +142,26 @@ exports.updateCategory = async (req, res) => {
       data: category,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-      errors: error.errors?.map((err) => ({
-        field: err.path,
-        message: err.message,
-      })),
-    });
+    return handleApiError(error, req, res, "CategoryController.updateCategory");
   }
 };
 
 //Delete Category
 exports.deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid category ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const category = await Category.findByPk(id);
 
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: "Category not found",
-      });
+      const err = new Error("Category not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await category.destroy();
@@ -181,14 +172,7 @@ exports.deleteCategory = async (req, res) => {
       message: "Category deleted successfully",
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-      errors: error.errors?.map((err) => ({
-        field: err.path,
-        message: err.message,
-      })),
-    });
+    return handleApiError(error, req, res, "CategoryController.deleteCategory");
   }
 };
 
@@ -222,9 +206,6 @@ exports.getAllCategoriesWithSubcategories = async (req, res) => {
       data: categories,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleApiError(error, req, res, "CategoryController.getAllCategoriesWithSubcategories");
   }
 };

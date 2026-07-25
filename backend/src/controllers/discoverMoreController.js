@@ -1,5 +1,6 @@
 const DiscoverMore = require("../models/DiscoverMore");
 const Category = require("../models/Category");
+const handleApiError = require("../utils/errorHandler");
 
 /**
  * Create Discover More Banner
@@ -15,22 +16,34 @@ exports.createDiscoverMore = async (req, res) => {
       is_active,
     } = req.body;
 
-    const category = await Category.findByPk(categoryId);
+    if (!title || typeof title !== "string" || !title.trim()) {
+      const err = new Error("Title is required");
+      err.statusCode = 400;
+      throw err;
+    }
 
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: "Category not found",
-      });
+    if (categoryId) {
+      if (isNaN(Number(categoryId))) {
+        const err = new Error("Invalid category ID");
+        err.statusCode = 400;
+        throw err;
+      }
+      const category = await Category.findByPk(categoryId);
+
+      if (!category) {
+        const err = new Error("Category not found");
+        err.statusCode = 404;
+        throw err;
+      }
     }
 
     const banner = await DiscoverMore.create({
-      categoryId,
+      categoryId: categoryId ? Number(categoryId) : null,
       subtitle,
-      title,
+      title: title.trim(),
       image_url,
       href,
-      is_active,
+      is_active: is_active !== undefined ? Boolean(is_active) : true,
     });
 
     res.status(201).json({
@@ -39,13 +52,7 @@ exports.createDiscoverMore = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Create Discover More Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to create banner",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DiscoverMoreController.createDiscoverMore");
   }
 };
 
@@ -70,13 +77,7 @@ exports.getAllDiscoverMore = async (req, res) => {
       data: banners,
     });
   } catch (error) {
-    console.error("Get Discover More Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch banners",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DiscoverMoreController.getAllDiscoverMore");
   }
 };
 
@@ -104,13 +105,7 @@ exports.getActiveDiscoverMore = async (req, res) => {
       data: banners,
     });
   } catch (error) {
-    console.error("Get Active Discover More Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch active banners",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DiscoverMoreController.getActiveDiscoverMore");
   }
 };
 
@@ -119,7 +114,14 @@ exports.getActiveDiscoverMore = async (req, res) => {
  */
 exports.getDiscoverMoreById = async (req, res) => {
   try {
-    const banner = await DiscoverMore.findByPk(req.params.id, {
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await DiscoverMore.findByPk(id, {
       include: [
         {
           model: Category,
@@ -129,10 +131,9 @@ exports.getDiscoverMoreById = async (req, res) => {
     });
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     res.status(200).json({
@@ -140,13 +141,7 @@ exports.getDiscoverMoreById = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Get Banner Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch banner",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DiscoverMoreController.getDiscoverMoreById");
   }
 };
 
@@ -155,13 +150,19 @@ exports.getDiscoverMoreById = async (req, res) => {
  */
 exports.updateDiscoverMore = async (req, res) => {
   try {
-    const banner = await DiscoverMore.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await DiscoverMore.findByPk(id);
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await banner.update(req.body);
@@ -172,13 +173,7 @@ exports.updateDiscoverMore = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Update Discover More Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to update banner",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DiscoverMoreController.updateDiscoverMore");
   }
 };
 
@@ -187,13 +182,19 @@ exports.updateDiscoverMore = async (req, res) => {
  */
 exports.updateDiscoverMoreStatus = async (req, res) => {
   try {
-    const banner = await DiscoverMore.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await DiscoverMore.findByPk(id);
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await banner.update({
@@ -208,13 +209,7 @@ exports.updateDiscoverMoreStatus = async (req, res) => {
       data: banner,
     });
   } catch (error) {
-    console.error("Status Update Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to update status",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DiscoverMoreController.updateDiscoverMoreStatus");
   }
 };
 
@@ -223,13 +218,19 @@ exports.updateDiscoverMoreStatus = async (req, res) => {
  */
 exports.deleteDiscoverMore = async (req, res) => {
   try {
-    const banner = await DiscoverMore.findByPk(req.params.id);
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) {
+      const err = new Error("Invalid banner ID");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const banner = await DiscoverMore.findByPk(id);
 
     if (!banner) {
-      return res.status(404).json({
-        success: false,
-        message: "Banner not found",
-      });
+      const err = new Error("Banner not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     await banner.destroy();
@@ -239,12 +240,6 @@ exports.deleteDiscoverMore = async (req, res) => {
       message: "Banner deleted successfully",
     });
   } catch (error) {
-    console.error("Delete Discover More Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete banner",
-      error: error.message,
-    });
+    return handleApiError(error, req, res, "DiscoverMoreController.deleteDiscoverMore");
   }
 };

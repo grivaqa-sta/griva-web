@@ -958,18 +958,23 @@ export default function GrivaAIChatbot() {
             />
           </div>
         </motion.button>
+      </div>
 
-        {/* Chat Window Dialog (Compact, Responsive and mobile optimized) */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 350, damping: 25 }}
-              className="absolute right-full bottom-0 mr-3 w-[92vw] sm:w-[340px] bg-white rounded-[24px] shadow-2xl border border-gray-100 z-[99999] flex flex-col overflow-hidden" style={{ height: "min(450px, calc(100vh - 120px))" }}
-            >
-            {/* Header */}
+      {/* Chat Window Dialog - rendered outside button wrapper to avoid stacking context issues */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className={`fixed z-[99999] bg-white rounded-[24px] shadow-2xl border border-gray-100 flex flex-col overflow-hidden
+              bottom-[80px] left-2 right-2
+              sm:left-auto sm:right-[92px] sm:w-[340px]
+              ${scrolled ? "sm:bottom-24" : "sm:bottom-6"}
+            `}
+            style={{ height: "min(450px, calc(100svh - 160px))" }}
+          >
             <div className="bg-[#F54900] px-4 py-3.5 text-white flex items-center justify-between relative shadow-md select-none touch-none">
               {/* Decorative top glowing bar */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-300 via-orange-100 to-orange-400 opacity-40" />
@@ -1191,9 +1196,8 @@ export default function GrivaAIChatbot() {
               </button>
             </form>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+        )}
+      </AnimatePresence>
 
       {/* CSS style to completely hide scrollbars while preserving scrolling functionality */}
       <style>{`

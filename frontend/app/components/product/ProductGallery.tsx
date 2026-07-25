@@ -11,36 +11,34 @@ interface ProductGalleryProps {
 
 export default function ProductGallery({ images, title }: ProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [zoom, setZoom] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   const activeImage = images[activeIndex] || images[0];
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
+    const x = Math.min(100, Math.max(0, ((e.clientX - left) / width) * 100));
+    const y = Math.min(100, Math.max(0, ((e.clientY - top) / height) * 100));
     setMousePos({ x, y });
   };
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Main Image View */}
+      {/* Main Image */}
       <div
-        className="relative aspect-square w-full max-w-[360px] mx-auto overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 cursor-zoom-in touch-pan-y"
-        onMouseEnter={() => !isMobile && setZoom(true)}
-        onMouseLeave={() => setZoom(false)}
-        onMouseMove={(e) => !isMobile && handleMouseMove(e)}
+        className="relative aspect-square w-full max-w-[360px] mx-auto overflow-hidden rounded-2xl bg-white p-4 cursor-zoom-in"
+        onMouseEnter={() => !isMobile && setIsHovering(true)}
+        onMouseLeave={() => { setIsHovering(false); setMousePos({ x: 50, y: 50 }); }}
+        onMouseMove={handleMouseMove}
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -48,37 +46,35 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
             drag={images.length > 1 ? "x" : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.5}
-            onDragEnd={(e, info) => {
-              const swipe = info.offset.x;
-              const swipeThreshold = 50;
-              if (swipe < -swipeThreshold) {
-                // Swipe Left -> next image
-                setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : prev));
-              } else if (swipe > swipeThreshold) {
-                // Swipe Right -> previous image
-                setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
-              }
+            onDragEnd={(_, info) => {
+              if (info.offset.x < -50) setActiveIndex((p) => (p < images.length - 1 ? p + 1 : p));
+              else if (info.offset.x > 50) setActiveIndex((p) => (p > 0 ? p - 1 : p));
             }}
             initial={{ opacity: 0, x: isMobile ? 20 : 0 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: isMobile ? -20 : 0 }}
             transition={{ duration: 0.2 }}
             className="relative h-full w-full select-none"
-            style={{
-              transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
-              transform: zoom ? "scale(1.8)" : "scale(1)",
-              transition: zoom ? "none" : "transform 0.2s ease-out",
-              touchAction: "pan-y",
-            }}
+            style={{ touchAction: "pan-y" }}
           >
-            <Image
-              src={activeImage}
-              alt={title}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-contain p-4 select-none pointer-events-none"
-              priority
-            />
+            {/* Zoom wrapper — separate from motion.div so drag doesn't override transform */}
+            <div
+              className="relative h-full w-full"
+              style={{
+                transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
+                transform: isHovering ? "scale(2)" : "scale(1)",
+                transition: isHovering ? "transform 0.1s ease-out" : "transform 0.3s ease-out",
+              }}
+            >
+              <Image
+                src={activeImage}
+                alt={title}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-contain p-4 select-none pointer-events-none"
+                priority
+              />
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>

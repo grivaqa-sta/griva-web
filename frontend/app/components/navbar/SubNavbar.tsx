@@ -1,25 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
-import { Category, SubCategory } from "@/app/types/types";
 import { useCategoriesWithSubcategories } from "@/app/hooks/useCategories";
 import { useAdminSettings } from "@/app/context/AdminContext";
-
-interface CategoryWithSubcategories extends Category {
-  subcategories: SubCategory[];
-}
+import { SubCategory } from "@/app/types/types";
 
 export default function SubNavbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ left: number; right: number; top: number; alignRight: boolean } | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { categories: rawCategories } = useCategoriesWithSubcategories();
-  const navLinks = rawCategories.filter((cat) => cat.is_active);
   const [comingSoonVisible, setComingSoonVisible] = useState(true);
   const [visible, setVisible] = useState(true);
   const { announcementBarEnabled } = useAdminSettings();
+
+  // Memoize active categories to avoid filtering rawCategories on every scroll render
+  const navLinks = useMemo(() => {
+    return rawCategories.filter((cat) => cat.is_active);
+  }, [rawCategories]);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -50,6 +52,7 @@ export default function SubNavbar() {
       }
 
       lastScrollY = currentScrollY;
+      setActiveDropdown(null);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -74,129 +77,145 @@ export default function SubNavbar() {
     };
   }, []);
 
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>, dropdownKey: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isRight = rect.left > window.innerWidth / 2;
+    setDropdownPos({
+      left: rect.left,
+      right: window.innerWidth - rect.right,
+      top: rect.bottom,
+      alignRight: isRight,
+    });
+    setActiveDropdown(dropdownKey);
+  };
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const amount = direction === "left" ? -220 : 220;
+      scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (scrollRef.current && e.deltaY !== 0) {
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
   if (!comingSoonVisible) return null;
+
+  const activeCategoryObj = navLinks.find(
+    (l) => (l.slug || String(l.id)) === activeDropdown
+  );
+  const rawSubs: SubCategory[] = activeCategoryObj?.subcategories ?? [];
+  const activeSubcategories = rawSubs.filter(
+    (sub: SubCategory) => sub && sub.is_active !== false
+  );
+  const isWide = activeSubcategories.length > 8;
+  const hasSubcats = activeSubcategories.length > 0;
 
   return (
     <>
-      {/* Inject keyframe animation + Apple font */}
-      <style>{`
-        /*
-          Rows sit flush against each other (no gap, no per-row border).
-          Rounding only applies to the outer 4 corners of the whole
-          stack, via overflow-hidden + rounded-lg on the parent. Each
-          row still fades/slides in on its own timer, one after another.
-        */
-        @keyframes subnavRowIn {
-          0% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .subnav-dropdown-row {
-          opacity: 0;
-          animation: subnavRowIn 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .subnav-link {
-          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
-        }
-
-        .subnav-dropdown-panel {
-          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
-        }
-      `}</style>
-
       <div
-        className="hidden lg:block fixed left-0 right-0 z-30 border-y border-gray-200 bg-white px-4 sm:px-6 lg:px-8 xl:px-10 transition-all duration-300 ease-in-out"
+        className="hidden lg:block fixed left-0 right-0 z-30 border-y border-gray-200 bg-white sm:px-6 lg:px-8 xl:px-10 transition-all duration-300 ease-in-out"
         style={{
           top: announcementBarEnabled ? "120px" : "80px",
           transform: visible ? "translateY(0)" : "translateY(-60px)",
           opacity: visible ? 1 : 0,
-          pointerEvents: visible ? "auto" : "none"
+          pointerEvents: visible ? "auto" : "none",
         }}
       >
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 items-center">
 
-          <nav className="flex items-center gap-1">
-            {navLinks.map((link) => {
-              const isActive = pathname.startsWith(link.href);
-              const activeSubcategories = link.subcategories?.filter(
-                (sub) => sub.is_active
-              ) ?? [];
+            {/* Scrollable Nav Track */}
+            <div
+              ref={scrollRef}
+              onWheel={handleWheel}
+              className="w-full overflow-x-auto no-scrollbar scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            >
+              <nav className="flex items-center justify-between min-w-full gap-4 lg:gap-6 xl:gap-8 h-14">
+                {navLinks.map((link) => {
+                  const isActive = pathname.startsWith(link.href);
+                  const subs: SubCategory[] = link.subcategories ?? [];
+                  const activeSubs = subs.filter(
+                    (sub: SubCategory) => sub && sub.is_active !== false
+                  );
+                  const linkHasSubs = activeSubs.length > 0;
+                  const dropdownKey = link.slug || String(link.id);
 
-              // If more than 8 items → use 2-column grid layout
-              const isWide = activeSubcategories.length > 8;
-
-              return (
-                <div
-                  key={link.id}
-                  className="relative flex h-14 items-center"
-                  onMouseEnter={() => setActiveDropdown(link.slug)}
-                  onMouseLeave={() => setActiveDropdown(null)}
-                >
-                  {/* Nav trigger link */}
-                  <Link
-                    href={link.href}
-                    className={`subnav-link relative flex items-center gap-1 px-3 text-[13px] font-semibold uppercase tracking-wider transition-colors duration-200 whitespace-nowrap
-                      ${isActive ? "text-orange-500" : "text-black hover:text-orange-500"}`}
-                  >
-                    {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-orange-500" />
-                    )}
-                    {link.title}
-                    {activeSubcategories.length > 0 && (
-                      <ChevronDown
-                        size={12}
-                        className={`transition-transform duration-200 ${
-                          activeDropdown === link.slug ? "rotate-180 text-orange-400" : "text-gray-400"
+                  return (
+                    <div
+                      key={link.id}
+                      className="relative flex h-14 items-center shrink-0"
+                      onMouseEnter={(e) => handleMouseEnter(e, dropdownKey)}
+                      onMouseLeave={() => setActiveDropdown(null)}
+                    >
+                      {/* Nav trigger link */}
+                      <Link
+                        href={link.href}
+                        className={`subnav-link relative flex items-center gap-1.5 px-0 text-[12px] xl:text-[13px] font-semibold uppercase tracking-wider transition-colors duration-200 whitespace-nowrap ${
+                          isActive ? "text-orange-500" : "text-black hover:text-orange-500"
                         }`}
-                      />
-                    )}
-                  </Link>
-
-                  {/* Dropdown panel */}
-                  {activeDropdown === link.slug && activeSubcategories.length > 0 && (
-                    <div className="absolute left-0 top-full z-50 pt-1">
-                      {/*
-                        No shared panel background. Rows sit flush
-                        against each other (no gap) so they read as one
-                        continuous block once they've all appeared, but
-                        each row still animates in on its own, one by
-                        one. Rounding is only applied to the outer 4
-                        corners of the whole stack (top corners on the
-                        first row, bottom corners on the last row).
-                      */}
-                      <div
-                        className={`flex flex-col shadow-md overflow-hidden rounded-lg ${isWide ? "w-[380px] flex-row flex-wrap" : "w-[200px]"}`}
                       >
-                        {/* Each item animates in on its own, but sits flush against its neighbors */}
-                        {activeSubcategories.map((item, idx) => (
-                          <Link
-                            key={item.id}
-                            href={item.href}
-                            className={`subnav-dropdown-row flex items-center gap-2 bg-white px-4 py-[9px] text-[13px] font-semibold uppercase text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors
-                              ${isWide ? "w-1/2" : "w-full"}`}
-                            style={{ animationDelay: `${idx * 100}ms` }}
-                          >
-                            <span className="h-[5px] w-[5px] rounded-full bg-orange-300 shrink-0" />
-                            {item.title}
-                          </Link>
-                        ))}
-                      </div>
+                        {isActive && (
+                          <span className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full bg-orange-500" />
+                        )}
+                        {link.title}
+                        {linkHasSubs && (
+                          <ChevronDown
+                            size={12}
+                            className={`transition-transform duration-200 ${
+                              activeDropdown === dropdownKey ? "rotate-180 text-orange-400" : "text-gray-400"
+                            }`}
+                          />
+                        )}
+                      </Link>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
+                  );
+                })}
+              </nav>
+            </div>
 
+          </div>
         </div>
       </div>
+
+      {/* Floating Unclipped Dropdown Panel */}
+      {activeDropdown && hasSubcats && dropdownPos && (
+        <div
+          className="fixed z-50 pt-1 transition-opacity duration-150"
+          style={{
+            top: `${dropdownPos.top}px`,
+            ...(dropdownPos.alignRight
+              ? { right: `${dropdownPos.right}px` }
+              : { left: `${dropdownPos.left}px` }),
+          }}
+          onMouseEnter={() => setActiveDropdown(activeDropdown)}
+          onMouseLeave={() => setActiveDropdown(null)}
+        >
+          <div
+            className={`flex flex-col shadow-lg border border-gray-100 bg-white overflow-hidden rounded-lg ${
+              isWide ? "w-[380px] flex-row flex-wrap" : "w-[200px]"
+            }`}
+          >
+            {activeSubcategories.map((item: SubCategory, idx: number) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`subnav-dropdown-row flex items-center gap-2 bg-white px-4 py-[9px] text-[13px] font-semibold uppercase text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors ${
+                  isWide ? "w-1/2" : "w-full"
+                }`}
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <span className="h-[5px] w-[5px] rounded-full bg-orange-300 shrink-0" />
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Desktop placeholder to preserve layout space (since SubNavbar is fixed) */}
       <div className="hidden lg:block h-14" aria-hidden="true" />
     </>

@@ -50,7 +50,7 @@ export default function CartPage() {
 
   const { settings } = useSettings();
   const shippingFee = settings.shippingFee ?? 10;
-  const freeShippingThreshold = settings.freeShippingThreshold ?? 99;
+  const freeShippingThreshold = Number(settings.freeShippingThreshold) || 99;
 
   const [stockStatus, setStockStatus] = useState<Record<number, { available: number; ok: boolean; active: boolean; title: string }>>({});
   const [checkingStock, setCheckingStock] = useState(false);
@@ -122,22 +122,22 @@ export default function CartPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-gray-900">
-                      {state.totalPrice >= shippingConfig.freeShippingThreshold ? (
+                      {state.totalPrice >= freeShippingThreshold ? (
                         <span className="text-green-600 font-extrabold">You qualify for Free Delivery!</span>
                       ) : (
-                        <span>Free Shipping Above QAR {shippingConfig.freeShippingThreshold.toFixed(0)}</span>
+                        <span>Free Shipping Above QAR {freeShippingThreshold.toFixed(0)}</span>
                       )}
                     </h4>
                     <p className="text-[11px] text-gray-500 mt-0.5">
-                      {state.totalPrice >= shippingConfig.freeShippingThreshold ? (
+                      {state.totalPrice >= freeShippingThreshold ? (
                         "Your order will be shipped free of charge within Qatar."
                       ) : (
-                        <>Add <span className="font-bold text-orange-500">QAR {(shippingConfig.freeShippingThreshold - state.totalPrice).toFixed(2)}</span> more to get Free Delivery</>
+                        <>Add <span className="font-bold text-orange-500">QAR {(freeShippingThreshold - state.totalPrice).toFixed(2)}</span> more to get Free Delivery</>
                       )}
                     </p>
                   </div>
                 </div>
-                {state.totalPrice < shippingConfig.freeShippingThreshold && (
+                {state.totalPrice < freeShippingThreshold && (
                   <Link
                     href="/shop"
                     className="text-xs font-bold text-orange-500 hover:text-orange-600 transition shrink-0 self-start sm:self-center"
@@ -152,7 +152,7 @@ export default function CartPage() {
                 <div
                   className="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-500 ease-out rounded-full"
                   style={{
-                    width: `${Math.min((state.totalPrice / shippingConfig.freeShippingThreshold) * 100, 100)}%`,
+                    width: `${Math.min((state.totalPrice / freeShippingThreshold) * 100, 100)}%`,
                   }}
                 />
               </div>

@@ -157,6 +157,7 @@ export interface ProductRequest {
   description?: string;
   price: number;
   old_price?: number;
+  cost_price?: number;
   discount_percentage?: number;
   stock?: number;
   sku?: string;
@@ -188,6 +189,7 @@ export interface ApiProduct {
   description?: string;
   price: string;               // DECIMAL returned as string from DB e.g. "49.99"
   old_price?: string;          // Optional, e.g. "69.99"
+  cost_price?: string;          // Internal cost price, hidden from customers
   discount_percentage?: number;
   stock: number;
   sku?: string;

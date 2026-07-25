@@ -53,6 +53,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
     description: "",
     price: 0,
     old_price: 0,
+    cost_price: 0,
     discount_percentage: 0,
     stock: 0,
     sku: "",
@@ -198,6 +199,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
         description: productToEdit.description || "",
         price: productToEdit.price || 0,
         old_price: productToEdit.old_price || 0,
+        cost_price: productToEdit.cost_price || 0,
         discount_percentage: productToEdit.discount_percentage || 0,
         stock: productToEdit.stock || 0,
         sku: productToEdit.sku || "",
@@ -1058,7 +1060,31 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, productToE
                     }`}
                   />
                 </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                    Cost Price <span className="text-[9px] text-gray-400 font-normal">(Internal Only)</span>
+                  </label>
+                  <input
+                    type="number" step="0.01"
+                    placeholder="Purchase cost"
+                    value={formData.cost_price || ""}
+                    onChange={(e) => handleChange("cost_price", parseFloat(e.target.value) || 0)}
+                    className="w-full border border-dashed border-orange-300 rounded-xl px-4 py-2.5 text-sm focus:border-orange-500 outline-none bg-orange-50/30"
+                  />
+                </div>
               </div>
+              {/* Internal Profit Preview */}
+              {formData.cost_price && Number(formData.cost_price) > 0 && Number(formData.price) > 0 && (
+                <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl flex items-center gap-4 text-xs">
+                  <span className="font-bold text-green-700">📊 Profit Preview:</span>
+                  <span className="text-gray-600">Selling: <strong className="text-gray-800">QAR {Number(formData.price).toFixed(2)}</strong></span>
+                  <span className="text-gray-600">Cost: <strong className="text-gray-800">QAR {Number(formData.cost_price).toFixed(2)}</strong></span>
+                  <span className="text-green-700 font-bold">
+                    Profit: QAR {(Number(formData.price) - Number(formData.cost_price)).toFixed(2)}
+                    {" "}({(((Number(formData.price) - Number(formData.cost_price)) / Number(formData.price)) * 100).toFixed(1)}%)
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Descriptions */}

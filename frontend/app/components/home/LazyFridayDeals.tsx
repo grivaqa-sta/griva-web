@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { getSettingsApi } from "@/app/utils/api";
+import { useSettings } from "@/app/context/SettingsContext";
 import { useCategories, useSubCategories } from "@/app/hooks/useCategories";
 import { Clock } from "lucide-react";
 import { useAllProducts } from "@/app/hooks/useProducts";
@@ -85,10 +85,15 @@ function SmallLightning() {
 
 export default function LazyFridayDeals() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [fridaySaleEnabled, setFridaySaleEnabled] = useState<boolean | null>(null);
-  const [fridaySaleConfig, setFridaySaleConfig] = useState<any[] | null>(null);
   const [isFriday, setIsFriday] = useState(false);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+
+
+  // Read fridaySaleEnabled and fridaySaleConfig from the global SettingsProvider.
+  // The previous fetchSettings() useEffect is removed — settings are loaded once at app startup.
+  const { settings } = useSettings();
+  const fridaySaleEnabled = settings.fridaySaleEnabled;
+  const fridaySaleConfig = settings.fridaySaleConfig ?? null;
 
   const { categories: apiCategories } = useCategories();
   const { subCategories: apiSubCategories } = useSubCategories();
@@ -106,19 +111,7 @@ export default function LazyFridayDeals() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const settings = await getSettingsApi();
-        setFridaySaleEnabled(settings.fridaySaleEnabled);
-        setFridaySaleConfig(settings.fridaySaleConfig || null);
-      } catch (err) {
-        console.error("Failed to load settings for Friday Deals:", err);
-        setFridaySaleEnabled(false);
-      }
-    };
-    fetchSettings();
-  }, []);
+
 
   useEffect(() => {
     const calculateTimeLeft = () => {

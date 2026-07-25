@@ -121,7 +121,7 @@ function ToastItem({
         <span className="block text-[10px] font-bold tracking-[0.12em] text-gray-400 uppercase mb-0.5">
           {config.label}
         </span>
-        <p className="text-[13px] font-medium text-gray-100 leading-normal">
+        <p className="text-[13px] font-medium text-gray-100 leading-normal whitespace-pre-line">
           {toast.message}
         </p>
         {toast.type === "cart" && (

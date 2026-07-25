@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Wallet, Star, Truck } from "lucide-react";
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import { useBannerProducts, useGlobalSettings } from "@/app/hooks/useHomeData";
+import { useBannerProducts } from "@/app/hooks/useHomeData";
+import { useSettings } from "@/app/context/SettingsContext";
 import { BannerProduct, HeroSlide } from "@/app/types/types";
 
 function getCleanBadge(p: BannerProduct): string {
@@ -96,7 +97,7 @@ export default function DesktopHeroBanner({ bannerProducts: propProducts, loadin
     const hookResult = useBannerProducts();
     const loading = propLoading !== undefined ? propLoading : hookResult.loading;
     const bannerProducts = propProducts !== undefined ? propProducts : hookResult.bannerProducts;
-    const { settings } = useGlobalSettings();
+    const { settings } = useSettings();
     const slides: HeroSlide[] = bannerProducts.map(mapProductToSlide);
     const [current, setCurrent] = useState(0);
     const freeShippingThreshold = settings?.freeShippingThreshold ?? 99;

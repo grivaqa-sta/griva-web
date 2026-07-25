@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { getSettingsApi } from "@/app/utils/api";
+import { useSettings } from "@/app/context/SettingsContext";
 
 interface MidnightSaleContextValue {
   isActive: boolean;             // true = admin ON + within Friday 8PM–Sat 2AM window
@@ -96,7 +96,11 @@ function formatCountdown(ms: number): string {
 }
 
 export function MidnightSaleProvider({ children }: { children: ReactNode }) {
-  const [adminEnabled, setAdminEnabled] = useState(false);
+  // Read midnightSaleEnabled from the global SettingsProvider (loaded ONCE on app startup).
+  // This replaces the previous 60-second polling loop that was keeping Neon DB awake 24/7.
+  const { settings } = useSettings();
+  const adminEnabled = !!settings.midnightSaleEnabled;
+
   const [withinWindow, setWithinWindow] = useState(false);
   const [countdown, setCountdown] = useState("00:00:00");
   const [countingToEnd, setCountingToEnd] = useState(false);
@@ -119,21 +123,6 @@ export function MidnightSaleProvider({ children }: { children: ReactNode }) {
       setCountdown(formatCountdown(remaining));
       setCountingToEnd(false);
     }
-  }, []);
-
-  // Poll settings every 60 seconds
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const settings = await getSettingsApi();
-        setAdminEnabled(!!settings.midnightSaleEnabled);
-      } catch {
-        setAdminEnabled(false);
-      }
-    };
-    fetchSettings();
-    const settingsInterval = setInterval(fetchSettings, 60_000);
-    return () => clearInterval(settingsInterval);
   }, []);
 
   // Tick every second

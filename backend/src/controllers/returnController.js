@@ -429,6 +429,7 @@ exports.updateReturnRequestStatus = async (req, res) => {
     try {
       emitToRoles(["admin", "staff"], "order-updated", { orderId: returnRequest.order_id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToRoles(["admin", "staff"], "product-stock-updated", { returnId: returnRequest.id });
       if (assignedDriverId) {
         emitToUser(assignedDriverId, "driver-assigned", { orderId: returnRequest.order_id });
         emitToUser(assignedDriverId, "order-updated", { orderId: returnRequest.order_id });

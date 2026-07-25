@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { getSettingsApi, getDeliverySlotsApi } from "@/app/utils/api";
+import { getDeliverySlotsApi } from "@/app/utils/api";
+import { useSettings } from "@/app/context/SettingsContext";
 import { useToast } from "@/app/context/ToastContext";
 
 // ─────────────────────────────────────────────────────────
@@ -93,7 +94,7 @@ const extractQatarLocalNumber = (phoneStr: string): string => {
 // ─────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const { state: userState, isAuthenticated, isCustomer } = useUser();
-  const { state: cartState, dispatch: cartDispatch } = useCart();
+  const { state: cartState, dispatch: cartDispatch, clearCart } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -320,31 +321,17 @@ export default function CheckoutPage() {
     setCheckoutToken(token);
   }, [effectiveCartState.items]);
   // Shipping config from backend
-  const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
-    shippingFee: 10,
-    freeShippingThreshold: 99,
-    whatsappNumber: "+97470066559",
-  });
+  const { settings } = useSettings();
+  const shippingConfig = {
+    shippingFee: settings.shippingFee !== undefined ? Number(settings.shippingFee) : 10,
+    freeShippingThreshold: settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 99,
+    whatsappNumber: settings.whatsappNumber || "+97470066559",
+  };
 
   const isLoggedIn = isAuthenticated && isCustomer;
 
-  // Fetch site settings and active delivery slots
+  // Fetch active delivery slots
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const settings = await getSettingsApi();
-        if (settings) {
-          setShippingConfig({
-            shippingFee: settings.shippingFee !== undefined ? Number(settings.shippingFee) : 10,
-            freeShippingThreshold: settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 99,
-            whatsappNumber: settings.whatsappNumber || "+97470066559",
-          });
-        }
-      } catch {
-        // Use defaults silently
-      }
-    };
-
     const fetchSlots = async () => {
       try {
         const slots = await getDeliverySlotsApi();
@@ -355,7 +342,6 @@ export default function CheckoutPage() {
       }
     };
 
-    fetchSettings();
     fetchSlots();
   }, []);
 
@@ -805,32 +791,15 @@ export default function CheckoutPage() {
           }
         } catch {}
 
-        // Clear ordered items from the cart (sequentially to avoid race conditions/lockups)
+        // Clear cart after successful order without triggering item-removal toasts
         if (isBuyNow) {
           sessionStorage.removeItem("griva-buynow-item");
         } else {
-          for (const item of effectiveCartState.items) {
-            if (isLoggedIn) {
-              await cartService.removeItem(item.id).catch((err) => {
-                console.error(`Failed to remove item ${item.id} from DB cart:`, err);
-              });
-            } else {
-              cartDispatch({ type: "REMOVE", payload: { id: item.id } });
-            }
-          }
-
-          // For logged-in users, sync the context cart state once at the end
-          if (isLoggedIn) {
-            try {
-              const res = await cartService.getCart();
-              if (res.success && res.cart) {
-                cartDispatch({ type: "SET_CART", payload: res.cart.items });
-              }
-            } catch (err) {
-              console.error("Failed to sync cart after removal:", err);
-            }
-          }
+          await clearCart();
         }
+
+        // Display order success toast
+        toast.success("Order placed successfully!\nThank you for your purchase.");
 
         // Navigate to success page (exposing order number & slot only, omitting total price URL param)
         const selectedSlot = deliverySlots.find((s) => s.id === selectedSlotId);

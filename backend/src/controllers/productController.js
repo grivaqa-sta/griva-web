@@ -5,6 +5,20 @@ const cache = require("../utils/cache");
 const handleApiError = require("../utils/errorHandler");
 const { emitToRoles } = require("../socket/socket");
 
+const sanitizeProduct = (product, isAdminOrStaff) => {
+  if (!product) return null;
+  const p = product.toJSON ? product.toJSON() : { ...product };
+  if (!isAdminOrStaff) {
+    delete p.cost_price;
+  }
+  return p;
+};
+
+const sanitizeProducts = (products, isAdminOrStaff) => {
+  if (!Array.isArray(products)) return products;
+  return products.map(p => sanitizeProduct(p, isAdminOrStaff));
+};
+
 /**
  * Helper to extract Cloudinary public ID from its URL
  */
@@ -153,10 +167,12 @@ exports.getProducts = async (req, res) => {
 
     cache.set(cacheKey, products, 300000);
 
+    const sanitized = sanitizeProducts(products, isAdminOrStaffUser);
+
     res.status(200).json({
       success: true,
-      count: products.length,
-      data: products,
+      count: sanitized.length,
+      data: sanitized,
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getProducts");
@@ -195,7 +211,7 @@ exports.getProductById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: product,
+      data: sanitizeProduct(product, isAdminOrStaffUser),
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getProductById");
@@ -229,7 +245,7 @@ exports.getProductsBySubCategory = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: products,
+      data: sanitizeProducts(products, isAdminOrStaffUser),
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getProductsBySubCategory");
@@ -257,11 +273,12 @@ exports.getFeaturedProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000);
+    const sanitized = sanitizeProducts(products, false);
+    cache.set(cacheKey, sanitized, 300000);
 
     res.status(200).json({
       success: true,
-      data: products,
+      data: sanitized,
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getFeaturedProducts");
@@ -289,11 +306,12 @@ exports.getTrendingProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000);
+    const sanitized = sanitizeProducts(products, false);
+    cache.set(cacheKey, sanitized, 300000);
 
     res.status(200).json({
       success: true,
-      data: products,
+      data: sanitized,
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getTrendingProducts");
@@ -321,11 +339,12 @@ exports.getBestSellerProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000);
+    const sanitized = sanitizeProducts(products, false);
+    cache.set(cacheKey, sanitized, 300000);
 
     res.status(200).json({
       success: true,
-      data: products,
+      data: sanitized,
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getBestSellerProducts");
@@ -355,11 +374,12 @@ exports.getNewProducts = async (req, res) => {
       limit: 4,
     });
 
-    cache.set(cacheKey, products, 300000);
+    const sanitized = sanitizeProducts(products, false);
+    cache.set(cacheKey, sanitized, 300000);
 
     res.status(200).json({
       success: true,
-      data: products,
+      data: sanitized,
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getNewProducts");
@@ -628,12 +648,13 @@ exports.getBannerActiveProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000);
+    const sanitized = sanitizeProducts(products, false);
+    cache.set(cacheKey, sanitized, 300000);
 
     res.status(200).json({
       success: true,
-      count: products.length,
-      data: products,
+      count: sanitized.length,
+      data: sanitized,
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getBannerActiveProducts");
@@ -695,12 +716,13 @@ exports.getDealOfDayProducts = async (req, res) => {
       },
     });
 
-    cache.set(cacheKey, products, 300000);
+    const sanitized = sanitizeProducts(products, false);
+    cache.set(cacheKey, sanitized, 300000);
 
     res.status(200).json({
       success: true,
-      count: products.length,
-      data: products,
+      count: sanitized.length,
+      data: sanitized,
     });
   } catch (error) {
     return handleApiError(error, req, res, "ProductController.getDealOfDayProducts");

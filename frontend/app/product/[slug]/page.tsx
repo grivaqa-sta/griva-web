@@ -614,16 +614,16 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
 
         {/* Unified Premium Card */}
-        <div className="bg-white rounded-[32px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-10 mb-12 w-full">
+        <div className="bg-white rounded-[10px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-1 md:p-4 md:p-10 mb-12 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             {/* Left Column: Gallery */}
-            <div className="lg:col-span-6">
+            <div className="lg:col-span-6 relative md:border border-gray-100 md:shadow-sm md:p-2">
               <ProductGallery images={displayGalleryImages} title={product.title} />
             </div>
 
             {/* Right Column: Buying Panel */}
-            <div className="lg:col-span-6 flex flex-col justify-between">
-            <div>
+            <div className="lg:col-span-6 flex flex-col justify-between px-3 pb-3 md:px-0 md:pb-0">
+            <div className="mt-3 md:mt-0">
               {/* Brand badge */}
               {product.brand && (
                 <span className="text-xs font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2.5 py-1 rounded-full">
@@ -632,7 +632,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               )}
 
               {/* Title */}
-              <h1 className="mt-4 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              <h1 className="md:mt-4 mt-3 text-lg sm:text-3xl font-bold tracking-tight text-gray-900 leading-snug">
                 {product.title}
               </h1>
 
@@ -691,7 +691,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Price Panel */}
-              <div className="mt-6 flex items-baseline gap-3 border-b pb-6 flex-wrap">
+              <div className=" mt-4 flex items-baseline gap-3 flex-wrap">
                 <span className="text-2xl sm:text-3xl font-extrabold text-black whitespace-nowrap">
                   QAR {formatPrice(displayPrice)}
                 </span>
@@ -709,23 +709,23 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Product Short Description */}
               {(product.short_description || product.description) && (
-                <div className="mt-6 text-sm text-gray-600 leading-relaxed border-b pb-6">
+                <div className="mt-4 text-sm text-gray-600 leading-relaxed">
                   <p>{product.short_description || product.description}</p>
                 </div>
               )}
 
               {/* Dynamic Attributes & Variants */}
               {product.attributes && product.attributes.length > 0 && (
-                <div className="mt-6 space-y-5">
+                <div className=" mt-5 space-y-5">
                   {product.attributes.map((attr: any) => {
                     const selectedVal = getCombinationValue(selectedAttrs, attr.name);
                     const matchingAttrVal = attr.values.find((v: string) => v.toLowerCase() === selectedVal.toLowerCase()) || selectedVal;
                     return (
                       <div key={attr.name}>
-                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2.5">
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                           Select {attr.name}: <span className="text-gray-500 font-semibold">{matchingAttrVal}</span>
                         </h3>
-                        <div className="flex items-center gap-2.5 flex-wrap">
+                        <div className="flex items-center gap-2.5 flex-wrap mt-2">
                           {attr.values.map((val: string) => {
                             const status = getAttributeOptionStatus(attr.name, val);
                             const isSelected = selectedVal.trim().toLowerCase() === val.trim().toLowerCase();
@@ -777,7 +777,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Legacy Color Variants (Fallback) */}
               {(!product.attributes || product.attributes.length === 0) && colorVariants.length > 0 && (
-                <div className="mt-6">
+                <div className="mt-5">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                     Select Color: <span className="text-gray-500 font-semibold">{selectedColor}</span>
                   </h3>
@@ -802,7 +802,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Legacy Size Variants (Fallback) */}
               {(!product.attributes || product.attributes.length === 0) && (product.variants || []).some((v) => v.size) && (
-                <div className="mt-6">
+                <div className="mt-5">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                     Select Size: <span className="text-gray-500 font-semibold">{selectedSize}</span>
                   </h3>
@@ -827,7 +827,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               )}
 
               {/* Quantity Selector */}
-              <div className="mt-6">
+              <div className="mt-5">
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                   Quantity:
                 </h3>
@@ -850,7 +850,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             </div>
 
             {/* Actions */}
-            <div className="mt-8 pt-6 border-t space-y-3">
+            <div className="mt-6 space-y-4">
               <div className="flex gap-4">
                 <button
                   onClick={handleAddToCart}
@@ -873,18 +873,18 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Trust badges */}
-              <div className="grid grid-cols-3 gap-2.5 pt-4 text-[10px] text-gray-500">
-                <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
+              <div className="grid grid-cols-3 gap-2.5 pt-4 mt-2 text-[10px] text-gray-500">
+                <div className="flex flex-col items-center justify-center text-center p-3 rounded-lg bg-gray-50/50 border border-gray-100">
                   <Truck className="h-4 w-4 text-orange-500 mb-1" />
                   <span className="font-semibold text-gray-700">Free Shipping</span>
                   <span>Orders over QAR {freeShippingThreshold.toFixed(0)}</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
+                <div className="flex flex-col items-center justify-center text-center p-3 rounded-lg bg-gray-50/50 border border-gray-100">
                   <RotateCcw className="h-4 w-4 text-orange-500 mb-1" />
                   <span className="font-semibold text-gray-700">7-Day Returns</span>
                   <span>7 days return only</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-2 rounded-lg bg-gray-50/50">
+                <div className="flex flex-col items-center justify-center text-center p-3 rounded-lg bg-gray-50/50 border border-gray-100">
                   <ShieldCheck className="h-4 w-4 text-orange-500 mb-1" />
                   <span className="font-semibold text-gray-700">Full Warranty</span>
                   <span>Guaranteed quality</span>
@@ -896,16 +896,30 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
 
         {/* Tabbed Product Details */}
-        <div ref={reviewsTabRef} className="bg-white rounded-[24px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 mb-12 w-full">
-          <div className="flex border-b border-gray-100 gap-6 overflow-x-auto scrollbar-none">
+        <div ref={reviewsTabRef} className="bg-white rounded-[10px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 mb-12 w-full">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">All details</h2>
+          </div>
+          
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-2 relative">
             {tabsList.map((tabItem) => (
               <button
                 key={tabItem.id}
-                onClick={() => setActiveTab(tabItem.id)}
-                className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                onClick={(e) => {
+                  setActiveTab(tabItem.id);
+                  const btn = e.currentTarget;
+                  const container = btn.parentElement;
+                  if (container) {
+                    container.scrollTo({
+                      left: btn.offsetLeft - container.offsetLeft,
+                      behavior: "smooth"
+                    });
+                  }
+                }}
+                className={`px-5 py-2.5 text-sm font-semibold rounded-[8px] transition-all cursor-pointer whitespace-nowrap border ${
                   activeTab === tabItem.id
-                    ? "border-orange-500 text-orange-500 font-extrabold"
-                    : "border-transparent text-gray-500 hover:text-gray-800"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 {tabItem.label}
@@ -913,7 +927,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             ))}
           </div>
 
-          <div className="py-6">
+          <div className="py-6 max-h-[400px] overflow-y-auto scrollbar-thin pr-2 mt-2">
             {activeTab === "desc" && (
               <div className="text-sm text-gray-600 leading-relaxed max-w-4xl space-y-4">
                 <p>{product.description || product.short_description || "No description provided for this product."}</p>

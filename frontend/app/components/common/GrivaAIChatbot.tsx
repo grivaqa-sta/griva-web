@@ -204,6 +204,7 @@ export default function GrivaAIChatbot() {
   const [scrolled, setScrolled] = useState(false);
   const [atFooter, setAtFooter] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
 
 
@@ -893,30 +894,27 @@ export default function GrivaAIChatbot() {
 
   return (
     <>
-      <div className={`fixed right-4 sm:right-6 z-[998] flex flex-col items-end gap-2 select-none transition-all duration-300 ${
+      <div className={`fixed right-4 sm:right-6 z-[99999] flex flex-col items-end gap-2 select-none transition-all duration-300 ${
         scrolled ? "bottom-20 sm:bottom-24" : "bottom-20 sm:bottom-6"
       } ${
         atFooter && !isOpen ? "opacity-0 scale-75 pointer-events-none" : "opacity-100 scale-100"
       }`}>
-        {/* Unread message tooltip bubble */}
+        {/* Unread message tooltip bubble - absolute so it doesn't affect layout */}
         <AnimatePresence>
           {!isOpen && showTooltip && (
             <motion.div
-              initial={{ opacity: 0, y: 12, scale: 0.85 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.85 }}
-              transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 20 }}
-              className="bg-white rounded-2xl shadow-xl border border-gray-100/60 px-4 py-2.5 text-xs text-gray-800 max-w-[190px] leading-relaxed cursor-pointer pointer-events-auto"
+              initial={{ opacity: 0, x: 10, scale: 0.85 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.85 }}
+              transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+              className="absolute bottom-full right-0 mb-2 bg-white rounded-2xl shadow-xl border border-gray-100/60 px-4 py-2.5 text-xs text-gray-800 w-[190px] leading-relaxed cursor-pointer pointer-events-auto"
               onClick={handleOpenChat}
             >
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="h-2 w-2 rounded-full bg-[#F54900] animate-pulse" />
                 <p className="font-bold text-[12px] text-gray-900">GRIVA AI Assist 🤖</p>
               </div>
-              <p className="text-gray-500 text-[10px] leading-snug">Online! Ask me about returns, delivery & deals.</p>
-              {/* Arrow pointer */}
-              <div className="absolute -bottom-1.5 right-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white" />
-              <div className="absolute -bottom-[7px] right-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-100/50 z-[-1]" />
+              <p className="text-gray-500 text-[10px] leading-snug">Online! Ask me about returns, delivery &amp; deals.</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -925,8 +923,15 @@ export default function GrivaAIChatbot() {
         <motion.button
           onClick={() => (isOpen ? setIsOpen(false) : handleOpenChat())}
           aria-label="Open GRIVA Chat Assistant"
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
+          onMouseEnter={() => {
+            if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+            setShowTooltip(true);
+            tooltipTimerRef.current = setTimeout(() => setShowTooltip(false), 2000);
+          }}
+          onMouseLeave={() => {
+            if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+            setShowTooltip(false);
+          }}
           animate={
             pulsed
               ? { scale: [1, 1.14, 1], boxShadow: ["0 0 0 0 rgba(245,73,0,0.4)", "0 0 0 14px rgba(245,73,0,0)", "0 0 0 0 rgba(245,73,0,0)"] }
@@ -955,19 +960,21 @@ export default function GrivaAIChatbot() {
         </motion.button>
       </div>
 
-      {/* Chat Window Dialog (Compact, Responsive and mobile optimized) */}
+      {/* Chat Window Dialog - rendered outside button wrapper to avoid stacking context issues */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            exit={{ opacity: 0, y: 20, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 350, damping: 25 }}
-            className={`fixed right-[4%] sm:right-6 w-[92vw] sm:w-[340px] h-[450px] bg-white rounded-[24px] shadow-2xl border border-gray-100 z-[999] flex flex-col overflow-hidden transition-all duration-300 ${
-              scrolled ? "bottom-[140px] sm:bottom-[164px]" : "bottom-[140px] sm:bottom-[92px]"
-            }`}
+            className={`fixed z-[99999] bg-white rounded-[24px] shadow-2xl border border-gray-100 flex flex-col overflow-hidden
+              bottom-[80px] left-2 right-2
+              sm:left-auto sm:right-[92px] sm:w-[340px]
+              ${scrolled ? "sm:bottom-24" : "sm:bottom-6"}
+            `}
+            style={{ height: "min(450px, calc(100svh - 160px))" }}
           >
-            {/* Header */}
             <div className="bg-[#F54900] px-4 py-3.5 text-white flex items-center justify-between relative shadow-md select-none touch-none">
               {/* Decorative top glowing bar */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-300 via-orange-100 to-orange-400 opacity-40" />
@@ -987,11 +994,6 @@ export default function GrivaAIChatbot() {
                 </div>
                 <div>
                   <h3 className="font-extrabold text-[13px] tracking-tight">GRIVA Assistant</h3>
-                  <p className="text-[9px] text-orange-100 font-semibold flex items-center gap-1">
-                    <span>AI Assistant</span>
-                    <span className="h-1 w-1 rounded-full bg-orange-200" />
-                    <span>Always Online</span>
-                  </p>
                 </div>
               </div>
 
@@ -1011,18 +1013,6 @@ export default function GrivaAIChatbot() {
                 >
                   <X size={18} />
                 </button>
-              </div>
-            </div>
-
-            {/* Quick Status Bar */}
-            <div className="bg-orange-50/60 border-b border-orange-100/40 px-4 py-1.5 flex items-center justify-between text-[9px] text-gray-500 select-none">
-              <div className="flex items-center gap-1 font-semibold">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-gray-700">🟢 Live Agent Online</span>
-              </div>
-              <div className="flex items-center gap-1 text-orange-600 font-bold">
-                <TrendingUp size={10} />
-                <span>Doha Express Active</span>
               </div>
             </div>
 
@@ -1205,7 +1195,7 @@ export default function GrivaAIChatbot() {
                 <Send size={14} className={inputValue.trim() ? "translate-x-0.5" : ""} />
               </button>
             </form>
-          </motion.div>
+            </motion.div>
         )}
       </AnimatePresence>
 

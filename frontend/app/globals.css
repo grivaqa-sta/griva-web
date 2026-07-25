@@ -143,4 +143,21 @@ h1, h2, h3, h4, h5, h6 {
 .p-4\.5 { padding: 1.125rem !important; }
 .gap-4\.5 { gap: 1.125rem !important; }
 .h-9\.5 { height: 2.375rem !important; }
-.w-9\.5 { width: 2.375rem !important; }
+.w-9\.5 { width: 2.375rem !important; }
+
+/* SubNavbar dropdown row animation */
+@keyframes subnavRowIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subnav-dropdown-row {
+  opacity: 0;
+  animation: subnavRowIn 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

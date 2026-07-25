@@ -8,10 +8,12 @@ import { useToast } from '@/app/context/ToastContext';
 import { categoryService } from '@/app/services/category.service';
 import { subCategoryService } from '@/app/services/subCategory.service';
 import { useRouter } from 'next/navigation';
+import { useSocket } from '@/app/context/SocketContext';
 
 export default function ProductsTab() {
   const router = useRouter();
   const { toast, confirm } = useToast();
+  const { socket } = useSocket();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
@@ -33,6 +35,25 @@ export default function ProductsTab() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStockUpdate = () => {
+      console.log("🔌 [Socket.IO Event]: Product stock update received in ProductsTab. Refetching...");
+      loadData();
+    };
+
+    socket.on("product-stock-updated", handleStockUpdate);
+    socket.on("new-order", handleStockUpdate);
+    socket.on("order-updated", handleStockUpdate);
+
+    return () => {
+      socket.off("product-stock-updated", handleStockUpdate);
+      socket.off("new-order", handleStockUpdate);
+      socket.off("order-updated", handleStockUpdate);
+    };
+  }, [socket]);
 
   const loadData = async () => {
     setLoading(true);

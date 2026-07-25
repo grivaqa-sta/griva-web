@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getSettingsApi } from "@/app/utils/api";
+import { useSettings } from "@/app/context/SettingsContext";
 import {
   Truck,
   RotateCcw,
@@ -16,17 +15,9 @@ interface FeatureItem {
 }
 
 export default function FeatureSection() {
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
-
-  useEffect(() => {
-    getSettingsApi()
-      .then((settings) => {
-        if (settings && settings.freeShippingThreshold !== undefined) {
-          setFreeShippingThreshold(Number(settings.freeShippingThreshold));
-        }
-      })
-      .catch((err) => console.error("Failed to fetch settings in FeatureSection:", err));
-  }, []);
+  // freeShippingThreshold comes from the global SettingsProvider \u2014 no individual API call needed.
+  const { settings } = useSettings();
+  const freeShippingThreshold = settings.freeShippingThreshold ?? 99;
 
   const features: FeatureItem[] = [
     {

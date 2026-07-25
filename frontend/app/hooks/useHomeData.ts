@@ -63,16 +63,13 @@ export function useBannerProducts() {
   return { bannerProducts: data || [], loading, error, refetch };
 }
 
+import { useSettings } from "../context/SettingsContext";
+
 // ─────────────────────────────────────────────────────────
-// GET /api/settings — global store settings
+// GET /api/settings — global store settings (Consumes SettingsContext)
 // ─────────────────────────────────────────────────────────
 export function useGlobalSettings() {
-  const { data, loading, error, refetch } = useQuery<GlobalSettings>(
-    "global_settings",
-    async () => {
-      return await getSettingsApi();
-    }
-  );
-
-  return { settings: data, loading, error, refetch };
+  const { settings, loading, error, refresh } = useSettings();
+  return { settings, loading, error, refetch: refresh };
 }
+

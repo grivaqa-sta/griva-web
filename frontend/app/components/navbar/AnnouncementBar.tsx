@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAdminSettings } from "../../context/AdminContext";
-import { getSettingsApi } from "../../utils/api";
+import { useSettings } from "../../context/SettingsContext";
 import { useScrolled } from "../../hooks/useScrolled";
 import {
   Truck,
@@ -56,12 +56,13 @@ export default function AnnouncementBar() {
   const [mounted, setMounted] = useState(false);
   const [shoppersCount, setShoppersCount] = useState<number | null>(null);
   const [trend, setTrend] = useState<"up" | "down" | "neutral">("neutral");
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
   const [comingSoonVisible, setComingSoonVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-
   const { announcementBarEnabled } = useAdminSettings();
+  const { settings } = useSettings();
+  const freeShippingThreshold = settings.freeShippingThreshold ?? 99;
   const pathname = usePathname();
+
 
   useEffect(() => {
     setMounted(true);
@@ -73,18 +74,6 @@ export default function AnnouncementBar() {
 
     const initial = SHOPPER_BASE + Math.floor(Math.random() * SHOPPER_VARIANCE);
     setShoppersCount(initial);
-
-    const fetchSettings = async () => {
-      try {
-        const settings = await getSettingsApi();
-        if (settings && settings.freeShippingThreshold !== undefined) {
-          setFreeShippingThreshold(Number(settings.freeShippingThreshold));
-        }
-      } catch (err) {
-        console.error("Failed to fetch settings in AnnouncementBar", err);
-      }
-    };
-    fetchSettings();
 
     const timer = setInterval(() => {
       const steps = [-2, -1, 0, 1, 2];

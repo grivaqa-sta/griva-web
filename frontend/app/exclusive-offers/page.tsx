@@ -1,32 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Check, ArrowUpRight, MessageSquare, Send } from "lucide-react";
-import { getSettingsApi } from "@/app/utils/api";
+import { useSettings } from "@/app/context/SettingsContext";
 import { useToast } from "@/app/context/ToastContext";
 
 export default function ExclusiveDeals() {
   const { toast } = useToast();
-  const [telegramLink, setTelegramLink] = useState<string>("");
-  const [whatsappLink, setWhatsappLink] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    async function loadLinks() {
-      try {
-        const settings = await getSettingsApi();
-        setTelegramLink(settings.telegramLink || "");
-        setWhatsappLink(settings.whatsappCommunityLink || "");
-      } catch (err) {
-        console.error("Failed to fetch campaign links:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadLinks();
-  }, []);
+  // telegramLink and whatsappCommunityLink come from the global SettingsProvider \u2014 no independent fetch.
+  const { settings, loading } = useSettings();
+  const telegramLink = settings.telegramLink || "";
+  const whatsappLink = settings.whatsappCommunityLink || "";
 
   const handleChannelClick = (e: React.MouseEvent<HTMLAnchorElement>, name: string, url: string) => {
     if (!url || url.trim() === "") {

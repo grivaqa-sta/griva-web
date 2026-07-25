@@ -54,6 +54,12 @@ const Product = sequelize.define(
       allowNull: true,
     },
 
+    cost_price: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: null,
+    },
+
     mobile_ad_banner:{
       type: DataTypes.STRING,
       allowNull: true,

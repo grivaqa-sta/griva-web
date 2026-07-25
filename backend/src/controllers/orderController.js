@@ -1628,7 +1628,7 @@ exports.getDeepAnalytics = async (req, res, next) => {
           include: [{
             model: Product,
             as: "product",
-            attributes: ["id", "title", "price", "main_image_url"],
+            attributes: ["id", "title", "price", "cost_price", "main_image_url"],
             include: [{
               model: SubCategory,
               as: "subcategory",
@@ -1687,6 +1687,10 @@ exports.getDeepAnalytics = async (req, res, next) => {
     // Delivery metrics
     let deliveryTimes = []; // differences in milliseconds for (createdAt -> delivered/completed)
     let deliverySlotCounts = {};
+
+    // Profit tracking (internal only)
+    let totalCost = 0;
+    let totalProfit = 0;
 
     orders.forEach((order) => {
       // Parse status
@@ -1794,6 +1798,19 @@ exports.getDeepAnalytics = async (req, res, next) => {
               productSalesMap[pId].priceSum += price;
               productSalesMap[pId].count++;
 
+              // Profit calculation using cost_price
+              const costPrice = item.product.cost_price
+                ? (typeof item.product.cost_price === "string" ? parseFloat(item.product.cost_price) : item.product.cost_price)
+                : 0;
+              if (costPrice > 0) {
+                const itemCost = costPrice * qty;
+                const itemProfit = itemTotal - itemCost;
+                totalCost += itemCost;
+                totalProfit += itemProfit;
+                productSalesMap[pId].cost = (productSalesMap[pId].cost || 0) + itemCost;
+                productSalesMap[pId].profit = (productSalesMap[pId].profit || 0) + itemProfit;
+              }
+
               // Category mapping
               const categoryTitle = item.product.subcategory?.category?.title || "Other";
               const subcategoryTitle = item.product.subcategory?.title || "Other";
@@ -1853,6 +1870,9 @@ exports.getDeepAnalytics = async (req, res, next) => {
         qty: p.qty,
         revenue: parseFloat(p.revenue.toFixed(2)),
         avgPrice: parseFloat((p.priceSum / p.count).toFixed(2)),
+        cost: parseFloat((p.cost || 0).toFixed(2)),
+        profit: parseFloat((p.profit || 0).toFixed(2)),
+        margin: p.revenue > 0 ? parseFloat((((p.profit || 0) / p.revenue) * 100).toFixed(2)) : 0,
       }))
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 10);
@@ -1884,7 +1904,7 @@ exports.getDeepAnalytics = async (req, res, next) => {
 
     // 3. Inventory Health (Parallel Query)
     const products = await Product.findAll({
-      attributes: ["id", "title", "stock", "price", "main_image_url"]
+      attributes: ["id", "title", "stock", "price", "cost_price", "main_image_url"]
     });
     const totalSKUs = products.length;
     const outOfStockCount = products.filter(p => p.stock === 0).length;
@@ -1892,6 +1912,10 @@ exports.getDeepAnalytics = async (req, res, next) => {
     const totalInventoryValue = products.reduce((sum, p) => {
       const pPrice = typeof p.price === "string" ? parseFloat(p.price.replace(/[$,]/g, "")) : parseFloat(p.price) || 0;
       return sum + (p.stock * pPrice);
+    }, 0);
+    const totalInventoryCost = products.reduce((sum, p) => {
+      const cPrice = p.cost_price ? (typeof p.cost_price === "string" ? parseFloat(p.cost_price) : p.cost_price) : 0;
+      return sum + (p.stock * cPrice);
     }, 0);
 
     // 4. Customer Acquisition last 6 months
@@ -1998,6 +2022,13 @@ exports.getDeepAnalytics = async (req, res, next) => {
         repeatCustomerRate: parseFloat(repeatCustomerRate.toFixed(2)),
         avgDeliveryTimeHours: parseFloat(avgDeliveryTimeHours.toFixed(2)),
         deliverySuccessRate: parseFloat(deliverySuccessRate.toFixed(2)),
+        profitIntelligence: {
+          totalCost: parseFloat(totalCost.toFixed(2)),
+          totalProfit: parseFloat(totalProfit.toFixed(2)),
+          profitMargin: totalRevenue > 0 ? parseFloat(((totalProfit / totalRevenue) * 100).toFixed(2)) : 0,
+          totalInventoryCost: parseFloat(totalInventoryCost.toFixed(2)),
+          potentialInventoryProfit: parseFloat((totalInventoryValue - totalInventoryCost).toFixed(2)),
+        },
       }
     });
 

@@ -97,7 +97,7 @@ export default function MobileHeroBanner({ bannerProducts: propProducts, loading
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative w-full h-[200px] sm:h-[260px] rounded-2xl overflow-hidden shadow-xs bg-white"
+        className="relative w-full h-[200px] sm:h-[260px] rounded-2xl overflow-hidden "
       >
         {/* Stacked Images - Toggled via CSS opacity for buttery smooth transition */}
         {bannerProducts.map((product, idx) => {

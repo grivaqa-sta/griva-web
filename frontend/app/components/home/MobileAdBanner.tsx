@@ -7,7 +7,7 @@ import { useBannerProducts } from "@/app/hooks/useHomeData";
 function MobileHeroBannerSkeleton() {
   return (
     <div className="block lg:hidden px-4 mt-3 pb-2 animate-pulse">
-      <div className="relative w-full h-[180px] rounded-2xl bg-gray-100 overflow-hidden" />
+      <div className="relative w-full h-[200px] sm:h-[260px] rounded-2xl bg-gray-100 overflow-hidden" />
     </div>
   );
 }
@@ -91,29 +91,14 @@ export default function MobileHeroBanner({ bannerProducts: propProducts, loading
 
   const activeIndex = current % bannerProducts.length;
 
-  // We use the first image as a hidden spacer in normal document flow
-  // to dynamically establish the correct aspect ratio/height for the container.
-  const firstProduct = bannerProducts[0];
-  const firstRawSrc = firstProduct?.mobile_ad_banner;
-  const firstImageSrc = firstRawSrc.startsWith("http") || firstRawSrc.startsWith("/")
-    ? firstRawSrc
-    : `http://localhost:8080${firstRawSrc}`;
-
   return (
     <div className="block lg:hidden px-4 mt-3 pb-2">
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative w-full rounded-2xl overflow-hidden shadow-xs bg-white"
+        className="relative w-full h-[200px] sm:h-[260px] rounded-2xl overflow-hidden shadow-xs bg-white"
       >
-        {/* Invisible Spacer Image to establish natural aspect ratio/height */}
-        <img
-          src={firstImageSrc}
-          alt=""
-          className="w-full h-auto opacity-0 pointer-events-none block"
-        />
-
         {/* Stacked Images - Toggled via CSS opacity for buttery smooth transition */}
         {bannerProducts.map((product, idx) => {
           const rawSrc = product.mobile_ad_banner;
@@ -137,7 +122,7 @@ export default function MobileHeroBanner({ bannerProducts: propProducts, loading
               <img
                 src={imageSrc}
                 alt={product.title}
-                className="w-full h-full object-cover block"
+                className="w-full h-full object-contain block"
               />
             </Link>
           );

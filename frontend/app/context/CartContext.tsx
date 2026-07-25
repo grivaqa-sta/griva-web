@@ -105,6 +105,7 @@ interface CartContextValue {
     slug?: string;
     sku?: string;
   }) => Promise<void>;
+  clearCart: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -422,6 +423,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearCart = async () => {
+    await customDispatch({ type: "CLEAR" });
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -431,6 +436,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         openDrawer,
         closeDrawer,
         addToCart,
+        clearCart,
       }}
     >
       {children}

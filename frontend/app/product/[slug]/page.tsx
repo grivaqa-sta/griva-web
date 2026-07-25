@@ -27,6 +27,7 @@ import ScrollReveal from "@/app/components/common/ScrollReveal";
 import { trackViewContent, trackAddToCart } from "@/app/components/common/PixelScripts";
 import ProductSchema from "@/components/seo/ProductSchema";
 import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import { useSettings } from "@/app/context/SettingsContext";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -273,8 +274,6 @@ export default function ProductPage({ params }: ProductPageProps) {
   }, []);
   const [quantity, setQuantity] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<string>("specs");
-
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState(150);
   const [reviewsList, setReviewsList] = useState<any[]>([]);
 
   const tabsList = React.useMemo(() => {
@@ -405,20 +404,10 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
   };
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.settings?.freeShippingThreshold) {
-            setFreeShippingThreshold(parseFloat(data.settings.freeShippingThreshold));
-          }
-        }
-      } catch {}
-    };
-    fetchSettings();
-  }, []);
+  // freeShippingThreshold from global SettingsProvider — no API call needed.
+  const { settings } = useSettings();
+  const freeShippingThreshold = Number(settings.freeShippingThreshold) || 99;
+
 
   useEffect(() => {
     const fetchReviews = async () => {

@@ -458,6 +458,8 @@ exports.createOrder = async (req, res, next) => {
     try {
       emitToRoles(["admin", "staff"], "new-order");
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      const affectedProductIds = items ? Array.from(new Set(items.map(i => i.product_id).filter(Boolean))) : [];
+      emitToRoles(["admin", "staff"], "product-stock-updated", { orderId: order.id, productIds: affectedProductIds });
     } catch (socketErr) {
       console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
     }
@@ -731,6 +733,7 @@ exports.updateOrderStatus = async (req, res, next) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToRoles(["admin", "staff"], "product-stock-updated", { orderId: order.id });
       emitToOrder(order.id, "order-status-updated", { orderId: order.id, status });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status });
@@ -1528,6 +1531,7 @@ exports.cancelMyOrder = async (req, res, next) => {
       emitToRoles(["admin", "staff"], "order-status-updated", { orderId: order.id, status: "cancelled" });
       emitToRoles(["admin", "staff"], "order-updated", { orderId: order.id });
       emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+      emitToRoles(["admin", "staff"], "product-stock-updated", { orderId: order.id });
       emitToOrder(order.id, "order-status-updated", { orderId: order.id, status: "cancelled" });
       if (order.delivery_boy_id) {
         emitToUser(order.delivery_boy_id, "order-status-updated", { orderId: order.id, status: "cancelled" });

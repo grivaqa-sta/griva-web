@@ -3,6 +3,7 @@ const SubCategory = require("../models/SubCategory");
 const { Op } = require("sequelize");
 const cache = require("../utils/cache");
 const handleApiError = require("../utils/errorHandler");
+const { emitToRoles } = require("../socket/socket");
 
 /**
  * Helper to extract Cloudinary public ID from its URL
@@ -452,6 +453,12 @@ exports.updateProduct = async (req, res) => {
 
     cache.clear();
 
+    try {
+      emitToRoles(["admin", "staff"], "product-stock-updated", { productId: product.id });
+    } catch (sErr) {
+      console.error("🔌 [Socket.IO Error]:", sErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
@@ -502,6 +509,12 @@ exports.updateProductStock = async (req, res) => {
 
     await product.save();
     cache.clear();
+
+    try {
+      emitToRoles(["admin", "staff"], "product-stock-updated", { productId: product.id, stock: product.stock });
+    } catch (sErr) {
+      console.error("🔌 [Socket.IO Error]:", sErr.message);
+    }
 
     res.status(200).json({
       success: true,

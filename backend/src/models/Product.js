@@ -177,7 +177,7 @@ const Product = sequelize.define(
     },
 
     meta_title: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true,
     },
 

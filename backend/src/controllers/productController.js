@@ -74,7 +74,23 @@ exports.createProduct = async (req, res) => {
       throw err;
     }
 
-    const product = await Product.create(req.body);
+    // Auto-generate slug from title if omitted or empty
+    let finalSlug = req.body.slug && typeof req.body.slug === "string" && req.body.slug.trim()
+      ? req.body.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "")
+      : title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+
+    // Resolve duplicate slug collisions by appending a unique timestamp suffix
+    const existingProduct = await Product.findOne({ where: { slug: finalSlug } });
+    if (existingProduct) {
+      finalSlug = `${finalSlug}-${Date.now().toString().slice(-4)}`;
+    }
+
+    const payload = {
+      ...req.body,
+      slug: finalSlug,
+    };
+
+    const product = await Product.create(payload);
 
     const ProductVariant = require("../models/ProductVariant");
     const { variants } = req.body;

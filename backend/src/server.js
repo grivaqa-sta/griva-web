@@ -18,6 +18,11 @@ const startServer = async () => {
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
     await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "cost_price" DECIMAL(10, 2);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "mobile_ad_banner" VARCHAR(255);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "desktop_ad_banner" VARCHAR(255);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "deal_of_day" BOOLEAN DEFAULT false;');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "href" VARCHAR(255);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "banner_background_color" VARCHAR(255);');
     // Resync primary key sequences for all database tables to prevent PK duplicate key errors in production
     const tablesToResync = [
       'sub_categories',

@@ -14,10 +14,18 @@ const startServer = async () => {
   // Run critical migrations unconditionally regardless of DB_SYNC
   try {
     await sequelize.query('ALTER TABLE "products" ALTER COLUMN "short_description" TYPE TEXT;');
+    await sequelize.query('ALTER TABLE "products" ALTER COLUMN "meta_description" TYPE TEXT;');
+    await sequelize.query('ALTER TABLE "products" ALTER COLUMN "meta_title" TYPE TEXT;');
+    await sequelize.query('ALTER TABLE "products" ALTER COLUMN "title" TYPE TEXT;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
     await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "cost_price" DECIMAL(10, 2);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "mobile_ad_banner" VARCHAR(255);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "desktop_ad_banner" VARCHAR(255);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "deal_of_day" BOOLEAN DEFAULT false;');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "href" VARCHAR(255);');
+    await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "banner_background_color" VARCHAR(255);');
     // Resync primary key sequences for all database tables to prevent PK duplicate key errors in production
     const tablesToResync = [
       'sub_categories',

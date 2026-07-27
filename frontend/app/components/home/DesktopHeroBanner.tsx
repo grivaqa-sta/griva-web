@@ -211,7 +211,7 @@ export default function DesktopHeroBanner({ bannerProducts: propProducts, loadin
                                             </span>
                                         </div>
 
-                                        <h1 className="max-w-xl text-2xl font-black text-white sm:text-2xl lg:text-3xl tracking-wide">
+                                        <h1 className="max-w-xl text-2xl font-black text-white sm:text-2xl lg:text-3xl tracking-wide line-clamp-2">
                                             {currentSlide.title}
                                         </h1>
                                         <p className="max-w-lg text-sm text-gray-300 mt-2 lg:mt-3 line-clamp-2 leading-relaxed">

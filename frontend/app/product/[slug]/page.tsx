@@ -886,7 +886,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
                 <div className="flex flex-col items-center justify-center text-center p-3 rounded-lg bg-gray-50/50 border border-gray-100">
                   <ShieldCheck className="h-4 w-4 text-orange-500 mb-1" />
-                  <span className="font-semibold text-gray-700">Full Warranty</span>
+                  <span className="font-semibold text-gray-700">Full Guaranty</span>
                   <span>Guaranteed quality</span>
                 </div>
               </div>

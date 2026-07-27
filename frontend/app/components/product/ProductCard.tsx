@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart, Truck } from "lucide-react";
 import { ApiProduct } from "@/app/types/types";
 import Rating from "../rating/Rating";
@@ -62,6 +63,30 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
       category: "Product",
       quantity: 1,
     });
+  };
+
+  const router = useRouter();
+
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const priceStr = formatPrice(product.price) || "0.00";
+    const priceNum = parseFloat(priceStr);
+    const oldPriceNum = product.old_price ? parseFloat(formatPrice(product.old_price) || "0") : priceNum;
+
+    const buyNowItem = {
+      productId: product.id,
+      title: product.title,
+      image: product.main_image_url,
+      price: `QAR ${priceStr}`,
+      priceNumber: priceNum,
+      oldPriceNumber: oldPriceNum,
+      quantity: 1,
+      category: "Product",
+      slug: product.slug,
+    };
+    sessionStorage.setItem("griva-buynow-item", JSON.stringify(buyNowItem));
+    router.push("/checkout?buyNow=true");
   };
 
   return (
@@ -240,22 +265,21 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
               Add to Cart
             </button>
 
-            <Link href={`/product/${product.id}`} className="w-full">
-              <button
-                className="flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300"
-                style={{ backgroundColor: INK, boxShadow: "0 10px 20px rgba(13,13,13,0.2)" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = ORANGE;
-                  e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = INK;
-                  e.currentTarget.style.boxShadow = "0 10px 20px rgba(13,13,13,0.2)";
-                }}
-              >
-                Buy Now
-              </button>
-            </Link>
+            <button
+              onClick={handleBuyNow}
+              className="flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-2 text-sm font-semibold text-white transition-all duration-300"
+              style={{ backgroundColor: INK, boxShadow: "0 10px 20px rgba(13,13,13,0.2)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = ORANGE;
+                e.currentTarget.style.boxShadow = "0 14px 28px rgba(255,106,0,0.32)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = INK;
+                e.currentTarget.style.boxShadow = "0 10px 20px rgba(13,13,13,0.2)";
+              }}
+            >
+              Buy Now
+            </button>
           </>
         )}
       </div>

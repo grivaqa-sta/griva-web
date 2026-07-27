@@ -105,6 +105,7 @@ export default function CheckoutPage() {
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const isSubmitRef = useRef(false);
+  const orderPlacedSuccessRef = useRef(false);
   const [orderError, setOrderError] = useState("");
   const [stockErrors, setStockErrors] = useState<Record<string | number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
@@ -142,6 +143,22 @@ export default function CheckoutPage() {
       }
     }
   }, []);
+
+  // Clean up Buy Now item if we leave checkout without placing an order
+  useEffect(() => {
+    let isUnloading = false;
+    const handleBeforeUnload = () => {
+      isUnloading = true;
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (isBuyNow && !orderPlacedSuccessRef.current && !isUnloading) {
+        sessionStorage.removeItem("griva-buynow-item");
+      }
+    };
+  }, [isBuyNow]);
 
   // Initialize selectedItemIds with all cart items (only if not Buy Now mode)
   useEffect(() => {
@@ -765,6 +782,7 @@ export default function CheckoutPage() {
       });
 
       if (response.success) {
+        orderPlacedSuccessRef.current = true;
         // Save guest order reference for tracking
         try {
           const guestRef = {

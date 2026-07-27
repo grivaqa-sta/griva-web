@@ -1556,7 +1556,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                     <Mail className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" />
                                     <div>
                                       <p className="text-[10px] text-gray-400 font-semibold uppercase">Customer Email</p>
-                                      <p className="text-xs font-bold text-gray-800 mt-0.5">{order.user?.email || `User #${order.user_id}`}</p>
+                                      <p className="text-xs font-bold text-gray-800 mt-0.5">{order.customer_email || order.user?.email || (order.user_id ? `User #${order.user_id}` : "—")}</p>
                                     </div>
                                   </div>
                                   <div className="flex items-start gap-2.5 pt-2 border-t border-orange-500/10">

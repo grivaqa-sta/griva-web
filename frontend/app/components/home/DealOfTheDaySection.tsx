@@ -198,15 +198,23 @@ export default function DealOfTheDaySection() {
 
   const handleBuyNow = () => {
     if (!slide) return;
-    addToCart({
-      id: slide.id,
+    const priceStr = slide.price;
+    const priceNum = parseFloat(priceStr);
+    const oldPriceNum = slide.oldPrice ? parseFloat(slide.oldPrice) : priceNum;
+
+    const buyNowItem = {
+      productId: slide.id,
       title: slide.title,
       image: slide.mainImage,
-      price: slide.price,
+      price: `QAR ${priceStr}`,
+      priceNumber: priceNum,
+      oldPriceNumber: oldPriceNum,
+      quantity: 1,
       category: slide.category,
       slug: slide.slug,
-    });
-    router.push("/checkout");
+    };
+    sessionStorage.setItem("griva-buynow-item", JSON.stringify(buyNowItem));
+    router.push("/checkout?buyNow=true");
   };
 
   if (loading) {

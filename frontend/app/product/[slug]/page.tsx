@@ -927,7 +927,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             ))}
           </div>
 
-          <div className="py-6 max-h-[400px] overflow-y-auto scrollbar-thin pr-2 mt-2">
+          <div className="py-6 pr-2 mt-2">
             {activeTab === "desc" && (
               <div className="text-sm text-gray-600 leading-relaxed max-w-4xl space-y-4">
                 <p>{product.description || product.short_description || "No description provided for this product."}</p>

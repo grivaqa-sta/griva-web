@@ -397,7 +397,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
             <div style="font-size: 12px; color: #555; line-height: 1.5; margin-top: 3px;">
               Commercial Registration: #129481A<br/>
               State of Qatar<br/>
-              WhatsApp Support: ${formatQatarPhone('50921122')}
+              WhatsApp Support: ${formatQatarPhone('70066559')}
             </div>
           </div>
           <div>

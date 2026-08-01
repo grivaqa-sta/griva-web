@@ -1382,6 +1382,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                   disabled={updatingId === order.id}
                                   onClick={() => handleStatusChange(order.id, nextStatus)}
                                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer disabled:opacity-50 ${nextCfg.bg} ${nextCfg.color} hover:opacity-80`}
+                                >
                                   {updatingId === order.id && updatingStatus === nextStatus ? (
                                     <span className="h-2.5 w-2.5 border border-current border-t-transparent rounded-full animate-spin" />
                                   ) : nextCfg.icon}
@@ -1699,7 +1700,9 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
                                             }
                                           });
                                         }}
-                                        className="flex items-center gap-1.5 px-3 py-2 bg-white border border-orange-500/20 hover:border-orange-500 text-orange-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer h-[32px]"
+                                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-[10px] font-bold transition-all cursor-pointer h-[32px] ${
+                                          isDark ? 'bg-zinc-800 border-zinc-700 text-orange-400 hover:border-orange-500' : 'bg-white border-orange-500/20 text-orange-600 hover:border-orange-500'
+                                        }`}
                                       >
                                         📄 Tax Invoice
                                       </button>

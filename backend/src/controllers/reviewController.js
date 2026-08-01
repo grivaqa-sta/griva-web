@@ -330,3 +330,17 @@ exports.getAllReviews = async (req, res) => {
     return handleApiError(error, req, res, "ReviewController.getAllReviews");
   }
 };
+
+exports.seedProductionReviewsController = async (req, res) => {
+  try {
+    const { seedProductionReviews } = require("../utils/seedReviews");
+    const result = await seedProductionReviews();
+    res.status(200).json({
+      success: true,
+      message: "Production reviews seeded successfully.",
+      result
+    });
+  } catch (error) {
+    return handleApiError(error, req, res, "ReviewController.seedProductionReviewsController");
+  }
+};

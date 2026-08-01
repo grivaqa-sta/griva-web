@@ -224,6 +224,12 @@ const startServer = async () => {
   // ✅ Run after sync
   await createDefaultAdmin();
   await migrateLegacyProducts();
+  try {
+    const { seedProductionReviews } = require("./utils/seedReviews");
+    await seedProductionReviews();
+  } catch (seedErr) {
+    console.log("ℹ️ [SEED REVIEWS]: Skipped review auto-seed:", seedErr.message);
+  }
 
   const { initSocket } = require("./socket/socket");
   const server = app.listen(PORT, () => {

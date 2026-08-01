@@ -14,5 +14,6 @@ router.post("/order", reviewController.createOrderReviews);
 // Admin-only Delivery & Product Reviews
 router.get("/", authenticateJWT, reviewController.getAllReviews);
 router.get("/delivery", authenticateJWT, reviewController.getDeliveryReviews);
+router.post("/seed", reviewController.seedProductionReviewsController);
 
 module.exports = router;

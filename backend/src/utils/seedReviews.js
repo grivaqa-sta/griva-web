@@ -124,7 +124,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Fast delivery", body: "Ordered yesterday and received today morning. Smooth experience." },
   { rating: 5, title: "Very nice", body: "Nice item, good price compared to market." },
   { rating: 5, title: "Recommended", body: "Good quality and prompt delivery. Recommended!" },
-  { rating: 5, title: "Satisfied customer", body: "Proper packing and original item. Thanks GriVA." },
+  { rating: 5, title: "Satisfied customer", body: "Proper packing and original item. Thanks GRIVA." },
   { rating: 5, title: "Quick service", body: "Fast delivery to West Bay. Item is working perfectly." },
   { rating: 5, title: "Good quality", body: "Super quality item. Packaging was very neat." },
   { rating: 5, title: "Worth it", body: "Totally worth the price. Delivery took less than 3 hours in Lusail." },
@@ -132,7 +132,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Excellent", body: "Exact same item as shown. Very satisfied!" },
   { rating: 5, title: "Original item", body: "Original product with genuine packing. Highly recommended." },
   { rating: 5, title: "Value for money", body: "Good item, affordable price. Delivery was prompt." },
-  { rating: 5, title: "Very happy", body: "Second time buying from GriVA, great service as always." },
+  { rating: 5, title: "Very happy", body: "Second time buying from GRIVA, great service as always." },
   { rating: 5, title: "Adipoli saanam", body: "Valare nalla product. Quick delivery in Al Wakrah." },
   { rating: 5, title: "Superb quality", body: "Really impressed with the quality and packaging." },
   { rating: 5, title: "Nice buy", body: "Decent product for the price. Delivery driver was helpful." },
@@ -145,7 +145,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Good service", body: "Fast shipping and neat packing. Will order more items." },
   { rating: 5, title: "Great customer care", body: "Very good customer service and super fast delivery." },
   { rating: 5, title: "Superb condition", body: "Superb condition, authentic brand product." },
-  { rating: 5, title: "Genuine brand", body: "Genuine item delivered on time. Thanks GriVA team." },
+  { rating: 5, title: "Genuine brand", body: "Genuine item delivered on time. Thanks GRIVA team." },
   { rating: 5, title: "Smooth transaction", body: "Smooth delivery experience in Pearl Qatar." },
   { rating: 5, title: "100% Satisfied", body: "100% satisfied with the quality and quick dispatch." },
   { rating: 5, title: "Excellent packing", body: "Excellent packing and genuine product." },
@@ -159,7 +159,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Polite driver", body: "Item arrived safely. Delivery driver was polite." },
   { rating: 5, title: "Will buy again", body: "Top quality product. Will definitely buy again." },
   { rating: 5, title: "Fast Al Rayyan delivery", body: "Very fast delivery to Al Rayyan. Super satisfied!" },
-  { rating: 5, title: "100% Real", body: "Item is 100% original. Excellent service by GriVA." },
+  { rating: 5, title: "100% Real", body: "Item is 100% original. Excellent service by GRIVA." },
   { rating: 5, title: "Super satisfied", body: "Super satisfied with the product condition and delivery speed." },
   { rating: 5, title: "Neat dispatch", body: "Neatly packed and fast dispatch in Doha." },
   { rating: 5, title: "Earlier than expected", body: "Highly impressed! Delivery arrived earlier than expected." },
@@ -171,7 +171,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Prompt Abu Hamour", body: "Prompt delivery to Abu Hamour. Product is genuine." },
   { rating: 5, title: "Valare Nallathu", body: "Valare Nallathu. Original product with great packing." },
   { rating: 5, title: "Sealed box", body: "Delivered fast with sealed box. Fully satisfied." },
-  { rating: 5, title: "Excellent support", body: "Great product, excellent support from GriVA team." },
+  { rating: 5, title: "Excellent support", body: "Great product, excellent support from GRIVA team." },
   { rating: 5, title: "Works like charm", body: "Item arrived intact and works like a charm." },
   { rating: 5, title: "Best price Qatar", body: "Best price online in Qatar. Fast shipping too." },
   { rating: 5, title: "Reliable store", body: "Very reliable store. Genuine product delivered on time." },
@@ -185,7 +185,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Super quality", body: "Super quality! Exactly as described." },
   { rating: 5, title: "Neat packaging", body: "Very neat packaging and quick delivery to Umm Salal." },
   { rating: 5, title: "Satisfied purchase", body: "Satisfied purchase. Original item delivered fast." },
-  { rating: 5, title: "Awesome GriVA", body: "Awesome service by GriVA! Will shop again." },
+  { rating: 5, title: "Awesome GRIVA", body: "Awesome service by GRIVA! Will shop again." },
   { rating: 5, title: "Hassle free", body: "Item is great and delivery was hassle-free." },
   { rating: 5, title: "Quick response", body: "Quick response and genuine item delivered." },
   { rating: 5, title: "Al Wakrah delivery", body: "Very good item. Fast delivery in Al Wakrah." },
@@ -206,7 +206,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Arrived super fast", body: "Arrived super fast in Doha. Very happy!" },
   { rating: 5, title: "Fast dispatch", body: "Great value for money and fast dispatch." },
   { rating: 5, title: "10/10 Product", body: "Product is 10/10. Packaging was top quality." },
-  { rating: 5, title: "Extremely satisfied", body: "Extremely satisfied with GriVA fast delivery." },
+  { rating: 5, title: "Extremely satisfied", body: "Extremely satisfied with GRIVA fast delivery." },
   { rating: 5, title: "Authentic item", body: "Authentic item delivered safely. Thanks!" },
   { rating: 5, title: "Pearl Qatar fast", body: "Super fast delivery service in Pearl Qatar." },
   { rating: 5, title: "Amazing quality", body: "Item quality is amazing. Fast order processing." },
@@ -215,7 +215,7 @@ const SIMPLE_5STAR_REVIEWS = [
   { rating: 5, title: "Great product", body: "Great product condition and fast response." },
   { rating: 5, title: "Received in pristine", body: "Received in pristine condition. Excellent!" },
   { rating: 5, title: "West Bay fast", body: "Top notch item. Fast delivery in West Bay." },
-  { rating: 5, title: "GriVA is the best", body: "100% original. GriVA is the best!" },
+  { rating: 5, title: "GRIVA is the best", body: "100% original. GRIVA is the best!" },
   { rating: 5, title: "Super quality product", body: "Super quality product, smooth delivery!" }
 ];
 
@@ -234,7 +234,7 @@ async function seedProductionReviews() {
     }
 
     // 2. Ensure customer user accounts exist in DB
-    const dummyPasswordHash = await bcrypt.hash("Customer@GriVA2026", 10);
+    const dummyPasswordHash = await bcrypt.hash("Customer@GRIVA2026", 10);
     const createdUsers = [];
 
     for (const cust of CUSTOMER_POOL) {

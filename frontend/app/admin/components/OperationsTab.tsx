@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AdminOrder, updateOrderStatusApi } from "../../utils/api";
 import { useToast } from "@/app/context/ToastContext";
+import { useAdminTheme } from "../context/AdminThemeContext";
 
 interface OperationsTabProps {
   ordersList: AdminOrder[];
@@ -65,6 +66,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function OperationsTab({ ordersList, setOrdersList, setActiveTab }: OperationsTabProps) {
   const { toast } = useToast();
+  const { isDark } = useAdminTheme();
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
@@ -263,10 +265,12 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
       {/* ── Operations Widgets Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Widget 1: Today's Delivery Slots */}
-        <div className="bg-white border border-orange-500/30 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+        <div className={`border rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-colors ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-orange-500/30'
+        }`}>
           <div>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-orange-500/10">
-              <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+            <div className={`flex items-center justify-between mb-4 pb-2 border-b ${isDark ? 'border-zinc-800' : 'border-orange-500/10'}`}>
+              <h4 className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-zinc-100' : 'text-gray-900'}`}>
                 <Calendar className="h-4 w-4 text-orange-500" />
                 Today's Delivery Slots
               </h4>
@@ -288,13 +292,17 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                         window.history.pushState(null, "", `/admin?tab=orders&slot=${slot.id}`);
                         setActiveTab("orders");
                       }}
-                      className="flex items-center justify-between p-2.5 bg-orange-500/3 hover:bg-orange-500/8 border border-orange-500/10 rounded-xl transition-all cursor-pointer group/item"
+                      className={`flex items-center justify-between p-2.5 border rounded-xl transition-all cursor-pointer group/item ${
+                        isDark ? 'bg-zinc-800/60 hover:bg-zinc-800 border-zinc-700/60' : 'bg-orange-500/3 hover:bg-orange-500/8 border-orange-500/10'
+                      }`}
                     >
-                      <span className="text-xs font-bold text-gray-700 group-hover/item:text-orange-600 transition-colors">
+                      <span className={`text-xs font-bold transition-colors ${isDark ? 'text-zinc-300 group-hover/item:text-orange-400' : 'text-gray-700 group-hover/item:text-orange-600'}`}>
                         {slot.name}
                       </span>
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-black text-gray-900 bg-white border border-orange-500/20 px-2 py-0.5 rounded-lg shadow-2xs">
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-lg shadow-2xs border ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-orange-500/20 text-gray-900'
+                        }`}>
                           {count} Order{count !== 1 ? "s" : ""}
                         </span>
                         <ChevronRight className="h-3 w-3 text-gray-400 opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-0.5 transition-all" />
@@ -308,10 +316,12 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
         </div>
 
         {/* Widget 2: Delivery Queue Summary */}
-        <div className="bg-white border border-orange-500/30 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+        <div className={`border rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-colors ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-orange-500/30'
+        }`}>
           <div>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-orange-500/10">
-              <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+            <div className={`flex items-center justify-between mb-4 pb-2 border-b ${isDark ? 'border-zinc-800' : 'border-orange-500/10'}`}>
+              <h4 className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-zinc-100' : 'text-gray-900'}`}>
                 <Truck className="h-4 w-4 text-orange-500" />
                 Delivery Queue Summary
               </h4>
@@ -324,14 +334,14 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                   count: ordersList.filter(o => o.status === "assigned").length,
                   status: "assigned",
                   icon: <UserCheck className="h-3.5 w-3.5 text-blue-500" />,
-                  color: "bg-blue-500/5 hover:bg-blue-500/10 border-blue-500/15 text-blue-700"
+                  color: isDark ? "bg-blue-950/40 hover:bg-blue-900/50 border-blue-800/40 text-blue-300" : "bg-blue-500/5 hover:bg-blue-500/10 border-blue-500/15 text-blue-700"
                 },
                 {
                   label: "Out For Delivery",
                   count: ordersList.filter(o => o.status === "out_for_delivery").length,
                   status: "out_for_delivery",
                   icon: <Truck className="h-3.5 w-3.5 text-orange-500" />,
-                  color: "bg-orange-500/5 hover:bg-orange-500/10 border-orange-500/15 text-orange-700"
+                  color: isDark ? "bg-orange-950/40 hover:bg-orange-900/50 border-orange-800/40 text-orange-300" : "bg-orange-500/5 hover:bg-orange-500/10 border-orange-500/15 text-orange-700"
                 },
                 {
                   label: "Delivered Today",
@@ -342,7 +352,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                   }).length,
                   status: "delivered",
                   icon: <CheckCircle className="h-3.5 w-3.5 text-green-500" />,
-                  color: "bg-green-500/5 hover:bg-green-500/10 border-green-500/15 text-green-700"
+                  color: isDark ? "bg-green-950/40 hover:bg-green-900/50 border-green-800/40 text-green-300" : "bg-green-500/5 hover:bg-green-500/10 border-green-500/15 text-green-700"
                 }
               ].map((item, i) => (
                 <div
@@ -360,7 +370,9 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-black text-gray-900 bg-white border border-gray-150 px-2 py-0.5 rounded-lg shadow-2xs">
+                    <span className={`text-xs font-black px-2 py-0.5 rounded-lg shadow-2xs border ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-gray-150 text-gray-900'
+                    }`}>
                       {item.count}
                     </span>
                     <ChevronRight className="h-3 w-3 text-gray-400 opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-0.5 transition-all" />
@@ -372,10 +384,12 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
         </div>
 
         {/* Widget 3: Urgent Actions */}
-        <div className="bg-white border border-orange-500/30 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+        <div className={`border rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-colors ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-orange-500/30'
+        }`}>
           <div>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-orange-500/10">
-              <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+            <div className={`flex items-center justify-between mb-4 pb-2 border-b ${isDark ? 'border-zinc-800' : 'border-orange-500/10'}`}>
+              <h4 className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-zinc-100' : 'text-gray-900'}`}>
                 <Activity className="h-4 w-4 text-orange-500" />
                 Urgent Actions
               </h4>
@@ -388,7 +402,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                   count: newOrders.length,
                   status: "new",
                   alert: newOrders.length > 0,
-                  color: "bg-red-50 border-red-200 hover:bg-red-100/70 text-red-700"
+                  color: isDark ? "bg-red-950/40 border-red-800/40 text-red-300" : "bg-red-50 border-red-200 hover:bg-red-100/70 text-red-700"
                 },
                 {
                   label: "Pending > 30 Minutes",
@@ -399,14 +413,14 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                   }).length,
                   status: "pending",
                   alert: ordersList.some(o => o.status === "pending" && (Date.now() - new Date(o.createdAt).getTime() > 30 * 60 * 1000)),
-                  color: "bg-amber-50 border-amber-200 hover:bg-amber-100/70 text-amber-700"
+                  color: isDark ? "bg-amber-950/40 border-amber-800/40 text-amber-300" : "bg-amber-50 border-amber-200 hover:bg-amber-100/70 text-amber-700"
                 },
                 {
                   label: "Rescheduled Deliveries",
                   count: ordersList.filter(o => o.status === "rescheduled").length,
                   status: "rescheduled",
                   alert: ordersList.some(o => o.status === "rescheduled"),
-                  color: "bg-blue-50 border-blue-200 hover:bg-blue-100/70 text-blue-700"
+                  color: isDark ? "bg-blue-950/40 border-blue-800/40 text-blue-300" : "bg-blue-50 border-blue-200 hover:bg-blue-100/70 text-blue-700"
                 }
               ].map((item, i) => (
                 <div
@@ -416,14 +430,16 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                     setActiveTab("orders");
                   }}
                   className={`flex items-center justify-between p-2.5 border rounded-xl transition-all cursor-pointer group/item ${
-                    item.alert ? item.color : "bg-gray-50 border-gray-150 hover:bg-gray-100 text-gray-500"
+                    item.alert ? item.color : isDark ? "bg-zinc-800/50 border-zinc-700/50 text-zinc-400" : "bg-gray-50 border-gray-150 hover:bg-gray-100 text-gray-500"
                   }`}
                 >
                   <span className="text-xs font-bold transition-colors">
                     {item.label}
                   </span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-black bg-white border border-current px-2 py-0.5 rounded-lg shadow-2xs">
+                    <span className={`text-xs font-black border px-2 py-0.5 rounded-lg shadow-2xs ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-current'
+                    }`}>
                       {item.count}
                     </span>
                     <ChevronRight className="h-3 w-3 text-gray-450 opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-0.5 transition-all" />
@@ -439,7 +455,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-sm font-bold text-gray-900">Recent Store Orders</h4>
+            <h4 className={`text-sm font-bold ${isDark ? 'text-zinc-100' : 'text-gray-900'}`}>Recent Store Orders</h4>
             <p className="text-[10px] text-gray-400 mt-0.5">Showing latest 10 orders</p>
           </div>
           <button
@@ -450,11 +466,15 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
           </button>
         </div>
 
-        <div className="bg-white border border-orange-500/30 rounded-2xl overflow-hidden shadow-xs">
+        <div className={`border rounded-2xl overflow-hidden shadow-xs transition-colors ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-orange-500/30'
+        }`}>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
-                <tr className="border-b border-orange-500/20 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50/50">
+                <tr className={`border-b text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                  isDark ? 'bg-zinc-950/80 border-zinc-800 text-zinc-400' : 'bg-gray-50/50 border-orange-500/20 text-gray-400'
+                }`}>
                   <th className="p-4">Order</th>
                   <th className="p-4">Customer</th>
                   <th className="p-4">Phone</th>
@@ -463,7 +483,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className={`divide-y ${isDark ? 'divide-zinc-800/60' : 'divide-gray-100'}`}>
                 {recentOrders.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-10 text-center text-xs text-gray-400">
@@ -483,8 +503,10 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                       <React.Fragment key={order.id}>
                         <tr
                           onClick={() => handleToggleExpand(order.id, !isUnreviewed)}
-                          className={`hover:bg-orange-500/3 transition-colors cursor-pointer group ${
-                            isUnreviewed ? "border-l-4 border-l-amber-500 bg-amber-500/5" : ""
+                          className={`transition-colors cursor-pointer group ${
+                            isUnreviewed
+                              ? isDark ? "border-l-4 border-l-amber-500 bg-amber-950/30 hover:bg-amber-900/40" : "border-l-4 border-l-amber-500 bg-amber-500/5 hover:bg-orange-500/5"
+                              : isDark ? "hover:bg-zinc-800/70" : "hover:bg-orange-500/3"
                           }`}
                         >
                           {/* Order Number */}
@@ -492,7 +514,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                             <div className="flex items-center gap-2 flex-wrap max-w-[200px]">
                               <div className="flex items-center gap-1">
                                 <Hash className="h-3 w-3 text-orange-400" />
-                                <span className="text-xs font-black text-gray-800">
+                                <span className={`text-xs font-black ${isDark ? 'text-zinc-100' : 'text-gray-800'}`}>
                                   {orderNo}
                                 </span>
                               </div>
@@ -501,7 +523,7 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
                                   NEW
                                 </span>
                               )}
-                              <span className="text-[10px] text-gray-400 font-semibold block w-full pl-4 mt-0.5">
+                              <span className={`text-[10px] font-semibold block w-full pl-4 mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-400'}`}>
                                 {timeSince(order.createdAt)}
                               </span>
                             </div>
@@ -509,21 +531,21 @@ export default function OperationsTab({ ordersList, setOrdersList, setActiveTab 
 
                           {/* Customer */}
                           <td className="p-4">
-                            <span className="text-xs font-bold text-gray-800 block truncate max-w-[150px]">
+                            <span className={`text-xs font-bold block truncate max-w-[150px] ${isDark ? 'text-zinc-200' : 'text-gray-800'}`}>
                               {order.customer_name || order.user?.email || `Customer #${order.user_id}`}
                             </span>
                           </td>
 
                           {/* Phone */}
                           <td className="p-4">
-                            <span className="text-xs text-gray-500 font-semibold">
+                            <span className={`text-xs font-semibold ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
                               {order.customer_phone || "—"}
                             </span>
                           </td>
 
                           {/* Delivery Slot */}
                           <td className="p-4">
-                            <span className="text-xs text-gray-650 font-bold">
+                            <span className={`text-xs font-bold ${isDark ? 'text-zinc-300' : 'text-gray-650'}`}>
                               {(order as any).deliverySlot?.name || deliverySlots.find(s => Number(s.id) === Number(order.delivery_slot_id))?.name || "None"}
                             </span>
                           </td>

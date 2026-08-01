@@ -159,6 +159,28 @@ export default function PricingMediaStep({
               />
             </div>
 
+            {/* Cost Price (Internal Only for Admin Profit Tracking) */}
+            <div className="flex flex-col gap-1.5 col-span-2 md:col-span-1">
+              <label className="text-[11px] font-bold text-emerald-600 uppercase tracking-wide flex items-center justify-between">
+                <span>Cost Price (QAR)</span>
+                <span className="text-[9px] text-emerald-500 font-semibold lowercase">admin only</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.cost_price || ""}
+                onChange={(e) => handleChange("cost_price", parseFloat(e.target.value) || 0)}
+                className="w-full border border-emerald-500/20 bg-emerald-50/20 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 outline-none transition-all font-semibold"
+                placeholder="0.00"
+              />
+              {Boolean(formData.cost_price && formData.cost_price > 0 && formData.price && formData.price > 0) && (
+                <div className="text-[10px] font-bold flex items-center justify-between px-1 text-emerald-700">
+                  <span>Est. Profit: QAR {((formData.price || 0) - (formData.cost_price || 0)).toFixed(2)}</span>
+                  <span>({((((formData.price || 0) - (formData.cost_price || 0)) / (formData.price || 1)) * 100).toFixed(1)}% Margin)</span>
+                </div>
+              )}
+            </div>
+
             {/* Inventory / Stock */}
             <div className="flex flex-col gap-1.5 col-span-2 md:col-span-1">
               {hasVariants ? (

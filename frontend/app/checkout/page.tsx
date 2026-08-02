@@ -515,11 +515,11 @@ export default function CheckoutPage() {
 
   const hasTrackedCheckoutRef = useRef(false);
   useEffect(() => {
-    if (activeCart.items.length > 0 && finalTotal > 0 && !hasTrackedCheckoutRef.current) {
-      trackInitiateCheckout(finalTotal, activeCart.items);
+    if (activeCart.items.length > 0 && orderTotal > 0 && !hasTrackedCheckoutRef.current) {
+      trackInitiateCheckout(orderTotal, activeCart.items);
       hasTrackedCheckoutRef.current = true;
     }
-  }, [activeCart.items, finalTotal]);
+  }, [activeCart.items, orderTotal]);
 
   // Stock error helpers
   const activeStockErrors = Object.keys(stockErrors).filter((id) =>

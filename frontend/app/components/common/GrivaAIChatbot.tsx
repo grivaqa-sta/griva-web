@@ -673,7 +673,7 @@ export default function GrivaAIChatbot() {
           );
         } else {
           addBotResponse(
-            "We have great campaigns running! 🎉\n\n• **Free Doha Delivery:** Applied automatically on all orders above QAR 99.\n• **Premium Quality:** Guaranteed best tech and perfume deals in Qatar.\n\nClick below to check out our shop page!",
+            "We have great campaigns running! 🎉\n\n• **Free Doha Delivery:** Applied automatically on all orders above QAR 49.\n• **Premium Quality:** Guaranteed best tech and perfume deals in Qatar.\n\nClick below to check out our shop page!",
             [
               { label: "🛍️ Shop Latest Deals", action: "redirect", link: "/shop" },
               { label: "🔙 Back to Main Menu", action: "main_menu" }
@@ -762,7 +762,7 @@ export default function GrivaAIChatbot() {
       );
     } else if (q.includes("delivery") || q.includes("shipping") || q.includes("time") || q.includes("doha") || q.includes("cod") || q.includes("fast")) {
       addBotResponse(
-        "We offer fast express delivery! 🚚\n\n• **Doha:** Free delivery on orders over QAR 99.\n• **Rest of Qatar:** Express dispatch with delivery within 24-48 hours.\n• Cash on Delivery (COD) is fully supported!",
+        "We offer fast express delivery! 🚚\n\n• **Doha:** Free delivery on orders over QAR 49.\n• **Rest of Qatar:** Express dispatch with delivery within 24-48 hours.\n• Cash on Delivery (COD) is fully supported!",
         [
           { label: "🚚 Delivery Policy Details", action: "redirect", link: "/same-day-delivery-doha" },
           { label: "🔙 Main Menu", action: "main_menu" }
@@ -780,7 +780,7 @@ export default function GrivaAIChatbot() {
         );
       } else {
         addBotResponse(
-          "We offer free Doha shipping on orders over QAR 99, plus seasonal discounts on premium electronics and fragrances! Click below to shop:",
+          "We offer free Doha shipping on orders over QAR 49, plus seasonal discounts on premium electronics and fragrances! Click below to shop:",
           [
             { label: "🛍️ Browse Shop", action: "redirect", link: "/shop" },
             { label: "🔙 Main Menu", action: "main_menu" }

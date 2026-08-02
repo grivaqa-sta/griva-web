@@ -99,7 +99,7 @@ export const metadata: Metadata = {
     url: "https://thegriva.com",
     siteName: "GRIVA Qatar",
     title: "GRIVA Qatar - Online Shopping with Cash on Delivery",
-    description: "Qatar's trusted online store. Apple & Samsung accessories, gaming, perfumes, toys, baby products. COD available across Qatar. Free delivery over QAR 99.",
+    description: "Qatar's trusted online store. Apple & Samsung accessories, gaming, perfumes, toys, baby products. COD available across Qatar. Free delivery over QAR 49.",
     images: [
       {
         url: "/og-image.jpg",

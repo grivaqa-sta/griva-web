@@ -26,6 +26,7 @@ const startServer = async () => {
     await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "deal_of_day" BOOLEAN DEFAULT false;');
     await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "href" VARCHAR(255);');
     await sequelize.query('ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "banner_background_color" VARCHAR(255);');
+    await sequelize.query('UPDATE "SiteSettings" SET "freeShippingThreshold" = 49.00, "announcementBarText" = \'FREE DELIVERY ON ORDERS OVER QAR 49\' WHERE "freeShippingThreshold" != 49.00 OR "announcementBarText" LIKE \'%99%\' OR "announcementBarText" LIKE \'%150%\';');
     // Resync primary key sequences for all database tables to prevent PK duplicate key errors in production
     const tablesToResync = [
       'sub_categories',

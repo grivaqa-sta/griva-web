@@ -23,7 +23,7 @@ import FAQSchema from "@/components/seo/FAQSchema";
 const DELIVERY_FAQS = [
   {
     question: "What are the shipping charges for GRIVA orders in Qatar?",
-    answer: "Delivery is completely FREE across all municipalities in Qatar for orders above QAR 99. For orders below QAR 99, a flat delivery fee of QAR 10 applies to Doha and inner suburbs, and QAR 25-30 for remote outer zones."
+    answer: "Delivery is completely FREE across all municipalities in Qatar for orders above QAR 49. For orders below QAR 49, a flat delivery fee of QAR 10 applies to Doha and inner suburbs, and QAR 25-30 for remote outer zones."
   },
   {
     question: "How fast is the same-day delivery in Doha?",
@@ -48,21 +48,21 @@ const COVERAGE_ZONES = [
     name: "DOHA MUNICIPAL & INNER SUBURBS",
     areas: "West Bay, The Pearl, Lusail, Al Waab, Abu Hamour, Al Sadd, Madinat Khalifa",
     time: "2 - 4 Hours",
-    fee: "QAR 10 (Free over QAR 99)",
+    fee: "QAR 10 (Free over QAR 49)",
     highlight: true
   },
   {
     name: "RAYYAN & SUBURBS",
     areas: "Muaither, Al Wajbah, Gharrafa, Shahaniya, Umm Salal Mohammed",
     time: "4 - 6 Hours",
-    fee: "QAR 20 (Free over QAR 99)",
+    fee: "QAR 20 (Free over QAR 49)",
     highlight: false
   },
   {
     name: "AL WAKRA & AL WUKAIR",
     areas: "Wakra City, Wukair, Ezdan Villages, Mesaieed Port",
     time: "4 - 6 Hours",
-    fee: "QAR 20 (Free over QAR 99)",
+    fee: "QAR 20 (Free over QAR 49)",
     highlight: false
   },
   {
@@ -91,7 +91,7 @@ export default function SameDayDeliveryPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white apple-font">
       <title>Same Day Delivery Doha & Qatar Express Shipping | GRIVA</title>
-      <meta name="description" content="Enjoy lightning fast same-day delivery across Doha, Lusail, West Bay, Pearl-Qatar, and all major Qatar regions. Free delivery on orders above QAR 99." />
+      <meta name="description" content="Enjoy lightning fast same-day delivery across Doha, Lusail, West Bay, Pearl-Qatar, and all major Qatar regions. Free delivery on orders above QAR 49." />
       <link rel="canonical" href="https://thegriva.com/same-day-delivery-doha" />
       <BreadcrumbSchema items={[
         { name: "Home", path: "/" },
@@ -156,7 +156,7 @@ export default function SameDayDeliveryPage() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="mx-auto mt-6 max-w-xl text-xs sm:text-sm leading-relaxed text-zinc-400"
             >
-              Order before 4 PM to get your premium electronics, audio gear, and lifestyle products delivered right to your doorstep within 2-4 hours in Doha. Free shipping on orders over QAR 99.
+              Order before 4 PM to get your premium electronics, audio gear, and lifestyle products delivered right to your doorstep within 2-4 hours in Doha. Free shipping on orders over QAR 49.
             </motion.p>
 
             <motion.div
@@ -193,7 +193,7 @@ export default function SameDayDeliveryPage() {
               <div className="mx-auto mb-3 w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
                 <Zap className="h-4 w-4" />
               </div>
-              <p className="text-lg font-bold text-white">Free Over QAR 99</p>
+              <p className="text-lg font-bold text-white">Free Over QAR 49</p>
               <p className="mt-1 text-[10px] text-zinc-500 uppercase tracking-wider">Across All Cities</p>
             </div>
             <div className="p-6 text-center">

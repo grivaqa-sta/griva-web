@@ -341,7 +341,7 @@ export default function CheckoutPage() {
   const { settings } = useSettings();
   const shippingConfig = {
     shippingFee: settings.shippingFee !== undefined ? Number(settings.shippingFee) : 10,
-    freeShippingThreshold: settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 99,
+    freeShippingThreshold: settings.freeShippingThreshold !== undefined ? Number(settings.freeShippingThreshold) : 49,
     whatsappNumber: settings.whatsappNumber || "+97470066559",
   };
 

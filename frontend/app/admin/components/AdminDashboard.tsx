@@ -68,7 +68,7 @@ export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [shippingFee, setShippingFee] = useState<number>(10);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(99);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(49);
   const [telegramLink, setTelegramLink] = useState<string>("");
   const [whatsappCommunityLink, setWhatsappCommunityLink] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
       setFridaySaleEnabled(dbSettings.fridaySaleEnabled);
       setMidnightSaleEnabled(dbSettings.midnightSaleEnabled);
       setShippingFee(dbSettings.shippingFee !== undefined ? Number(dbSettings.shippingFee) : 10);
-      setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 99);
+      setFreeShippingThreshold(dbSettings.freeShippingThreshold !== undefined ? Number(dbSettings.freeShippingThreshold) : 49);
       setTelegramLink(dbSettings.telegramLink || "");
       setWhatsappCommunityLink(dbSettings.whatsappCommunityLink || "");
       setFridaySaleConfig(dbSettings.fridaySaleConfig || null);

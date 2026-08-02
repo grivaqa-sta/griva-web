@@ -402,7 +402,7 @@ exports.createOrder = async (req, res, next) => {
     // Fetch site settings for shipping fee calculation
     const settings = await SiteSetting.findOne({ transaction });
     const shippingFee = settings ? parseFloat(settings.shippingFee) : 15.00;
-    const freeShippingThreshold = settings ? parseFloat(settings.freeShippingThreshold) : 150.00;
+    const freeShippingThreshold = settings ? parseFloat(settings.freeShippingThreshold) : 49.00;
 
     let finalTotal = calculatedTotal;
     if (calculatedTotal < freeShippingThreshold && calculatedTotal > 0) {

@@ -50,7 +50,7 @@ export default function CartPage() {
 
   const { settings } = useSettings();
   const shippingFee = settings.shippingFee ?? 10;
-  const freeShippingThreshold = Number(settings.freeShippingThreshold) || 99;
+  const freeShippingThreshold = Number(settings.freeShippingThreshold) || 49;
 
   const [stockStatus, setStockStatus] = useState<Record<number, { available: number; ok: boolean; active: boolean; title: string }>>({});
   const [checkingStock, setCheckingStock] = useState(false);

@@ -60,7 +60,7 @@ export default function AnnouncementBar() {
   const [isMobile, setIsMobile] = useState(false);
   const { announcementBarEnabled } = useAdminSettings();
   const { settings } = useSettings();
-  const freeShippingThreshold = settings.freeShippingThreshold ?? 99;
+  const freeShippingThreshold = settings.freeShippingThreshold ?? 49;
   const pathname = usePathname();
 
 

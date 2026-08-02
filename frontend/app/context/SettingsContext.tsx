@@ -34,7 +34,7 @@ export const SETTINGS_DEFAULTS: GlobalSettings = {
   fridaySaleEnabled: true,
   midnightSaleEnabled: false,
   shippingFee: 10,
-  freeShippingThreshold: 99,
+  freeShippingThreshold: 49,
   whatsappNumber: "+97470066559",
   supportEmail: "info@thegriva.com",
   telegramLink: "",

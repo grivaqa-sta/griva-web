@@ -233,7 +233,7 @@ export async function getSettingsApi(): Promise<GlobalSettings> {
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
         shippingFee: 10,
-        freeShippingThreshold: 99,
+        freeShippingThreshold: 49,
       },
     }
   );
@@ -253,7 +253,7 @@ export async function updateSettingsApi(settings: Partial<GlobalSettings>): Prom
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
         shippingFee: 10,
-        freeShippingThreshold: 99,
+        freeShippingThreshold: 49,
         ...settings,
       },
     }

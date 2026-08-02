@@ -17,7 +17,7 @@ interface FeatureItem {
 export default function FeatureSection() {
   // freeShippingThreshold comes from the global SettingsProvider \u2014 no individual API call needed.
   const { settings } = useSettings();
-  const freeShippingThreshold = settings.freeShippingThreshold ?? 99;
+  const freeShippingThreshold = settings.freeShippingThreshold ?? 49;
 
   const features: FeatureItem[] = [
     {

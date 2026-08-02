@@ -100,7 +100,7 @@ export default function DesktopHeroBanner({ bannerProducts: propProducts, loadin
     const { settings } = useSettings();
     const slides: HeroSlide[] = bannerProducts.map(mapProductToSlide);
     const [current, setCurrent] = useState(0);
-    const freeShippingThreshold = settings?.freeShippingThreshold ?? 99;
+    const freeShippingThreshold = settings?.freeShippingThreshold ?? 49;
     const busyRef = useRef(false);
 
     useEffect(() => {

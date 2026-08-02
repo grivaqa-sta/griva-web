@@ -70,7 +70,7 @@ For tech shoppers in Doha, West Bay, Al Sadd, and Lusail, waiting is no longer a
 
 At **GRIVA**, we recognized this shift early on. Our localized warehouse and dedicated in-house logistics team ensure that:
 * Orders placed before **4:00 PM** are delivered in **2 to 4 hours**.
-* Delivery is **FREE** for orders above QAR 99.
+* Delivery is **FREE** for orders above QAR 49.
 * Real-time WhatsApp coordinate updates keep you in touch with the courier.
 
 ## SECURITY & TRUST: COD & DOORSTEP CARD PAYMENTS

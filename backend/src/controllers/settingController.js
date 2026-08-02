@@ -10,13 +10,13 @@ exports.getSettings = async (req, res) => {
     if (!setting) {
       setting = await SiteSetting.create({
         announcementBarEnabled: true,
-        announcementBarText: "Free shipping across Doha for orders over $150!",
+        announcementBarText: "FREE DELIVERY ON ORDERS OVER QAR 49",
         fridaySaleEnabled: true,
         midnightSaleEnabled: false,
         whatsappNumber: "+97470066559",
         supportEmail: "info@thegriva.com",
-        shippingFee: 15.00,
-        freeShippingThreshold: 150.00,
+        shippingFee: 10.00,
+        freeShippingThreshold: 49.00,
         telegramLink: "",
         whatsappCommunityLink: "",
         fridaySaleConfig: null,
@@ -51,13 +51,13 @@ exports.updateSettings = async (req, res) => {
     if (!setting) {
       setting = await SiteSetting.create({
         announcementBarEnabled: announcementBarEnabled !== undefined ? Boolean(announcementBarEnabled) : true,
-        announcementBarText: announcementBarText || "Free shipping across Doha for orders over $150!",
+        announcementBarText: announcementBarText || "FREE DELIVERY ON ORDERS OVER QAR 49",
         fridaySaleEnabled: fridaySaleEnabled !== undefined ? Boolean(fridaySaleEnabled) : true,
         midnightSaleEnabled: midnightSaleEnabled !== undefined ? Boolean(midnightSaleEnabled) : false,
         whatsappNumber: whatsappNumber || "+97470066559",
         supportEmail: supportEmail || "info@thegriva.com",
-        shippingFee: shippingFee !== undefined ? Number(shippingFee) : 15.00,
-        freeShippingThreshold: freeShippingThreshold !== undefined ? Number(freeShippingThreshold) : 150.00,
+        shippingFee: shippingFee !== undefined ? Number(shippingFee) : 10.00,
+        freeShippingThreshold: freeShippingThreshold !== undefined ? Number(freeShippingThreshold) : 49.00,
         telegramLink: telegramLink || "",
         whatsappCommunityLink: whatsappCommunityLink || "",
         fridaySaleConfig: fridaySaleConfig || null,

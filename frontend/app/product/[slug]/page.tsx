@@ -406,7 +406,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   // freeShippingThreshold from global SettingsProvider — no API call needed.
   const { settings } = useSettings();
-  const freeShippingThreshold = Number(settings.freeShippingThreshold) || 99;
+  const freeShippingThreshold = Number(settings.freeShippingThreshold) || 49;
 
 
   useEffect(() => {

@@ -15,7 +15,7 @@ const SiteSetting = sequelize.define(
     },
     announcementBarText: {
       type: DataTypes.STRING,
-      defaultValue: "Free shipping across Doha for orders over QAR 150!",
+      defaultValue: "FREE DELIVERY ON ORDERS OVER QAR 49",
     },
     fridaySaleEnabled: {
       type: DataTypes.BOOLEAN,
@@ -39,11 +39,11 @@ const SiteSetting = sequelize.define(
     },
     shippingFee: {
       type: DataTypes.DECIMAL(10, 2),
-      defaultValue: 15.00,
+      defaultValue: 10.00,
     },
     freeShippingThreshold: {
       type: DataTypes.DECIMAL(10, 2),
-      defaultValue: 150.00,
+      defaultValue: 49.00,
     },
     telegramLink: {
       type: DataTypes.STRING,

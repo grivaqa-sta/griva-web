@@ -100,13 +100,7 @@ export default function CheckoutPage() {
   const { toast } = useToast();
 
   const [mounted, setMounted] = useState(false);
-  const [isBuyNow, setIsBuyNow] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("buyNow") === "true";
-    }
-    return false;
-  });
+  const [isBuyNow, setIsBuyNow] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<any | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
 

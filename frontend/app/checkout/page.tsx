@@ -100,7 +100,13 @@ export default function CheckoutPage() {
   const { toast } = useToast();
 
   const [mounted, setMounted] = useState(false);
-  const [isBuyNow, setIsBuyNow] = useState(false);
+  const [isBuyNow, setIsBuyNow] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("buyNow") === "true";
+    }
+    return false;
+  });
   const [buyNowItem, setBuyNowItem] = useState<any | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
 
@@ -114,32 +120,44 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setMounted(true);
-    const params = new URLSearchParams(window.location.search);
-    const buyNowParam = params.get("buyNow") === "true";
-    if (buyNowParam) {
-      setIsBuyNow(true);
-      const stored = sessionStorage.getItem("griva-buynow-item");
-      if (stored) {
-        try {
-          const item = JSON.parse(stored);
-          const fullItem = {
-            id: Date.now(),
-            productId: item.productId,
-            title: item.title,
-            image: item.image,
-            price: item.price,
-            priceNumber: item.priceNumber,
-            oldPriceNumber: item.oldPriceNumber || item.priceNumber,
-            quantity: item.quantity,
-            category: item.category,
-            selectedColor: item.selectedColor,
-            selectedStorage: item.selectedStorage,
-            slug: item.slug,
-          };
-          setBuyNowItem(fullItem);
-          setSelectedItemIds(new Set([fullItem.id]));
-        } catch (err) {
-          console.error("Failed to parse buyNowItem:", err);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const buyNowParam = params.get("buyNow") === "true";
+      if (buyNowParam) {
+        setIsBuyNow(true);
+        const stored = sessionStorage.getItem("griva-buynow-item");
+        if (stored) {
+          try {
+            const item = JSON.parse(stored);
+            const pNum = typeof item.priceNumber === "number" && !isNaN(item.priceNumber)
+              ? item.priceNumber
+              : parseFloat(String(item.price || 0).replace(/[^0-9.]/g, "")) || 0;
+            const oldPNum = typeof item.oldPriceNumber === "number" && !isNaN(item.oldPriceNumber)
+              ? item.oldPriceNumber
+              : pNum;
+
+            const fullItem = {
+              id: Date.now(),
+              productId: Number(item.productId),
+              variantId: item.variantId ? Number(item.variantId) : undefined,
+              selectedAttributes: item.selectedAttributes || undefined,
+              title: item.title || "Product",
+              image: item.image || "",
+              price: item.price || `QAR ${pNum.toFixed(2)}`,
+              priceNumber: pNum,
+              oldPriceNumber: oldPNum,
+              quantity: Number(item.quantity) || 1,
+              category: item.category || "Product",
+              selectedColor: item.selectedColor || undefined,
+              selectedStorage: item.selectedStorage || undefined,
+              slug: item.slug || "",
+              sku: item.sku || undefined,
+            };
+            setBuyNowItem(fullItem);
+            setSelectedItemIds(new Set([fullItem.id]));
+          } catch (err) {
+            console.error("Failed to parse buyNowItem:", err);
+          }
         }
       }
     }
@@ -473,18 +491,20 @@ export default function CheckoutPage() {
     fetchAddresses();
   }, [isLoggedIn]);
 
-  // Redirect if cart is empty (but not while placing order)
+  // Redirect if cart is empty (but not while placing order or in Buy Now mode)
   useEffect(() => {
     if (!mounted || isPlacingOrder) return;
-    if (isBuyNow) {
+
+    const isBuyNowUrl = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("buyNow") === "true";
+    if (isBuyNowUrl || isBuyNow) {
       const stored = sessionStorage.getItem("griva-buynow-item");
-      if (!stored) {
+      if (!stored && !buyNowItem) {
         router.push("/cart");
       }
     } else if (cartState.items.length === 0) {
       router.push("/cart");
     }
-  }, [mounted, cartState.items.length, isBuyNow, router, isPlacingOrder]);
+  }, [mounted, cartState.items.length, isBuyNow, buyNowItem, router, isPlacingOrder]);
 
   if (!mounted) {
     return null;

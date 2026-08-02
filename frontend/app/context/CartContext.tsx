@@ -14,6 +14,7 @@ import { parsePriceNumber } from "@/app/data/data";
 import { useUser } from "./UserContext";
 import { cartService } from "../services/cart.service";
 import { useToast } from "./ToastContext";
+import { trackAddToCart } from "@/app/components/common/PixelScripts";
 
 // ─────────────────────────────────────────────────────────
 // Reducer
@@ -244,6 +245,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
         if (response.success && response.cart) {
           dispatch({ type: "SET_CART", payload: response.cart.items });
+          trackAddToCart(product.id, product.title, product.price, qty, product.category);
           toast.cart("Product added to cart");
         }
       } else {
@@ -329,6 +331,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           sku: product.sku,
         };
         dispatch({ type: "ADD", payload: cartItem });
+        trackAddToCart(product.id, product.title, product.price, qty, product.category);
         toast.cart("Product added to cart");
       }
     } catch (error: any) {

@@ -7,6 +7,7 @@ import { useCart } from "@/app/context/CartContext";
 import { addressService } from "@/app/services/address.service";
 import { orderService } from "@/app/services/order.service";
 import { cartService } from "@/app/services/cart.service";
+import { trackInitiateCheckout } from "@/app/components/common/PixelScripts";
 import { Address, CartState } from "@/app/types/types";
 import SectionHeading from "@/app/components/common/SectionHeading";
 import {
@@ -511,6 +512,14 @@ export default function CheckoutPage() {
       setFormErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
+
+  const hasTrackedCheckoutRef = useRef(false);
+  useEffect(() => {
+    if (activeCart.items.length > 0 && finalTotal > 0 && !hasTrackedCheckoutRef.current) {
+      trackInitiateCheckout(finalTotal, activeCart.items);
+      hasTrackedCheckoutRef.current = true;
+    }
+  }, [activeCart.items, finalTotal]);
 
   // Stock error helpers
   const activeStockErrors = Object.keys(stockErrors).filter((id) =>

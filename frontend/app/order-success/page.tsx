@@ -60,8 +60,7 @@ function OrderSuccessContent() {
     if (orderData && orderExists) {
       const totalStr = String(orderData.total_price || "0").replace(/([$]|qar|[\s,])/gi, "");
       const totalValue = parseFloat(totalStr) || 0;
-      const numItems = orderData.items?.length || 1;
-      trackPurchase(orderNumber, totalValue, numItems);
+      trackPurchase(orderNumber, totalValue, orderData.items || []);
     }
   }, [orderData, orderExists]);
 

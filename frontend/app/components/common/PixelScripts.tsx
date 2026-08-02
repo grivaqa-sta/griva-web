@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 // ─────────────────────────────────────────────────────────
 // Replace these IDs with your actual pixel IDs from:
@@ -19,10 +20,14 @@ declare global {
     _fbq: any;
     snaptr: (...args: any[]) => void;
     gtag?: (...args: any[]) => void;
+    dataLayer: any[];
   }
 }
 
 export default function PixelScripts() {
+  const pathname = usePathname();
+
+  // Initialize pixels
   useEffect(() => {
     // ─── Meta (Facebook) Pixel ──────────────────────────────
     if (META_PIXEL_ID) {
@@ -67,91 +72,157 @@ export default function PixelScripts() {
     }
   }, []);
 
+  // Track SPA client-side page views in GA4 and GTM on route change
+  useEffect(() => {
+    if (typeof window === "undefined" || !pathname) return;
+
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: "page_view",
+      page_path: pathname,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+
+    window.gtag?.("event", "page_view", {
+      page_path: pathname,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  }, [pathname]);
+
   return null; // no visible UI
 }
 
 // ─── Helper Functions for Event Tracking ────────────────
-// Call these from any component for conversion events:
 
 /**
  * Track when a product is viewed
  */
-export function trackViewContent(productId: string | number, title: string, price: number) {
+export function trackViewContent(productId: string | number, title: string, price: number, category: string = "") {
   if (typeof window === "undefined") return;
+  const numPrice = typeof price === "number" ? price : parseFloat(String(price).replace(/[^0-9.]/g, "")) || 0;
+
   if (META_PIXEL_ID) {
     window.fbq?.("track", "ViewContent", {
       content_ids: [String(productId)],
       content_name: title,
       content_type: "product",
-      value: price,
+      value: numPrice,
       currency: "QAR",
     });
   }
   if (SNAP_PIXEL_ID) {
     window.snaptr?.("track", "VIEW_CONTENT", {
       item_ids: [String(productId)],
-      item_category: "product",
-      price: price,
+      item_category: category || "product",
+      price: numPrice,
       currency: "QAR",
     });
   }
-  // ─── Google Analytics GA4 ─────────────────────────────
+
+  const itemObj = {
+    item_id: String(productId),
+    item_name: title,
+    item_category: category,
+    price: numPrice,
+    quantity: 1,
+  };
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: "view_item",
+    ecommerce: {
+      currency: "QAR",
+      value: numPrice,
+      items: [itemObj],
+    },
+  });
+
   window.gtag?.("event", "view_item", {
     currency: "QAR",
-    value: price,
-    items: [{
-      item_id: String(productId),
-      item_name: title,
-      price: price,
-      quantity: 1
-    }]
+    value: numPrice,
+    items: [itemObj],
   });
 }
 
 /**
  * Track when a product is added to cart
  */
-export function trackAddToCart(productId: string | number, title: string, price: number) {
+export function trackAddToCart(
+  productId: string | number,
+  title: string,
+  price: number | string,
+  quantity: number = 1,
+  category: string = ""
+) {
   if (typeof window === "undefined") return;
+  const numPrice = typeof price === "number" ? price : parseFloat(String(price).replace(/[^0-9.]/g, "")) || 0;
+  const totalPrice = numPrice * (quantity || 1);
+
   if (META_PIXEL_ID) {
     window.fbq?.("track", "AddToCart", {
       content_ids: [String(productId)],
       content_name: title,
       content_type: "product",
-      value: price,
+      value: totalPrice,
       currency: "QAR",
     });
   }
   if (SNAP_PIXEL_ID) {
     window.snaptr?.("track", "ADD_CART", {
       item_ids: [String(productId)],
-      price: price,
+      price: totalPrice,
       currency: "QAR",
     });
   }
-  // ─── Google Analytics GA4 ─────────────────────────────
+
+  const itemObj = {
+    item_id: String(productId),
+    item_name: title,
+    item_category: category,
+    price: numPrice,
+    quantity: quantity || 1,
+  };
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: "add_to_cart",
+    ecommerce: {
+      currency: "QAR",
+      value: totalPrice,
+      items: [itemObj],
+    },
+  });
+
   window.gtag?.("event", "add_to_cart", {
     currency: "QAR",
-    value: price,
-    items: [{
-      item_id: String(productId),
-      item_name: title,
-      price: price,
-      quantity: 1
-    }]
+    value: totalPrice,
+    items: [itemObj],
   });
 }
 
 /**
  * Track when checkout is initiated
  */
-export function trackInitiateCheckout(totalValue: number, numItems: number) {
+export function trackInitiateCheckout(totalValue: number, items: any[] = []) {
   if (typeof window === "undefined") return;
+
+  const formattedItems = items.map((item) => {
+    const p = typeof item.priceNumber === "number" ? item.priceNumber : parseFloat(String(item.price || 0).replace(/[^0-9.]/g, "")) || 0;
+    return {
+      item_id: String(item.productId || item.id || ""),
+      item_name: item.title || item.name || "Product",
+      price: p,
+      quantity: item.quantity || 1,
+    };
+  });
+
   if (META_PIXEL_ID) {
     window.fbq?.("track", "InitiateCheckout", {
       value: totalValue,
       currency: "QAR",
-      num_items: numItems,
+      num_items: items.length || 1,
     });
   }
   if (SNAP_PIXEL_ID) {
@@ -160,23 +231,48 @@ export function trackInitiateCheckout(totalValue: number, numItems: number) {
       currency: "QAR",
     });
   }
-  // ─── Google Analytics GA4 ─────────────────────────────
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: "begin_checkout",
+    ecommerce: {
+      currency: "QAR",
+      value: totalValue,
+      items: formattedItems,
+    },
+  });
+
   window.gtag?.("event", "begin_checkout", {
     currency: "QAR",
-    value: totalValue
+    value: totalValue,
+    items: formattedItems,
   });
 }
 
 /**
  * Track a successful purchase
  */
-export function trackPurchase(orderNumber: string, totalValue: number, numItems: number) {
+export function trackPurchase(orderNumber: string, totalValue: number, items: any[] = []) {
   if (typeof window === "undefined") return;
+
+  const formattedItems = items.map((item) => {
+    const p = typeof item.price === "number"
+      ? item.price
+      : parseFloat(String(item.price_at_purchase || item.price || 0).replace(/[^0-9.]/g, "")) || 0;
+    const name = item.title || item.name || (item.product ? item.product.title : "Product");
+    return {
+      item_id: String(item.id || item.product_id || ""),
+      item_name: name,
+      price: p,
+      quantity: item.quantity || 1,
+    };
+  });
+
   if (META_PIXEL_ID) {
     window.fbq?.("track", "Purchase", {
       value: totalValue,
       currency: "QAR",
-      num_items: numItems,
+      num_items: items.length || 1,
       order_id: orderNumber,
     });
   }
@@ -187,10 +283,22 @@ export function trackPurchase(orderNumber: string, totalValue: number, numItems:
       transaction_id: orderNumber,
     });
   }
-  // ─── Google Analytics GA4 ─────────────────────────────
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: "purchase",
+    ecommerce: {
+      transaction_id: orderNumber,
+      value: totalValue,
+      currency: "QAR",
+      items: formattedItems,
+    },
+  });
+
   window.gtag?.("event", "purchase", {
     transaction_id: orderNumber,
     value: totalValue,
-    currency: "QAR"
+    currency: "QAR",
+    items: formattedItems,
   });
 }

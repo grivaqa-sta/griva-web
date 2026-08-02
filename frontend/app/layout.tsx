@@ -216,9 +216,11 @@ export default function RootLayout({
             __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
               gtag('js', new Date());
               gtag('config', 'G-NJRX15EYGX', {
-                page_path: window.location.pathname,
+                send_page_view: true,
+                cookie_flags: 'SameSite=None;Secure'
               });
             `,
           }}

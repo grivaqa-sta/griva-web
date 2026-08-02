@@ -84,11 +84,16 @@ export default function PixelScripts() {
       page_title: document.title,
     });
 
-    window.gtag?.("event", "page_view", {
-      page_path: pathname,
-      page_location: window.location.href,
-      page_title: document.title,
-    });
+    if (window.gtag) {
+      window.gtag("config", "G-NJRX15EYGX", {
+        page_path: pathname,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+      window.gtag("event", "user_engagement", {
+        engagement_time_msec: 1000,
+      });
+    }
   }, [pathname]);
 
   return null; // no visible UI

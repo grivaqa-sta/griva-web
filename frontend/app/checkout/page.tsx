@@ -111,6 +111,7 @@ export default function CheckoutPage() {
   const [stockErrors, setStockErrors] = useState<Record<string | number, { title: string; availableStock: number }>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
   const hasShownStockToastRef = useRef(false);
+  const hasTrackedCheckoutRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -500,6 +501,17 @@ export default function CheckoutPage() {
     }
   }, [mounted, cartState.items.length, isBuyNow, buyNowItem, router, isPlacingOrder]);
 
+  // Track begin_checkout (must be before early returns — hooks cannot be after conditional returns)
+  useEffect(() => {
+    if (!mounted) return;
+    const totalPrice = activeCart.totalPrice;
+    if (activeCart.items.length > 0 && totalPrice > 0 && !hasTrackedCheckoutRef.current) {
+      const shipping = totalPrice >= shippingConfig.freeShippingThreshold || totalPrice === 0 ? 0 : shippingConfig.shippingFee;
+      trackInitiateCheckout(totalPrice + shipping, activeCart.items);
+      hasTrackedCheckoutRef.current = true;
+    }
+  }, [mounted, activeCart.items, activeCart.totalPrice, shippingConfig]);
+
   if (!mounted) {
     return null;
   }
@@ -526,14 +538,6 @@ export default function CheckoutPage() {
       setFormErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
-
-  const hasTrackedCheckoutRef = useRef(false);
-  useEffect(() => {
-    if (activeCart.items.length > 0 && orderTotal > 0 && !hasTrackedCheckoutRef.current) {
-      trackInitiateCheckout(orderTotal, activeCart.items);
-      hasTrackedCheckoutRef.current = true;
-    }
-  }, [activeCart.items, orderTotal]);
 
   // Stock error helpers
   const activeStockErrors = Object.keys(stockErrors).filter((id) =>

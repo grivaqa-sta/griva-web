@@ -63,11 +63,17 @@ app.use(
 
       const allowedOrigins = getAllowedOrigins();
 
-      // Check exact match, vercel preview subdomains, or local dev localhost
+      // Check exact match, vercel preview subdomains, or local dev (localhost & LAN IPs)
       const isAllowed =
         allowedOrigins.includes(origin) ||
         /\.vercel\.app$/.test(origin) ||
-        (process.env.NODE_ENV === "development" && origin.startsWith("http://localhost:"));
+        (process.env.NODE_ENV === "development" && (
+          origin.startsWith("http://localhost:") ||
+          origin.startsWith("http://127.0.0.1:") ||
+          origin.startsWith("http://192.168.") ||
+          origin.startsWith("http://10.") ||
+          origin.startsWith("http://172.")
+        ));
 
       if (isAllowed) {
         return callback(null, true);

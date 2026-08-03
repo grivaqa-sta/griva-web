@@ -81,10 +81,12 @@ const Order = sequelize.define(
     },
     customer_email: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: {
-        isEmail: {
-          msg: "Must be a valid email address",
+        isEmail(value) {
+          if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            throw new Error("Must be a valid email address");
+          }
         },
       },
     },

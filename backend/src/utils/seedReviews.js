@@ -224,7 +224,13 @@ const SIMPLE_5STAR_REVIEWS = [
  */
 async function seedProductionReviews() {
   try {
-    console.log("🌱 [SEED REVIEWS]: Resetting and generating 100% ALL 5-STAR UNIQUE reviews (min 7 per product)...");
+    const existingReviewCount = await Review.count();
+    if (existingReviewCount > 0) {
+      console.log(`ℹ️ [SEED REVIEWS]: Database already has ${existingReviewCount} reviews. Skipping auto-seed.`);
+      return { success: true, message: "Reviews already seeded." };
+    }
+
+    console.log("🌱 [SEED REVIEWS]: Generating 100% ALL 5-STAR UNIQUE reviews (min 7 per product)...");
 
     // 1. Fetch all products
     const products = await Product.findAll();

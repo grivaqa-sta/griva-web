@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Search, Plus, Minus, Trash2, ShoppingBag, User, Phone,
-  MapPin, MessageSquare, CreditCard, CheckCircle, Loader2, AlertCircle,
+  MapPin, MessageSquare, CreditCard, CheckCircle, Loader2, AlertCircle, Building, Home, Compass
 } from 'lucide-react';
 import { useAdminTheme } from '../context/AdminThemeContext';
 
@@ -46,14 +46,22 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
   // Cart
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // Customer form
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [address, setAddress] = useState('');
+  // Customer Form (Matching exact Checkout Page fields & structure)
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [area, setArea] = useState('');
+  const [street, setStreet] = useState('');
+  const [buildingNumber, setBuildingNumber] = useState('');
+  const [zone, setZone] = useState('');
+  const [villaApartment, setVillaApartment] = useState('');
+  const [landmark, setLandmark] = useState('');
   const [city, setCity] = useState('Doha');
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'Paid'>('COD');
   const [notes, setNotes] = useState('');
+
+  // Form field errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Submission
   const [submitting, setSubmitting] = useState(false);
@@ -66,7 +74,7 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
 
   useEffect(() => {
     if (!isOpen) return;
-    const token = localStorage.getItem('griva_admin_token') || '';
+    const token = localStorage.getItem('griva_admin_token') || localStorage.getItem('griva_staff_token') || '';
     fetch(`${API_BASE}/settings`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -86,7 +94,7 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
     }
     setSearching(true);
     try {
-      const token = localStorage.getItem('griva_admin_token') || '';
+      const token = localStorage.getItem('griva_admin_token') || localStorage.getItem('griva_staff_token') || '';
       const res = await fetch(`${API_BASE}/products?search=${encodeURIComponent(q)}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -124,14 +132,20 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
       setSearchResults([]);
       setShowDropdown(false);
       setCartItems([]);
-      setCustomerName('');
-      setCustomerPhone('');
-      setCustomerEmail('');
-      setAddress('');
+      setFullName('');
+      setPhone('');
+      setEmail('');
+      setArea('');
+      setStreet('');
+      setBuildingNumber('');
+      setZone('');
+      setVillaApartment('');
+      setLandmark('');
       setCity('Doha');
       setPaymentMethod('COD');
       setNotes('');
       setError('');
+      setFormErrors({});
       setSuccess(null);
       setSubmitting(false);
     }
@@ -169,45 +183,115 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
   const shipping = subtotal > 0 && subtotal < freeThreshold ? shippingFee : 0;
   const total = subtotal + shipping;
 
+  // Strict Validation matching Customer Checkout Page exactly
+  const validateCustomerForm = (): boolean => {
+    const errs: Record<string, string> = {};
+
+    // 1. Full Name
+    const nameVal = fullName.trim();
+    if (!nameVal) {
+      errs.fullName = 'Full name is required';
+    } else if (nameVal.length < 3 || nameVal.length > 80) {
+      errs.fullName = 'Full name must be between 3 and 80 characters';
+    }
+
+    // 2. Qatar Phone Number (+974, 8 digits starting with 3, 5, 6, 7)
+    let cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.startsWith('00974')) cleanPhone = cleanPhone.slice(5);
+    else if (cleanPhone.startsWith('974')) cleanPhone = cleanPhone.slice(3);
+
+    if (!cleanPhone) {
+      errs.phone = 'Phone number is required';
+    } else if (!/^[3567]\d{7}$/.test(cleanPhone)) {
+      errs.phone = 'Must be an 8-digit Qatar phone number starting with 3, 5, 6, or 7';
+    }
+
+    // 3. Email (optional format check if filled)
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      errs.email = 'Invalid email address format';
+    }
+
+    // 4. Address Fields
+    if (!area.trim()) errs.area = 'Area / District is required';
+    if (!street.trim()) errs.street = 'Street Name / Number is required';
+    if (!buildingNumber.trim()) errs.buildingNumber = 'Building Number is required';
+
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async () => {
     setError('');
-    if (!customerName.trim()) { setError('Customer name is required.'); return; }
-    if (!address.trim()) { setError('Delivery address is required.'); return; }
-    if (cartItems.length === 0) { setError('Add at least one product.'); return; }
+
+    if (cartItems.length === 0) {
+      setError('Add at least one product to the order.');
+      setStep(1);
+      return;
+    }
+
+    if (!validateCustomerForm()) {
+      setError('Please fix the highlighted errors before submitting.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('griva_admin_token') || '';
+      // Clean phone number for backend (e.g. +97455551234)
+      let cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone.startsWith('00974')) cleanPhone = cleanPhone.slice(5);
+      else if (cleanPhone.startsWith('974')) cleanPhone = cleanPhone.slice(3);
+      const formattedPhone = `+974${cleanPhone}`;
+
+      // Format full shipping address matching customer checkout page structure
+      const formattedAddress = [
+        `Building ${buildingNumber.trim()}`,
+        `Street ${street.trim()}`,
+        zone.trim() ? `Zone ${zone.trim()}` : null,
+        area.trim(),
+        villaApartment.trim() ? `Villa/Apt ${villaApartment.trim()}` : null,
+        landmark.trim() ? `Landmark: ${landmark.trim()}` : null,
+      ].filter(Boolean).join(', ');
+
+      const token = localStorage.getItem('griva_admin_token') || localStorage.getItem('griva_staff_token') || '';
       const res = await fetch(`${API_BASE}/orders/admin/manual-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim() || null,
-          customer_email: customerEmail.trim() || null,
-          shipping_address: address.trim(),
+          customer_name: fullName.trim(),
+          customer_phone: formattedPhone,
+          customer_email: email.trim() || null,
+          shipping_address: formattedAddress,
           city: city.trim() || 'Doha',
           payment_method: paymentMethod,
           notes: notes.trim() || null,
           items: cartItems.map(ci => ({ product_id: ci.product.id, quantity: ci.quantity })),
         }),
       });
+
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Failed to create order.'); setSubmitting(false); return; }
+      if (!res.ok) {
+        setError(data.error || 'Failed to create order.');
+        setSubmitting(false);
+        return;
+      }
       setSuccess(data.order);
       onOrderCreated(data.order);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Network error. Please try again.');
     }
     setSubmitting(false);
   };
 
   if (!isOpen) return null;
 
-  const inputClass = `w-full text-xs font-semibold px-3 py-2.5 border rounded-xl outline-none transition-all ${
-    isDark
-      ? 'bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus:border-orange-500'
-      : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-orange-400 focus:bg-white'
+  const getInputClass = (fieldName: string) => `w-full text-xs font-semibold px-3 py-2.5 border rounded-xl outline-none transition-all ${
+    formErrors[fieldName]
+      ? 'border-red-500 bg-red-50/20 text-red-900 focus:border-red-500'
+      : isDark
+        ? 'bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus:border-orange-500'
+        : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-orange-400 focus:bg-white'
   }`;
+
   const labelClass = `block text-[10px] font-black uppercase tracking-wider mb-1.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`;
 
   return (
@@ -234,7 +318,7 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
             </button>
             <div className={`w-4 h-px ${isDark ? 'bg-zinc-700' : 'bg-gray-200'}`} />
             <button onClick={() => cartItems.length > 0 && setStep(2)} disabled={cartItems.length === 0} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer disabled:opacity-40 ${step === 2 ? 'bg-orange-500 text-white shadow-md' : isDark ? 'bg-zinc-800 text-zinc-400 hover:text-zinc-200' : 'bg-gray-100 text-gray-500 hover:text-gray-700'}`}>
-              <User className="h-3 w-3" /> Customer
+              <User className="h-3 w-3" /> Customer Details
             </button>
           </div>
           <button onClick={onClose} disabled={submitting} className={`p-2 rounded-xl transition-colors cursor-pointer ${isDark ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-gray-100 text-gray-400'}`}>
@@ -253,7 +337,7 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
                 Order number: <span className="font-black text-orange-500">{success.order_number}</span>
               </p>
-              <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Added to your orders list with "pending" status.</p>
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Added to your orders list with &quot;pending&quot; status.</p>
             </div>
             <button onClick={onClose} className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-xs font-bold shadow-md hover:opacity-90 transition-all cursor-pointer">Done</button>
           </div>
@@ -276,7 +360,7 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-                        className={`${inputClass} pl-9`}
+                        className={`${getInputClass('')} pl-9`}
                       />
                       {showDropdown && searchResults.length > 0 && (
                         <div ref={dropdownRef} className={`absolute top-full mt-1 left-0 right-0 rounded-xl border shadow-xl z-50 overflow-hidden max-h-64 overflow-y-auto ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-gray-200'}`}>
@@ -357,58 +441,229 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
                 </div>
               )}
 
-              {/* STEP 2 — Customer */}
+              {/* STEP 2 — Customer Details (Matching Checkout Page Fields & Qatar Validation) */}
               {step === 2 && (
                 <div className="p-5 space-y-4">
+                  {/* Customer Info Section */}
                   <div>
-                    <p className={`text-[10px] font-black uppercase tracking-wider mb-3 flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}><User className="h-3 w-3" /> Customer Information</p>
+                    <p className={`text-[10px] font-black uppercase tracking-wider mb-3 flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                      <User className="h-3 w-3" /> Customer Information
+                    </p>
                     <div className="grid grid-cols-2 gap-3">
+                      {/* Full Name */}
                       <div>
-                        <label className={labelClass}>Full Name <span className="text-red-500">*</span></label>
-                        <input type="text" placeholder="e.g. Ahmed Al-Rashid" value={customerName} onChange={e => setCustomerName(e.target.value)} className={inputClass} />
+                        <label className={labelClass}>
+                          Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Ahmed Al-Rashid"
+                          value={fullName}
+                          onChange={e => {
+                            setFullName(e.target.value);
+                            if (formErrors.fullName) setFormErrors(prev => ({ ...prev, fullName: '' }));
+                          }}
+                          className={getInputClass('fullName')}
+                        />
+                        {formErrors.fullName && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.fullName}</p>}
                       </div>
+
+                      {/* Qatar Phone Number with +974 Badge */}
                       <div>
-                        <label className={labelClass}><span className="flex items-center gap-1"><Phone className="h-2.5 w-2.5" /> Phone</span></label>
-                        <input type="tel" placeholder="+974 5555 1234" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className={inputClass} />
+                        <label className={labelClass}>
+                          <span className="flex items-center gap-1"><Phone className="h-2.5 w-2.5" /> Qatar Phone Number <span className="text-red-500">*</span></span>
+                        </label>
+                        <div className="relative flex items-center">
+                          <span className={`absolute left-3 text-xs font-black flex items-center gap-1 pointer-events-none ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                            🇶🇦 +974
+                          </span>
+                          <input
+                            type="tel"
+                            maxLength={10}
+                            placeholder="5555 1234"
+                            value={phone}
+                            onChange={e => {
+                              setPhone(e.target.value);
+                              if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: '' }));
+                            }}
+                            className={`${getInputClass('phone')} pl-20`}
+                          />
+                        </div>
+                        {formErrors.phone ? (
+                          <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.phone}</p>
+                        ) : (
+                          <p className={`text-[9px] mt-0.5 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>8 digits starting with 3, 5, 6, or 7</p>
+                        )}
                       </div>
+
+                      {/* Email (Optional) */}
                       <div className="col-span-2">
-                        <label className={labelClass}>Email (optional)</label>
-                        <input type="email" placeholder="customer@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className={inputClass} />
+                        <label className={labelClass}>Email Address (optional)</label>
+                        <input
+                          type="email"
+                          placeholder="customer@example.com"
+                          value={email}
+                          onChange={e => {
+                            setEmail(e.target.value);
+                            if (formErrors.email) setFormErrors(prev => ({ ...prev, email: '' }));
+                          }}
+                          className={getInputClass('email')}
+                        />
+                        {formErrors.email && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.email}</p>}
                       </div>
                     </div>
                   </div>
 
+                  {/* Address Section matching Checkout Page */}
                   <div>
-                    <p className={`text-[10px] font-black uppercase tracking-wider mb-3 flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}><MapPin className="h-3 w-3" /> Delivery Address</p>
-                    <div className="space-y-3">
+                    <p className={`text-[10px] font-black uppercase tracking-wider mb-3 flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                      <MapPin className="h-3 w-3" /> Shipping &amp; Delivery Address
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Area / District */}
                       <div>
-                        <label className={labelClass}>Street / Area / Building <span className="text-red-500">*</span></label>
-                        <textarea placeholder="e.g. Building 12, Al Sadd Street, Al Sadd" value={address} onChange={e => setAddress(e.target.value)} rows={2} className={`${inputClass} resize-none`} />
+                        <label className={labelClass}>
+                          Area / District <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Al Sadd, West Bay, Mansoura"
+                          value={area}
+                          onChange={e => {
+                            setArea(e.target.value);
+                            if (formErrors.area) setFormErrors(prev => ({ ...prev, area: '' }));
+                          }}
+                          className={getInputClass('area')}
+                        />
+                        {formErrors.area && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.area}</p>}
                       </div>
+
+                      {/* Street Name / Number */}
+                      <div>
+                        <label className={labelClass}>
+                          Street Name / Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Al Sadd Street, Street 840"
+                          value={street}
+                          onChange={e => {
+                            setStreet(e.target.value);
+                            if (formErrors.street) setFormErrors(prev => ({ ...prev, street: '' }));
+                          }}
+                          className={getInputClass('street')}
+                        />
+                        {formErrors.street && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.street}</p>}
+                      </div>
+
+                      {/* Building Number */}
+                      <div>
+                        <label className={labelClass}>
+                          Building Number / Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Building 12, Tower B"
+                          value={buildingNumber}
+                          onChange={e => {
+                            setBuildingNumber(e.target.value);
+                            if (formErrors.buildingNumber) setFormErrors(prev => ({ ...prev, buildingNumber: '' }));
+                          }}
+                          className={getInputClass('buildingNumber')}
+                        />
+                        {formErrors.buildingNumber && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.buildingNumber}</p>}
+                      </div>
+
+                      {/* Zone Number */}
+                      <div>
+                        <label className={labelClass}>Zone Number (optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Zone 39"
+                          value={zone}
+                          onChange={e => setZone(e.target.value)}
+                          className={getInputClass('zone')}
+                        />
+                      </div>
+
+                      {/* Villa / Apartment */}
+                      <div>
+                        <label className={labelClass}>Villa / Apartment (optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Apt 402 / Villa 15"
+                          value={villaApartment}
+                          onChange={e => setVillaApartment(e.target.value)}
+                          className={getInputClass('villaApartment')}
+                        />
+                      </div>
+
+                      {/* City */}
                       <div>
                         <label className={labelClass}>City</label>
-                        <input type="text" placeholder="Doha" value={city} onChange={e => setCity(e.target.value)} className={inputClass} />
+                        <input
+                          type="text"
+                          placeholder="Doha"
+                          value={city}
+                          onChange={e => setCity(e.target.value)}
+                          className={getInputClass('city')}
+                        />
+                      </div>
+
+                      {/* Landmark */}
+                      <div className="col-span-2">
+                        <label className={labelClass}>Landmark / Directions (optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Near Hamad Hospital, behind Costa Coffee"
+                          value={landmark}
+                          onChange={e => setLandmark(e.target.value)}
+                          className={getInputClass('landmark')}
+                        />
                       </div>
                     </div>
                   </div>
 
+                  {/* Payment Method & Delivery Notes */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelClass}><span className="flex items-center gap-1"><CreditCard className="h-2.5 w-2.5" /> Payment Method</span></label>
+                      <label className={labelClass}>
+                        <span className="flex items-center gap-1"><CreditCard className="h-2.5 w-2.5" /> Payment Method</span>
+                      </label>
                       <div className="grid grid-cols-2 gap-2">
                         {(['COD', 'Paid'] as const).map(method => (
-                          <button key={method} type="button" onClick={() => setPaymentMethod(method)} className={`py-2 rounded-xl text-[11px] font-black border transition-all cursor-pointer ${paymentMethod === method ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-md' : isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-orange-500/40' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-orange-300'}`}>
+                          <button
+                            key={method}
+                            type="button"
+                            onClick={() => setPaymentMethod(method)}
+                            className={`py-2 rounded-xl text-[11px] font-black border transition-all cursor-pointer ${
+                              paymentMethod === method
+                                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-md'
+                                : isDark
+                                  ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-orange-500/40'
+                                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-orange-300'
+                            }`}
+                          >
                             {method === 'COD' ? '💵 COD' : '✅ Paid'}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div>
-                      <label className={labelClass}><span className="flex items-center gap-1"><MessageSquare className="h-2.5 w-2.5" /> Notes (optional)</span></label>
-                      <textarea placeholder="Delivery notes..." value={notes} onChange={e => setNotes(e.target.value)} rows={2} className={`${inputClass} resize-none`} />
+                      <label className={labelClass}>
+                        <span className="flex items-center gap-1"><MessageSquare className="h-2.5 w-2.5" /> Delivery Notes (optional)</span>
+                      </label>
+                      <textarea
+                        placeholder="WhatsApp / Instagram special instructions..."
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        rows={2}
+                        className={`${getInputClass('notes')} resize-none`}
+                      />
                     </div>
                   </div>
 
+                  {/* Order Summary */}
                   <div className={`rounded-xl border p-3 space-y-1 ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-orange-50 border-orange-100'}`}>
                     <p className={`text-[10px] font-black uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Order Summary</p>
                     {cartItems.map(ci => (
@@ -459,3 +714,4 @@ export default function ManualOrderModal({ isOpen, onClose, onOrderCreated }: Ma
     </div>
   );
 }
+

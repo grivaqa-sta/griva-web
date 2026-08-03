@@ -90,8 +90,8 @@ router.get("/admin/delivery-boys", authenticateJWT, isAdminOrStaff, orderControl
 // Maps to: POST /api/orders/admin/delivery-boys (Admin creates a delivery boy account)
 router.post("/admin/delivery-boys", authenticateJWT, isAdmin, orderController.createDeliveryBoy);
 
-// Maps to: POST /api/orders/admin/manual-order (Admin creates manual order for WhatsApp/Instagram customers)
-router.post("/admin/manual-order", authenticateJWT, isAdmin, orderController.createManualOrder);
+// Maps to: POST /api/orders/admin/manual-order (Admin/Staff creates manual order for WhatsApp/Instagram customers)
+router.post("/admin/manual-order", authenticateJWT, isAdminOrStaff, orderController.createManualOrder);
 
 // Maps to: PATCH /api/orders/admin/delivery-boys/:id/reset-password (Admin resets driver password)
 router.patch("/admin/delivery-boys/:id/reset-password", authenticateJWT, isAdmin, orderController.resetDeliveryBoyPassword);

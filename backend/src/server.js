@@ -19,6 +19,7 @@ const startServer = async () => {
     await sequelize.query('ALTER TABLE "products" ALTER COLUMN "title" TYPE TEXT;');
     await sequelize.query('ALTER TABLE "products" ALTER COLUMN "main_image_url" TYPE TEXT;');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "is_manual_order" BOOLEAN DEFAULT false;');
+    await sequelize.query('ALTER TABLE "Orders" ALTER COLUMN "customer_email" DROP NOT NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');
@@ -224,16 +225,7 @@ const startServer = async () => {
     }
   }
 
-  // ✅ Run after sync
-  await createDefaultAdmin();
-  await migrateLegacyProducts();
-  try {
-    const { seedProductionReviews } = require("./utils/seedReviews");
-    await seedProductionReviews();
-  } catch (seedErr) {
-    console.log("ℹ️ [SEED REVIEWS]: Skipped review auto-seed:", seedErr.message);
-  }
-
+  // ✅ Start server immediately so port 8080 is available without waiting
   const { initSocket } = require("./socket/socket");
   const server = app.listen(PORT, () => {
     console.log(
@@ -241,6 +233,18 @@ const startServer = async () => {
     );
   });
   initSocket(server);
+
+  // Background initialization tasks (non-blocking)
+  createDefaultAdmin().catch(err => console.error("Admin init error:", err.message));
+  migrateLegacyProducts().catch(err => console.error("Migration error:", err.message));
+  try {
+    const { seedProductionReviews } = require("./utils/seedReviews");
+    seedProductionReviews().catch(seedErr => {
+      console.log("ℹ️ [SEED REVIEWS]: Skipped review auto-seed:", seedErr.message);
+    });
+  } catch (seedErr) {
+    console.log("ℹ️ [SEED REVIEWS]: Skipped review auto-seed:", seedErr.message);
+  }
 };
 
 const createDefaultAdmin = async () => {

@@ -502,6 +502,152 @@ exports.createOrder = async (req, res, next) => {
 };
 
 /**
+ * Manual Order Creation — Admin only
+ * POST /api/orders/admin/manual-order
+ * Allows admin to create orders for WhatsApp / Instagram / phone customers.
+ * Skips email validation, skips phone regex (admin can type international numbers),
+ * still reduces stock properly inside a transaction.
+ */
+exports.createManualOrder = async (req, res) => {
+  let transaction;
+  try {
+    const {
+      customer_name,
+      customer_phone,
+      customer_email,
+      shipping_address,
+      city,
+      items,
+      payment_method,
+      notes,
+    } = req.body;
+
+    if (!customer_name || !String(customer_name).trim()) {
+      return res.status(400).json({ error: "Customer name is required." });
+    }
+    if (!shipping_address || !String(shipping_address).trim()) {
+      return res.status(400).json({ error: "Shipping address is required." });
+    }
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "At least one product item is required." });
+    }
+
+    transaction = await sequelize.transaction();
+
+    let calculatedTotal = 0;
+    const itemsToCreate = [];
+
+    for (const item of items) {
+      const productId = item.product_id || item.id;
+      const qty = parseInt(item.quantity, 10);
+
+      if (!productId || isNaN(qty) || qty <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({ error: "Each item must have a valid product_id and quantity." });
+      }
+
+      const product = await Product.findByPk(productId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!product) {
+        await transaction.rollback();
+        return res.status(404).json({ error: `Product ID ${productId} not found.` });
+      }
+
+      // Reduce stock
+      if (product.stock < qty) {
+        await transaction.rollback();
+        return res.status(409).json({
+          error: `Insufficient stock for '${product.title}'. Only ${product.stock} units available.`,
+          code: "INSUFFICIENT_STOCK",
+        });
+      }
+      product.stock -= qty;
+      await product.save({ transaction });
+
+      const unitPrice = item.price_override
+        ? parseFloat(item.price_override)
+        : parseFloat(product.getDataValue("price"));
+
+      calculatedTotal += unitPrice * qty;
+
+      itemsToCreate.push({
+        product_id: product.id,
+        variant_id: null,
+        selected_attributes: {},
+        quantity: qty,
+        price_at_purchase: unitPrice,
+        sku: product.sku || null,
+        image_snapshot: product.main_image_url || null,
+      });
+    }
+
+    // Shipping calculation using site settings
+    const settings = await SiteSetting.findOne({ transaction });
+    const shippingFee = settings ? parseFloat(settings.shippingFee) : 15.00;
+    const freeShippingThreshold = settings ? parseFloat(settings.freeShippingThreshold) : 49.00;
+    let finalTotal = calculatedTotal;
+    if (calculatedTotal < freeShippingThreshold && calculatedTotal > 0) {
+      finalTotal += shippingFee;
+    }
+
+    const orderNumber = await generateOrderNumber(transaction);
+
+    const order = await Order.create({
+      order_number: orderNumber,
+      user_id: null,
+      total_price: finalTotal,
+      shipping_address: String(shipping_address).trim(),
+      status: "pending",
+      customer_name: String(customer_name).trim(),
+      customer_phone: customer_phone ? String(customer_phone).trim() : null,
+      customer_email: customer_email ? String(customer_email).trim() : null,
+      payment_method: payment_method || "COD",
+      payment_status: "unpaid",
+      delivery_notes: notes || null,
+      city: city || "Doha",
+      is_manual_order: true,
+    }, { transaction });
+
+    const finalizedItems = itemsToCreate.map((item) => ({
+      ...item,
+      order_id: order.id,
+    }));
+
+    await OrderItem.bulkCreate(finalizedItems, { transaction });
+    await transaction.commit();
+
+    // Notify admin dashboard via socket
+    try {
+      emitToRoles(["admin", "staff"], "new-order");
+      emitToRoles(["admin", "staff"], "dashboard-metrics-updated");
+    } catch (socketErr) {
+      console.error("🔌 [Socket.IO Emission Error]:", socketErr.message);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Manual order created successfully.",
+      order: {
+        id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+        total_price: order.total_price,
+        payment_method: order.payment_method,
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        createdAt: order.createdAt,
+      },
+    });
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    return handleApiError(error, req, res, "OrderController.createManualOrder");
+  }
+};
+
+/**
  * Guest Order Tracking — look up order by order_number + phone
  * GET /api/orders/track?order_number=GRV-...&phone=+974...
  * No authentication required.

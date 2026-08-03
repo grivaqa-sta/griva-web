@@ -8,6 +8,7 @@ import {
 import { useToast } from '@/app/context/ToastContext';
 import { useAdminTheme } from '../context/AdminThemeContext';
 import { AdminOrder, updateOrderStatusApi, downloadOrdersExportApi, bulkPrintOrdersApi, reconcileCashPaymentApi } from '../../utils/api';
+import ManualOrderModal from './ManualOrderModal';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
@@ -79,6 +80,7 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
   const [exportError, setExportError] = useState('');
   const [openPrintMenuId, setOpenPrintMenuId] = useState<number | null>(null);
   const [isBulkPrintModalOpen, setIsBulkPrintModalOpen] = useState(false);
+  const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
 
   useEffect(() => {
     if (statusParam) {
@@ -961,6 +963,13 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           <p className={`text-[10px] mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-400'}`}>Manage packing slips, batch printing, and flexible data exports.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setIsManualOrderModalOpen(true)}
+            className="flex items-center gap-2 px-4.5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-xs font-bold shadow-md hover:opacity-90 transition-all cursor-pointer active:scale-95 flex items-center justify-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Manual Order
+          </button>
           <button
             onClick={() => setIsBulkPrintModalOpen(true)}
             className="flex items-center gap-2 px-4.5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-xs font-bold shadow-md hover:opacity-90 transition-all cursor-pointer active:scale-95 flex items-center justify-center"
@@ -2083,6 +2092,16 @@ export default function OrdersTab({ ordersList, setOrdersList }: OrdersTabProps)
           {toastMsg}
         </div>
       )}
+
+      {/* Manual Order Modal */}
+      <ManualOrderModal
+        isOpen={isManualOrderModalOpen}
+        onClose={() => setIsManualOrderModalOpen(false)}
+        onOrderCreated={(newOrder) => {
+          toast.success(`Manual order ${newOrder.order_number} created successfully!`);
+          setIsManualOrderModalOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ const startServer = async () => {
     await sequelize.query('ALTER TABLE "products" ALTER COLUMN "meta_description" TYPE TEXT;');
     await sequelize.query('ALTER TABLE "products" ALTER COLUMN "meta_title" TYPE TEXT;');
     await sequelize.query('ALTER TABLE "products" ALTER COLUMN "title" TYPE TEXT;');
+    await sequelize.query('ALTER TABLE "products" ALTER COLUMN "main_image_url" TYPE TEXT;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ADD COLUMN IF NOT EXISTS "delivery_boy_id" INTEGER REFERENCES "Users" ("id") ON DELETE SET NULL;');
     await sequelize.query('ALTER TABLE "ReturnRequests" ALTER COLUMN "status" TYPE VARCHAR(50);');
     await sequelize.query('ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "fridaySaleConfig" JSONB;');

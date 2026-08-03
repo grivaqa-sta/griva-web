@@ -97,7 +97,7 @@ const Product = sequelize.define(
     },
 
     main_image_url: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
     },
 

@@ -189,6 +189,12 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
   }, [product, loadedVariants]);
 
+  useEffect(() => {
+    if (product?.slug && slug !== product.slug && /^\d+$/.test(slug)) {
+      window.history.replaceState(null, "", `/product/${product.slug}`);
+    }
+  }, [product, slug]);
+
   const isSelectionComplete = React.useMemo(() => {
     if (!product || !product.attributes) return true;
     return product.attributes.every((attr: any) => {

@@ -123,7 +123,7 @@ export default function ProductCard({ product }: { product?: ApiProduct }) {
         </motion.div>
       </button>
 
-      <Link href={`/product/${product.id}`} className="flex flex-col flex-1">
+      <Link href={`/product/${product.slug || product.id}`} className="flex flex-col flex-1">
 
         {/* ── Image ── */}
         <div

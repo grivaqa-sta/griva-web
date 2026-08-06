@@ -36,7 +36,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
   const sku = product.sku || String(product.id || "");
   const brandName = product.brand || "GRIVA Qatar";
   const categoryName = typeof product.category === "object" ? product.category.title : product.category || "";
-  const productUrl = `https://thegriva.com/product/${product.id || product.slug || ""}`;
+  const productUrl = `https://thegriva.com/product/${product.slug || product.id || ""}`;
 
   const priceVal = typeof product.price === "string" ? product.price : String(product.price || "0");
   const stockQty = typeof product.stock === "number" ? product.stock : (product.stock_quantity ?? 10);
@@ -53,7 +53,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
   const schema: any = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "@id": `https://thegriva.com/product/${product.id || product.slug || ""}`,
+    "@id": `https://thegriva.com/product/${product.slug || product.id || ""}`,
     "name": title,
     "description": description,
     "image": imageUrls.length > 1 ? imageUrls : (imageUrls[0] || ""),

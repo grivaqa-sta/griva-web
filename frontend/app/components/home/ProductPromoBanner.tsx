@@ -31,7 +31,7 @@ const ProductPromoBanner = () => {
   if (!banner) return null;
 
   const product = banner.product;
-  const productHref = product ? `/product/${product.id}` : "/shop";
+  const productHref = product ? `/product/${product.slug || product.id}` : "/shop";
 
   const imageSrc = product?.main_image_url
     ? product.main_image_url.startsWith("http") || product.main_image_url.startsWith("/")

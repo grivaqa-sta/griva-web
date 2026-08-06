@@ -13,6 +13,7 @@ import {
   Plus,
   Minus,
   Star,
+  Check,
 } from "lucide-react";
 import { useProduct, useAllProducts } from "@/app/hooks/useProducts";
 import { useCart } from "@/app/context/CartContext";
@@ -92,7 +93,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const { product, loading } = useProduct(slug);
   const { products: allProducts } = useAllProducts();
-  const { addToCart } = useCart();
+  const { addToCart, state: cartState } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { isAuthenticated } = useUser();
   const { toast } = useToast();
@@ -109,6 +110,13 @@ export default function ProductPage({ params }: ProductPageProps) {
       : (product.variants || []);
     return normalizeVariants(list);
   }, [product]);
+
+  const cartQuantity = React.useMemo(() => {
+    if (!product || !cartState?.items) return 0;
+    return cartState.items
+      .filter((item) => item.productId === product.id || item.id === product.id)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }, [product, cartState?.items]);
 
   const getValidOptionsForAttribute = (attrName: string, precedingAttrs: Record<string, string>): string[] => {
     if (!product || !product.attributes || loadedVariants.length === 0) return [];
@@ -847,6 +855,16 @@ export default function ProductPage({ params }: ProductPageProps) {
                   </button>
                 </div>
               </div>
+
+              {/* Already in cart badge */}
+              {cartQuantity > 0 && (
+                <div className="mt-3.5 flex items-center gap-1.5 w-fit rounded-full bg-[#F0FDF4] border border-emerald-200 px-3 py-1 text-[13px] sm:text-sm font-medium text-emerald-700">
+                  <Check className="h-4 w-4 text-emerald-600 stroke-[2.5]" />
+                  <span>
+                    Already in cart: <span className="font-semibold">{cartQuantity}</span>
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

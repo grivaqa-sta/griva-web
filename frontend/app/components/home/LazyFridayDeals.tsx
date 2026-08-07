@@ -194,12 +194,10 @@ export default function LazyFridayDeals() {
       })
     : categories.map(c => ({ ...c, discount: 35 }));
 
-  // Dynamically calculate the highest discount percentage from active Friday categories & products
-  const maxDiscountPercentage = Math.max(
-    ...activeCategories.map((c) => Number(c.discount) || 0),
-    ...(Array.isArray(products) ? products.map((p) => Number(p.discount_percentage) || 0) : []),
-    50
-  );
+  // Dynamically calculate the highest discount percentage from active Friday deal cards
+  const categoryDiscounts = activeCategories.map((c) => Number(c.discount) || 0);
+  const rawMaxDiscount = Math.max(...categoryDiscounts, 40);
+  const maxDiscountPercentage = Math.min(rawMaxDiscount, 75);
 
   return (
     <section className="w-full py-6 lg:py-10 bg-white">

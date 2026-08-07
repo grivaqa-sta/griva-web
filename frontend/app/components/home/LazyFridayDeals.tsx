@@ -153,8 +153,16 @@ export default function LazyFridayDeals() {
     return null;
   }
 
-  const activeCategories = (fridaySaleConfig && Array.isArray(fridaySaleConfig) && fridaySaleConfig.length === 4)
-    ? fridaySaleConfig.map((item, idx) => {
+  const rawCards = (fridaySaleConfig && typeof fridaySaleConfig === "object" && !Array.isArray(fridaySaleConfig) && Array.isArray(fridaySaleConfig.cards))
+    ? fridaySaleConfig.cards
+    : (Array.isArray(fridaySaleConfig) ? fridaySaleConfig : null);
+
+  const customSubheading = (fridaySaleConfig && typeof fridaySaleConfig === "object" && !Array.isArray(fridaySaleConfig) && fridaySaleConfig.subheading)
+    ? fridaySaleConfig.subheading
+    : "BIGGEST PRICE DROPS OF THE WEEK";
+
+  const activeCategories = (rawCards && rawCards.length === 4)
+    ? rawCards.map((item: any, idx: number) => {
         let href = "/shop";
         if (item.type === "subcategory" && item.slug) {
           href = `/shop?sub=${item.slug}`;
@@ -193,11 +201,6 @@ export default function LazyFridayDeals() {
         };
       })
     : categories.map(c => ({ ...c, discount: 35 }));
-
-  // Dynamically calculate the highest discount percentage from active Friday deal cards
-  const categoryDiscounts = activeCategories.map((c) => Number(c.discount) || 0);
-  const rawMaxDiscount = Math.max(...categoryDiscounts, 40);
-  const maxDiscountPercentage = Math.min(rawMaxDiscount, 75);
 
   return (
     <section className="w-full py-6 lg:py-10 bg-white">
@@ -250,7 +253,7 @@ export default function LazyFridayDeals() {
               FRIDAY <span className="text-[#FF6A00]">FLASH DEALS</span>
             </motion.h2>
 
-            {/* Subtitle with decorative lines — Dynamically shows highest discount */}
+            {/* Subtitle with decorative lines — Editable in Admin Panel */}
             <motion.div 
               className="flex items-center justify-center gap-4 mt-3"
               variants={descVariant}
@@ -260,7 +263,7 @@ export default function LazyFridayDeals() {
             >
               <div className="h-[1px] w-8 sm:w-16 bg-gradient-to-r from-transparent to-orange-500/40" />
               <span className="text-[10px] sm:text-xs font-black uppercase tracking-[3.5px] text-orange-600">
-                UP TO {maxDiscountPercentage}% OFF
+                {customSubheading}
               </span>
               <div className="h-[1px] w-8 sm:w-16 bg-gradient-to-l from-transparent to-orange-500/40" />
             </motion.div>
@@ -310,7 +313,7 @@ export default function LazyFridayDeals() {
           <div className="relative z-10 p-5 sm:p-6 lg:p-10">
             {/* ── Cards grid — 2 cols on mobile, 4 on xl ── */}
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-3.5 lg:gap-6">
-              {activeCategories.map((item, i) => {
+              {activeCategories.map((item: any, i: number) => {
                 const discountVal = item.discount || 35;
 
                 return (

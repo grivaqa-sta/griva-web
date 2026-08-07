@@ -194,6 +194,13 @@ export default function LazyFridayDeals() {
       })
     : categories.map(c => ({ ...c, discount: 35 }));
 
+  // Dynamically calculate the highest discount percentage from active Friday categories & products
+  const maxDiscountPercentage = Math.max(
+    ...activeCategories.map((c) => Number(c.discount) || 0),
+    ...(Array.isArray(products) ? products.map((p) => Number(p.discount_percentage) || 0) : []),
+    50
+  );
+
   return (
     <section className="w-full py-6 lg:py-10 bg-white">
       <div className="lg:mx-auto lg:max-w-7xl lg:px-8 px-3">
@@ -245,7 +252,7 @@ export default function LazyFridayDeals() {
               FRIDAY <span className="text-[#FF6A00]">FLASH DEALS</span>
             </motion.h2>
 
-            {/* Subtitle with decorative lines */}
+            {/* Subtitle with decorative lines — Dynamically shows highest discount */}
             <motion.div 
               className="flex items-center justify-center gap-4 mt-3"
               variants={descVariant}
@@ -254,7 +261,9 @@ export default function LazyFridayDeals() {
               viewport={{ once: true }}
             >
               <div className="h-[1px] w-8 sm:w-16 bg-gradient-to-r from-transparent to-orange-500/40" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-[3.5px] text-orange-600">UP TO 40% OFF</span>
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-[3.5px] text-orange-600">
+                UP TO {maxDiscountPercentage}% OFF
+              </span>
               <div className="h-[1px] w-8 sm:w-16 bg-gradient-to-l from-transparent to-orange-500/40" />
             </motion.div>
 

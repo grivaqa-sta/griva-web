@@ -330,15 +330,9 @@ export async function getSubscribersApi(): Promise<SubscriberInfo[]> {
   const res = await safeFetch<{ subscribers: SubscriberInfo[] }>(
     "/subscribers",
     { method: "GET" },
-    {
-      subscribers: [
-        { email: "jassim.althani@gmail.com", joinedDate: "June 01, 2026", country: "Qatar" },
-        { email: "fatima.almansouri@yahoo.com", joinedDate: "May 29, 2026", country: "Qatar" },
-        { email: "john.doe@verizon.com", joinedDate: "May 25, 2026", country: "United States" },
-      ],
-    }
+    { subscribers: [] }
   );
-  return res.subscribers;
+  return res.subscribers || [];
 }
 
 export async function addSubscriberApi(email: string): Promise<SubscriberInfo> {
@@ -427,29 +421,14 @@ export interface AnalyticsData {
 }
 
 export async function getAnalyticsApi(startDate?: string, endDate?: string): Promise<AnalyticsData> {
-  const mockAnalytics: AnalyticsData = {
-    totalSales: 14897.50,
-    totalOrders: 12,
-    averageOrderValue: 1241.46,
-    totalCustomers: 4,
-    salesByCategory: [
-      { category: "Gadgets", sales: 5842.00 },
-      { category: "Laptops", sales: 2998.00 },
-      { category: "Headphones", sales: 696.00 },
-      { category: "Gaming", sales: 998.00 },
-      { category: "Speakers", sales: 399.98 },
-    ],
-    orderStatusCounts: { pending: 1, shipped: 3, completed: 7, cancelled: 1 },
-    salesOverTime: [
-      { date: "Jun 01", sales: 759.99 },
-      { date: "Jun 02", sales: 1997.00 },
-      { date: "Jun 03", sales: 696.00 },
-      { date: "Jun 04", sales: 1498.00 },
-      { date: "Jun 05", sales: 799.00 },
-      { date: "Jun 06", sales: 2699.00 },
-      { date: "Jun 07", sales: 1198.00 },
-      { date: "Jun 08", sales: 2551.00 },
-    ],
+  const emptyAnalytics: AnalyticsData = {
+    totalSales: 0,
+    totalOrders: 0,
+    averageOrderValue: 0,
+    totalCustomers: 0,
+    salesByCategory: [],
+    orderStatusCounts: { pending: 0, shipped: 0, completed: 0, cancelled: 0 },
+    salesOverTime: [],
   };
 
   const query = new URLSearchParams();
@@ -460,9 +439,9 @@ export async function getAnalyticsApi(startDate?: string, endDate?: string): Pro
   const res = await safeFetch<{ analytics: AnalyticsData }>(
     `/orders/analytics${queryString}`,
     { method: "GET" },
-    { analytics: mockAnalytics }
+    { analytics: emptyAnalytics }
   );
-  return res.analytics;
+  return res.analytics || emptyAnalytics;
 }
 
 export interface DeepAnalyticsData {
@@ -502,82 +481,30 @@ export interface DeepAnalyticsData {
 }
 
 export async function getDeepAnalyticsApi(startDate?: string, endDate?: string): Promise<DeepAnalyticsData> {
-  const defaultAnalytics: DeepAnalyticsData = {
-    totalRevenue: 28450.00,
-    grossRevenue: 32150.00,
-    totalOrders: 28,
-    netOrders: 24,
-    averageOrderValue: 1185.42,
-    medianOrderValue: 799.00,
-    highestSingleOrder: 4599.00,
-    fulfillmentRate: 85.71,
-    cancellationRate: 10.71,
-    orderStatusCounts: {
-      pending: 2,
-      processing: 1,
-      assigned: 1,
-      out_for_delivery: 0,
-      delivered: 24,
-      completed: 0,
-      cancelled: 3,
-      failed: 0,
-      returned: 0,
-      attempted: 0,
-      rescheduled: 0,
-    },
-    paymentMethodRevenue: {
-      COD: 18500.00,
-      Card: 4950.00,
-      Online: 5000.00,
-      Other: 0.00,
-    },
-    salesOverTime: [
-      { date: "Jun 24", sales: 1200.00 },
-      { date: "Jun 25", sales: 3450.00 },
-      { date: "Jun 26", sales: 2200.00 },
-      { date: "Jun 27", sales: 5600.00 },
-      { date: "Jun 28", sales: 1500.00 },
-      { date: "Jun 29", sales: 4800.00 },
-      { date: "Jun 30", sales: 9700.00 },
-    ],
-    salesByCategory: [
-      { category: "Gadgets", sales: 12450.00, qty: 15, avgPrice: 830.00 },
-      { category: "Laptops", sales: 9800.00, qty: 3, avgPrice: 3266.67 },
-      { category: "Headphones", sales: 3200.00, qty: 8, avgPrice: 400.00 },
-      { category: "Gaming", sales: 3000.00, qty: 5, avgPrice: 600.00 },
-    ],
-    bestSellers: [
-      { id: 1, title: "DJI Mini 4 Pro Drone", image: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?q=80&w=800", qty: 6, revenue: 4559.94, avgPrice: 759.99 },
-      { id: 2, title: "Meta Quest 3 VR Headset", image: "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?q=80&w=800", qty: 4, revenue: 1996.00, avgPrice: 499.00 },
-    ],
-    bestCustomers: [
-      { name: "Jassim Al Thani", email: "jassim.althani@gmail.com", phone: "+974 5551 2345", orderCount: 5, spent: 8950.00, lastOrderDate: new Date().toISOString(), aov: 1790.00 },
-      { name: "Fatima Al Mansouri", email: "fatima.almansouri@yahoo.com", phone: "+974 6667 8901", orderCount: 3, spent: 4200.00, lastOrderDate: new Date().toISOString(), aov: 1400.00 },
-    ],
-    deliverySlotCounts: {
-      "09:00 AM - 12:00 PM": 12,
-      "01:00 PM - 04:00 PM": 8,
-      "05:00 PM - 08:00 PM": 4,
-    },
-    hourlyHeatmap: [0, 0, 0, 0, 0, 0, 1, 2, 4, 3, 5, 2, 6, 8, 4, 3, 2, 5, 7, 9, 4, 2, 1, 0],
-    dayOfWeekVolume: [2, 5, 4, 6, 3, 5, 3],
-    inventory: {
-      totalSKUs: 45,
-      outOfStockCount: 3,
-      lowStockCount: 7,
-      totalInventoryValue: 125400.00,
-    },
-    customerAcquisition: [
-      { month: "Jan 2026", count: 12 },
-      { month: "Feb 2026", count: 18 },
-      { month: "Mar 2026", count: 24 },
-      { month: "Apr 2026", count: 32 },
-      { month: "May 2026", count: 41 },
-      { month: "Jun 2026", count: 55 },
-    ],
-    repeatCustomerRate: 35.5,
-    avgDeliveryTimeHours: 4.2,
-    deliverySuccessRate: 98.2,
+  const emptyAnalytics: DeepAnalyticsData = {
+    totalRevenue: 0,
+    grossRevenue: 0,
+    totalOrders: 0,
+    netOrders: 0,
+    averageOrderValue: 0,
+    medianOrderValue: 0,
+    highestSingleOrder: 0,
+    fulfillmentRate: 0,
+    cancellationRate: 0,
+    orderStatusCounts: {},
+    paymentMethodRevenue: { COD: 0, Card: 0, Online: 0, Other: 0 },
+    salesOverTime: [],
+    salesByCategory: [],
+    bestSellers: [],
+    bestCustomers: [],
+    deliverySlotCounts: {},
+    hourlyHeatmap: [],
+    dayOfWeekVolume: [],
+    inventory: { totalSKUs: 0, outOfStockCount: 0, lowStockCount: 0, totalInventoryValue: 0 },
+    customerAcquisition: [],
+    repeatCustomerRate: 0,
+    avgDeliveryTimeHours: 0,
+    deliverySuccessRate: 0,
   };
 
   const query = new URLSearchParams();
@@ -588,9 +515,9 @@ export async function getDeepAnalyticsApi(startDate?: string, endDate?: string):
   const res = await safeFetch<{ analytics: DeepAnalyticsData }>(
     `/orders/deep-analytics${queryString}`,
     { method: "GET" },
-    { analytics: defaultAnalytics }
+    { analytics: emptyAnalytics }
   );
-  return res.analytics;
+  return res.analytics || emptyAnalytics;
 }
 
 export interface OrderItem {
@@ -630,20 +557,13 @@ export interface AdminOrder {
   longitude?: number;
 }
 
-const MOCK_ORDERS: AdminOrder[] = [
-  { id: 1, user_id: 2, status: "completed", total_price: "QAR 759.99", shipping_address: "Al Sadd District, Doha, Qatar", createdAt: new Date(Date.now() - 9*86400000).toISOString(), user: { id: 2, email: "jassim.althani@gmail.com" }, items: [{ id: 1, product_id: 1, quantity: 1, price_at_purchase: 759.99, product: { id: 1, title: "DJI Mini 4 Pro Drone", main_image_url: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?q=80&w=800" } }] },
-  { id: 2, user_id: 3, status: "shipped", total_price: "QAR 499.00", shipping_address: "West Bay Tower 12, Doha, Qatar", createdAt: new Date(Date.now() - 8*86400000).toISOString(), user: { id: 3, email: "fatima.almansouri@yahoo.com" }, items: [{ id: 2, product_id: 2, quantity: 1, price_at_purchase: 499.00, product: { id: 2, title: "Meta Quest 3 VR Headset", main_image_url: "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?q=80&w=800" } }] },
-  { id: 3, user_id: 4, status: "completed", total_price: "QAR 1499.00", shipping_address: "Al Wakra City Center, Al Wakra, Qatar", createdAt: new Date(Date.now() - 8*86400000).toISOString(), user: { id: 4, email: "john.doe@verizon.com" }, items: [{ id: 3, product_id: 6, quantity: 1, price_at_purchase: 1499.00, product: { id: 6, title: "MacBook Air 15-inch M3", main_image_url: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=800" } }] },
-  { id: 4, user_id: 5, status: "pending", total_price: "QAR 696.00", shipping_address: "The Pearl - Qatar, Porto Arabia, Doha", createdAt: new Date(Date.now() - 2*86400000).toISOString(), user: { id: 5, email: "sara.alkhanji@hotmail.com" }, items: [{ id: 4, product_id: 4, quantity: 2, price_at_purchase: 348.00, product: { id: 4, title: "Sony WH-1000XM5 Headphones", main_image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800" } }] },
-];
-
 export async function getAllOrdersApi(): Promise<AdminOrder[]> {
   const res = await safeFetch<{ orders: AdminOrder[] }>(
     "/orders",
     { method: "GET" },
-    { orders: MOCK_ORDERS }
+    { orders: [] }
   );
-  return res.orders || MOCK_ORDERS;
+  return res.orders || [];
 }
 
 export async function updateOrderStatusApi(id: number, status: string): Promise<boolean> {

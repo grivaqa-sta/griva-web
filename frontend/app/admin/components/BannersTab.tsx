@@ -588,50 +588,15 @@ function DealOfDaySection() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-start">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-700 mb-1">Product</label>
-                  <div className="relative" ref={dropdownRef}>
-                    <div
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="w-full flex items-center justify-between text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white cursor-pointer"
-                    >
-                      <span className="truncate pr-2">
-                        {selectedProductId
-                          ? products.find(p => p.id === Number(selectedProductId))?.title || 'Select a product...'
-                          : 'Select a product...'}
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                    </div>
+                  <SearchableProductSelect
+                    products={products}
+                    value={selectedProductId}
+                    onChange={(val) => {
+                      setSelectedProductId(val ? Number(val) : '');
+                    }}
+                    placeholder="Type product title to search..."
+                  />
 
-                    {isDropdownOpen && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                        <div
-                          onClick={() => { setSelectedProductId(''); setIsDropdownOpen(false); }}
-                          className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-xs text-gray-500 border-b border-gray-100"
-                        >
-                          Select a product...
-                        </div>
-                        {products.map(p => {
-                          const imgSrc = p.main_image_url;
-                          const formattedImgSrc = imgSrc?.startsWith('http') || imgSrc?.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`;
-                          return (
-                            <div
-                              key={p.id}
-                              onClick={() => { setSelectedProductId(p.id); setIsDropdownOpen(false); }}
-                              className={`px-3 py-2 hover:bg-orange-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 ${selectedProductId === p.id ? 'bg-orange-50' : ''}`}
-                            >
-                              {imgSrc ? (
-                                <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0" />
-                              ) : (
-                                <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
-                                  <ImageIcon className="w-4 h-4 text-gray-300" />
-                                </div>
-                              )}
-                              <span className="text-xs font-medium text-gray-700 truncate">{p.title}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
                   {/* Selected Product Image Preview */}
                   {selectedProductId && (() => {
                     const selectedP = products.find(p => p.id === Number(selectedProductId));

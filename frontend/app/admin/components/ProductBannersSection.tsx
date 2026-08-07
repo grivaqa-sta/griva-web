@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, Check, X, Loader2, ChevronDown } from 'lucide-react';
 import { productService } from '@/app/services/product.service';
 import { ApiProduct } from '@/app/types/types';
+import SearchableProductSelect from './SearchableProductSelect';
 
 const COLORS = [
   { id: '#1A3A2A', name: 'Dark Green', hex: '#1A3A2A' },
@@ -14,7 +15,6 @@ export default function ProductBannersSection() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [saveSuccessId, setSaveSuccessId] = useState<number | null>(null);
-  const [openDropdownSlot, setOpenDropdownSlot] = useState<number | null>(null);
   // Queue of exactly 3 hex color strings shown as swatches per product
   const [colorQueues, setColorQueues] = useState<Record<number, string[]>>({});
   // Temporary picker value before user clicks Add
@@ -213,56 +213,20 @@ export default function ProductBannersSection() {
           {SLOTS.map(slotIndex => {
             const product = activeBanners[slotIndex];
 
-            // If slot is empty, show a Select Product dropdown
+            // If slot is empty, show a Searchable Select Product dropdown
             if (!product) {
               return (
                 <div key={`slot-${slotIndex}`} className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-start pt-12 min-h-[300px]">
                   <h5 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Banner Slot {slotIndex + 1}</h5>
-                  <div className="relative w-full">
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-between border border-gray-300 rounded-xl px-4 py-2.5 text-xs outline-none bg-white font-semibold text-gray-700 shadow-sm cursor-pointer hover:border-orange-500 focus:border-orange-500 transition-colors"
-                      onClick={() => setOpenDropdownSlot(openDropdownSlot === slotIndex ? null : slotIndex)}
-                    >
-                      <span>+ Select Product to Add</span>
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </button>
-                    {openDropdownSlot === slotIndex && (
-                      <>
-                        <div 
-                          className="fixed inset-0 z-40"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenDropdownSlot(null);
-                          }}
-                        />
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto overflow-x-hidden text-left">
-                          {availableProducts.length > 0 ? (
-                          availableProducts.map(p => (
-                            <div
-                              key={p.id}
-                              className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
-                              onClick={() => {
-                                handleAddBanner(p.id);
-                                setOpenDropdownSlot(null);
-                              }}
-                            >
-                              <div className="w-8 h-8 rounded shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-100">
-                                {p.main_image_url ? (
-                                  <img src={p.main_image_url} alt={p.title} className="w-full h-full object-contain" />
-                                ) : (
-                                  <span className="text-[8px] text-gray-400">No Img</span>
-                                )}
-                              </div>
-                              <span className="text-xs text-gray-700 truncate flex-1">{p.title}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-4 py-3 text-xs text-center text-gray-500">No products available</div>
-                        )}
-                        </div>
-                      </>
-                    )}
+                  <div className="w-full">
+                    <SearchableProductSelect
+                      products={availableProducts}
+                      value=""
+                      onChange={(val) => {
+                        if (val) handleAddBanner(Number(val));
+                      }}
+                      placeholder="+ Search Product to Add..."
+                    />
                   </div>
                 </div>
               );

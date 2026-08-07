@@ -5,6 +5,7 @@ import {
 import ProductBannersSection from './ProductBannersSection';
 import DiscoverMoreSection from './DiscoverMoreSection';
 import ProductPromoBannersSection from './ProductPromoBannersSection';
+import SearchableProductSelect from './SearchableProductSelect';
 import { productService } from '@/app/services/product.service';
 import { uploadService } from '@/app/services/upload.service';
 import dealOfDayService from '@/app/services/dealOfDay.service';
@@ -980,30 +981,17 @@ function FridayDealsSection({ fridaySaleConfig, onSaveFridaySaleConfig }: { frid
                       {/* Mode Fields */}
                       {activeMode === "product" && (
                         <div className="space-y-1">
-                          <select
+                          <SearchableProductSelect
+                            products={matchedProducts.filter((p: any) => p.main_image_url)}
                             value={card.image || ""}
-                            onChange={(e) => {
+                            onChange={(val, selectedP) => {
                               const newCards = [...cards];
-                              newCards[idx] = { ...card, image: e.target.value };
+                              const newImg = selectedP ? selectedP.main_image_url || selectedP.image : String(val);
+                              newCards[idx] = { ...card, image: newImg };
                               setCards(newCards);
                             }}
-                            className="w-full text-xs font-semibold text-gray-700 bg-white border border-orange-500/10 rounded-lg px-2 py-2 outline-none focus:border-orange-500 transition-colors"
-                          >
-                            {matchedProducts.filter((p: any) => p.main_image_url).length === 0 ? (
-                              <option value="">No products with images found...</option>
-                            ) : (
-                              <>
-                                <option value="">Select a product...</option>
-                                {matchedProducts
-                                  .filter((p: any) => p.main_image_url)
-                                  .map((p: any) => (
-                                    <option key={p.id} value={p.main_image_url}>
-                                      {p.title}
-                                    </option>
-                                  ))}
-                              </>
-                            )}
-                          </select>
+                            placeholder="Type to search product image..."
+                          />
                         </div>
                       )}
 

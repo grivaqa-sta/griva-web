@@ -1,10 +1,11 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, ToggleLeft, ToggleRight, Loader, Loader2, Image as ImageIcon, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, ToggleLeft, ToggleRight, Loader, Loader2, Image as ImageIcon, Check } from 'lucide-react';
 import productBannerService from '@/app/services/productBanner.service';
 import { productService } from '@/app/services/product.service';
 import { ApiProduct, ProductBanner } from '@/app/types/types';
 import { useToast } from '@/app/context/ToastContext';
+import SearchableProductSelect from './SearchableProductSelect';
 
 export default function ProductPromoBannersSection() {
   const [banners, setBanners] = useState<ProductBanner[]>([]);
@@ -18,19 +19,10 @@ export default function ProductPromoBannersSection() {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const { toast, confirm } = useToast();
 
   useEffect(() => {
     loadData();
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const loadData = async () => {
@@ -202,123 +194,80 @@ export default function ProductPromoBannersSection() {
               <h5 className="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Plus className="h-4 w-4 text-orange-500" /> Add New Promo Banner
               </h5>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-              <div className="md:col-span-2">
-                <label className="block text-[10px] font-bold text-gray-700 mb-1">Product</label>
-                <div className="relative" ref={dropdownRef}>
-                  <div
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="w-full flex items-center justify-between text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white cursor-pointer"
-                  >
-                    <span className="truncate pr-2">
-                      {selectedProductId
-                        ? products.find(p => p.id === Number(selectedProductId))?.title || 'Select a product...'
-                        : 'Select a product...'}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">Product</label>
+                  <SearchableProductSelect
+                    products={products}
+                    value={selectedProductId}
+                    onChange={(val, selectedP) => {
+                      setSelectedProductId(val ? Number(val) : '');
+                      if (selectedP) {
+                        setTitle(selectedP.title);
+                        if (selectedP.discount_percentage && selectedP.discount_percentage > 0) {
+                          setSubtitle(`${selectedP.discount_percentage}% OFF`);
+                        } else if (selectedP.old_price && Number(selectedP.old_price) > Number(selectedP.price)) {
+                          const disc = Math.round(((Number(selectedP.old_price) - Number(selectedP.price)) / Number(selectedP.old_price)) * 100);
+                          setSubtitle(disc > 0 ? `${disc}% OFF` : 'Special Offer');
+                        } else {
+                          setSubtitle('Special Offer');
+                        }
+                      }
+                    }}
+                    placeholder="Type product title to search..."
+                  />
 
-                  {isDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                      <div
-                        onClick={() => { setSelectedProductId(''); setIsDropdownOpen(false); }}
-                        className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-xs text-gray-500 border-b border-gray-100"
-                      >
-                        Select a product...
+                  {/* Selected Product Image Preview */}
+                  {selectedProductId && (() => {
+                    const selectedP = products.find(p => p.id === Number(selectedProductId));
+                    const imgSrc = selectedP?.main_image_url;
+                    if (!imgSrc) return null;
+                    return (
+                      <div className="mt-2 flex items-center gap-2 p-2 bg-white border border-gray-100 rounded-lg">
+                        <img
+                          src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
+                          alt="Selected Product"
+                          className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
+                        />
+                        <span className="text-[10px] font-medium text-gray-600 truncate">{selectedP?.title}</span>
                       </div>
-                      {products.map(p => {
-                        const imgSrc = p.main_image_url;
-                        const formattedImgSrc = imgSrc?.startsWith('http') || imgSrc?.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`;
-                        return (
-                          <div
-                            key={p.id}
-                            onClick={() => {
-                              setSelectedProductId(p.id);
-                              setIsDropdownOpen(false);
-                              
-                              // Auto-fill product title
-                              setTitle(p.title);
-                              
-                              // Auto-fill discount/subtitle if present
-                              if (p.discount_percentage && p.discount_percentage > 0) {
-                                setSubtitle(`${p.discount_percentage}% OFF`);
-                              } else if (p.old_price && Number(p.old_price) > Number(p.price)) {
-                                const disc = Math.round(((Number(p.old_price) - Number(p.price)) / Number(p.old_price)) * 100);
-                                if (disc > 0) {
-                                  setSubtitle(`${disc}% OFF`);
-                                } else {
-                                  setSubtitle('Special Offer');
-                                }
-                              } else {
-                                setSubtitle('Special Offer');
-                              }
-                            }}
-                            className={`px-3 py-2 hover:bg-orange-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 ${selectedProductId === p.id ? 'bg-orange-50' : ''}`}
-                          >
-                            {imgSrc ? (
-                               <img src={formattedImgSrc} alt="" className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0" />
-                            ) : (
-                              <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
-                                <ImageIcon className="w-4 h-4 text-gray-300" />
-                              </div>
-                            )}
-                            <span className="text-xs font-medium text-gray-700 truncate">{p.title}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
-                {/* Selected Product Image Preview */}
-                {selectedProductId && (() => {
-                  const selectedP = products.find(p => p.id === Number(selectedProductId));
-                  const imgSrc = selectedP?.main_image_url;
-                  if (!imgSrc) return null;
-                  return (
-                    <div className="mt-2 flex items-center gap-2 p-2 bg-white border border-gray-100 rounded-lg">
-                      <img
-                        src={imgSrc.startsWith('http') || imgSrc.startsWith('/') ? imgSrc : `http://localhost:8080${imgSrc}`}
-                        alt="Selected Product"
-                        className="w-8 h-8 rounded object-contain p-0.5 bg-gray-50 border border-gray-200 shrink-0"
-                      />
-                      <span className="text-[10px] font-medium text-gray-600 truncate">{selectedP?.title}</span>
-                    </div>
-                  );
-                })()}
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. MEGA SALE"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">Subtitle (Optional)</label>
+                  <input
+                    type="text"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="e.g. 50% OFF"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. MEGA SALE"
-                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
-                />
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleSaveBanner}
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-sm"
+                >
+                  {isSaving ? <Loader className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {isSaving ? 'Creating...' : 'Create Promo Banner'}
+                </button>
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-700 mb-1">Subtitle (Optional)</label>
-                <input
-                  type="text"
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="e.g. 50% OFF"
-                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 bg-white"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={handleSaveBanner}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-sm"
-              >
-                {isSaving ? <Loader className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                {isSaving ? 'Creating...' : 'Create Promo Banner'}
-              </button>
-            </div>
             </div>
           )}
         </div>

@@ -225,11 +225,26 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
     setSelectedSubCategory("");
   };
 
+  // Auto-sync parent category if a subcategory is selected without a category
+  useEffect(() => {
+    if (selectedSubCategory && !selectedCategory && subCategories.length > 0 && categories.length > 0) {
+      const matchedSub = subCategories.find(
+        (s) => s.slug.toLowerCase() === selectedSubCategory.toLowerCase()
+      );
+      if (matchedSub) {
+        const matchedCat = categories.find((c) => c.id === matchedSub.category_id);
+        if (matchedCat) {
+          setSelectedCategory(matchedCat.slug.toLowerCase());
+        }
+      }
+    }
+  }, [selectedSubCategory, selectedCategory, subCategories, categories]);
+
   // Get subcategories of the currently selected category
   const activeSubCategories = useMemo(() => {
     if (!selectedCategory) return [];
     const matchedCat = categories.find(
-      (c) => c.slug === selectedCategory || c.href?.includes(selectedCategory)
+      (c) => c.slug.toLowerCase() === selectedCategory.toLowerCase() || c.href?.includes(selectedCategory)
     );
     if (!matchedCat) return [];
     return subCategories.filter((s) => s.category_id === matchedCat.id);
@@ -238,9 +253,14 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
   // Build a set of subcategory IDs belonging to the selected category
   const selectedCategorySubIds = useMemo(() => {
     if (!selectedCategory) return null;
-    if (activeSubCategories.length === 0) return null;
-    return new Set(activeSubCategories.map((s) => s.id));
-  }, [selectedCategory, activeSubCategories]);
+    const matchedCat = categories.find(
+      (c) => c.slug.toLowerCase() === selectedCategory.toLowerCase() || c.href?.includes(selectedCategory)
+    );
+    if (!matchedCat) return null;
+    const catSubs = subCategories.filter((s) => s.category_id === matchedCat.id);
+    if (catSubs.length === 0) return null;
+    return new Set(catSubs.map((s) => s.id));
+  }, [selectedCategory, categories, subCategories]);
 
   // Dynamic brand list & counts computed from products
   const brandCounts = useMemo(() => {
@@ -337,8 +357,8 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
     // Subcategory filter — if a specific subcategory is selected, filter by that
     if (selectedSubCategory) {
-      const matchedSub = activeSubCategories.find(
-        (s) => s.slug === selectedSubCategory
+      const matchedSub = subCategories.find(
+        (s) => s.slug.toLowerCase() === selectedSubCategory.toLowerCase()
       );
       if (matchedSub) {
         result = result.filter((p) => p.subcategory_id === matchedSub.id);

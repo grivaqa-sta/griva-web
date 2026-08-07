@@ -676,6 +676,7 @@ function FridayDealsSection({ fridaySaleConfig, onSaveFridaySaleConfig }: { frid
   ];
 
   const [cards, setCards] = useState<any[]>(defaultCards);
+  const [subheading, setSubheading] = useState<string>("BIGGEST PRICE DROPS OF THE WEEK");
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -691,8 +692,17 @@ function FridayDealsSection({ fridaySaleConfig, onSaveFridaySaleConfig }: { frid
   }, []);
 
   useEffect(() => {
-    if (fridaySaleConfig && Array.isArray(fridaySaleConfig) && fridaySaleConfig.length === 4) {
-      setCards(fridaySaleConfig);
+    if (fridaySaleConfig) {
+      if (Array.isArray(fridaySaleConfig) && fridaySaleConfig.length === 4) {
+        setCards(fridaySaleConfig);
+      } else if (typeof fridaySaleConfig === "object") {
+        if (Array.isArray(fridaySaleConfig.cards)) {
+          setCards(fridaySaleConfig.cards);
+        }
+        if (fridaySaleConfig.subheading) {
+          setSubheading(fridaySaleConfig.subheading);
+        }
+      }
     }
   }, [fridaySaleConfig]);
 
@@ -701,13 +711,16 @@ function FridayDealsSection({ fridaySaleConfig, onSaveFridaySaleConfig }: { frid
       <div className="border-b border-orange-500/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Friday Deals Card Manager</h4>
-          <p className="text-[10px] text-gray-400 mt-0.5">Customize the titles, discounts, linked categories, and product images of the 4 storefront cards.</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Customize the section subheading, titles, discounts, linked categories, and product images of the storefront cards.</p>
         </div>
         <button
           onClick={async () => {
             setIsSavingFridayConfig(true);
             try {
-              await onSaveFridaySaleConfig(cards);
+              await onSaveFridaySaleConfig({
+                subheading,
+                cards,
+              });
               toast.success("Friday Deals layout saved successfully.");
             } catch (err) {
               toast.error("Failed to save Friday Deals layout.");
@@ -720,6 +733,23 @@ function FridayDealsSection({ fridaySaleConfig, onSaveFridaySaleConfig }: { frid
         >
           {isSavingFridayConfig ? "Saving..." : "Save Deals Configuration"}
         </button>
+      </div>
+
+      {/* Section Subheading Editor */}
+      <div className="bg-orange-50/40 border border-orange-200/50 p-4 rounded-xl space-y-1.5">
+        <label className="block text-[10px] font-bold uppercase text-orange-600 tracking-wider">
+          Section Subheading Copy (Storefront Banner)
+        </label>
+        <input
+          type="text"
+          value={subheading}
+          onChange={(e) => setSubheading(e.target.value)}
+          placeholder="e.g. BIGGEST PRICE DROPS OF THE WEEK"
+          className="w-full text-xs font-bold text-gray-800 bg-white border border-orange-300 rounded-lg px-3 py-2 outline-none focus:border-orange-500 shadow-xs"
+        />
+        <p className="text-[10px] text-gray-400">
+          This high-converting headline is displayed directly under &quot;FRIDAY FLASH DEALS&quot; on the homepage.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

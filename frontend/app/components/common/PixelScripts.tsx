@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 //   Meta Business Manager → Events Manager → Pixels
 //   Snapchat Business → Snap Pixel
 // ─────────────────────────────────────────────────────────
-const rawMetaId = process.env.NEXT_PUBLIC_META_PIXEL_ID || "2570473940080239";
+const rawMetaId = process.env.NEXT_PUBLIC_META_PIXEL_ID || "1885612416155900";
 const rawSnapId = process.env.NEXT_PUBLIC_SNAP_PIXEL_ID || "YOUR_SNAP_PIXEL_ID";
 
 const META_PIXEL_ID = rawMetaId !== "YOUR_META_PIXEL_ID" && rawMetaId !== "null" && rawMetaId !== "undefined" ? rawMetaId : null;

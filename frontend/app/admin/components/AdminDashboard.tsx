@@ -354,6 +354,16 @@ export default function AdminDashboard() {
       {/* ── Main ── */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
 
+        {/* ── Payment Reminder Banner ── */}
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border-b border-amber-200">
+          <span className="text-amber-500 text-base flex-shrink-0">🔔</span>
+          <p className="text-[11px] sm:text-xs text-amber-800 font-medium leading-snug">
+            <span className="font-bold">Payment Reminder</span> — Dear Client, a friendly reminder that an amount of{" "}
+            <span className="font-bold">₹26,200</span> is kindly due by{" "}
+            <span className="font-bold">Monday, 17 Aug 2026</span>. We&apos;d appreciate if you could clear this at your earliest convenience to avoid any interruption to admin access. Thank you for your trust! 🙏
+          </p>
+        </div>
+
         {/* ── Header ── */}
         <AdminHeader activeTab={activeTab} onMenuClick={() => setSidebarOpen(true)} />
 

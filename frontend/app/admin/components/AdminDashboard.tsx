@@ -354,15 +354,6 @@ export default function AdminDashboard() {
       {/* ── Main ── */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
 
-        {/* ── Payment Reminder Banner ── */}
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border-b border-amber-200">
-          <span className="text-amber-500 text-base flex-shrink-0">🔔</span>
-          <p className="text-[11px] sm:text-xs text-amber-800 font-medium leading-snug">
-            <span className="font-bold">Balance Due Notice</span> — We value our work with you and are giving a final opportunity to clear the outstanding balance of{" "}
-            <span className="font-bold">₹26,200</span>. Kindly settle this before the{" "}
-            <span className="font-bold">last date: Monday, 17 Aug 2026</span>{" "}to ensure continued uninterrupted access to the admin panel. We appreciate your prompt attention. Thank you! 🙏
-          </p>
-        </div>
 
         {/* ── Header ── */}
         <AdminHeader activeTab={activeTab} onMenuClick={() => setSidebarOpen(true)} />
